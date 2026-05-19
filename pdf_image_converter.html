@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF⇔画像 変換ツール｜無料でPDFを画像に・画像をPDFに変換</title>
+<meta name="description" content="PDFを画像（JPG/PNG）に変換、または複数の画像をPDF1枚にまとめる無料ツール。ファイルはブラウザ内で処理されるのでサーバーに送信されません。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<!-- PDF.js（PDF→画像用） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<!-- jsPDF（画像→PDF用） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #f4f6f9;
+  color: #222;
+  font-family: 'BIZ UDPGothic', sans-serif;
+  min-height: 100vh;
+  padding: 24px 14px 60px;
+  display: flex; flex-direction: column; align-items: center;
+}
+.container { width: 100%; max-width: 600px; }
+
+header { text-align: center; margin-bottom: 22px; }
+h1 { font-size: clamp(20px,5vw,26px); font-weight:700; color:#1a56db; margin-bottom:6px; letter-spacing:0.03em; }
+.subtitle { font-size:11px; color:#666; line-height:1.8; }
+
+.card {
+  background:#fff; border:1px solid #dde3ee; border-radius:10px;
+  padding:20px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,0.06);
+}
+
+/* タブ切り替え */
+.tabs { display:grid; grid-template-columns:1fr 1fr; gap:0; margin-bottom:20px; border:1px solid #c3d4f8; border-radius:8px; overflow:hidden; }
+.tab-btn {
+  background:#f1f5fd; border:none; padding:12px 8px;
+  font-family:'BIZ UDPGothic',sans-serif; font-size:13px; font-weight:700;
+  color:#555; cursor:pointer; transition:background 0.15s,color 0.15s;
+  letter-spacing:0.04em;
+}
+.tab-btn.active { background:#1a56db; color:#fff; }
+.tab-btn:first-child { border-right:1px solid #c3d4f8; }
+
+/* パネル */
+.panel { display:none; }
+.panel.active { display:block; }
+
+/* ドロップゾーン */
+.dropzone {
+  border:2px dashed #c3d4f8; border-radius:10px;
+  background:#f8fafd; padding:32px 20px;
+  text-align:center; cursor:pointer;
+  transition:border-color 0.2s, background 0.2s;
+  margin-bottom:16px;
+  position:relative;
+}
+.dropzone:hover, .dropzone.dragover { border-color:#1a56db; background:#eef3fd; }
+.dropzone input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+.drop-icon { font-size:36px; margin-bottom:8px; }
+.drop-title { font-size:14px; font-weight:700; color:#333; margin-bottom:4px; }
+.drop-sub { font-size:11px; color:#888; }
+
+/* オプション */
+.option-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.option-label { font-size:13px; color:#333; font-weight:700; }
+.option-desc { font-size:11px; color:#888; margin-top:2px; }
+select {
+  border:1px solid #c7d0e0; border-radius:7px; background:#f8fafd;
+  color:#222; font-family:'BIZ UDPGothic',sans-serif; font-size:13px;
+  padding:7px 10px; outline:none; cursor:pointer;
+}
+select:focus { border-color:#1a56db; }
+
+/* 実行ボタン */
+.btn-run {
+  width:100%; background:#1a56db; border:none; border-radius:8px;
+  color:#fff; font-family:'BIZ UDPGothic',sans-serif; font-size:15px; font-weight:700;
+  padding:13px; cursor:pointer; letter-spacing:0.06em; transition:background 0.15s,transform 0.1s;
+}
+.btn-run:hover { background:#1546b8; }
+.btn-run:active { transform:scale(0.98); }
+.btn-run:disabled { opacity:0.45; cursor:not-allowed; transform:none; }
+
+/* プログレス */
+.progress-wrap { display:none; margin-top:14px; }
+.progress-wrap.show { display:block; }
+.progress-bar-bg { background:#e5e7eb; border-radius:99px; height:8px; overflow:hidden; margin-bottom:6px; }
+.progress-bar { background:#1a56db; height:100%; border-radius:99px; width:0%; transition:width 0.3s; }
+.progress-text { font-size:11px; color:#555; text-align:center; }
+
+/* エラー */
+.error-msg {
+  display:none; background:#fff1f1; border:1px solid #fca5a5; border-radius:7px;
+  color:#b91c1c; font-size:13px; padding:9px 13px; margin-top:10px;
+}
+.error-msg.show { display:block; }
+
+/* 結果エリア */
+.result-area { display:none; margin-top:14px; animation:fadeUp 0.3s ease; }
+.result-area.show { display:block; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+.result-header {
+  font-size:11px; font-weight:700; color:#555; letter-spacing:0.08em; margin-bottom:10px;
+}
+
+/* 画像プレビュー一覧 */
+.preview-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px; margin-bottom:12px; }
+.preview-item { text-align:center; }
+.preview-item img { width:100%; border-radius:6px; border:1px solid #dde3ee; display:block; }
+.preview-item .preview-label { font-size:10px; color:#777; margin-top:4px; }
+
+/* ダウンロードボタン */
+.btn-dl {
+  display:block; width:100%; background:#f0faf4; border:1px solid #a8d5b5;
+  border-radius:7px; color:#217346; font-family:'BIZ UDPGothic',sans-serif;
+  font-size:13px; font-weight:700; padding:10px; cursor:pointer;
+  transition:background 0.15s; text-align:center; margin-bottom:8px;
+  text-decoration:none;
+}
+.btn-dl:hover { background:#d4edda; }
+
+/* ファイルリスト（画像→PDF用） */
+.file-list { list-style:none; margin-bottom:12px; }
+.file-list li {
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:13px; padding:6px 10px; background:#f8fafd;
+  border:1px solid #dde3ee; border-radius:6px; margin-bottom:4px;
+}
+.file-list li .fname { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:70%; }
+.file-list li .fremove {
+  background:none; border:none; color:#dc2626; font-size:16px;
+  cursor:pointer; padding:0 4px; line-height:1; flex-shrink:0;
+}
+.file-list-empty { font-size:12px; color:#aaa; text-align:center; padding:8px; }
+
+/* 注意書き */
+.note { font-size:11px; color:#888; line-height:1.8; padding:0 4px; margin-bottom:6px; }
+
+footer { margin-top:30px; text-align:center; font-size:11px; color:#aaa; }
+
+@media(max-width:380px){
+  .preview-grid { grid-template-columns:repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>🔄 PDF⇔画像 変換ツール</h1>
+    <p class="subtitle">
+      ※ PDFを画像（JPG/PNG）に変換・複数画像をPDF1枚にまとめる<br>
+      ※ ファイルはブラウザ内で処理。サーバーに送信されません<br>
+      ※ 完全無料・登録不要
+    </p>
+  </header>
+
+  <div class="card">
+    <!-- タブ -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('pdf2img')">📄 PDF → 画像</button>
+      <button class="tab-btn" onclick="switchTab('img2pdf')">🖼️ 画像 → PDF</button>
+    </div>
+
+    <!-- ===== PDF→画像パネル ===== -->
+    <div class="panel active" id="panel-pdf2img">
+
+      <div class="dropzone" id="dz-pdf" ondragover="onDragOver(event,'dz-pdf')" ondragleave="onDragLeave('dz-pdf')" ondrop="onDrop(event,'pdf')">
+        <input type="file" accept=".pdf,application/pdf" onchange="onFileSelect(event,'pdf')" id="input-pdf">
+        <div class="drop-icon">📄</div>
+        <div class="drop-title">PDFをドロップ または クリックして選択</div>
+        <div class="drop-sub">対応形式：PDF</div>
+      </div>
+      <div id="pdf-filename" style="font-size:12px;color:#1a56db;margin-bottom:12px;display:none;"></div>
+
+      <div class="option-row">
+        <div>
+          <div class="option-label">出力形式</div>
+          <div class="option-desc">JPGは軽量・PNGは高品質</div>
+        </div>
+        <select id="img-format">
+          <option value="jpeg">JPG</option>
+          <option value="png">PNG</option>
+        </select>
+      </div>
+      <div class="option-row">
+        <div>
+          <div class="option-label">解像度（DPI）</div>
+          <div class="option-desc">高いほど高画質・ファイル大きくなる</div>
+        </div>
+        <select id="img-dpi">
+          <option value="1">低（72dpi相当）</option>
+          <option value="1.5">中（108dpi）</option>
+          <option value="2" selected>標準（144dpi）</option>
+          <option value="3">高（216dpi）</option>
+        </select>
+      </div>
+
+      <button class="btn-run" id="btn-convert-pdf" onclick="convertPdfToImg()" disabled>画像に変換する</button>
+      <div class="error-msg" id="err-pdf"></div>
+
+      <div class="progress-wrap" id="prog-pdf">
+        <div class="progress-bar-bg"><div class="progress-bar" id="bar-pdf"></div></div>
+        <div class="progress-text" id="prog-pdf-text">変換中...</div>
+      </div>
+
+      <div class="result-area" id="result-pdf2img">
+        <div class="result-header">▶ 変換結果（クリックでダウンロード）</div>
+        <div class="preview-grid" id="preview-grid"></div>
+        <button class="btn-dl" id="btn-dl-all" onclick="downloadAll()" style="display:none">📦 全ページまとめてダウンロード（ZIP）</button>
+      </div>
+    </div>
+
+    <!-- ===== 画像→PDFパネル ===== -->
+    <div class="panel" id="panel-img2pdf">
+
+      <div class="dropzone" id="dz-img" ondragover="onDragOver(event,'dz-img')" ondragleave="onDragLeave('dz-img')" ondrop="onDrop(event,'img')">
+        <input type="file" accept="image/*" multiple onchange="onFileSelect(event,'img')" id="input-img">
+        <div class="drop-icon">🖼️</div>
+        <div class="drop-title">画像をドロップ または クリックして選択</div>
+        <div class="drop-sub">JPG / PNG / WEBP など複数ファイルOK</div>
+      </div>
+
+      <ul class="file-list" id="img-file-list">
+        <li class="file-list-empty" id="img-list-empty">画像が選択されていません</li>
+      </ul>
+
+      <div class="option-row">
+        <div>
+          <div class="option-label">用紙サイズ</div>
+          <div class="option-desc">画像に合わせて自動調整</div>
+        </div>
+        <select id="pdf-pagesize">
+          <option value="a4">A4</option>
+          <option value="a3">A3</option>
+          <option value="letter">レター</option>
+          <option value="fit">画像サイズに合わせる</option>
+        </select>
+      </div>
+      <div class="option-row">
+        <div>
+          <div class="option-label">向き</div>
+        </div>
+        <select id="pdf-orient">
+          <option value="portrait">縦（ポートレート）</option>
+          <option value="landscape">横（ランドスケープ）</option>
+        </select>
+      </div>
+
+      <button class="btn-run" id="btn-convert-img" onclick="convertImgToPdf()" disabled>PDFに変換する</button>
+      <div class="error-msg" id="err-img"></div>
+
+      <div class="progress-wrap" id="prog-img">
+        <div class="progress-bar-bg"><div class="progress-bar" id="bar-img"></div></div>
+        <div class="progress-text" id="prog-img-text">変換中...</div>
+      </div>
+
+      <div class="result-area" id="result-img2pdf">
+        <div class="result-header">▶ 変換完了</div>
+        <a class="btn-dl" id="btn-dl-pdf" href="#" download="converted.pdf">📥 PDFをダウンロード</a>
+      </div>
+    </div>
+  </div>
+
+  <p class="note">
+    ※ 変換はすべてブラウザ内で完結。ファイルは外部に送信されません<br>
+    ※ 大きなPDF（50ページ超）は処理に時間がかかる場合があります<br>
+    ※ パスワード付きPDFには非対応
+  </p>
+
+</div>
+<footer>© 2025 PDF⇔画像 変換ツール</footer>
+
+<script>
+// PDF.js workerパス設定
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ============================================================
+// 状態管理
+// ============================================================
+let pdfFile   = null;
+let imgFiles  = []; // {file, url} の配列
+let pageBlobs = []; // PDF→画像 の変換結果Blob[]
+
+// ============================================================
+// タブ切り替え
+// ============================================================
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>{
+    b.classList.toggle('active', (i===0&&tab==='pdf2img')||(i===1&&tab==='img2pdf'));
+  });
+  document.getElementById('panel-pdf2img').classList.toggle('active', tab==='pdf2img');
+  document.getElementById('panel-img2pdf').classList.toggle('active', tab==='img2pdf');
+}
+
+// ============================================================
+// ドラッグ&ドロップ
+// ============================================================
+function onDragOver(e,id){ e.preventDefault(); document.getElementById(id).classList.add('dragover'); }
+function onDragLeave(id){ document.getElementById(id).classList.remove('dragover'); }
+function onDrop(e,type){
+  e.preventDefault();
+  const id=type==='pdf'?'dz-pdf':'dz-img';
+  document.getElementById(id).classList.remove('dragover');
+  const files=e.dataTransfer.files;
+  if(type==='pdf') handlePdfFile(files[0]);
+  else handleImgFiles(files);
+}
+function onFileSelect(e,type){
+  if(type==='pdf') handlePdfFile(e.target.files[0]);
+  else handleImgFiles(e.target.files);
+}
+
+// ============================================================
+// PDF→画像：ファイル受け付け
+// ============================================================
+function handlePdfFile(file){
+  if(!file||file.type!=='application/pdf'){
+    showErr('err-pdf','PDFファイルを選択してください');return;
+  }
+  pdfFile=file;
+  hideErr('err-pdf');
+  const fnEl=document.getElementById('pdf-filename');
+  fnEl.textContent='📄 '+file.name+' （'+formatSize(file.size)+'）';
+  fnEl.style.display='block';
+  document.getElementById('btn-convert-pdf').disabled=false;
+  document.getElementById('result-pdf2img').classList.remove('show');
+  pageBlobs=[];
+}
+
+// ============================================================
+// PDF→画像：変換実行
+// ============================================================
+async function convertPdfToImg(){
+  if(!pdfFile) return;
+  const format=document.getElementById('img-format').value;
+  const scale=parseFloat(document.getElementById('img-dpi').value);
+  const btn=document.getElementById('btn-convert-pdf');
+  btn.disabled=true;
+  showProgress('prog-pdf','bar-pdf','prog-pdf-text',0,'読み込み中...');
+  hideErr('err-pdf');
+  pageBlobs=[];
+
+  try{
+    const arrayBuf=await pdfFile.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:arrayBuf}).promise;
+    const total=pdf.numPages;
+    const grid=document.getElementById('preview-grid');
+    grid.innerHTML='';
+
+    for(let i=1;i<=total;i++){
+      const page=await pdf.getPage(i);
+      const vp=page.getViewport({scale});
+      const canvas=document.createElement('canvas');
+      canvas.width=vp.width; canvas.height=vp.height;
+      const ctx=canvas.getContext('2d');
+      await page.render({canvasContext:ctx,viewport:vp}).promise;
+
+      const mimeType='image/'+(format==='jpeg'?'jpeg':'png');
+      const quality=format==='jpeg'?0.92:1;
+      const blob=await new Promise(res=>canvas.toBlob(res,mimeType,quality));
+      const url=URL.createObjectURL(blob);
+      const ext=format==='jpeg'?'jpg':'png';
+      const baseName=pdfFile.name.replace(/\.pdf$/i,'');
+      const dlName=`${baseName}_${String(i).padStart(3,'0')}.${ext}`;
+      pageBlobs.push({blob,url,ext,page:i,dlName});
+
+      // プレビュー追加
+      const item=document.createElement('div');
+      item.className='preview-item';
+      item.innerHTML=`<img src="${url}" alt="ページ${i}" loading="lazy">
+        <div class="preview-label">ページ ${i}</div>
+        <a class="btn-dl" style="margin-top:4px;padding:6px;font-size:11px;" href="${url}" download="${dlName}">⬇ DL</a>`;
+      grid.appendChild(item);
+
+      const pct=Math.round(i/total*100);
+      showProgress('prog-pdf','bar-pdf','prog-pdf-text',pct,`変換中... ${i}/${total}ページ`);
+    }
+
+    document.getElementById('btn-dl-all').style.display=total>1?'block':'none';
+    document.getElementById('result-pdf2img').classList.add('show');
+    hideProgress('prog-pdf');
+  }catch(e){
+    hideProgress('prog-pdf');
+    showErr('err-pdf','変換に失敗しました：'+e.message);
+    console.error(e);
+  }
+  btn.disabled=false;
+}
+
+// ============================================================
+// ZIPでまとめてダウンロード（JSZipなしの簡易版：1枚ずつ）
+// ============================================================
+async function downloadAll(){
+  for(const p of pageBlobs){
+    const a=document.createElement('a');
+    a.href=p.url;
+    a.download=p.dlName;
+    a.click();
+    await new Promise(r=>setTimeout(r,300));
+  }
+}
+
+// ============================================================
+// 画像→PDF：ファイル受け付け
+// ============================================================
+function handleImgFiles(fileList){
+  const newFiles=Array.from(fileList).filter(f=>f.type.startsWith('image/'));
+  if(newFiles.length===0){ showErr('err-img','画像ファイルを選択してください'); return; }
+  hideErr('err-img');
+  newFiles.forEach(f=>{
+    const url=URL.createObjectURL(f);
+    imgFiles.push({file:f,url});
+  });
+  renderImgList();
+  document.getElementById('btn-convert-img').disabled=imgFiles.length===0;
+  document.getElementById('result-img2pdf').classList.remove('show');
+}
+
+function renderImgList(){
+  const ul=document.getElementById('img-file-list');
+  const empty=document.getElementById('img-list-empty');
+  ul.innerHTML='';
+  if(imgFiles.length===0){
+    ul.appendChild(empty);
+    empty.style.display='block';
+    document.getElementById('btn-convert-img').disabled=true;
+    return;
+  }
+  imgFiles.forEach((f,i)=>{
+    const li=document.createElement('li');
+    li.innerHTML=`<span class="fname">📷 ${f.file.name}</span><span style="font-size:11px;color:#aaa;flex-shrink:0;margin:0 8px">${formatSize(f.file.size)}</span><button class="fremove" onclick="removeImg(${i})" title="削除">×</button>`;
+    ul.appendChild(li);
+  });
+}
+
+function removeImg(i){
+  URL.revokeObjectURL(imgFiles[i].url);
+  imgFiles.splice(i,1);
+  renderImgList();
+  document.getElementById('result-img2pdf').classList.remove('show');
+}
+
+// ============================================================
+// 画像→PDF：変換実行
+// ============================================================
+async function convertImgToPdf(){
+  if(imgFiles.length===0) return;
+  const pageSize=document.getElementById('pdf-pagesize').value;
+  const orient=document.getElementById('pdf-orient').value;
+  const btn=document.getElementById('btn-convert-img');
+  btn.disabled=true;
+  showProgress('prog-img','bar-img','prog-img-text',0,'変換中...');
+  hideErr('err-img');
+
+  try{
+    const {jsPDF}=window.jspdf;
+    let doc=null;
+
+    for(let i=0;i<imgFiles.length;i++){
+      const {file,url}=imgFiles[i];
+      const imgData=await fileToDataURL(file);
+      const img=await loadImage(url);
+      const iw=img.naturalWidth, ih=img.naturalHeight;
+
+      // 用紙サイズ決定
+      let pw,ph; // mm
+      if(pageSize==='fit'){
+        // 画像ピクセルをmmに変換（96dpi基準）
+        pw=iw/3.7795; ph=ih/3.7795;
+      } else {
+        const sizes={a4:[210,297],a3:[297,420],letter:[215.9,279.4]};
+        [pw,ph]=sizes[pageSize];
+        if(orient==='landscape'){[pw,ph]=[ph,pw];}
+      }
+
+      if(!doc){
+        doc=new jsPDF({orientation:orient==='landscape'?'landscape':'portrait', unit:'mm', format:pageSize==='fit'?[pw,ph]:pageSize});
+      } else {
+        doc.addPage(pageSize==='fit'?[pw,ph]:pageSize, orient==='landscape'?'landscape':'portrait');
+      }
+
+      // 画像をページに収める（アスペクト比維持）
+      const ratio=Math.min(pw/iw,ph/ih);
+      const dw=iw*ratio, dh=ih*ratio;
+      const dx=(pw-dw)/2, dy=(ph-dh)/2;
+      const fmt=file.type==='image/png'?'PNG':'JPEG';
+      doc.addImage(imgData,fmt,dx,dy,dw,dh);
+
+      showProgress('prog-img','bar-img','prog-img-text',Math.round((i+1)/imgFiles.length*100),`処理中... ${i+1}/${imgFiles.length}枚`);
+    }
+
+    const pdfBlob=doc.output('blob');
+    const pdfUrl=URL.createObjectURL(pdfBlob);
+    const dlBtn=document.getElementById('btn-dl-pdf');
+    dlBtn.href=pdfUrl;
+    const basePdfName=imgFiles[0].file.name.replace(/\.[^.]+$/,'')+'.pdf';
+    dlBtn.download=basePdfName;
+    document.getElementById('result-img2pdf').classList.add('show');
+    hideProgress('prog-img');
+  }catch(e){
+    hideProgress('prog-img');
+    showErr('err-img','変換に失敗しました：'+e.message);
+    console.error(e);
+  }
+  btn.disabled=false;
+}
+
+// ============================================================
+// ユーティリティ
+// ============================================================
+function fileToDataURL(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=e=>res(e.target.result);
+    r.onerror=rej;
+    r.readAsDataURL(file);
+  });
+}
+function loadImage(url){
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    img.onload=()=>res(img);
+    img.onerror=rej;
+    img.src=url;
+  });
+}
+function formatSize(bytes){
+  if(bytes<1024) return bytes+'B';
+  if(bytes<1024*1024) return (bytes/1024).toFixed(1)+'KB';
+  return (bytes/(1024*1024)).toFixed(1)+'MB';
+}
+function showErr(id,msg){ const el=document.getElementById(id); el.textContent=msg; el.classList.add('show'); }
+function hideErr(id){ document.getElementById(id).classList.remove('show'); }
+function showProgress(wrapId,barId,textId,pct,txt){
+  document.getElementById(wrapId).classList.add('show');
+  document.getElementById(barId).style.width=pct+'%';
+  document.getElementById(textId).textContent=txt;
+}
+function hideProgress(wrapId){ document.getElementById(wrapId).classList.remove('show'); }
+</script>
+</body>
+</html>

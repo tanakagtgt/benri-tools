@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>住宅ローン算定ツール｜繰上返済・投資比較・住宅ローン控除を一括シミュレーション</title>
+<meta name="description" content="住宅ローンの返済額計算から繰上返済シミュレーション・投資比較・住宅ローン控除まで一括で判断できる無料ツール。変動金利リスクや住宅ローン計算も対応。初心者向け。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================
+   リセット・基本
+============================================ */
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  background:#f4f6f9;color:#222;
+  font-family:'BIZ UDPGothic',sans-serif;
+  min-height:100vh;padding:0 0 60px;
+}
+
+/* ============================================
+   ヘッダー
+============================================ */
+.site-header{
+  background:#1a56db;color:#fff;
+  text-align:center;padding:26px 16px 20px;margin-bottom:20px;
+}
+.site-header h1{font-size:clamp(16px,4.5vw,23px);font-weight:700;margin-bottom:8px;letter-spacing:0.03em;}
+.site-header .header-desc{font-size:11px;opacity:0.85;line-height:1.8;}
+
+/* ============================================
+   共通レイアウト
+============================================ */
+.container{width:100%;max-width:780px;margin:0 auto;padding:0 14px;}
+
+.section-title{
+  font-size:14px;font-weight:700;color:#1a56db;
+  border-left:4px solid #1a56db;padding-left:10px;
+  margin-bottom:14px;letter-spacing:0.03em;
+}
+
+.card{
+  background:#fff;border:1px solid #dde3ee;border-radius:10px;
+  padding:20px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,0.06);
+}
+
+/* ============================================
+   タブ（4個）
+============================================ */
+.tab-nav{
+  display:flex;overflow-x:auto;
+  background:#fff;border-bottom:2px solid #dde3ee;
+  margin-bottom:16px;-webkit-overflow-scrolling:touch;
+}
+.tab-nav::-webkit-scrollbar{height:0;}
+.tab-btn{
+  flex-shrink:0;background:none;border:none;
+  border-bottom:3px solid transparent;margin-bottom:-2px;
+  padding:12px 16px;font-family:'BIZ UDPGothic',sans-serif;
+  font-size:12px;font-weight:700;color:#888;cursor:pointer;
+  white-space:nowrap;transition:color .15s,border-color .15s;letter-spacing:.03em;
+}
+.tab-btn.active{color:#1a56db;border-bottom-color:#1a56db;}
+.tab-btn:hover{color:#1a56db;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* ============================================
+   フォーム
+============================================ */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.form-group{display:flex;flex-direction:column;}
+.form-group.full{grid-column:1/-1;}
+.form-group label{font-size:11px;font-weight:700;color:#555;letter-spacing:.07em;margin-bottom:5px;}
+.label-sub{font-size:10px;font-weight:400;color:#999;margin-left:3px;}
+.form-group input[type="number"],
+.form-group select{
+  width:100%;border:1px solid #c7d0e0;border-radius:7px;
+  background:#f8fafd;color:#222;font-family:'BIZ UDPGothic',sans-serif;
+  font-size:15px;padding:10px 12px;outline:none;
+  transition:border-color .18s;-webkit-appearance:none;
+}
+.form-group input:focus,.form-group select:focus{border-color:#1a56db;background:#fff;}
+.input-unit{display:flex;align-items:center;gap:6px;}
+.input-unit input{flex:1;}
+.input-unit span{font-size:13px;color:#777;white-space:nowrap;}
+.radio-group{display:flex;gap:14px;flex-wrap:wrap;}
+.radio-item{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:#333;user-select:none;}
+.radio-item input[type="radio"]{accent-color:#1a56db;width:16px;height:16px;}
+
+/* ============================================
+   ボタン
+============================================ */
+.btn-calc{
+  width:100%;background:#1a56db;border:none;border-radius:8px;
+  color:#fff;font-family:'BIZ UDPGothic',sans-serif;
+  font-size:15px;font-weight:700;padding:14px;cursor:pointer;
+  letter-spacing:.06em;transition:background .15s,transform .1s;
+}
+.btn-calc:hover{background:#1546b8;}
+.btn-calc:active{transform:scale(.98);}
+
+/* ============================================
+   エラー
+============================================ */
+.error-msg{
+  display:none;background:#fff1f1;border:1px solid #fca5a5;
+  border-radius:7px;color:#b91c1c;font-size:13px;
+  padding:9px 13px;margin-top:10px;
+}
+.error-msg.show{display:block;}
+
+/* ============================================
+   アコーディオン
+============================================ */
+.accordion-wrap{
+  border:1px solid #dde3ee;border-radius:10px;overflow:hidden;
+  margin-bottom:14px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.05);
+}
+.accordion-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;cursor:pointer;user-select:none;
+  background:#f8fafd;border-bottom:1px solid transparent;transition:background .15s;
+}
+.accordion-head:hover{background:#eef3fd;}
+.accordion-head.open{border-bottom-color:#dde3ee;background:#fff;}
+.acc-left{display:flex;align-items:center;gap:8px;}
+.acc-icon{font-size:16px;}
+.acc-title{font-size:13px;font-weight:700;color:#333;}
+.acc-sub{font-size:11px;color:#888;margin-left:4px;}
+.acc-arrow{font-size:11px;color:#aaa;transition:transform .25s;}
+.accordion-head.open .acc-arrow{transform:rotate(180deg);}
+.accordion-body{display:none;padding:16px 18px 18px;}
+.accordion-body.open{display:block;}
+
+/* ============================================
+   説明カード（intro）
+============================================ */
+.intro-card{
+  background:linear-gradient(135deg,#e8f0fe 0%,#f0fdf4 100%);
+  border:1px solid #c3d4f8;border-radius:10px;
+  padding:16px 18px;margin-bottom:14px;
+}
+.intro-card .ic-title{font-size:13px;font-weight:700;color:#1a56db;margin-bottom:6px;}
+.intro-card .ic-desc{font-size:12px;color:#444;line-height:1.7;}
+
+/* ============================================
+   結果パネル（基本計算）
+============================================ */
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.result-panel{
+  background:linear-gradient(135deg,#e8f0fe 0%,#f0fdf4 100%);
+  border:1px solid #c3d4f8;border-radius:10px;
+  padding:20px;margin-bottom:14px;display:none;
+}
+.result-panel.show{display:block;animation:fadeUp .3s ease;}
+
+/* 強調ヒーロー数値 */
+.result-hero{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.result-hero-item{
+  background:#fff;border-radius:10px;padding:16px 10px;
+  text-align:center;border:2px solid #1a56db;
+  box-shadow:0 2px 8px rgba(26,86,219,.08);
+}
+.rh-label{font-size:11px;font-weight:700;color:#1a56db;letter-spacing:.08em;margin-bottom:4px;}
+.rh-value{font-size:clamp(18px,5vw,28px);font-weight:700;color:#1a56db;line-height:1.1;}
+.rh-unit{font-size:12px;color:#888;margin-left:2px;}
+.rh-note{font-size:10px;color:#aaa;margin-top:4px;}
+
+/* サブ数値グリッド */
+.result-sub-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.result-sub-item{
+  background:rgba(255,255,255,.75);border:1px solid #dde3ee;
+  border-radius:8px;padding:10px 8px;text-align:center;
+}
+.rs-label{font-size:10px;color:#777;font-weight:700;}
+.rs-value{font-size:14px;font-weight:700;color:#333;margin-top:3px;}
+.rs-item-red  .rs-value{color:#dc2626;}
+.rs-item-green .rs-value{color:#16a34a;}
+.rs-item-blue  .rs-value{color:#1a56db;}
+
+/* お金の性質カード */
+.cost-concept{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;}
+.cost-concept-item{border-radius:7px;padding:10px 8px;text-align:center;}
+.cc-emoji{font-size:18px;margin-bottom:4px;}
+.cc-label{font-weight:700;font-size:11px;margin-bottom:2px;}
+.cc-value{font-size:12px;font-weight:700;}
+.cc-note{font-size:9px;margin-top:3px;}
+.cc-principal{background:#dbeafe;color:#1e3a8a;}
+.cc-interest {background:#fee2e2;color:#991b1b;}
+.cc-deduction{background:#dcfce7;color:#15803d;}
+
+/* ============================================
+   グラフ
+============================================ */
+.chart-wrap{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.chart-box{text-align:center;}
+.chart-title{font-size:12px;font-weight:700;color:#555;margin-bottom:8px;}
+canvas{max-width:100%;border-radius:6px;}
+
+/* ============================================
+   返済スケジュール表
+============================================ */
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.schedule-table{width:100%;min-width:480px;border-collapse:collapse;font-size:12px;}
+.schedule-table th{
+  background:#1a56db;color:#fff;padding:8px 10px;
+  text-align:right;font-weight:700;white-space:nowrap;
+}
+.schedule-table th:first-child{text-align:center;}
+.schedule-table td{padding:7px 10px;text-align:right;border-bottom:1px solid #eaeff6;white-space:nowrap;}
+.schedule-table td:first-child{text-align:center;font-weight:700;color:#555;}
+.schedule-table tr:nth-child(even){background:#f8fafd;}
+.schedule-table tr:hover{background:#eef3fd;}
+.schedule-table .bonus-row{background:#fffbeb;}
+.schedule-table .bonus-row td{color:#92400e;}
+.table-toggle-btn{
+  width:100%;background:#f8fafd;border:1px solid #dde3ee;border-radius:7px;
+  color:#555;font-family:'BIZ UDPGothic',sans-serif;
+  font-size:13px;font-weight:700;padding:10px;cursor:pointer;
+  margin-bottom:10px;transition:background .15s;
+}
+.table-toggle-btn:hover{background:#eef3fd;color:#1a56db;}
+
+/* ============================================
+   繰上返済＆投資 結果
+============================================ */
+/* 判定カード */
+.verdict-card{
+  border-radius:10px;padding:16px 18px;margin-bottom:14px;
+  text-align:center;display:none;animation:fadeUp .3s ease;
+}
+.verdict-card.show{display:block;}
+.vc-emoji{font-size:30px;margin-bottom:6px;}
+.vc-title{font-size:17px;font-weight:700;margin-bottom:5px;}
+.vc-diff{font-size:13px;margin-bottom:8px;}
+.vc-note{font-size:11px;opacity:.8;line-height:1.6;}
+.verdict-invest{background:#dcfce7;border:2px solid #86efac;color:#15803d;}
+.verdict-prepay{background:#dbeafe;border:2px solid #93c5fd;color:#1e3a8a;}
+.verdict-tie   {background:#f1f5fd;border:2px solid #c3d4f8;color:#475569;}
+
+/* 比較カード */
+.compare-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.compare-card{border-radius:10px;padding:14px 12px;text-align:center;border:1px solid #dde3ee;background:#fff;}
+.cc2-label{font-size:11px;font-weight:700;color:#777;margin-bottom:6px;}
+.cc2-value{font-size:clamp(15px,4vw,20px);font-weight:700;}
+.cc2-sub  {font-size:10px;color:#888;margin-top:4px;}
+.cc2-prepay{border-color:#93c5fd;} .cc2-prepay .cc2-value{color:#1a56db;}
+.cc2-invest{border-color:#86efac;} .cc2-invest .cc2-value{color:#16a34a;}
+
+/* 比較テーブル */
+.compare-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;}
+.compare-table th{
+  background:#f1f5fd;color:#333;padding:9px 12px;
+  text-align:left;font-weight:700;border-bottom:2px solid #c3d4f8;font-size:12px;
+}
+.compare-table td{padding:9px 12px;border-bottom:1px solid #eaeff6;vertical-align:top;}
+.compare-table tr:last-child td{border-bottom:none;}
+.ct-highlight{color:#1a56db;font-weight:700;}
+.ct-saving   {color:#16a34a;font-weight:700;}
+.ct-danger   {color:#dc2626;font-weight:700;}
+
+/* 「早期ほど効果大」バナー */
+.early-repay-banner{
+  background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;
+  padding:12px 14px;margin-bottom:12px;font-size:12px;color:#92400e;line-height:1.7;
+}
+
+/* バッジ */
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;margin-left:6px;vertical-align:middle;}
+.badge-blue {background:#dbeafe;color:#1e3a8a;}
+.badge-green{background:#dcfce7;color:#15803d;}
+.badge-red  {background:#fee2e2;color:#991b1b;}
+
+/* ============================================
+   金利変動・固定変動 比較テーブル
+============================================ */
+.rate-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;}
+.rate-table th{background:#f1f5fd;color:#333;padding:9px 12px;text-align:left;font-weight:700;border-bottom:2px solid #c3d4f8;font-size:12px;}
+.rate-table td{padding:9px 12px;border-bottom:1px solid #eaeff6;}
+.rate-table tr:last-child td{border-bottom:none;}
+
+/* ============================================
+   FAQ
+============================================ */
+.faq-item{margin-bottom:10px;border:1px solid #dde3ee;border-radius:8px;overflow:hidden;}
+.faq-q{
+  background:#f8fafd;padding:13px 16px;font-size:13px;font-weight:700;
+  color:#333;cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;
+}
+.faq-q::after{content:'▼';font-size:10px;color:#999;transition:transform .2s;}
+.faq-q.open::after{transform:rotate(180deg);}
+.faq-a{display:none;padding:12px 16px;font-size:13px;color:#444;line-height:1.7;background:#fff;}
+.faq-a.open{display:block;}
+
+/* ============================================
+   注意書き・フッター
+============================================ */
+.note{font-size:11px;color:#888;line-height:1.8;padding:0 4px;margin-bottom:6px;}
+footer{margin-top:30px;text-align:center;font-size:11px;color:#aaa;}
+
+/* ============================================
+   スマホ対応
+============================================ */
+@media(max-width:480px){
+  .form-grid{grid-template-columns:1fr;}
+  .form-group.full{grid-column:1;}
+  .chart-wrap{grid-template-columns:1fr;}
+  .result-hero{grid-template-columns:1fr 1fr;}
+  .result-sub-grid{grid-template-columns:repeat(2,1fr);}
+  .cost-concept{grid-template-columns:repeat(3,1fr);}
+  .compare-cards{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:360px){
+  .result-hero{grid-template-columns:1fr;}
+  .compare-cards{grid-template-columns:1fr;}
+  .result-sub-grid{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <h1>🏠 住宅ローン 算定ツール</h1>
+  <p class="header-desc">
+    返済額計算・繰上返済シミュレーション・投資比較・住宅ローン控除を一画面で判断<br>
+    変動金利リスクや住宅ローン計算もまとめて確認。初心者でも安心。
+  </p>
+</header>
+
+<div class="container">
+
+  <!-- タブ（4個） -->
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('ver1')">📊 基本計算</button>
+    <button class="tab-btn" onclick="switchTab('rate')">📈 金利変動</button>
+    <button class="tab-btn" onclick="switchTab('fixed')">🔄 固定→変動</button>
+    <button class="tab-btn" onclick="switchTab('faq')">❓ FAQ</button>
+  </div>
+
+  <!-- ============================================
+       基本計算タブ（繰上返済・投資・控除 統合）
+  ============================================ -->
+  <div class="tab-panel active" id="tab-ver1">
+
+    <!-- intro説明カード -->
+    <div class="intro-card">
+      <div class="ic-title">💡 このツールでできること</div>
+      <div class="ic-desc">
+        余剰資金を「繰上返済」と「投資」どちらに使うべきか比較できます。<br>
+        住宅ローン金利より投資リターンが高ければ投資優勢、低ければ繰上返済優勢になる傾向があります。<br>
+        <strong>繰上返済は早いほど利息削減効果が大きくなります。</strong>
+      </div>
+    </div>
+
+    <!-- ① 借入条件 -->
+    <div class="card">
+      <div class="section-title">🏦 借入条件の入力</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>物件価格<span class="label-sub">万円</span></label>
+          <div class="input-unit">
+            <input type="number" id="propertyPrice" value="4000" min="0" oninput="calcBasic()">
+            <span>万円</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>頭金<span class="label-sub">万円</span></label>
+          <div class="input-unit">
+            <input type="number" id="downPayment" value="500" min="0" oninput="calcBasic()">
+            <span>万円</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>年利<span class="label-sub">%</span></label>
+          <div class="input-unit">
+            <input type="number" id="annualRate" value="1.5" min="0" max="30" step="0.01" oninput="calcBasic()">
+            <span>%</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>返済年数<span class="label-sub">年</span></label>
+          <div class="input-unit">
+            <input type="number" id="years" value="35" min="1" max="50" oninput="calcBasic()">
+            <span>年</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>ボーナス返済額<span class="label-sub">万円/回</span></label>
+          <div class="input-unit">
+            <input type="number" id="bonusPayment" value="0" min="0" oninput="calcBasic()">
+            <span>万円</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>返済方式</label>
+          <div class="radio-group" style="margin-top:8px;">
+            <label class="radio-item">
+              <input type="radio" name="repayType" value="equal" checked onchange="calcBasic()">元利均等
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="repayType" value="principal" onchange="calcBasic()">元金均等
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="error-msg" id="err-basic"></div>
+    </div>
+
+    <!-- ② 繰上返済設定（アコーディオン） -->
+    <div class="accordion-wrap" id="acc-prepay">
+      <div class="accordion-head" onclick="toggleAcc('acc-prepay')">
+        <div class="acc-left">
+          <span class="acc-icon">⬆️</span>
+          <span class="acc-title">繰上返済を設定する</span>
+          <span class="acc-sub">設定すると削減利息・短縮年数が計算されます</span>
+        </div>
+        <span class="acc-arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>繰上返済額<span class="label-sub">万円</span></label>
+            <div class="input-unit">
+              <input type="number" id="prepayAmount" value="100" min="0">
+              <span>万円</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>実施タイミング<span class="label-sub">借入後何年目</span></label>
+            <div class="input-unit">
+              <input type="number" id="prepayYear" value="5" min="1" max="49">
+              <span>年後</span>
+            </div>
+          </div>
+          <div class="form-group full">
+            <label>繰上返済の方式</label>
+            <div class="radio-group" style="margin-top:8px;">
+              <label class="radio-item">
+                <input type="radio" name="prepayType" value="shorten" checked>期間短縮型（完済を早める）
+              </label>
+              <label class="radio-item">
+                <input type="radio" name="prepayType" value="reduce">返済額軽減型（月々を減らす）
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ 投資比較設定（アコーディオン） -->
+    <div class="accordion-wrap" id="acc-invest">
+      <div class="accordion-head" onclick="toggleAcc('acc-invest')">
+        <div class="acc-left">
+          <span class="acc-icon">💹</span>
+          <span class="acc-title">投資比較を設定する</span>
+          <span class="acc-sub">繰上返済 vs 投資の比較ができます</span>
+        </div>
+        <span class="acc-arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>期待年利<span class="label-sub">%</span></label>
+            <div class="input-unit">
+              <input type="number" id="invRate" value="5" min="0" max="30" step="0.1">
+              <span>%</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>運用年数<span class="label-sub">年</span></label>
+            <div class="input-unit">
+              <input type="number" id="invYears" value="20" min="1" max="50">
+              <span>年</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>毎月積立額<span class="label-sub">万円（任意）</span></label>
+            <div class="input-unit">
+              <input type="number" id="invMonthly" value="0" min="0">
+              <span>万円</span>
+            </div>
+          </div>
+        </div>
+        <p style="font-size:11px;color:#888;">※投資元本は繰上返済額と同額で比較します。毎月積立は複利で加算されます。</p>
+      </div>
+    </div>
+
+    <!-- ④ 住宅ローン控除（アコーディオン） -->
+    <div class="accordion-wrap" id="acc-deduction">
+      <div class="accordion-head" onclick="toggleAcc('acc-deduction')">
+        <div class="acc-left">
+          <span class="acc-icon">💴</span>
+          <span class="acc-title">住宅ローン控除を設定する</span>
+          <span class="acc-sub">設定すると実質負担額が計算されます</span>
+        </div>
+        <span class="acc-arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>入居年</label>
+            <select id="ded-year" onchange="calcBasic()">
+              <option value="2024">2024年</option>
+              <option value="2025" selected>2025年</option>
+              <option value="2026">2026年</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>住宅の種類</label>
+            <select id="ded-type" onchange="updateDedRate()">
+              <option value="0.7_13">認定長期優良・低炭素（0.7%・13年）</option>
+              <option value="0.7_13_zeh">ZEH水準省エネ（0.7%・13年）</option>
+              <option value="0.7_13_energy">省エネ基準適合（0.7%・13年）</option>
+              <option value="0.7_10">その他の住宅（0.7%・10年）</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>控除率<span class="label-sub">%（自動）</span></label>
+            <div class="input-unit">
+              <input type="number" id="ded-rate" value="0.7" step="0.1" readonly style="background:#f0f0f0;">
+              <span>%</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>控除期間<span class="label-sub">年（自動）</span></label>
+            <div class="input-unit">
+              <input type="number" id="ded-period" value="13" readonly style="background:#f0f0f0;">
+              <span>年</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>所得税＋住民税（年）<span class="label-sub">万円</span></label>
+            <div class="input-unit">
+              <input type="number" id="ded-tax" value="40" min="0" oninput="calcBasic()">
+              <span>万円</span>
+            </div>
+          </div>
+        </div>
+        <p style="font-size:11px;color:#888;margin-top:4px;">※控除額は年末ローン残高×控除率、上限は所得税＋住民税（年）</p>
+      </div>
+    </div>
+
+    <!-- 計算ボタン -->
+    <button class="btn-calc" onclick="runAll()" style="margin-bottom:14px;">すべて計算する</button>
+
+    <!-- ============================================
+         基本計算 結果パネル
+    ============================================ -->
+    <div class="result-panel" id="result-basic">
+      <div style="font-size:11px;color:#1a56db;font-weight:700;margin-bottom:10px;letter-spacing:.05em;">★ 住宅ローン控除を考慮した本当のコスト</div>
+
+      <!-- ヒーロー数値（実質月額・実質総負担） -->
+      <div class="result-hero">
+        <div class="result-hero-item">
+          <div class="rh-label">実質月額イメージ</div>
+          <div><span class="rh-value" id="rh-real-monthly">—</span><span class="rh-unit">円/月</span></div>
+          <div class="rh-note">返済額 − 月換算控除額</div>
+        </div>
+        <div class="result-hero-item">
+          <div class="rh-label">実質総負担額</div>
+          <div><span class="rh-value" id="rh-real-total">—</span><span class="rh-unit">円</span></div>
+          <div class="rh-note">総返済額 − 累計控除額</div>
+        </div>
+      </div>
+
+      <!-- サブ数値 -->
+      <div class="result-sub-grid">
+        <div class="result-sub-item">
+          <div class="rs-label">毎月返済額</div>
+          <div class="rs-value" id="rs-monthly">—</div>
+          <div id="rs-prepay-monthly" style="display:none;font-size:10px;color:#16a34a;font-weight:700;margin-top:3px;"></div>
+        </div>
+        <div class="result-sub-item rs-item-red">
+          <div class="rs-label">総利息</div>
+          <div class="rs-value" id="rs-interest">—</div>
+          <div id="rs-prepay-interest" style="display:none;font-size:10px;color:#16a34a;font-weight:700;margin-top:3px;"></div>
+        </div>
+        <div class="result-sub-item">
+          <div class="rs-label">総返済額</div>
+          <div class="rs-value" id="rs-total">—</div>
+          <div id="rs-prepay-total" style="display:none;font-size:10px;color:#16a34a;font-weight:700;margin-top:3px;"></div>
+        </div>
+        <div class="result-sub-item rs-item-green">
+          <div class="rs-label">控除総額</div>
+          <div class="rs-value" id="rs-deduction">—</div>
+        </div>
+        <div class="result-sub-item">
+          <div class="rs-label">借入総額</div>
+          <div class="rs-value" id="rs-loan">—</div>
+        </div>
+        <div class="result-sub-item">
+          <div class="rs-label">返済回数</div>
+          <div class="rs-value" id="rs-count">—</div>
+        </div>
+      </div>
+
+      <!-- お金の性質 -->
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#555;margin-bottom:8px;">📘 お金の性質を理解しよう</div>
+        <div class="cost-concept">
+          <div class="cost-concept-item cc-principal">
+            <div class="cc-emoji">🏠</div>
+            <div class="cc-label">元金</div>
+            <div class="cc-value" id="cc-principal">—</div>
+            <div class="cc-note">資産になるお金</div>
+          </div>
+          <div class="cost-concept-item cc-interest">
+            <div class="cc-emoji">💸</div>
+            <div class="cc-label">利息</div>
+            <div class="cc-value" id="cc-interest">—</div>
+            <div class="cc-note">純粋なコスト</div>
+          </div>
+          <div class="cost-concept-item cc-deduction">
+            <div class="cc-emoji">💴</div>
+            <div class="cc-label">控除額</div>
+            <div class="cc-value" id="cc-deduction">—</div>
+            <div class="cc-note">戻るお金</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- グラフ（基本：元金・利息 / 残債推移） -->
+    <div class="card" id="chart-card" style="display:none;">
+      <div class="section-title">📊 グラフ（基本）</div>
+      <div class="chart-wrap">
+        <div class="chart-box">
+          <div class="chart-title">元金・利息の割合</div>
+          <canvas id="pieChart" width="200" height="200"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">残債推移（万円）</div>
+          <canvas id="lineChart" width="300" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================
+         繰上返済 結果（アコーディオン）
+    ============================================ -->
+    <div class="accordion-wrap" id="acc-prepay-result" style="display:none;">
+      <div class="accordion-head open" onclick="toggleAcc('acc-prepay-result')">
+        <div class="acc-left">
+          <span class="acc-icon">⬆️</span>
+          <span class="acc-title">繰上返済シミュレーション結果</span>
+        </div>
+        <span class="acc-arrow">▼</span>
+      </div>
+      <div class="accordion-body open">
+
+        <!-- 早期効果バナー -->
+        <div class="early-repay-banner" id="early-banner"></div>
+
+        <!-- 繰上返済比較テーブル -->
+        <div class="table-scroll">
+          <table class="compare-table" id="prepay-table"></table>
+        </div>
+
+        <!-- グラフ：利息削減推移 -->
+        <div style="margin-top:14px;">
+          <div class="chart-title">繰上返済による利息削減効果（残債比較）</div>
+          <canvas id="prepayChart" width="600" height="220" style="width:100%;"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================
+         投資 結果（アコーディオン）
+    ============================================ -->
+    <div class="accordion-wrap" id="acc-invest-result" style="display:none;">
+      <div class="accordion-head open" onclick="toggleAcc('acc-invest-result')">
+        <div class="acc-left">
+          <span class="acc-icon">💹</span>
+          <span class="acc-title">投資シミュレーション結果</span>
+        </div>
+        <span class="acc-arrow">▼</span>
+      </div>
+      <div class="accordion-body open">
+        <div class="result-sub-grid" style="margin-bottom:12px;">
+          <div class="result-sub-item rs-item-green">
+            <div class="rs-label">将来資産額</div>
+            <div class="rs-value" id="inv-future">—</div>
+          </div>
+          <div class="result-sub-item">
+            <div class="rs-label">投資元本</div>
+            <div class="rs-value" id="inv-principal">—</div>
+          </div>
+          <div class="result-sub-item rs-item-blue">
+            <div class="rs-label">運用益（税前）</div>
+            <div class="rs-value" id="inv-gain">—</div>
+          </div>
+        </div>
+
+        <!-- グラフ：複利成長 -->
+        <div>
+          <div class="chart-title">投資の複利成長推移（万円）</div>
+          <canvas id="investChart" width="600" height="220" style="width:100%;"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================
+         比較結果（アコーディオン）
+    ============================================ -->
+    <div class="accordion-wrap" id="acc-compare-result" style="display:none;">
+      <div class="accordion-head open" onclick="toggleAcc('acc-compare-result')">
+        <div class="acc-left">
+          <span class="acc-icon">⚖️</span>
+          <span class="acc-title">繰上返済 vs 投資 最終比較</span>
+        </div>
+        <span class="acc-arrow">▼</span>
+      </div>
+      <div class="accordion-body open">
+
+        <!-- 判定カード -->
+        <div class="verdict-card" id="verdict-card"></div>
+
+        <!-- 数値比較カード -->
+        <div class="compare-cards">
+          <div class="compare-card cc2-prepay">
+            <div class="cc2-label">⬆️ 繰上返済の効果</div>
+            <div class="cc2-value" id="cc2-prepay-val">—</div>
+            <div class="cc2-sub" id="cc2-prepay-sub">利息削減額</div>
+          </div>
+          <div class="compare-card cc2-invest">
+            <div class="cc2-label">💹 投資の期待リターン</div>
+            <div class="cc2-value" id="cc2-invest-val">—</div>
+            <div class="cc2-sub">将来資産額（税前・複利）</div>
+          </div>
+        </div>
+
+        <!-- 詳細テーブル -->
+        <div class="table-scroll">
+          <table class="compare-table" id="compare-table"></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 返済スケジュール -->
+    <div class="card" id="schedule-card" style="display:none;">
+      <div class="section-title">📅 月別返済スケジュール</div>
+      <button class="table-toggle-btn" onclick="toggleSchedule()">▼ 月別返済表を表示する</button>
+      <div id="schedule-wrap" style="display:none;">
+        <div class="table-scroll">
+          <table class="schedule-table">
+            <thead>
+              <tr>
+                <th>回</th><th>返済月</th><th>返済額</th>
+                <th>元金</th><th>利息</th><th>残高</th>
+                <th id="th-prepay-bal" style="display:none;background:#15803d;">繰上後残高</th>
+              </tr>
+            </thead>
+            <tbody id="schedule-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /tab-ver1 -->
+
+  <!-- ============================================
+       金利変動タブ
+  ============================================ -->
+  <div class="tab-panel" id="tab-rate">
+    <div class="card">
+      <div class="section-title">📈 金利変動シミュレーション</div>
+      <p style="font-size:12px;color:#777;margin-bottom:14px;">将来金利が上昇した場合の変動金利リスクを試算します。基本計算タブの条件を使用します。</p>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>金利上昇 開始時期<span class="label-sub">年後</span></label>
+          <div class="input-unit">
+            <input type="number" id="rateChangeYear" value="5" min="1" max="49"><span>年後</span>
+          </div>
+        </div>
+      </div>
+      <button class="btn-calc" onclick="calcRateChange()">金利変動をシミュレーション</button>
+      <div class="error-msg" id="err-rate"></div>
+    </div>
+    <div class="card" id="rate-result" style="display:none;">
+      <div class="section-title">📋 金利変動 比較結果</div>
+      <div class="table-scroll">
+        <table class="rate-table" id="rate-table"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       固定→変動タブ
+  ============================================ -->
+  <div class="tab-panel" id="tab-fixed">
+    <div class="card">
+      <div class="section-title">🔄 固定金利終了後シミュレーション</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>借入金額<span class="label-sub">万円</span></label>
+          <div class="input-unit"><input type="number" id="fx-loan" value="3500" min="0"><span>万円</span></div>
+        </div>
+        <div class="form-group">
+          <label>返済年数<span class="label-sub">年</span></label>
+          <div class="input-unit"><input type="number" id="fx-years" value="35" min="1" max="50"><span>年</span></div>
+        </div>
+        <div class="form-group">
+          <label>固定期間<span class="label-sub">年</span></label>
+          <div class="input-unit"><input type="number" id="fx-fixed-years" value="10" min="1" max="30"><span>年</span></div>
+        </div>
+        <div class="form-group">
+          <label>固定期間中の金利<span class="label-sub">%</span></label>
+          <div class="input-unit"><input type="number" id="fx-rate1" value="0.8" min="0" max="30" step="0.01"><span>%</span></div>
+        </div>
+        <div class="form-group">
+          <label>固定終了後の金利<span class="label-sub">%</span></label>
+          <div class="input-unit"><input type="number" id="fx-rate2" value="1.8" min="0" max="30" step="0.01"><span>%</span></div>
+        </div>
+      </div>
+      <button class="btn-calc" onclick="calcFixed()">シミュレーション実行</button>
+      <div class="error-msg" id="err-fixed"></div>
+    </div>
+    <div class="card" id="fixed-result" style="display:none;">
+      <div class="section-title">📋 固定→変動 比較結果</div>
+      <div class="table-scroll">
+        <table class="rate-table" id="fixed-table"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       FAQタブ
+  ============================================ -->
+  <div class="tab-panel" id="tab-faq">
+    <div class="card">
+      <div class="section-title">❓ よくある質問（FAQ）</div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">元利均等と元金均等の違いは何ですか？</div>
+        <div class="faq-a"><strong>元利均等返済</strong>は毎月の返済額が一定です。収支の見通しが立てやすく一般的です。<strong>元金均等返済</strong>は元金が一定で、初期負担は大きいですが総利息が少なくなります。</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">繰上返済はなぜ早いほど効果が高いのですか？</div>
+        <div class="faq-a">住宅ローンの利息は残高に対して計算されます。早期に元金を減らすと、その後の毎月の利息計算ベースが下がるため、長期間にわたって利息削減効果が続きます。返済10年目と1年目では、同じ金額を繰上返済しても削減できる利息が大きく異なります。</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">繰上返済 vs 投資、どちらが有利？</div>
+        <div class="faq-a">理論的には<strong>住宅ローン金利 ＜ 投資利回り</strong>なら投資が有利です。ただし投資にはリスクがあり、繰上返済の利息削減は確定的です。リスク許容度・心理的安心感を考慮して判断しましょう。</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">住宅ローン控除とは何ですか？</div>
+        <div class="faq-a">住宅ローンを利用してマイホームを取得した際に、年末残高の0.7%が所得税・住民税から控除される制度です。最長13年間適用でき、住宅購入コストを大幅に下げる効果があります。</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">変動金利と固定金利、どちらを選べばよい？</div>
+        <div class="faq-a"><strong>変動金利</strong>は現在低金利ですが将来の金利上昇リスクがあります。<strong>固定金利</strong>は返済額が変わらず安心感があります。「金利変動」タブでリスクをシミュレーションして判断してください。</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="note">
+    ※ 本ツールの計算結果はシミュレーションです。実際のローン条件と異なる場合があります<br>
+    ※ 投資シミュレーションは期待値であり、将来利益を保証するものではありません<br>
+    ※ 重要な意思決定の際は金融機関・ファイナンシャルプランナーにご相談ください
+  </p>
+
+</div><!-- /container -->
+<footer>© 2025 住宅ローン算定ツール</footer>
+
+<!-- ============================================
+     JavaScript
+============================================ -->
+<script>
+'use strict';
+
+/* ============================================
+   ユーティリティ
+============================================ */
+const fmt    = n => (isNaN(n)||n===null)?'—':Math.round(n).toLocaleString('ja-JP');
+const fmtMan = n => (isNaN(n)||n===null)?'—':Math.round(n/10000).toLocaleString('ja-JP')+'万円';
+const getNum = id => parseFloat(document.getElementById(id).value);
+const showErr= (id,msg)=>{ const e=document.getElementById(id); e.textContent=msg; e.classList.add('show'); };
+const hideErr= id => document.getElementById(id).classList.remove('show');
+
+/* ============================================
+   タブ
+============================================ */
+const TAB_IDS=['ver1','rate','fixed','faq'];
+function switchTab(tab){
+  TAB_IDS.forEach(id=>{
+    document.getElementById('tab-'+id).classList.toggle('active',id===tab);
+  });
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>{
+    b.classList.toggle('active',TAB_IDS[i]===tab);
+  });
+}
+
+/* ============================================
+   アコーディオン
+============================================ */
+function toggleAcc(id){
+  const wrap=document.getElementById(id);
+  const head=wrap.querySelector('.accordion-head');
+  const body=wrap.querySelector('.accordion-body');
+  const isOpen=head.classList.contains('open');
+  head.classList.toggle('open',!isOpen);
+  body.classList.toggle('open',!isOpen);
+}
+
+/* ============================================
+   FAQ
+============================================ */
+function toggleFaq(el){
+  el.classList.toggle('open');
+  el.nextElementSibling.classList.toggle('open');
+}
+
+/* ============================================
+   スケジュール開閉
+============================================ */
+function toggleSchedule(){
+  const wrap=document.getElementById('schedule-wrap');
+  const btn=document.querySelector('.table-toggle-btn');
+  const show=wrap.style.display==='none';
+  wrap.style.display=show?'block':'none';
+  btn.textContent=show?'▲ 月別返済表を閉じる':'▼ 月別返済表を表示する';
+}
+
+/* ============================================
+   グローバル状態
+============================================ */
+let gLoan=0, gRate=0, gMonths=0, gType='equal', gBonus=0, gSchedule=[];
+
+/* ============================================
+   返済スケジュール生成
+============================================ */
+function buildSchedule(loan,monthRate,months,type,bonusPayment){
+  const sch=[]; let balance=loan;
+  const equalPay=monthRate===0
+    ? loan/months
+    : loan*monthRate*Math.pow(1+monthRate,months)/(Math.pow(1+monthRate,months)-1);
+  const bonusMos=[6,12];
+
+  for(let i=1;i<=months;i++){
+    if(balance<=0) break;
+    const calMo=i%12===0?12:i%12;
+    const isBonus=bonusPayment>0&&bonusMos.includes(calMo);
+    const interest=balance*monthRate;
+    let principal,payment;
+
+    if(type==='equal'){
+      payment=Math.min(equalPay,balance+interest);
+      principal=payment-interest;
+    } else {
+      principal=loan/months;
+      payment=principal+interest;
+    }
+    if(isBonus){
+      const extra=Math.min(bonusPayment,balance-principal);
+      principal+=extra; payment+=extra;
+    }
+    balance-=principal;
+    if(balance<0) balance=0;
+    sch.push({month:i,payment:Math.round(payment),principal:Math.round(principal),interest:Math.round(interest),balance:Math.round(balance),isBonus});
+  }
+  return sch;
+}
+
+/* ============================================
+   控除額計算
+============================================ */
+function calcDed(sch){
+  const rate  =getNum('ded-rate')/100;
+  const period=Math.round(getNum('ded-period'));
+  const tax   =getNum('ded-tax')*10000;
+  if(isNaN(rate)||isNaN(period)||isNaN(tax)) return 0;
+  let total=0;
+  for(let yr=1;yr<=period;yr++){
+    const row=sch.find(r=>r.month===yr*12)??sch[sch.length-1];
+    const bal=row?row.balance:0;
+    total+=Math.min(bal*rate,tax);
+  }
+  return total;
+}
+
+/* ============================================
+   控除レート自動更新
+============================================ */
+function updateDedRate(){
+  const parts=document.getElementById('ded-type').value.split('_');
+  document.getElementById('ded-rate').value=parts[0];
+  document.getElementById('ded-period').value=parts[1];
+  calcBasic();
+}
+
+/* ============================================
+   基本計算（入力変更時のリアルタイム）
+============================================ */
+function calcBasic(){
+  hideErr('err-basic');
+  const pp=getNum('propertyPrice')*10000, dp=getNum('downPayment')*10000;
+  const ar=getNum('annualRate'), yr=getNum('years'), bp=getNum('bonusPayment')*10000;
+  const type=document.querySelector('input[name="repayType"]:checked').value;
+
+  if(isNaN(pp)||pp<=0)  { showErr('err-basic','物件価格を正しく入力してください'); return; }
+  if(isNaN(dp)||dp<0)   { showErr('err-basic','頭金を正しく入力してください'); return; }
+  if(dp>=pp)             { showErr('err-basic','頭金は物件価格より少なくしてください'); return; }
+  if(isNaN(ar)||ar<0)   { showErr('err-basic','金利を正しく入力してください'); return; }
+  if(isNaN(yr)||yr<1)   { showErr('err-basic','返済年数を正しく入力してください'); return; }
+
+  const loan=pp-dp, mRate=ar/100/12, months=yr*12;
+  gLoan=loan; gRate=mRate; gMonths=months; gType=type; gBonus=bp;
+  gSchedule=buildSchedule(loan,mRate,months,type,bp);
+
+  const totalPay =gSchedule.reduce((s,r)=>s+r.payment,0);
+  const totalInt =gSchedule.reduce((s,r)=>s+r.interest,0);
+  const firstMon =gSchedule.find(r=>!r.isBonus)?.payment??0;
+  const ded      =calcDed(gSchedule);
+  const realTotal=totalPay-ded;
+  const realMon  =firstMon-(ded/months);
+
+  // ヒーロー
+  document.getElementById('rh-real-monthly').textContent=fmt(Math.max(0,realMon));
+  document.getElementById('rh-real-total').textContent  =fmt(Math.max(0,realTotal));
+  // サブ
+  document.getElementById('rs-monthly').textContent  =fmt(firstMon)+'円';
+  document.getElementById('rs-interest').textContent =fmt(totalInt)+'円';
+  document.getElementById('rs-total').textContent    =fmt(totalPay)+'円';
+  document.getElementById('rs-deduction').textContent=ded>0?fmt(ded)+'円':'（設定なし）';
+  document.getElementById('rs-loan').textContent     =fmt(loan)+'円';
+  document.getElementById('rs-count').textContent    =months+'回';
+  // 性質
+  document.getElementById('cc-principal').textContent=fmtMan(loan);
+  document.getElementById('cc-interest').textContent =fmtMan(totalInt);
+  document.getElementById('cc-deduction').textContent=ded>0?fmtMan(ded):'—';
+
+  document.getElementById('result-basic').classList.add('show');
+  document.getElementById('chart-card').style.display='block';
+  document.getElementById('schedule-card').style.display='block';
+
+  drawPieChart(loan,totalInt);
+  drawLineChart(gSchedule);
+  buildScheduleTable(gSchedule);
+}
+
+/* ============================================
+   「すべて計算する」ボタン：繰上返済＋投資も実行
+============================================ */
+function runAll(){
+  calcBasic();
+  if(gSchedule.length===0) return;
+
+  // 繰上返済設定チェック
+  const prepayOpen=document.getElementById('acc-prepay').querySelector('.accordion-body').classList.contains('open');
+  const investOpen=document.getElementById('acc-invest').querySelector('.accordion-body').classList.contains('open');
+
+  if(prepayOpen) calcPrepay();
+  if(investOpen) calcInvest();
+  if(prepayOpen&&investOpen) calcCompare();
+}
+
+/* ============================================
+   繰上返済計算
+============================================ */
+function calcPrepay(){
+  const amount=getNum('prepayAmount')*10000;
+  const prepYr=getNum('prepayYear');
+  const pType =document.querySelector('input[name="prepayType"]:checked').value;
+
+  if(isNaN(amount)||amount<=0||isNaN(prepYr)||prepYr<1) return;
+
+  const prepMo=prepYr*12;
+  if(prepMo>=gMonths) return;
+
+  const rowAt=gSchedule.find(r=>r.month===prepMo);
+  if(!rowAt) return;
+
+  const balAfter=rowAt.balance-amount;
+  if(balAfter<=0) return;
+
+  const remain=gMonths-prepMo;
+  const newSch=buildSchedule(balAfter,gRate,remain,gType,gBonus);
+  const newMon =pType==='reduce'?(newSch.find(r=>!r.isBonus)?.payment??0):null;
+
+  const origInt=gSchedule.reduce((s,r)=>s+r.interest,0);
+  const origPay=gSchedule.reduce((s,r)=>s+r.payment,0);
+  const origLen=gSchedule.length;
+
+  const before=[...gSchedule.filter(r=>r.month<=prepMo)];
+  const after =newSch.map(r=>({...r,month:r.month+prepMo}));
+  const combined=[...before,...after];
+
+  const newInt=combined.reduce((s,r)=>s+r.interest,0);
+  const newPay=combined.reduce((s,r)=>s+r.payment,0)+amount;
+  const newLen=combined.length;
+
+  const savedInt  =origInt-newInt;
+  const savedMos  =origLen-newLen;
+  const sy=new Date().getFullYear();
+  const origEndY=sy+Math.floor((origLen-1)/12), origEndM=((origLen-1)%12)+1;
+  const newEndY =sy+Math.floor((newLen-1)/12),  newEndM =((newLen-1)%12)+1;
+
+  // バナー
+  const earlyEffect=prepYr<=5?'非常に高い':prepYr<=10?'高い':prepYr<=20?'中程度':'低め';
+  document.getElementById('early-banner').innerHTML=
+    `⚡ <strong>${prepYr}年目の繰上返済</strong>：早期ほど利息削減効果が大きくなります。`+
+    `この時期の効果は<strong>「${earlyEffect}」</strong>です。`+
+    `同じ${fmt(amount)}円でも、返済開始直後に行うほど有利です。`;
+
+  // テーブル
+  document.getElementById('prepay-table').innerHTML=`
+    <thead><tr>
+      <th style="width:38%">項目</th><th>繰上返済なし</th><th>繰上返済あり</th><th>効果</th>
+    </tr></thead>
+    <tbody>
+      <tr><td>完済時期</td><td>${origEndY}年${origEndM}月</td><td>${newEndY}年${newEndM}月</td>
+          <td class="ct-saving">${savedMos>0?savedMos+'ヶ月短縮':'—'}</td></tr>
+      <tr><td>総利息</td><td>${fmt(origInt)}円</td><td>${fmt(newInt)}円</td>
+          <td class="ct-saving">▲${fmt(savedInt)}円削減</td></tr>
+      <tr><td>総返済額</td><td>${fmt(origPay)}円</td><td>${fmt(newPay)}円</td>
+          <td class="${newPay<origPay?'ct-saving':'ct-danger'}">${fmt(Math.abs(origPay-newPay))}円${newPay<origPay?'減':'増'}</td></tr>
+      ${pType==='reduce'&&newMon?`
+      <tr><td>繰上後の月額</td>
+          <td>${fmt(gSchedule.find(r=>!r.isBonus)?.payment)}円</td>
+          <td>${fmt(newMon)}円</td>
+          <td class="ct-saving">▲${fmt((gSchedule.find(r=>!r.isBonus)?.payment??0)-newMon)}円/月</td></tr>`:''}
+    </tbody>`;
+
+  // グラフ
+  drawPrepayChart(gSchedule,combined);
+
+  // 結果を保存して比較用に使う
+  window._prepayResult={ savedInt, savedMos, newEndY, newEndM, amount };
+
+  // ① サブ数値グリッドに「繰上後」を追記
+  const firstMon   = gSchedule.find(r=>!r.isBonus)?.payment??0;
+  const newFirstMon= pType==='reduce'&&newMon ? newMon : firstMon; // 軽減型なら月額変わる
+  const prepayMonEl  = document.getElementById('rs-prepay-monthly');
+  const prepayIntEl  = document.getElementById('rs-prepay-interest');
+  const prepayPayEl  = document.getElementById('rs-prepay-total');
+
+  prepayMonEl.style.display='block';
+  prepayIntEl.style.display='block';
+  prepayPayEl.style.display='block';
+
+  if(pType==='reduce'&&newMon&&newMon<firstMon){
+    prepayMonEl.textContent=`繰上後 ▶ ▲${fmt(firstMon-newMon)}円`;
+  } else {
+    prepayMonEl.textContent=`繰上後 ▶ 変わらず（期間短縮）`;
+    prepayMonEl.style.color='#888';
+  }
+  prepayIntEl.textContent=`繰上後 ▶ ▲${fmt(savedInt)}円削減`;
+  prepayPayEl.textContent=`繰上後 ▶ ${newPay<origPay?'▲'+fmt(origPay-newPay)+'円減':'+'+fmt(newPay-origPay)+'円増'}`;
+
+  // ② スケジュール表に繰上後残高列を追加（combinedのbalanceをmapに変換）
+  const prepayBalMap = new Map();
+  // combinedには繰上前+繰上後の全行が入っている
+  // 元のgScheduleと月番号が一致する行だけ対応づける
+  combined.forEach(r => prepayBalMap.set(r.month, r.balance));
+  buildScheduleTable(gSchedule, prepayBalMap);
+
+  document.getElementById('acc-prepay-result').style.display='block';
+}
+
+/* ============================================
+   投資計算
+============================================ */
+function calcInvest(){
+  const amount  =getNum('prepayAmount')*10000; // 繰上返済額と同額
+  const rate    =getNum('invRate')/100;
+  const invYrs  =getNum('invYears');
+  const monthly =getNum('invMonthly')*10000;
+
+  if(isNaN(amount)||amount<=0||isNaN(rate)||rate<0||isNaN(invYrs)||invYrs<1) return;
+
+  // 複利：元本 + 毎月積立
+  const futureOnce   =amount*Math.pow(1+rate,invYrs);
+  // 毎月積立の将来価値（期末払い）
+  const mRate=rate/12;
+  const futureMonthly=monthly>0
+    ? monthly*(Math.pow(1+mRate,invYrs*12)-1)/mRate
+    : 0;
+  const futureTotal=futureOnce+futureMonthly;
+  const totalPrincipal=amount+monthly*invYrs*12;
+  const gain=futureTotal-totalPrincipal;
+
+  document.getElementById('inv-future').textContent   =fmtMan(futureTotal);
+  document.getElementById('inv-principal').textContent=fmtMan(totalPrincipal);
+  document.getElementById('inv-gain').textContent     =fmtMan(gain);
+
+  drawInvestChart(amount,rate,invYrs,monthly);
+
+  window._investResult={ futureTotal, totalPrincipal, gain, amount, rate, invYrs };
+
+  document.getElementById('acc-invest-result').style.display='block';
+}
+
+/* ============================================
+   最終比較
+============================================ */
+function calcCompare(){
+  const pr=window._prepayResult, ir=window._investResult;
+  if(!pr||!ir) return;
+
+  const savedInt  =pr.savedInt;
+  const futureVal =ir.futureTotal;
+  const investGain=ir.gain;
+  const diff=Math.abs(investGain-savedInt);
+  const ratio=Math.max(investGain,savedInt)>0?diff/Math.max(investGain,savedInt):0;
+  const isTie    =ratio<0.05;
+  const isInvest =!isTie&&investGain>savedInt;
+
+  const vc=document.getElementById('verdict-card');
+  vc.className='verdict-card show';
+  if(isTie){
+    vc.classList.add('verdict-tie');
+    vc.innerHTML=`<div class="vc-emoji">⚖️</div><div class="vc-title">ほぼ同等</div>
+      <div class="vc-diff">差額：約${fmtMan(diff)}</div>
+      <div class="vc-note">金利と投資利回りがほぼ拮抗しています。リスク許容度・心理的安心感で選びましょう。</div>`;
+  } else if(isInvest){
+    vc.classList.add('verdict-invest');
+    vc.innerHTML=`<div class="vc-emoji">🟢</div><div class="vc-title">投資優勢</div>
+      <div class="vc-diff">期待資産が約${fmtMan(diff)}多い</div>
+      <div class="vc-note">ただし投資には価格変動リスクがあります。将来利益を保証するものではありません。</div>`;
+  } else {
+    vc.classList.add('verdict-prepay');
+    vc.innerHTML=`<div class="vc-emoji">🟠</div><div class="vc-title">繰上返済優勢</div>
+      <div class="vc-diff">利息削減が約${fmtMan(diff)}多い</div>
+      <div class="vc-note">確実な利息削減効果があります。安定を重視する方に向いています。</div>`;
+  }
+
+  document.getElementById('cc2-prepay-val').textContent=fmtMan(savedInt);
+  document.getElementById('cc2-prepay-sub').textContent=`利息削減額（${pr.savedMos>0?pr.savedMos+'ヶ月短縮':'返済額軽減'}）`;
+  document.getElementById('cc2-invest-val').textContent=fmtMan(futureVal);
+
+  document.getElementById('compare-table').innerHTML=`
+    <thead><tr><th>項目</th><th>繰上返済</th><th>投資（複利）</th></tr></thead>
+    <tbody>
+      <tr><td>使用金額</td><td>${fmt(pr.amount)}円</td><td>${fmt(ir.amount)}円</td></tr>
+      <tr><td>効果・リターン</td>
+          <td class="${!isInvest?'ct-saving':''}">${fmt(savedInt)}円（利息削減）</td>
+          <td class="${isInvest?'ct-saving':''}">${fmt(investGain)}円（期待運用益・税前）</td></tr>
+      <tr><td>将来の手元資金</td>
+          <td>—（利息削減のみ）</td>
+          <td class="${isInvest?'ct-highlight':''}">${fmt(futureVal)}円</td></tr>
+      <tr><td>リスク</td><td>なし（確定）</td><td>あり（元本割れの可能性）</td></tr>
+      <tr><td>前提</td>
+          <td>${getNum('prepayYear')}年後に実施</td>
+          <td>年率${getNum('invRate')}%・${getNum('invYears')}年複利</td></tr>
+    </tbody>`;
+
+  document.getElementById('acc-compare-result').style.display='block';
+}
+
+/* ============================================
+   スケジュール表
+   prepayBalMap: Map<month, balance> 繰上後残高（任意）
+============================================ */
+function buildScheduleTable(sch, prepayBalMap){
+  const tbody=document.getElementById('schedule-body');
+  const thPrepay=document.getElementById('th-prepay-bal');
+  const sy=new Date().getFullYear();
+  const hasPrepay=prepayBalMap&&prepayBalMap.size>0;
+
+  // 繰上後残高ヘッダー表示切替
+  thPrepay.style.display=hasPrepay?'':'none';
+
+  tbody.innerHTML='';
+  sch.forEach(row=>{
+    const y=sy+Math.floor((row.month-1)/12);
+    const m=((row.month-1)%12)+1;
+    const tr=document.createElement('tr');
+    if(row.isBonus) tr.className='bonus-row';
+
+    // 繰上後残高セル
+    let prepayCell='';
+    if(hasPrepay){
+      if(prepayBalMap.has(row.month)){
+        const pBal=prepayBalMap.get(row.month);
+        const diff=row.balance-pBal; // 通常残高との差（繰上分だけ少ない）
+        prepayCell=`<td style="text-align:right;color:#15803d;font-weight:700;white-space:nowrap;">`+
+          `${fmt(pBal)}円`+
+          `<span style="display:block;font-size:10px;color:#16a34a;">▲${fmt(diff)}円少</span></td>`;
+      } else {
+        // 繰上返済後に完済している月（元の残高あり、繰上後はすでに0）
+        prepayCell=`<td style="text-align:right;color:#aaa;font-size:11px;">完済済</td>`;
+      }
+    }
+
+    tr.innerHTML=`<td>${row.month}</td><td>${y}/${String(m).padStart(2,'0')}${row.isBonus?' 🎁':''}</td>
+      <td>${fmt(row.payment)}円</td><td>${fmt(row.principal)}円</td>
+      <td>${fmt(row.interest)}円</td><td>${fmt(row.balance)}円</td>${prepayCell}`;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ============================================
+   グラフ：円グラフ（元金・利息）
+============================================ */
+function drawPieChart(principal,interest){
+  const cv=document.getElementById('pieChart');
+  const ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height,cx=W/2,cy=H/2-20,r=Math.min(W,H)/2-30;
+  ctx.clearRect(0,0,W,H);
+  const total=principal+interest, pR=principal/total, ang=-Math.PI/2;
+  ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,ang,ang+2*Math.PI*pR);ctx.closePath();
+  ctx.fillStyle='#3b82f6';ctx.fill();
+  ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,ang+2*Math.PI*pR,ang+2*Math.PI);ctx.closePath();
+  ctx.fillStyle='#fca5a5';ctx.fill();
+  const ly=H-28;
+  ctx.fillStyle='#3b82f6';ctx.fillRect(10,ly,14,14);
+  ctx.fillStyle='#333';ctx.font='11px sans-serif';ctx.textAlign='left';
+  ctx.fillText(`元金 ${(pR*100).toFixed(1)}%`,28,ly+11);
+  ctx.fillStyle='#fca5a5';ctx.fillRect(W/2,ly,14,14);
+  ctx.fillText(`利息 ${((1-pR)*100).toFixed(1)}%`,W/2+18,ly+11);
+}
+
+/* ============================================
+   グラフ：折れ線（残債推移）
+============================================ */
+function drawLineChart(sch){
+  const cv=document.getElementById('lineChart');
+  const ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height,pL=52,pR=12,pT=12,pB=30;
+  const gW=W-pL-pR,gH=H-pT-pB;
+  ctx.clearRect(0,0,W,H);
+  const yd=sch.filter(r=>r.month%12===0||r.month===sch.length);
+  const maxB=sch[0].balance+sch[0].principal, tot=yd.length;
+  if(tot<2) return;
+  ctx.strokeStyle='#eaeff6';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=pT+gH-(gH/4)*i;
+    ctx.beginPath();ctx.moveTo(pL,y);ctx.lineTo(W-pR,y);ctx.stroke();
+    ctx.fillStyle='#999';ctx.font='9px sans-serif';ctx.textAlign='right';
+    ctx.fillText(((maxB/4*i)/10000).toFixed(0)+'万',pL-3,y+3);
+  }
+  ctx.strokeStyle='#3b82f6';ctx.lineWidth=2;ctx.beginPath();
+  yd.forEach((r,i)=>{
+    const x=pL+(i/(tot-1))*gW,y=pT+gH-(r.balance/maxB)*gH;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });ctx.stroke();
+  ctx.fillStyle='rgba(59,130,246,0.08)';ctx.beginPath();
+  yd.forEach((r,i)=>{
+    const x=pL+(i/(tot-1))*gW,y=pT+gH-(r.balance/maxB)*gH;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.lineTo(W-pR,pT+gH);ctx.lineTo(pL,pT+gH);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#888';ctx.font='9px sans-serif';ctx.textAlign='center';
+  yd.forEach((r,i)=>{
+    if(i%Math.ceil(tot/6)===0||i===tot-1){
+      ctx.fillText(Math.round(r.month/12)+'年',pL+(i/(tot-1))*gW,H-5);
+    }
+  });
+}
+
+/* ============================================
+   グラフ：繰上返済 残債比較
+============================================ */
+function drawPrepayChart(origSch,newSch){
+  const cv=document.getElementById('prepayChart');
+  const ctx=cv.getContext('2d');
+  const W=cv.offsetWidth||600, H=220;
+  cv.width=W;cv.height=H;
+  const pL=52,pR=12,pT=14,pB=30;
+  const gW=W-pL-pR,gH=H-pT-pB;
+  ctx.clearRect(0,0,W,H);
+
+  const origYd=origSch.filter(r=>r.month%12===0||r.month===origSch.length);
+  const newYd =newSch .filter(r=>r.month%12===0||r.month===newSch.length);
+  const maxB  =origSch[0].balance+origSch[0].principal;
+  const totLen=Math.max(origYd.length,newYd.length);
+
+  // グリッド
+  ctx.strokeStyle='#eaeff6';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=pT+gH-(gH/4)*i;
+    ctx.beginPath();ctx.moveTo(pL,y);ctx.lineTo(W-pR,y);ctx.stroke();
+    ctx.fillStyle='#999';ctx.font='9px sans-serif';ctx.textAlign='right';
+    ctx.fillText(((maxB/4*i)/10000).toFixed(0)+'万',pL-3,y+3);
+  }
+
+  // 元の残債（青）
+  ctx.strokeStyle='#93c5fd';ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.beginPath();
+  origYd.forEach((r,i)=>{
+    const x=pL+(i/(totLen-1))*gW,y=pT+gH-(r.balance/maxB)*gH;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });ctx.stroke();ctx.setLineDash([]);
+
+  // 繰上返済後（緑実線）
+  ctx.strokeStyle='#16a34a';ctx.lineWidth=2.5;ctx.beginPath();
+  newYd.forEach((r,i)=>{
+    const x=pL+(i/(totLen-1))*gW,y=pT+gH-(r.balance/maxB)*gH;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });ctx.stroke();
+
+  // 凡例
+  ctx.setLineDash([4,3]);ctx.strokeStyle='#93c5fd';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(pL,H-8);ctx.lineTo(pL+24,H-8);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#444';ctx.font='10px sans-serif';ctx.textAlign='left';
+  ctx.fillText('繰上なし',pL+28,H-4);
+  ctx.strokeStyle='#16a34a';ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.moveTo(pL+90,H-8);ctx.lineTo(pL+114,H-8);ctx.stroke();
+  ctx.fillText('繰上あり',pL+118,H-4);
+}
+
+/* ============================================
+   グラフ：投資の複利成長
+============================================ */
+function drawInvestChart(principal,rate,years,monthly){
+  const cv=document.getElementById('investChart');
+  const ctx=cv.getContext('2d');
+  const W=cv.offsetWidth||600,H=220;
+  cv.width=W;cv.height=H;
+  const pL=56,pR=12,pT=14,pB=30;
+  const gW=W-pL-pR,gH=H-pT-pB;
+  ctx.clearRect(0,0,W,H);
+
+  // 年次データ生成
+  const data=[];
+  const mRate=rate/12;
+  for(let yr=0;yr<=years;yr++){
+    const once=principal*Math.pow(1+rate,yr);
+    const mon =monthly>0?monthly*(Math.pow(1+mRate,yr*12)-1)/mRate:0;
+    data.push({yr,value:once+mon,principal:principal+monthly*yr*12});
+  }
+  const maxV=data[data.length-1].value;
+
+  // グリッド
+  ctx.strokeStyle='#eaeff6';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=pT+gH-(gH/4)*i;
+    ctx.beginPath();ctx.moveTo(pL,y);ctx.lineTo(W-pR,y);ctx.stroke();
+    ctx.fillStyle='#999';ctx.font='9px sans-serif';ctx.textAlign='right';
+    ctx.fillText(((maxV/4*i)/10000).toFixed(0)+'万',pL-3,y+3);
+  }
+
+  // 元本ライン（点線）
+  ctx.strokeStyle='#d1d5db';ctx.lineWidth=1.5;ctx.setLineDash([3,3]);ctx.beginPath();
+  data.forEach((d,i)=>{
+    const x=pL+(i/(data.length-1))*gW,y=pT+gH-(d.principal/maxV)*gH;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });ctx.stroke();ctx.setLineDash([]);
+
+  // 資産ライン（緑）
+  ctx.strokeStyle='#16a34a';ctx.lineWidth=2.5;ctx.beginPath();
+  data.forEach((d,i)=>{
+    const x=pL+(i/(data.length-1))*gW,y=pT+gH-(d.value/maxV)*gH;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });ctx.stroke();
+
+  // 塗りつぶし
+  ctx.fillStyle='rgba(22,163,74,.08)';ctx.beginPath();
+  data.forEach((d,i)=>{
+    const x=pL+(i/(data.length-1))*gW,y=pT+gH-(d.value/maxV)*gH;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.lineTo(W-pR,pT+gH);ctx.lineTo(pL,pT+gH);ctx.closePath();ctx.fill();
+
+  // X軸ラベル
+  ctx.fillStyle='#888';ctx.font='9px sans-serif';ctx.textAlign='center';
+  data.forEach((d,i)=>{
+    if(i%Math.ceil(data.length/6)===0||i===data.length-1){
+      ctx.fillText(d.yr+'年',pL+(i/(data.length-1))*gW,H-5);
+    }
+  });
+
+  // 凡例
+  ctx.strokeStyle='#d1d5db';ctx.lineWidth=1.5;ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(pL,H-8);ctx.lineTo(pL+20,H-8);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#444';ctx.font='10px sans-serif';ctx.textAlign='left';
+  ctx.fillText('元本',pL+24,H-4);
+  ctx.strokeStyle='#16a34a';ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.moveTo(pL+56,H-8);ctx.lineTo(pL+76,H-8);ctx.stroke();
+  ctx.fillText('資産額',pL+80,H-4);
+}
+
+/* ============================================
+   金利変動シミュレーション
+============================================ */
+function calcRateChange(){
+  hideErr('err-rate');
+  if(gSchedule.length===0){showErr('err-rate','先に「基本計算」タブで計算してください');return;}
+  const changeYr=getNum('rateChangeYear');
+  if(isNaN(changeYr)||changeYr<1){showErr('err-rate','金利上昇開始時期を入力してください');return;}
+
+  const chMo=changeYr*12;
+  const rowAt=gSchedule.find(r=>r.month===chMo);
+  if(!rowAt){showErr('err-rate','金利変動時期が範囲外です');return;}
+
+  const baseBal=rowAt.balance, remain=gMonths-chMo;
+  const baseMon=gSchedule.find(r=>!r.isBonus)?.payment??0;
+  const origInt=gSchedule.reduce((s,r)=>s+r.interest,0);
+  const origPay=gSchedule.reduce((s,r)=>s+r.payment,0);
+  const baseAR =gRate*12*100;
+  const rises=[0.5,1.0,1.5,2.0];
+
+  let html=`<thead><tr><th>シナリオ</th><th>変動後の金利</th><th>変動後の月額</th><th>月額増加</th><th>総利息増加</th><th>総返済額</th></tr></thead><tbody>
+    <tr><td>現状維持<span class="badge badge-blue">基準</span></td><td>${baseAR.toFixed(2)}%</td>
+        <td>${fmt(baseMon)}円</td><td>—</td><td>—</td><td>${fmt(origPay)}円</td></tr>`;
+
+  rises.forEach(rise=>{
+    const nRate=(baseAR+rise)/100/12;
+    const nSch=buildSchedule(baseBal,nRate,remain,gType,gBonus);
+    const nMon=nSch.find(r=>!r.isBonus)?.payment??0;
+    const before=gSchedule.filter(r=>r.month<=chMo);
+    const bInt=before.reduce((s,r)=>s+r.interest,0), bPay=before.reduce((s,r)=>s+r.payment,0);
+    const nInt=nSch.reduce((s,r)=>s+r.interest,0),   nPay=nSch.reduce((s,r)=>s+r.payment,0);
+    html+=`<tr><td>+${rise}%上昇<span class="badge badge-red">リスク</span></td>
+      <td class="ct-danger">${(baseAR+rise).toFixed(2)}%</td>
+      <td>${fmt(nMon)}円</td>
+      <td class="ct-danger">+${fmt(nMon-baseMon)}円</td>
+      <td class="ct-danger">+${fmt(bInt+nInt-origInt)}円</td>
+      <td>${fmt(bPay+nPay)}円</td></tr>`;
+  });
+  html+='</tbody>';
+  document.getElementById('rate-table').innerHTML=html;
+  document.getElementById('rate-result').style.display='block';
+}
+
+/* ============================================
+   固定→変動シミュレーション
+============================================ */
+function calcFixed(){
+  hideErr('err-fixed');
+  const loan=getNum('fx-loan')*10000, yrs=getNum('fx-years');
+  const fxYrs=getNum('fx-fixed-years');
+  const r1=getNum('fx-rate1')/100/12, r2=getNum('fx-rate2')/100/12;
+
+  if(isNaN(loan)||loan<=0)     {showErr('err-fixed','借入金額を入力してください');return;}
+  if(isNaN(yrs)||yrs<1)        {showErr('err-fixed','返済年数を入力してください');return;}
+  if(isNaN(fxYrs)||fxYrs<1)   {showErr('err-fixed','固定期間を入力してください');return;}
+  if(fxYrs>=yrs)               {showErr('err-fixed','固定期間は返済年数より短くしてください');return;}
+
+  const mos=yrs*12, fxMos=fxYrs*12;
+  const s1=buildSchedule(loan,r1,mos,'equal',0);
+  const balAt=s1.find(r=>r.month===fxMos)?.balance??0;
+  const s2=buildSchedule(balAt,r2,mos-fxMos,'equal',0);
+  const sAF=buildSchedule(loan,r1,mos,'equal',0); // 全期間固定
+  const sAV=buildSchedule(loan,r2,mos,'equal',0); // 全期間変動
+
+  const m1=s1.find(r=>!r.isBonus)?.payment??0;
+  const m2=s2.find(r=>!r.isBonus)?.payment??0;
+  const mV=sAV.find(r=>!r.isBonus)?.payment??0;
+  const bf=s1.filter(r=>r.month<=fxMos);
+  const cPay=bf.reduce((s,r)=>s+r.payment,0)+s2.reduce((s,r)=>s+r.payment,0);
+  const cInt=bf.reduce((s,r)=>s+r.interest,0)+s2.reduce((s,r)=>s+r.interest,0);
+  const afPay=sAF.reduce((s,r)=>s+r.payment,0), afInt=sAF.reduce((s,r)=>s+r.interest,0);
+  const avPay=sAV.reduce((s,r)=>s+r.payment,0), avInt=sAV.reduce((s,r)=>s+r.interest,0);
+
+  document.getElementById('fixed-table').innerHTML=`
+    <thead><tr><th>項目</th><th>全期間固定(${getNum('fx-rate1')}%)</th><th>固定→変動(${getNum('fx-rate1')}%→${getNum('fx-rate2')}%)</th><th>全期間変動(${getNum('fx-rate2')}%)</th></tr></thead>
+    <tbody>
+      <tr><td>固定期間中の月額</td><td>${fmt(m1)}円</td><td>${fmt(m1)}円</td><td>${fmt(mV)}円</td></tr>
+      <tr><td>切替後の月額</td><td>${fmt(m1)}円</td><td class="${m2>m1?'ct-danger':''}">${fmt(m2)}円</td><td>${fmt(mV)}円</td></tr>
+      <tr><td>月額変化</td><td>—</td><td class="${m2>m1?'ct-danger':'ct-saving'}">${m2>m1?'+':''}${fmt(m2-m1)}円</td><td>—</td></tr>
+      <tr><td>総利息</td><td>${fmt(afInt)}円</td><td>${fmt(cInt)}円</td><td>${fmt(avInt)}円</td></tr>
+      <tr><td>総返済額</td><td>${fmt(afPay)}円</td><td>${fmt(cPay)}円</td><td>${fmt(avPay)}円</td></tr>
+    </tbody>`;
+  document.getElementById('fixed-result').style.display='block';
+}
+
+/* ============================================
+   初期化
+============================================ */
+window.addEventListener('DOMContentLoaded',()=>{ calcBasic(); });
+</script>
+</body>
+</html>

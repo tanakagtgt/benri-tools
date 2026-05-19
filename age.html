@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>年齢計算ツール｜生年月日から現在の年齢を自動計算（和暦・西暦対応）</title>
+<meta name="description" content="生年月日を入力するだけで現在の年齢を自動計算。○歳○ヶ月○日・曜日・星座・十二支（干支）を表示。西暦・和暦（令和・平成・昭和）どちらでも入力OK。5人まで同時計算できる無料ツール。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   リセット・ベース
+============================================================ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #f4f6f9;
+  color: #222;
+  font-family: 'BIZ UDPGothic', sans-serif;
+  min-height: 100vh;
+  padding: 24px 14px 60px;
+  display: flex; flex-direction: column; align-items: center;
+}
+
+.container { width: 100%; max-width: 640px; }
+
+/* ============================================================
+   ヘッダー
+============================================================ */
+header { text-align: center; margin-bottom: 22px; }
+h1 {
+  font-size: clamp(20px,5vw,26px); font-weight: 700;
+  color: #1a56db; margin-bottom: 4px; letter-spacing: 0.03em;
+}
+.subtitle { font-size: 11px; color: #666; line-height: 1.8; }
+
+/* ============================================================
+   カード（人物ブロック共通）
+============================================================ */
+.person-card {
+  background: #fff; border: 1px solid #dde3ee; border-radius: 10px;
+  padding: 18px 18px 14px; margin-bottom: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  transition: box-shadow 0.2s;
+}
+.person-card:focus-within { box-shadow: 0 2px 10px rgba(26,86,219,0.12); border-color: #93b4f8; }
+
+.person-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.person-number {
+  display: flex; align-items: center; gap: 8px;
+}
+.person-badge {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: #1a56db; color: #fff;
+  font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.person-name-input {
+  border: none; border-bottom: 1px solid #dde3ee;
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 13px; color: #333; background: transparent;
+  padding: 2px 4px; width: 120px; outline: none;
+  transition: border-color 0.18s;
+}
+.person-name-input:focus { border-color: #1a56db; }
+.person-name-input::placeholder { color: #bbb; }
+
+.btn-clear-person {
+  border: none; background: none; cursor: pointer;
+  font-size: 11px; color: #aaa; padding: 4px 6px;
+  border-radius: 5px; transition: color 0.15s, background 0.15s;
+}
+.btn-clear-person:hover { color: #dc2626; background: #fff1f1; }
+
+/* ============================================================
+   入力モード切替タブ
+============================================================ */
+.mode-tab-bar {
+  display: flex; background: #f0f4fb; border-radius: 7px;
+  padding: 2px; margin-bottom: 12px; gap: 2px;
+}
+.mode-tab-btn {
+  flex: 1; padding: 7px 4px; border: none; border-radius: 5px;
+  font-family: 'BIZ UDPGothic', sans-serif; font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s; color: #777; background: transparent;
+  letter-spacing: 0.03em;
+}
+.mode-tab-btn.active {
+  background: #fff; color: #1a56db;
+  box-shadow: 0 1px 3px rgba(26,86,219,0.15);
+}
+
+/* ============================================================
+   入力行（西暦 / 和暦）
+============================================================ */
+.input-row {
+  display: grid; gap: 8px; align-items: end; margin-bottom: 4px;
+}
+.input-row.seireki-row { grid-template-columns: 1fr 1fr 1fr; }
+.input-row.wareki-row  { grid-template-columns: 90px 1fr 1fr 1fr; }
+
+.input-group { display: flex; flex-direction: column; gap: 4px; }
+.input-label { font-size: 11px; font-weight: 700; color: #555; letter-spacing: 0.06em; }
+
+select, input[type="number"] {
+  width: 100%; border: 1px solid #c7d0e0; border-radius: 7px;
+  background: #f8fafd; color: #222;
+  font-family: 'BIZ UDPGothic', sans-serif; font-size: 15px;
+  padding: 8px 10px; outline: none; transition: border-color 0.18s;
+  -webkit-appearance: none; appearance: none;
+}
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 9px center; padding-right: 26px;
+}
+select:focus, input[type="number"]:focus { border-color: #1a56db; background: #fff; }
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+/* ============================================================
+   計算ボタン（一括）
+============================================================ */
+.btn-calc-all {
+  width: 100%; background: #1a56db; border: none; border-radius: 8px;
+  color: #fff; font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 15px; font-weight: 700; padding: 13px;
+  cursor: pointer; letter-spacing: 0.06em;
+  transition: background 0.15s, transform 0.1s;
+  margin-bottom: 14px;
+}
+.btn-calc-all:hover  { background: #1546b8; }
+.btn-calc-all:active { transform: scale(0.98); }
+
+/* ============================================================
+   エラー
+============================================================ */
+.error-msg {
+  display: none; background: #fff1f1; border: 1px solid #fca5a5;
+  border-radius: 6px; color: #b91c1c; font-size: 12px;
+  padding: 7px 11px; margin-top: 6px;
+}
+.error-msg.show { display: block; }
+
+/* ============================================================
+   結果パネル（各人物）
+============================================================ */
+.result-block {
+  display: none; margin-top: 12px;
+  background: linear-gradient(135deg,#e8f0fe 0%,#f0fdf4 100%);
+  border: 1px solid #c3d4f8; border-radius: 8px;
+  padding: 14px 16px;
+  animation: fadeUp 0.3s ease;
+}
+.result-block.show { display: block; }
+
+.result-age-main {
+  font-size: clamp(22px,6vw,30px); font-weight: 700; color: #111;
+  margin-bottom: 10px; letter-spacing: 0.02em;
+}
+.result-age-main span.accent { color: #1a56db; }
+
+.result-tags {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #fff; border: 1px solid #dde3ee;
+  border-radius: 99px; padding: 4px 11px;
+  font-size: 12px; color: #444;
+}
+.tag .tag-label { font-size: 10px; color: #888; font-weight: 700; letter-spacing: 0.06em; margin-right: 2px; }
+
+/* ============================================================
+   一括結果サマリーカード
+============================================================ */
+.summary-card {
+  display: none; background: #fff; border: 1px solid #dde3ee;
+  border-radius: 10px; padding: 18px 18px 14px;
+  margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.summary-card.show { display: block; animation: fadeUp 0.3s ease; }
+.summary-title {
+  font-size: 12px; font-weight: 700; color: #1a56db;
+  letter-spacing: 0.1em; margin-bottom: 14px;
+  border-bottom: 2px solid #e8f0fe; padding-bottom: 8px;
+}
+.summary-row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 9px 0; border-bottom: 1px solid #eaeff6; gap: 8px;
+  flex-wrap: wrap;
+}
+.summary-row:last-child { border-bottom: none; }
+.summary-name { font-size: 13px; font-weight: 700; color: #333; min-width: 60px; flex-shrink: 0; }
+.summary-age  { font-size: 14px; font-weight: 700; color: #1a56db; }
+.summary-sub  { font-size: 11px; color: #888; }
+
+/* コピーボタン */
+.btn-copy {
+  width: 100%; background: #f1f5fd; border: 1px solid #c3d4f8; border-radius: 7px;
+  color: #1a56db; font-family: 'BIZ UDPGothic', sans-serif; font-size: 13px; font-weight: 700;
+  padding: 10px; cursor: pointer; transition: background 0.15s; margin-top: 12px;
+}
+.btn-copy:hover { background: #dbeafe; }
+
+/* ============================================================
+   アニメーション
+============================================================ */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   フッター
+============================================================ */
+footer { margin-top: 30px; text-align: center; font-size: 11px; color: #aaa; }
+
+/* ============================================================
+   レスポンシブ
+============================================================ */
+@media (max-width: 420px) {
+  .input-row.seireki-row { grid-template-columns: 1fr 1fr 1fr; }
+  .input-row.wareki-row  { grid-template-columns: 80px 1fr 1fr 1fr; }
+  select, input[type="number"] { font-size: 16px; }
+  .person-name-input { width: 90px; }
+  .summary-row { flex-direction: column; gap: 2px; }
+}
+@media (max-width: 340px) {
+  .input-row.wareki-row { grid-template-columns: 1fr 1fr; }
+  .input-row.wareki-row .era-group { grid-column: 1/-1; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>年齢計算ツール</h1>
+  <p class="subtitle">生年月日から現在の年齢を自動計算 ｜ 西暦・和暦どちらも対応<br>5人まで同時計算できます</p>
+</header>
+
+<!-- ========================================================
+     人物カード × 5
+========================================================= -->
+<div id="personCards"></div>
+
+<!-- 一括計算ボタン -->
+<button class="btn-calc-all" onclick="calcAll()">▶ 全員の年齢を計算</button>
+
+<!-- サマリーカード -->
+<div class="summary-card" id="summaryCard">
+  <div class="summary-title">計算結果サマリー</div>
+  <div id="summaryBody"></div>
+  <button class="btn-copy" onclick="copySummary()">📋 結果をコピー</button>
+</div>
+
+<footer>
+  <p>© 年齢計算ツール</p>
+</footer>
+</div>
+
+<script>
+/* ============================================================
+   定数・マスタ
+============================================================ */
+const PERSON_COUNT = 5;
+
+const ERAS = {
+  reiwa:  { name:'令和',  start:2019, end:9999, offset:2018 },
+  heisei: { name:'平成',  start:1989, end:2019, offset:1988 },
+  showa:  { name:'昭和',  start:1926, end:1989, offset:1925 },
+};
+
+const ZODIAC_JP = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+const ETTO_NAME = ['ねずみ','うし','とら','うさぎ','たつ','へび','うま','ひつじ','さる','とり','いぬ','いのしし'];
+function jyunishi(y){ const i=(y-4)%12; return { kanji:ZODIAC_JP[i<0?i+12:i], name:ETTO_NAME[i<0?i+12:i] }; }
+
+// 十干（じっかん）
+const JIKKAN_KANJI = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+const JIKKAN_YOMI  = ['きのえ','きのと','ひのえ','ひのと','つちのえ','つちのと','かのえ','かのと','みずのえ','みずのと'];
+function jikkan(y){ const i=(y-4)%10; const idx=i<0?i+10:i; return { kanji:JIKKAN_KANJI[idx], yomi:JIKKAN_YOMI[idx] }; }
+
+// 十干＋十二支の組み合わせ（干支の正式表記）
+function kanshi(y){ const jk=jikkan(y); const jj=jyunishi(y); return `${jk.kanji}${jj.kanji}（${jk.yomi}・${jj.name}）`; }
+
+const SEIZA = [
+  { name:'やぎ座',  emoji:'♑', from:[12,22], to:[1,19]  },
+  { name:'みずがめ座',emoji:'♒', from:[1,20],  to:[2,18]  },
+  { name:'うお座',  emoji:'♓', from:[2,19],  to:[3,20]  },
+  { name:'おひつじ座',emoji:'♈',from:[3,21],  to:[4,19]  },
+  { name:'おうし座',emoji:'♉', from:[4,20],  to:[5,20]  },
+  { name:'ふたご座',emoji:'♊', from:[5,21],  to:[6,21]  },
+  { name:'かに座',  emoji:'♋', from:[6,22],  to:[7,22]  },
+  { name:'しし座',  emoji:'♌', from:[7,23],  to:[8,22]  },
+  { name:'おとめ座',emoji:'♍', from:[8,23],  to:[9,22]  },
+  { name:'てんびん座',emoji:'♎',from:[9,23],  to:[10,23] },
+  { name:'さそり座',emoji:'♏', from:[10,24], to:[11,22] },
+  { name:'いて座',  emoji:'♐', from:[11,23], to:[12,21] },
+];
+function seiza(m,d){
+  for(const s of SEIZA){
+    const [fm,fd]=s.from, [tm,td]=s.to;
+    if(fm===12){ if((m===12&&d>=fd)||(m===1&&d<=td)) return s; }
+    else { if((m===fm&&d>=fd)||(m===tm&&d<=td)) return s; }
+  }
+  return { name:'不明', emoji:'⭐' };
+}
+
+const DOW_JP = ['日','月','火','水','木','金','土'];
+
+/* ============================================================
+   DOM生成
+============================================================ */
+function buildCards(){
+  const wrap = document.getElementById('personCards');
+  wrap.innerHTML = '';
+  for(let i=0;i<PERSON_COUNT;i++){
+    wrap.insertAdjacentHTML('beforeend', cardHTML(i));
+  }
+}
+
+function cardHTML(i){
+  const n = i+1;
+  return `
+<div class="person-card" id="card${i}">
+  <div class="person-header">
+    <div class="person-number">
+      <div class="person-badge">${n}</div>
+      <input class="person-name-input" id="name${i}" type="text" placeholder="名前（任意）" maxlength="12">
+    </div>
+    <button class="btn-clear-person" onclick="clearPerson(${i})">クリア</button>
+  </div>
+
+  <!-- 入力モード切替 -->
+  <div class="mode-tab-bar">
+    <button class="mode-tab-btn active" id="tab_s_${i}" onclick="switchMode(${i},'seireki')">西暦</button>
+    <button class="mode-tab-btn"        id="tab_w_${i}" onclick="switchMode(${i},'wareki')">和暦</button>
+  </div>
+
+  <!-- 西暦入力 -->
+  <div id="pane_s_${i}">
+    <div class="input-row seireki-row">
+      <div class="input-group">
+        <label class="input-label" for="sy${i}">年</label>
+        <input type="number" id="sy${i}" min="1900" max="2099" placeholder="例: 1990">
+      </div>
+      <div class="input-group">
+        <label class="input-label" for="sm${i}">月</label>
+        <input type="number" id="sm${i}" min="1" max="12" placeholder="例: 4">
+      </div>
+      <div class="input-group">
+        <label class="input-label" for="sd${i}">日</label>
+        <input type="number" id="sd${i}" min="1" max="31" placeholder="例: 1">
+      </div>
+    </div>
+  </div>
+
+  <!-- 和暦入力 -->
+  <div id="pane_w_${i}" style="display:none">
+    <div class="input-row wareki-row">
+      <div class="input-group era-group">
+        <label class="input-label" for="we${i}">元号</label>
+        <select id="we${i}">
+          <option value="reiwa">令和</option>
+          <option value="heisei">平成</option>
+          <option value="showa" selected>昭和</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label class="input-label" for="wy${i}">年</label>
+        <input type="number" id="wy${i}" min="1" max="99" placeholder="例: 60">
+      </div>
+      <div class="input-group">
+        <label class="input-label" for="wm${i}">月</label>
+        <input type="number" id="wm${i}" min="1" max="12" placeholder="例: 4">
+      </div>
+      <div class="input-group">
+        <label class="input-label" for="wd${i}">日</label>
+        <input type="number" id="wd${i}" min="1" max="31" placeholder="例: 1">
+      </div>
+    </div>
+  </div>
+
+  <div class="error-msg" id="err${i}"></div>
+
+  <!-- 結果ブロック -->
+  <div class="result-block" id="result${i}">
+    <div class="result-age-main" id="resultAge${i}"></div>
+    <div class="result-tags" id="resultTags${i}"></div>
+  </div>
+</div>`;
+}
+
+/* ============================================================
+   モード切替
+============================================================ */
+const modes = Array(PERSON_COUNT).fill('seireki');
+function switchMode(i, mode){
+  modes[i] = mode;
+  document.getElementById(`tab_s_${i}`).classList.toggle('active', mode==='seireki');
+  document.getElementById(`tab_w_${i}`).classList.toggle('active', mode==='wareki');
+  document.getElementById(`pane_s_${i}`).style.display = mode==='seireki' ? '' : 'none';
+  document.getElementById(`pane_w_${i}`).style.display = mode==='wareki'  ? '' : 'none';
+  clearResult(i);
+}
+
+/* ============================================================
+   クリア
+============================================================ */
+function clearPerson(i){
+  ['sy','sm','sd','wy','wm','wd'].forEach(p=>{
+    const el=document.getElementById(p+i); if(el) el.value='';
+  });
+  document.getElementById('name'+i).value='';
+  clearResult(i);
+}
+function clearResult(i){
+  document.getElementById('result'+i).classList.remove('show');
+  document.getElementById('err'+i).classList.remove('show');
+}
+
+/* ============================================================
+   生年月日取得
+============================================================ */
+function getBirthDate(i){
+  if(modes[i]==='seireki'){
+    const y=parseInt(document.getElementById('sy'+i).value,10);
+    const m=parseInt(document.getElementById('sm'+i).value,10);
+    const d=parseInt(document.getElementById('sd'+i).value,10);
+    return { y,m,d };
+  } else {
+    const eraKey=document.getElementById('we'+i).value;
+    const era=ERAS[eraKey];
+    const nen=parseInt(document.getElementById('wy'+i).value,10);
+    const m=parseInt(document.getElementById('wm'+i).value,10);
+    const d=parseInt(document.getElementById('wd'+i).value,10);
+    const y=isNaN(nen)?NaN : era.offset+nen;
+    return { y,m,d,eraKey,nen,era };
+  }
+}
+
+/* ============================================================
+   バリデーション
+============================================================ */
+function validate(i, bd){
+  const {y,m,d}=bd;
+  if(isNaN(y)||isNaN(m)||isNaN(d)||!y||!m||!d){
+    return '生年月日をすべて入力してください';
+  }
+  if(y<1900||y>new Date().getFullYear()){
+    return `年の入力が正しくありません（1900〜${new Date().getFullYear()}）`;
+  }
+  if(m<1||m>12) return '月は1〜12で入力してください';
+  const maxD = new Date(y,m,0).getDate();
+  if(d<1||d>maxD) return `${m}月は${maxD}日までです`;
+  const birth=new Date(y,m-1,d);
+  if(birth>new Date()) return '生年月日が未来の日付です';
+
+  // 和暦範囲チェック
+  if(bd.eraKey){
+    const era=bd.era;
+    if(bd.nen<1||y<era.start||y>era.end){
+      return `${era.name}は1年〜${era.end-era.offset}年の範囲で入力してください`;
+    }
+  }
+  return null;
+}
+
+/* ============================================================
+   年齢計算
+============================================================ */
+function calcAge(by,bm,bd){
+  const today=new Date();
+  const ty=today.getFullYear(), tm=today.getMonth()+1, td=today.getDate();
+  let age=ty-by;
+  if(tm<bm||(tm===bm&&td<bd)) age--;
+
+  // 経過月
+  let months=(tm-bm+12)%12;
+  if(td<bd) months=(months-1+12)%12;
+
+  // 経過日
+  const lastBirthday=new Date(ty+(tm<bm||(tm===bm&&td<bd)?-1:0),bm-1,bd);
+  const diffMs=today-lastBirthday;
+  const days=Math.floor(diffMs/(1000*60*60*24))%31;
+
+  return { age, months, days };
+}
+
+/* ============================================================
+   一人分の計算・表示
+============================================================ */
+let lastResults = [];
+
+function calcOne(i){
+  const bd=getBirthDate(i);
+  const errEl=document.getElementById('err'+i);
+  errEl.classList.remove('show');
+  clearResult(i);
+
+  const err=validate(i,bd);
+  if(err){ errEl.textContent=err; errEl.classList.add('show'); return null; }
+
+  const {y,m,d}=bd;
+  const {age,months,days}=calcAge(y,m,d);
+  const birthDate=new Date(y,m-1,d);
+  const dow=DOW_JP[birthDate.getDay()];
+  const sz=seiza(m,d);
+  const jj=jyunishi(y);
+  const jk=jikkan(y);
+
+  // 和暦文字列（生年）
+  let warekiStr='';
+  for(const [key,era] of Object.entries(ERAS)){
+    if(y>=era.start&&y<=era.end){
+      const nen=y-era.offset;
+      warekiStr=(warekiStr?warekiStr+' / ':'')+`${era.name}${nen===1?'元':nen}年`;
+    }
+  }
+
+  // 結果表示
+  const nameRaw=document.getElementById('name'+i).value.trim();
+  const ageEl=document.getElementById('resultAge'+i);
+  ageEl.innerHTML=`<span class="accent">${age}</span>歳 <span style="font-size:0.62em;color:#444">${months}ヶ月 ${days}日</span>`;
+
+  const tagsEl=document.getElementById('resultTags'+i);
+  tagsEl.innerHTML='';
+  const tagData=[
+    { label:'生年月日', val:`${y}年${m}月${d}日（${dow}曜日）` },
+    { label:'和暦',     val:warekiStr||'—' },
+    { label:'星座',     val:`${sz.emoji} ${sz.name}` },
+    { label:'十干',     val:`${jk.kanji}（${jk.yomi}）` },
+    { label:'十二支',   val:`${jj.kanji}（${jj.name}）` },
+    { label:'干支',     val:`${jk.kanji}${jj.kanji}（${jk.yomi}${jj.name}）` },
+  ];
+  tagData.forEach(t=>{
+    const span=document.createElement('span');
+    span.className='tag';
+    span.innerHTML=`<span class="tag-label">${t.label}</span>${t.val}`;
+    tagsEl.appendChild(span);
+  });
+
+  document.getElementById('result'+i).classList.add('show');
+
+  return { i, name:nameRaw||`${i+1}人目`, y, m, d, age, months, days, dow, sz, jj, jk, warekiStr };
+}
+
+/* ============================================================
+   全員一括計算
+============================================================ */
+function calcAll(){
+  lastResults=[];
+  let anyInput=false;
+  for(let i=0;i<PERSON_COUNT;i++){
+    const bd=getBirthDate(i);
+    const hasInput = !isNaN(bd.y)&&bd.y&&!isNaN(bd.m)&&bd.m&&!isNaN(bd.d)&&bd.d;
+    if(!hasInput){ clearResult(i); continue; }
+    anyInput=true;
+    const r=calcOne(i);
+    if(r) lastResults.push(r);
+  }
+  renderSummary();
+  if(anyInput){
+    document.getElementById('summaryCard').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+}
+
+/* ============================================================
+   サマリー
+============================================================ */
+function renderSummary(){
+  const card=document.getElementById('summaryCard');
+  if(lastResults.length===0){ card.classList.remove('show'); return; }
+  card.classList.add('show');
+  const body=document.getElementById('summaryBody');
+  body.innerHTML='';
+  lastResults.forEach(r=>{
+    const row=document.createElement('div');
+    row.className='summary-row';
+    row.innerHTML=`
+      <span class="summary-name">${escHtml(r.name)}</span>
+      <span class="summary-age">${r.age}歳 ${r.months}ヶ月 ${r.days}日</span>
+      <span class="summary-sub">${r.sz.emoji}${r.sz.name} ／ ${r.jk.kanji}${r.jj.kanji}（${r.jk.yomi}${r.jj.name}）</span>
+    `;
+    body.appendChild(row);
+  });
+}
+
+function escHtml(s){ return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ============================================================
+   コピー
+============================================================ */
+function copySummary(){
+  if(!lastResults.length) return;
+  const today=new Date();
+  const dateStr=`${today.getFullYear()}/${today.getMonth()+1}/${today.getDate()}`;
+  let text=`【年齢計算結果】${dateStr}現在\n`;
+  text+='─'.repeat(28)+'\n';
+  lastResults.forEach(r=>{
+    text+=`${r.name}：${r.age}歳 ${r.months}ヶ月 ${r.days}日\n`;
+    text+=`  生年月日：${r.y}年${r.m}月${r.d}日（${r.dow}曜日）`;
+    if(r.warekiStr) text+=` ／ ${r.warekiStr}`;
+    text+=`\n  星座：${r.sz.name}　十干：${r.jk.kanji}（${r.jk.yomi}）　干支：${r.jk.kanji}${r.jj.kanji}（${r.jk.yomi}${r.jj.name}）\n`;
+  });
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn=document.querySelector('#summaryCard .btn-copy');
+    btn.textContent='✅ コピーしました！';
+    setTimeout(()=>{ btn.textContent='📋 結果をコピー'; },2000);
+  }).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    const btn=document.querySelector('#summaryCard .btn-copy');
+    btn.textContent='✅ コピーしました！';
+    setTimeout(()=>{ btn.textContent='📋 結果をコピー'; },2000);
+  });
+}
+
+/* ============================================================
+   Enterキー
+============================================================ */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target.closest('.person-card')){
+    const card=e.target.closest('.person-card');
+    const idx=parseInt(card.id.replace('card',''),10);
+    calcOne(idx);
+  }
+});
+
+/* ============================================================
+   初期化
+============================================================ */
+buildCards();
+</script>
+</body>
+</html>

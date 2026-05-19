@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>積立NISAシミュレーター｜毎月積立の複利効果をグラフで確認</title>
+<meta name="description" content="元本・毎月積立額・積立年数・利回りを入力するだけで、積立NISAの将来資産を自動試算。合計金額・運用収益・元本の推移をグラフで分かりやすく表示。スマホ対応の無料シミュレーターです。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   リセット・ベース
+============================================================ */
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  background:#f4f6f9;color:#222;
+  font-family:'BIZ UDPGothic',sans-serif;
+  min-height:100vh;padding:24px 14px 60px;
+  display:flex;flex-direction:column;align-items:center;
+}
+.container{width:100%;max-width:620px;}
+
+/* ============================================================
+   ヘッダー
+============================================================ */
+header{text-align:center;margin-bottom:22px;}
+h1{font-size:clamp(20px,5vw,26px);font-weight:700;color:#1a56db;margin-bottom:4px;letter-spacing:0.03em;}
+.subtitle{font-size:11px;color:#666;line-height:1.8;}
+
+/* ============================================================
+   カード
+============================================================ */
+.card{
+  background:#fff;border:1px solid #dde3ee;border-radius:10px;
+  padding:20px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,0.06);
+}
+.card-title{
+  font-size:12px;font-weight:700;color:#1a56db;letter-spacing:0.1em;
+  margin-bottom:16px;border-bottom:2px solid #e8f0fe;padding-bottom:8px;
+}
+
+/* ============================================================
+   入力グリッド
+============================================================ */
+.input-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;
+}
+.input-group{display:flex;flex-direction:column;gap:5px;}
+.input-label{font-size:11px;font-weight:700;color:#555;letter-spacing:0.06em;}
+.input-wrap{position:relative;display:flex;align-items:center;}
+.input-wrap input{
+  width:100%;border:1px solid #c7d0e0;border-radius:7px;
+  background:#f8fafd;color:#222;
+  font-family:'BIZ UDPGothic',sans-serif;font-size:16px;
+  padding:9px 36px 9px 10px;outline:none;transition:border-color 0.18s;
+  -webkit-appearance:none;appearance:none;
+}
+.input-wrap input:focus{border-color:#1a56db;background:#fff;}
+.input-unit{
+  position:absolute;right:10px;font-size:12px;color:#888;font-weight:700;
+  pointer-events:none;
+}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;}
+
+/* スライダー */
+.slider-row{display:flex;align-items:center;gap:10px;margin-top:4px;}
+input[type="range"]{
+  flex:1;height:4px;border-radius:99px;
+  -webkit-appearance:none;appearance:none;
+  background:linear-gradient(to right,#1a56db 0%,#1a56db var(--pct,50%),#dde3ee var(--pct,50%),#dde3ee 100%);
+  outline:none;cursor:pointer;
+}
+input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:#1a56db;border:2px solid #fff;box-shadow:0 1px 4px rgba(26,86,219,0.3);
+  cursor:pointer;transition:transform 0.1s;
+}
+input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.15);}
+input[type="range"]::-moz-range-thumb{
+  width:18px;height:18px;border-radius:50%;
+  background:#1a56db;border:2px solid #fff;cursor:pointer;
+}
+.slider-val{font-size:13px;font-weight:700;color:#1a56db;min-width:42px;text-align:right;}
+
+/* ============================================================
+   計算ボタン
+============================================================ */
+.btn-calc{
+  width:100%;background:#1a56db;border:none;border-radius:8px;
+  color:#fff;font-family:'BIZ UDPGothic',sans-serif;font-size:15px;font-weight:700;
+  padding:13px;cursor:pointer;letter-spacing:0.06em;
+  transition:background 0.15s,transform 0.1s;
+}
+.btn-calc:hover{background:#1546b8;}
+.btn-calc:active{transform:scale(0.98);}
+
+/* エラー */
+.error-msg{
+  display:none;background:#fff1f1;border:1px solid #fca5a5;
+  border-radius:7px;color:#b91c1c;font-size:13px;padding:9px 13px;margin-top:10px;
+}
+.error-msg.show{display:block;}
+
+/* ============================================================
+   結果サマリー
+============================================================ */
+.result-panel{
+  display:none;background:#fff;border:1px solid #dde3ee;border-radius:10px;
+  margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,0.06);overflow:hidden;
+}
+.result-panel.show{display:block;animation:fadeUp 0.3s ease;}
+
+.result-hero{
+  background:linear-gradient(135deg,#1a56db 0%,#2563eb 60%,#0ea5e9 100%);
+  padding:22px 20px 18px;text-align:center;color:#fff;
+}
+.result-hero-label{font-size:11px;font-weight:700;letter-spacing:0.12em;opacity:0.85;margin-bottom:6px;}
+.result-hero-value{font-size:clamp(32px,9vw,48px);font-weight:700;letter-spacing:0.02em;line-height:1;}
+.result-hero-sub{font-size:12px;opacity:0.8;margin-top:6px;}
+
+.result-stats{
+  display:grid;grid-template-columns:1fr 1fr 1fr;
+  border-bottom:1px solid #eaeff6;
+}
+.stat-item{
+  padding:14px 10px;text-align:center;border-right:1px solid #eaeff6;
+}
+.stat-item:last-child{border-right:none;}
+.stat-label{font-size:10px;font-weight:700;color:#888;letter-spacing:0.06em;margin-bottom:4px;}
+.stat-value{font-size:clamp(14px,4vw,18px);font-weight:700;}
+.stat-value.blue{color:#1a56db;}
+.stat-value.green{color:#059669;}
+.stat-value.orange{color:#d97706;}
+
+/* ============================================================
+   グラフエリア
+============================================================ */
+.chart-wrap{padding:20px 16px 16px;}
+.chart-legend{
+  display:flex;gap:16px;flex-wrap:wrap;justify-content:center;
+  margin-bottom:14px;
+}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#444;}
+.legend-dot{width:14px;height:14px;border-radius:4px;flex-shrink:0;}
+.ld-principal{background:#3b82f6;}
+.ld-monthly{background:#22c55e;}
+.ld-profit{background:#f59e0b;}
+
+.chart-container{position:relative;width:100%;}
+canvas{width:100%!important;display:block;}
+
+/* ============================================================
+   年別テーブル
+============================================================ */
+.table-section{padding:0 16px 16px;}
+.table-title{font-size:11px;font-weight:700;color:#888;letter-spacing:0.08em;margin-bottom:10px;}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{
+  background:#f0f4fb;color:#1a56db;font-weight:700;
+  padding:7px 8px;text-align:right;border:1px solid #dde3ee;
+  font-size:11px;letter-spacing:0.04em;white-space:nowrap;
+}
+th:first-child{text-align:center;}
+td{
+  padding:6px 8px;text-align:right;border:1px solid #eaeff6;color:#333;
+}
+td:first-child{text-align:center;font-weight:700;color:#1a56db;}
+tr:nth-child(even) td{background:#fafbfd;}
+tr:hover td{background:#e8f0fe;}
+
+/* ============================================================
+   コピーボタン
+============================================================ */
+.btn-copy{
+  width:100%;background:#f1f5fd;border:1px solid #c3d4f8;border-radius:7px;
+  color:#1a56db;font-family:'BIZ UDPGothic',sans-serif;font-size:13px;font-weight:700;
+  padding:10px;cursor:pointer;transition:background 0.15s;margin:12px 0 0;
+}
+.btn-copy:hover{background:#dbeafe;}
+
+/* ============================================================
+   注釈
+============================================================ */
+.note{
+  font-size:11px;color:#999;line-height:1.7;
+  background:#f8fafd;border-radius:7px;padding:12px 14px;margin-bottom:14px;
+}
+
+/* ============================================================
+   アニメーション・フッター
+============================================================ */
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+footer{margin-top:30px;text-align:center;font-size:11px;color:#aaa;}
+
+/* ============================================================
+   レスポンシブ
+============================================================ */
+@media(max-width:400px){
+  .input-grid{grid-template-columns:1fr;}
+  .result-stats{grid-template-columns:1fr;}
+  .stat-item{border-right:none;border-bottom:1px solid #eaeff6;}
+  .stat-item:last-child{border-bottom:none;}
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>積立NISAシミュレーター</h1>
+  <p class="subtitle">毎月積立の複利効果を計算・グラフで可視化<br>元本・積立額・年数・利回りを入力するだけ</p>
+</header>
+
+<!-- ========== 入力カード ========== -->
+<div class="card">
+  <div class="card-title">シミュレーション条件</div>
+
+  <div class="input-grid">
+    <!-- 元本 -->
+    <div class="input-group">
+      <label class="input-label" for="principal">元本（初期投資）</label>
+      <div class="input-wrap">
+        <input type="number" id="principal" min="0" max="10000" step="1" value="0" placeholder="0">
+        <span class="input-unit">万円</span>
+      </div>
+    </div>
+    <!-- 毎月積立 -->
+    <div class="input-group">
+      <label class="input-label" for="monthly">毎月積立額</label>
+      <div class="input-wrap">
+        <input type="number" id="monthly" min="1" max="100" step="0.1" value="3" placeholder="3">
+        <span class="input-unit">万円</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 積立年数スライダー -->
+  <div class="input-group" style="margin-bottom:14px;">
+    <label class="input-label">積立年数</label>
+    <div class="slider-row">
+      <input type="range" id="yearsRange" min="1" max="40" step="1" value="20"
+             oninput="syncSlider('years','yearsRange',1,40)">
+      <span class="slider-val" id="yearsVal">20年</span>
+    </div>
+    <div class="input-wrap" style="margin-top:6px;">
+      <input type="number" id="years" min="1" max="40" step="1" value="20"
+             oninput="syncInput('years','yearsRange',1,40)">
+      <span class="input-unit">年</span>
+    </div>
+  </div>
+
+  <!-- 利回りスライダー -->
+  <div class="input-group" style="margin-bottom:18px;">
+    <label class="input-label">年利回り（税引前）</label>
+    <div class="slider-row">
+      <input type="range" id="rateRange" min="0.1" max="15" step="0.1" value="5"
+             oninput="syncSlider('rate','rateRange',0.1,15)">
+      <span class="slider-val" id="rateVal">5.0%</span>
+    </div>
+    <div class="input-wrap" style="margin-top:6px;">
+      <input type="number" id="rate" min="0.1" max="15" step="0.1" value="5"
+             oninput="syncInput('rate','rateRange',0.1,15)">
+      <span class="input-unit">%</span>
+    </div>
+  </div>
+
+  <button class="btn-calc" onclick="simulate()">▶ シミュレーション実行</button>
+  <div class="error-msg" id="errMsg"></div>
+</div>
+
+<!-- ========== 結果パネル ========== -->
+<div class="result-panel" id="resultPanel">
+
+  <!-- ヒーローエリア -->
+  <div class="result-hero">
+    <div class="result-hero-label">最終積立総額</div>
+    <div class="result-hero-value" id="heroTotal">—</div>
+    <div class="result-hero-sub" id="heroSub"></div>
+  </div>
+
+  <!-- 3統計 -->
+  <div class="result-stats">
+    <div class="stat-item">
+      <div class="stat-label">投資元本合計</div>
+      <div class="stat-value blue" id="statPrincipal">—</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">運用収益</div>
+      <div class="stat-value orange" id="statProfit">—</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">収益率</div>
+      <div class="stat-value orange" id="statRate">—</div>
+    </div>
+  </div>
+
+  <!-- グラフ -->
+  <div class="chart-wrap">
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-dot ld-principal"></div>元本（青）</div>
+      <div class="legend-item"><div class="legend-dot ld-monthly"></div>毎月積立（緑）</div>
+      <div class="legend-item"><div class="legend-dot ld-profit"></div>運用収益（オレンジ）</div>
+    </div>
+    <div class="chart-container">
+      <canvas id="myChart"></canvas>
+    </div>
+  </div>
+
+  <!-- 年別テーブル -->
+  <div class="table-section">
+    <div class="table-title">年別シミュレーション結果</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>経過年</th>
+            <th>投資元本</th>
+            <th>運用収益</th>
+            <th>積立総額</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <button class="btn-copy" onclick="copyTable()">📋 結果をコピー</button>
+  </div>
+</div>
+
+<!-- 注釈 -->
+<div class="note">
+  ※ 本シミュレーターは概算値です。実際の運用成果を保証するものではありません。<br>
+  ※ 積立NISAは年間40万円（月約3.3万円）が非課税投資上限です（2024年から新NISAは年360万円）。<br>
+  ※ 利回りは複利・年次計算（毎月均等積立）で計算しています。税金・手数料は考慮していません。
+</div>
+
+<footer>© 積立NISAシミュレーター</footer>
+</div><!-- /container -->
+
+<!-- Chart.js CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+/* ============================================================
+   スライダー・入力同期
+============================================================ */
+function syncSlider(inputId, rangeId, min, max){
+  const r=document.getElementById(rangeId);
+  const v=parseFloat(r.value);
+  document.getElementById(inputId).value=v;
+  updateSliderLabel(inputId, rangeId, v);
+  updateRangeBg(r, min, max);
+}
+function syncInput(inputId, rangeId, min, max){
+  let v=parseFloat(document.getElementById(inputId).value);
+  if(isNaN(v)) return;
+  v=Math.min(max,Math.max(min,v));
+  document.getElementById(rangeId).value=v;
+  updateSliderLabel(inputId, rangeId, v);
+  updateRangeBg(document.getElementById(rangeId), min, max);
+}
+function updateSliderLabel(inputId, rangeId, v){
+  if(inputId==='years') document.getElementById('yearsVal').textContent=v+'年';
+  if(inputId==='rate')  document.getElementById('rateVal').textContent=v.toFixed(1)+'%';
+}
+function updateRangeBg(el, min, max){
+  const pct=((parseFloat(el.value)-min)/(max-min)*100).toFixed(1);
+  el.style.setProperty('--pct', pct+'%');
+}
+// 初期化
+updateRangeBg(document.getElementById('yearsRange'),1,40);
+updateRangeBg(document.getElementById('rateRange'),0.1,15);
+
+/* ============================================================
+   数値フォーマット（引数はすべて「円」単位）
+============================================================ */
+function fmt(en){ return Math.round(en).toLocaleString('ja-JP'); }
+
+// 円 → 万円表示（小数1桁）
+function fmtMan(en){ return (Math.round(en)/10000).toFixed(1)+'万円'; }
+
+// 円 → 億・万円の読みやすい表示
+function fmtManDisp(en){
+  const man = Math.round(en/10000);   // 万円に丸める
+  if(man >= 10000){                   // 1億円以上
+    const oku  = Math.floor(man/10000);
+    const amari= man % 10000;
+    if(amari === 0) return oku+'億円';
+    if(amari >= 1000) return oku+'億'+(Math.floor(amari/1000)*1000).toLocaleString()+'万円';
+    return oku+'億'+amari.toLocaleString()+'万円';
+  }
+  return man.toLocaleString()+'万円';
+}
+
+/* ============================================================
+   シミュレーション計算
+============================================================ */
+let chartInstance=null;
+let lastRows=[];
+
+function simulate(){
+  const errEl=document.getElementById('errMsg');
+  errEl.classList.remove('show');
+
+  const principal = parseFloat(document.getElementById('principal').value)||0;  // 万円
+  const monthly   = parseFloat(document.getElementById('monthly').value);        // 万円
+  const years     = parseInt(document.getElementById('years').value,10);
+  const rate      = parseFloat(document.getElementById('rate').value);            // %
+
+  // バリデーション
+  if(isNaN(monthly)||monthly<=0){ errEl.textContent='毎月積立額を入力してください';errEl.classList.add('show');return; }
+  if(isNaN(years)||years<1||years>40){ errEl.textContent='積立年数は1〜40年で入力してください';errEl.classList.add('show');return; }
+  if(isNaN(rate)||rate<=0||rate>15){ errEl.textContent='利回りは0.1〜15%で入力してください';errEl.classList.add('show');return; }
+
+  const r = rate/100/12;  // 月利
+  const rows=[];
+  lastRows=[];
+
+  // 入力を円に統一
+  const principalYen = principal * 10000;  // 元本（円）
+  const monthlyYen   = monthly   * 10000;  // 毎月積立（円）
+
+  // 年ごとの計算（複利・月次積立）
+  for(let y=1;y<=years;y++){
+    const n=y*12;  // 経過月数
+    // FV = 元本×(1+r)^n + 毎月積立×((1+r)^n - 1)/r × (1+r)
+    const pFV = principalYen * Math.pow(1+r, n);
+    const mFV = monthlyYen   * (Math.pow(1+r,n)-1)/r * (1+r);
+    const total       = pFV + mFV;
+    const principalAmt = principalYen;          // 元本（変わらない）
+    const monthlyAmt   = monthlyYen * n;        // 毎月積立の累計
+    const profit       = total - principalAmt - monthlyAmt;  // 運用収益
+    rows.push({ year:y, principalAmt, monthlyAmt, profit, total });
+  }
+  lastRows=rows;
+
+  const finalRow=rows[rows.length-1];
+  const totalInvested = finalRow.principalAmt + finalRow.monthlyAmt;
+  const profitRate=(finalRow.profit/totalInvested*100).toFixed(1);
+
+  // ヒーロー
+  document.getElementById('heroTotal').textContent=fmtManDisp(finalRow.total);
+  document.getElementById('heroSub').textContent=`${years}年後の積立総額`;
+  document.getElementById('statPrincipal').textContent=fmtMan(totalInvested);
+  document.getElementById('statProfit').textContent='+'+fmtMan(finalRow.profit);
+  document.getElementById('statRate').textContent='+'+profitRate+'%';
+
+  // テーブル
+  const tbody=document.getElementById('tableBody');
+  tbody.innerHTML='';
+  rows.forEach(r=>{
+    const tr=document.createElement('tr');
+    const invested=r.principalAmt+r.monthlyAmt;
+    tr.innerHTML=`<td>${r.year}年目</td><td>${fmtMan(invested)}</td><td style="color:#d97706">+${fmtMan(r.profit)}</td><td style="font-weight:700">${fmtMan(r.total)}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  // グラフ
+  drawChart(rows);
+
+  document.getElementById('resultPanel').classList.add('show');
+  document.getElementById('resultPanel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ============================================================
+   Chart.js グラフ描画
+============================================================ */
+function drawChart(rows){
+  const labels      = rows.map(r=>r.year+'年');
+  const principals  = rows.map(r=>Math.round(r.principalAmt/10000));
+  const monthlies   = rows.map(r=>Math.round(r.monthlyAmt/10000));
+  const profits     = rows.map(r=>Math.round(r.profit/10000));
+
+  if(chartInstance){ chartInstance.destroy(); }
+
+  const ctx=document.getElementById('myChart').getContext('2d');
+  chartInstance=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {
+          label:'元本（万円）',
+          data:principals,
+          backgroundColor:'rgba(59,130,246,0.88)',
+          borderColor:'#1d4ed8',
+          borderWidth:1,
+          borderRadius:3,
+          stack:'a',
+        },
+        {
+          label:'毎月積立（万円）',
+          data:monthlies,
+          backgroundColor:'rgba(34,197,94,0.88)',
+          borderColor:'#15803d',
+          borderWidth:1,
+          borderRadius:3,
+          stack:'a',
+        },
+        {
+          label:'運用収益（万円）',
+          data:profits,
+          backgroundColor:'rgba(245,158,11,0.88)',
+          borderColor:'#b45309',
+          borderWidth:1,
+          borderRadius:3,
+          stack:'a',
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:true,
+      aspectRatio: window.innerWidth<=400 ? 1.2 : 1.8,
+      interaction:{ mode:'index', intersect:false },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{
+          callbacks:{
+            label:ctx=>`${ctx.dataset.label}：${ctx.parsed.y.toLocaleString()}万円`,
+            footer:items=>{
+              const total=items.reduce((s,i)=>s+i.parsed.y,0);
+              return `合計：${total.toLocaleString()}万円`;
+            }
+          }
+        }
+      },
+      scales:{
+        x:{
+          grid:{ display:false },
+          ticks:{
+            font:{size:10},
+            maxRotation:0,
+            callback:function(v,i){
+              // 目盛りが多い場合は間引く
+              const lbls=this.chart.data.labels;
+              if(lbls.length<=10) return lbls[i];
+              return (i+1)%5===0 ? lbls[i] : '';
+            }
+          }
+        },
+        y:{
+          stacked:true,
+          grid:{ color:'#eaeff6' },
+          ticks:{
+            font:{size:10},
+            callback:v=>v>=10000?Math.round(v/10000)+'億':v+'万'
+          }
+        }
+      }
+    }
+  });
+}
+
+/* ============================================================
+   コピー
+============================================================ */
+function copyTable(){
+  if(!lastRows.length) return;
+  const principal=parseFloat(document.getElementById('principal').value)||0;
+  const monthly  =parseFloat(document.getElementById('monthly').value);
+  const years    =document.getElementById('years').value;
+  const rate     =document.getElementById('rate').value;
+  let text=`【積立NISAシミュレーション結果】\n`;
+  text+=`元本：${principal}万円 / 毎月積立：${monthly}万円 / ${years}年間 / 年利${rate}%\n`;
+  text+='─'.repeat(44)+'\n';
+  text+='経過年\t投資元本\t運用収益\t積立総額\n';
+  lastRows.forEach(r=>{
+    text+=`${r.year}年目\t${fmtMan(r.invested)}\t+${fmtMan(r.profit)}\t${fmtMan(r.total)}\n`;
+  });
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn=document.querySelector('.btn-copy');
+    btn.textContent='✅ コピーしました！';
+    setTimeout(()=>{ btn.textContent='📋 結果をコピー'; },2000);
+  }).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=text;document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');document.body.removeChild(ta);
+    const btn=document.querySelector('.btn-copy');
+    btn.textContent='✅ コピーしました！';
+    setTimeout(()=>{ btn.textContent='📋 結果をコピー'; },2000);
+  });
+}
+
+/* Enterキー */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target.tagName!=='BUTTON') simulate();
+});
+</script>
+</body>
+</html>
