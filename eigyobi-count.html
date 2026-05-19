@@ -19,40 +19,44 @@ body {
 }
 .container { width: 100%; max-width: 600px; }
 
-/* ヘッダー */
 header { text-align: center; margin-bottom: 22px; }
 h1 { font-size: clamp(20px,5vw,26px); font-weight:700; color:#1a56db; margin-bottom:4px; letter-spacing:0.03em; }
 .subtitle { font-size:11px; color:#666; line-height:1.8; }
 
-/* カード */
 .card {
   background:#fff; border:1px solid #dde3ee; border-radius:10px;
   padding:20px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,0.06);
 }
 
-/* 日付入力 */
+/* 日付と日数調整エリアの二段組グリッド */
 .date-grid {
-  display:grid; grid-template-columns:1fr 28px 1fr;
-  gap:10px; align-items:end; margin-bottom:16px;
+  display: grid;
+  grid-template-columns: 1fr 28px 1fr;
+  gap: 12px 10px;
+  align-items: end;
+  margin-bottom: 16px;
 }
 .date-group label { display:block; font-size:11px; font-weight:700; color:#555; letter-spacing:0.08em; margin-bottom:5px; }
-.date-group input[type="date"] {
+
+.date-group input[type="date"],
+.date-group input[type="number"] {
   width:100%; border:1px solid #c7d0e0; border-radius:7px;
   background:#f8fafd; color:#222; font-family:'BIZ UDPGothic',sans-serif;
   font-size:15px; padding:9px 10px; outline:none; transition:border-color 0.18s;
 }
-.date-group input[type="date"]:focus { border-color:#1a56db; }
-.arrow-center { text-align:center; color:#aaa; font-size:18px; padding-bottom:9px; }
+.date-group input[type="date"]:focus,
+.date-group input[type="number"]:focus { border-color:#1a56db; }
 
-/* オプション */
+.arrow-center { text-align:center; color:#aaa; font-size:18px; padding-bottom:9px; }
+.space-center { text-align:center; }
+
+/* 除外オプションエリア */
 .options-area { border-top:1px solid #eaeff6; padding-top:14px; margin-bottom:16px; }
 .options-title { font-size:11px; font-weight:700; color:#666; letter-spacing:0.08em; margin-bottom:10px; }
 .checkbox-list { display:flex; flex-direction:column; gap:8px; }
 .checkbox-item { display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:#333; user-select:none; }
 .checkbox-item input[type="checkbox"] { width:16px; height:16px; accent-color:#1a56db; cursor:pointer; flex-shrink:0; }
-.check-desc { font-size:11px; color:#888; }
 
-/* 計算ボタン */
 .btn-calc {
   width:100%; background:#1a56db; border:none; border-radius:8px;
   color:#fff; font-family:'BIZ UDPGothic',sans-serif; font-size:15px; font-weight:700;
@@ -61,16 +65,13 @@ h1 { font-size: clamp(20px,5vw,26px); font-weight:700; color:#1a56db; margin-bot
 .btn-calc:hover { background:#1546b8; }
 .btn-calc:active { transform:scale(0.98); }
 
-/* エラー */
 .error-msg {
   display:none; background:#fff1f1; border:1px solid #fca5a5; border-radius:7px;
   color:#b91c1c; font-size:13px; padding:9px 13px; margin-top:10px;
 }
 .error-msg.show { display:block; }
 
-/* ==============================
-   ① 結果パネル（常時表示）
-============================== */
+/* 結果パネル */
 .result-panel {
   background:#fff; border:1px solid #dde3ee; border-radius:10px;
   margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,0.06);
@@ -87,6 +88,9 @@ h1 { font-size: clamp(20px,5vw,26px); font-weight:700; color:#1a56db; margin-bot
 .result-number.placeholder { color:#bbb; }
 .result-unit { font-size:16px; color:#555; font-weight:700; margin-left:4px; }
 
+/* 令和表記 */
+.result-reiwa { font-size:12px; color:#444; margin-top:8px; line-height:1.5; text-align:center; }
+
 .breakdown-wrap { padding:16px; }
 .breakdown {
   display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px;
@@ -102,7 +106,6 @@ h1 { font-size: clamp(20px,5vw,26px); font-weight:700; color:#1a56db; margin-bot
 .b-weekend { color:#d97706; }
 .b-holiday { color:#dc2626; }
 
-/* 祝日リスト */
 .holiday-section {
   background:#fff8f8; border:1px solid #fde8e8; border-radius:8px;
   padding:12px 14px; margin-bottom:12px;
@@ -119,7 +122,6 @@ h1 { font-size: clamp(20px,5vw,26px); font-weight:700; color:#1a56db; margin-bot
 .holiday-list li:last-child { border-bottom:none; }
 .holiday-name { color:#888; }
 
-/* コピーボタン群 */
 .copy-buttons { display:flex; flex-direction:column; gap:8px; }
 .btn-copy {
   width:100%; background:#f1f5fd; border:1px solid #c3d4f8; border-radius:7px;
@@ -131,16 +133,13 @@ h1 { font-size: clamp(20px,5vw,26px); font-weight:700; color:#1a56db; margin-bot
 .btn-copy.excel-btn { color:#217346; border-color:#a8d5b5; background:#f0faf4; }
 .btn-copy.excel-btn:hover { background:#d4edda; }
 
-/* アニメーション */
 @keyframes fadeUp {
   from { opacity:0; transform:translateY(8px); }
   to   { opacity:1; transform:translateY(0); }
 }
 .anim { animation:fadeUp 0.3s ease; }
 
-/* ==============================
-   カレンダー
-============================== */
+/* カレンダー */
 .calendar-area { display:none; }
 .calendar-area.show { display:block; animation:fadeUp 0.3s ease; }
 .cal-section-title { font-size:13px; font-weight:700; color:#333; margin-bottom:12px; }
@@ -154,14 +153,23 @@ h1 { font-size: clamp(20px,5vw,26px); font-weight:700; color:#1a56db; margin-bot
 
 .cal-month-block { margin-bottom:22px; }
 .cal-month-block:last-child { margin-bottom:0; }
-.cal-month-label { font-size:13px; font-weight:700; color:#1a56db; margin-bottom:8px; letter-spacing:0.04em; }
+
+.cal-month-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:8px;
+}
+.cal-month-label { font-size:13px; font-weight:700; color:#1a56db; letter-spacing:0.04em; }
+.cal-month-count {
+  font-size:12px; font-weight:700; color:#1a56db;
+  background:#e8f0fe; border:1px solid #c3d4f8; border-radius:99px;
+  padding:2px 10px;
+}
 
 .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
 .cal-head { text-align:center; font-size:11px; font-weight:700; padding:4px 2px; color:#555; }
 .cal-head.sun { color:#dc2626; }
 .cal-head.sat { color:#1d4ed8; }
 
-/* ② セルは日付 + カウント番号の2段構成 */
 .cal-cell {
   aspect-ratio:1; display:flex; flex-direction:column;
   align-items:center; justify-content:center;
@@ -199,9 +207,9 @@ h1 { font-size: clamp(20px,5vw,26px); font-weight:700; color:#1a56db; margin-bot
 
 footer { margin-top:30px; text-align:center; font-size:11px; color:#aaa; }
 
-@media (max-width:380px) {
-  .date-grid { grid-template-columns:1fr; }
-  .arrow-center { display:none; }
+@media (max-width:440px) {
+  .date-grid { grid-template-columns:1fr; gap:8px 0; }
+  .arrow-center, .space-center { display:none; }
 }
 </style>
 </head>
@@ -210,16 +218,14 @@ footer { margin-top:30px; text-align:center; font-size:11px; color:#aaa; }
 
   <header>
     <h1>📅 営業日計算ツール</h1>
-    <!-- ① subtitleを4行の注意書きに変更 -->
     <p class="subtitle">
-      ※ 土日・祝日を除いた営業日数を自動計算<br>
+      ※ 土日・祝日・振替休日・年末年始を除いた営業日数を自動計算<br>
       ※ 開始日・終了日を含む日数で計算<br>
       ※ 祝日は2020〜2030年の日本の祝日に対応<br>
-      ※ 振替休日・年末年始（12/29〜1/3）も除外可能
+      ※ 開始日から〇日後・終了日の〇日前シミュレーションに対応
     </p>
   </header>
 
-  <!-- 入力カード -->
   <div class="card">
     <div class="date-grid">
       <div class="date-group">
@@ -231,7 +237,18 @@ footer { margin-top:30px; text-align:center; font-size:11px; color:#aaa; }
         <label>終了日</label>
         <input type="date" id="endDate" oninput="calculate()">
       </div>
+
+      <div class="date-group">
+        <label style="color:#1a56db;">開始日から〇日後</label>
+        <input type="number" id="daysAfter" placeholder="日数を入力" oninput="calcFutureDate()">
+      </div>
+      <div class="space-center"></div>
+      <div class="date-group">
+        <label style="color:#d97706;">終了日の〇日前</label>
+        <input type="number" id="daysBefore" placeholder="日数を入力" oninput="calcPastDate()">
+      </div>
     </div>
+
     <div class="options-area">
       <div class="options-title">▶ 除外オプション（営業しないならそのままでＯＫ）</div>
       <div class="checkbox-list">
@@ -244,17 +261,40 @@ footer { margin-top:30px; text-align:center; font-size:11px; color:#aaa; }
           <span>祝日・振替休日は営業しない</span>
         </label>
         <label class="checkbox-item">
-          <input type="checkbox" id="chkNenmatsu" checked onchange="calculate()">
-          <span>年末年始は営業しない</span>
-          <span class="check-desc">（12/29〜1/3）</span>
+          <input type="checkbox" id="chkNenmatsuBank" checked onchange="toggleNenmatsu('bank')">
+          <span>年末年始（12/31〜1/3）銀行Ver</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" id="chkNenmatsuGovt" onchange="toggleNenmatsu('govt')">
+          <span>年末年始（12/29〜1/3）行政機関Ver</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" id="chkMon" onchange="calculate()">
+          <span>毎週月曜日は営業しない</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" id="chkTue" onchange="calculate()">
+          <span>毎週火曜日は営業しない</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" id="chkWed" onchange="calculate()">
+          <span>毎週水曜日は営業しない</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" id="chkThu" onchange="calculate()">
+          <span>毎週木曜日は営業しない</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" id="chkFri" onchange="calculate()">
+          <span>毎週金曜日は営業しない</span>
         </label>
       </div>
     </div>
+
     <button class="btn-calc" onclick="calculate()">営業日数を計算する</button>
     <div class="error-msg" id="errorMsg"></div>
   </div>
 
-  <!-- ① 結果パネル（常時表示） -->
   <div class="result-panel" id="resultPanel">
     <div class="result-main">
       <div class="result-label">営業日数（除外日を引いた日数）</div>
@@ -262,6 +302,7 @@ footer { margin-top:30px; text-align:center; font-size:11px; color:#aaa; }
         <span class="result-number placeholder" id="resultNum">—</span>
         <span class="result-unit" id="resultUnitEl" style="visibility:hidden">日</span>
       </div>
+      <div class="result-reiwa" id="resultReiwa"></div>
     </div>
     <div class="breakdown-wrap">
       <div class="breakdown">
@@ -271,7 +312,7 @@ footer { margin-top:30px; text-align:center; font-size:11px; color:#aaa; }
         </div>
         <div class="breakdown-item">
           <div class="b-num b-weekend placeholder" id="bWeekend">—</div>
-          <div class="b-label">土日</div>
+          <div class="b-label">土日・指定曜日</div>
         </div>
         <div class="breakdown-item">
           <div class="b-num b-holiday placeholder" id="bHoliday">—</div>
@@ -282,7 +323,6 @@ footer { margin-top:30px; text-align:center; font-size:11px; color:#aaa; }
         <div class="holiday-header">▶ 期間内の祝日・年末年始</div>
         <ul class="holiday-list" id="holidayList"></ul>
       </div>
-      <!-- ③ コピーボタン3つ -->
       <div class="copy-buttons">
         <button class="btn-copy" id="btnCopyText" onclick="copyText()" disabled>📋 結果をテキストでコピー</button>
         <button class="btn-copy excel-btn" id="btnCopyCalendar" onclick="copyExcelCalendar()" disabled>📊 Excel用コピー（カレンダー形式）</button>
@@ -291,14 +331,11 @@ footer { margin-top:30px; text-align:center; font-size:11px; color:#aaa; }
     </div>
   </div>
 
-  <!-- ① 下の注意書きは削除 -->
-
-  <!-- カレンダー -->
   <div class="card calendar-area" id="calendarArea">
     <div class="cal-section-title">📆 カレンダー表示</div>
     <div class="calendar-legend">
       <div class="legend-item"><div class="legend-dot ld-business"></div>営業日（番号＝カウント順）</div>
-      <div class="legend-item"><div class="legend-dot ld-weekend"></div>土日</div>
+      <div class="legend-item"><div class="legend-dot ld-weekend"></div>土日・指定曜日</div>
       <div class="legend-item"><div class="legend-dot ld-holiday"></div>祝日等</div>
       <div class="legend-item"><div class="legend-dot ld-outside"></div>範囲外</div>
     </div>
@@ -306,7 +343,7 @@ footer { margin-top:30px; text-align:center; font-size:11px; color:#aaa; }
   </div>
 
 </div>
-<footer>© 2025 営業日計算ツール</footer>
+<footer>© 2026 営業日計算ツール</footer>
 
 <script>
 // ============================================================
@@ -343,7 +380,7 @@ function getHolidays(year){
     }
   }
   const ks=[...map.keys()].sort();
-  for(let i=0;i<ks.length-1;i++){
+  for(let i=0; i<ks.length-1; i++){
     const d1=new Date(ks[i]),d2=new Date(ks[i+1]);
     if((d2-d1)/86400000===2){
       const bt=new Date(d1); bt.setDate(bt.getDate()+1);
@@ -353,35 +390,142 @@ function getHolidays(year){
   }
   return map;
 }
-function isNenmatsu(ymd){ const [,m,d]=ymd.split('-').map(Number); return (m===12&&d>=29)||(m===1&&d<=3); }
+
+function isNenmatsuBank(ymd){
+  const [,m,d]=ymd.split('-').map(Number);
+  return (m===12&&d>=31)||(m===1&&d<=3);
+}
+function isNenmatsuGovt(ymd){
+  const [,m,d]=ymd.split('-').map(Number);
+  return (m===12&&d>=29)||(m===1&&d<=3);
+}
 
 // ============================================================
-// 状態
+// 詳細な和暦変換（曜日付き出力にも対応）
 // ============================================================
 const WEEK_JP = ['日','月','火','水','木','金','土'];
+
+function toReiwa(d, includeYoubi=false){
+  if(!d) return '';
+  const y = d.getFullYear();
+  const m = d.getMonth()+1;
+  const day = d.getDate();
+  const youbiStr = includeYoubi ? `(${WEEK_JP[d.getDay()]})` : '';
+
+  if(y > 2019 || (y===2019 && m>=5)){
+    const ry = y - 2018;
+    return `令和${ry === 1 ? '元' : ry}年${m}月${day}日${youbiStr}`;
+  }
+  if(y > 1989 || (y===1989 && (m>1||(m===1&&day>=8)))){
+    const hy = y - 1988;
+    return `平成${hy === 1 ? '元' : hy}年${m}月${day}日${youbiStr}`;
+  }
+  if(y >= 1926){
+    const sy = y - 1925;
+    return `昭和${sy === 1 ? '元' : sy}年${m}月${day}日${youbiStr}`;
+  }
+  return `${y}年${m}月${day}日${youbiStr}`;
+}
+
+function formatSlashingDate(d, includeYoubi=false){
+  if(!d) return '';
+  const youbiStr = includeYoubi ? `(${WEEK_JP[d.getDay()]})` : '';
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}${youbiStr}`;
+}
+
+// ============================================================
+// ② 〇日後 / 〇日前シミュレーターロジック (カレンダー連動)
+// ============================================================
+function calcFutureDate() {
+  const sStr = document.getElementById('startDate').value;
+  const days = parseInt(document.getElementById('daysAfter').value, 10);
+  const endInput = document.getElementById('endDate');
+
+  if (!sStr || isNaN(days)) return;
+  const startObj = new Date(sStr);
+
+  const futureObj = new Date(startObj);
+  futureObj.setDate(futureObj.getDate() + days);
+
+  // カレンダー形式 (YYYY-MM-DD) にフォーマットして終了日欄に代入
+  endInput.value = toYMD(futureObj);
+  calculate();
+}
+
+function calcPastDate() {
+  const eStr = document.getElementById('endDate').value;
+  const days = parseInt(document.getElementById('daysBefore').value, 10);
+  const startInput = document.getElementById('startDate');
+
+  if (!eStr || isNaN(days)) return;
+  const endObj = new Date(eStr);
+
+  const pastObj = new Date(endObj);
+  pastObj.setDate(pastObj.getDate() - days);
+
+  // カレンダー形式 (YYYY-MM-DD) にフォーマットして開始日欄に代入
+  startInput.value = toYMD(pastObj);
+  calculate();
+}
+
+// 状態
 const MONTH_JP= ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 const todayYMD= toYMD(new Date());
 let lastCalc  = null;
 
+function toggleNenmatsu(type) {
+  if (type === 'bank' && document.getElementById('chkNenmatsuBank').checked) {
+    document.getElementById('chkNenmatsuGovt').checked = false;
+  } else if (type === 'govt' && document.getElementById('chkNenmatsuGovt').checked) {
+    document.getElementById('chkNenmatsuBank').checked = false;
+  }
+  calculate();
+}
+
 // ============================================================
-// 計算
+// メイン計算処理
 // ============================================================
 function calculate(){
-  const sv=document.getElementById('startDate').value;
-  const ev=document.getElementById('endDate').value;
-  const chkW=document.getElementById('chkWeekend').checked;
-  const chkH=document.getElementById('chkHoliday').checked;
-  const chkN=document.getElementById('chkNenmatsu').checked;
-  const errEl=document.getElementById('errorMsg');
+  const sv = document.getElementById('startDate').value;
+  const ev = document.getElementById('endDate').value;
 
+  const chkW = document.getElementById('chkWeekend').checked;
+  const chkH = document.getElementById('chkHoliday').checked;
+  const chkNB = document.getElementById('chkNenmatsuBank').checked;
+  const chkNG = document.getElementById('chkNenmatsuGovt').checked;
+
+  const extraDow = new Set();
+  if(document.getElementById('chkMon').checked) extraDow.add(1);
+  if(document.getElementById('chkTue').checked) extraDow.add(2);
+  if(document.getElementById('chkWed').checked) extraDow.add(3);
+  if(document.getElementById('chkThu').checked) extraDow.add(4);
+  if(document.getElementById('chkFri').checked) extraDow.add(5);
+
+  const errEl=document.getElementById('errorMsg');
   errEl.classList.remove('show');
 
-  if(!sv||!ev){ resetDisplay(); return; }
-  const start=new Date(sv), end=new Date(ev);
-  if(end<start){ showError('終了日は開始日以降の日付を入力してください'); resetDisplay(); return; }
+  if(!sv || !ev){ resetDisplay(); return; }
+
+  const start = new Date(sv);
+  const end = new Date(ev);
+
+  if(end < start){ 
+    showError('終了日は開始日以降の日付を入力してください'); 
+    resetDisplay(); 
+    return; 
+  }
+
+  // 日数差枠への自動同期（入力中の枠の邪魔をしない制御付き）
+  const diffDays = Math.round((end - start) / 86400000);
+  if (document.activeElement !== document.getElementById('daysAfter')) {
+    document.getElementById('daysAfter').value = diffDays;
+  }
+  if (document.activeElement !== document.getElementById('daysBefore')) {
+    document.getElementById('daysBefore').value = diffDays;
+  }
 
   const hMaps={};
-  for(let y=start.getFullYear();y<=end.getFullYear();y++) hMaps[y]=getHolidays(y);
+  for(let y=start.getFullYear(); y<=end.getFullYear(); y++) hMaps[y]=getHolidays(y);
 
   let total=0, weekends=0, holidays=0, eigyoCount=0;
   const hitHols=[];
@@ -395,24 +539,30 @@ function calculate(){
     const [y]=ymd.split('-').map(Number);
     const hName=hMaps[y]?.get(ymd);
     const isWE=(dow===0||dow===6);
-    const isNen=isNenmatsu(ymd);
+    
+    const isNen = (chkNB && isNenmatsuBank(ymd)) || (chkNG && isNenmatsuGovt(ymd));
+    const isExtraDow = extraDow.has(dow);
 
     let cls='business', eigyoNum=null;
 
     if(isWE){
-      if(chkW) weekends++;
-      cls=(hName||(chkN&&isNen))?'holiday-wend':(dow===0?'weekend-sun':'weekend-sat');
+      if(chkW || isExtraDow) weekends++;
+      cls=(chkH && hName || isNen)?'holiday-wend':(dow===0?'weekend-sun':'weekend-sat');
+      if(isNen && !hitHols.find(h=>h.date===ymd)) hitHols.push({date:ymd,name:'年末年始'});
+    } else if(chkH && hName){
+      holidays++;
+      cls='holiday-wday';
+      hitHols.push({date:ymd,name:hName});
+    } else if(isNen){
+      holidays++;
+      cls='holiday-wday';
+      hitHols.push({date:ymd,name:'年末年始'});
+    } else if(isExtraDow){
+      weekends++;
+      cls='weekend-sat';
     } else {
-      if(chkH&&hName){
-        holidays++; cls='holiday-wday';
-        hitHols.push({date:ymd,name:hName});
-      } else if(chkN&&isNen){
-        holidays++; cls='holiday-wday';
-        hitHols.push({date:ymd,name:'年末年始'});
-      } else {
-        eigyoCount++;
-        eigyoNum=eigyoCount;
-      }
+      eigyoCount++;
+      eigyoNum=eigyoCount;
     }
     dayMap.set(ymd,{cls,eigyoNum});
     cur.setDate(cur.getDate()+1);
@@ -424,6 +574,10 @@ function calculate(){
   numEl.textContent=eigyo;
   numEl.classList.remove('placeholder');
   document.getElementById('resultUnitEl').style.visibility='visible';
+
+  // 画面上のメイン結果欄の表記変更
+  const reiwaEl = document.getElementById('resultReiwa');
+  reiwaEl.innerHTML = `${formatSlashingDate(start, true)} 〜 ${formatSlashingDate(end, true)}<br><span style="font-size:11px; color:#666;">（${toReiwa(start, true)} 〜 ${toReiwa(end, true)}）</span>`;
 
   setBreakdown('bTotal',total);
   setBreakdown('bWeekend',weekends);
@@ -447,8 +601,8 @@ function calculate(){
     document.getElementById(id).disabled=false;
   });
 
-  lastCalc={sv,ev,eigyo,total,weekends,holidays,hitHols,dayMap,start:new Date(start),end:new Date(end)};
-  renderCalendar(new Date(sv),new Date(ev),dayMap);
+  lastCalc={start, end, eigyo, total, weekends, holidays, hitHols, dayMap};
+  renderCalendar(new Date(start),new Date(end),dayMap);
 }
 
 function setBreakdown(id,val){
@@ -461,6 +615,7 @@ function resetDisplay(){
   const numEl=document.getElementById('resultNum');
   numEl.textContent='—'; numEl.classList.add('placeholder');
   document.getElementById('resultUnitEl').style.visibility='hidden';
+  document.getElementById('resultReiwa').textContent='';
   ['bTotal','bWeekend','bHoliday'].forEach(id=>{
     const el=document.getElementById(id); el.textContent='—'; el.classList.add('placeholder');
   });
@@ -476,12 +631,18 @@ function showError(msg){
 }
 
 // ============================================================
-// ③ コピー機能
+// ① 指定フォーマット形式でのテキストコピー
 // ============================================================
 function copyText(){
   if(!lastCalc) return;
-  const {sv,ev,eigyo,total,weekends,holidays}=lastCalc;
-  const text=`【営業日計算結果】\n期間：${sv.replace(/-/g,'/')} 〜 ${ev.replace(/-/g,'/')}\n営業日数：${eigyo}日\n（総日数 ${total}日 ／ 土日 ${weekends}日 ／ 祝日等 ${holidays}日を除く）`;
+  const {start, end, eigyo, total, weekends, holidays} = lastCalc;
+  
+  const text = `【営業日計算結果】
+期間：${formatSlashingDate(start, true)} 〜 ${formatSlashingDate(end, true)}
+期間：${toReiwa(start, true)}　～${toReiwa(end, true)}
+営業日数：${eigyo}日
+（総日数 ${total}日 ／ 土日等 ${weekends}日 ／ 祝日等 ${holidays}日を除く）`;
+
   doCopy('btnCopyText', text, '📋 結果をテキストでコピー');
 }
 
@@ -498,7 +659,7 @@ function copyExcelCalendar(){
     const firstDow=new Date(year,month,1).getDay();
     const days=new Date(year,month+1,0).getDate();
     let row=Array(firstDow).fill('');
-    for(let d=1;d<=days;d++){
+    for(let d=1; d<=days; d++){
       const ymd=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       const info=dayMap.get(ymd);
       let cell='';
@@ -540,14 +701,14 @@ function copyExcelList(){
 function doCopy(btnId, text, origLabel){
   navigator.clipboard.writeText(text).then(()=>{
     const btn=document.getElementById(btnId);
-    btn.textContent='✅ コピーしました！';
+    btn.textContent = '✅ コピーしました！';
     setTimeout(()=>{ btn.textContent=origLabel; },2000);
   }).catch(()=>{
     const ta=document.createElement('textarea');
     ta.value=text; document.body.appendChild(ta);
     ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
     const btn=document.getElementById(btnId);
-    btn.textContent='✅ コピーしました！';
+    btn.textContent = '✅ コピーしました！';
     setTimeout(()=>{ btn.textContent=origLabel; },2000);
   });
 }
@@ -562,14 +723,34 @@ function renderCalendar(start,end,dayMap){
   const startYMD=toYMD(start), endYMD=toYMD(end);
   const cur=new Date(start.getFullYear(),start.getMonth(),1);
   const endMonth=new Date(end.getFullYear(),end.getMonth(),1);
+
   while(cur<=endMonth){
     const year=cur.getFullYear(), month=cur.getMonth();
     const block=document.createElement('div');
     block.className='cal-month-block';
+
+    const daysInMonth=new Date(year,month+1,0).getDate();
+    let monthCount=0;
+    for(let d=1; d<=daysInMonth; d++){
+      const ymd=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const info=dayMap.get(ymd);
+      if(info && info.eigyoNum!==null) monthCount++;
+    }
+
+    const header=document.createElement('div');
+    header.className='cal-month-header';
     const lbl=document.createElement('div');
     lbl.className='cal-month-label';
     lbl.textContent=`${year}年 ${MONTH_JP[month]}`;
-    block.appendChild(lbl);
+    header.appendChild(lbl);
+    if(monthCount > 0){
+      const badge=document.createElement('div');
+      badge.className='cal-month-count';
+      badge.textContent=`営業日 ${monthCount}日`;
+      header.appendChild(badge);
+    }
+    block.appendChild(header);
+
     const grid=document.createElement('div');
     grid.className='cal-grid';
     WEEK_JP.forEach((w,i)=>{
@@ -579,11 +760,10 @@ function renderCalendar(start,end,dayMap){
       grid.appendChild(h);
     });
     const firstDow=new Date(year,month,1).getDay();
-    const daysInMonth=new Date(year,month+1,0).getDate();
-    for(let i=0;i<firstDow;i++){
+    for(let i=0; i<firstDow; i++){
       const e=document.createElement('div'); e.className='cal-cell empty'; grid.appendChild(e);
     }
-    for(let d=1;d<=daysInMonth;d++){
+    for(let d=1; d<=daysInMonth; d++){
       const ymd=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       const info=dayMap.get(ymd);
       const cell=document.createElement('div');
@@ -614,10 +794,13 @@ function renderCalendar(start,end,dayMap){
   area.classList.add('show');
 }
 
-// デフォルト日付（今日）
+// 初期表示の日付設定（起動時の日付＝当日に自動設定）
 window.addEventListener('DOMContentLoaded',()=>{
-  document.getElementById('startDate').value=todayYMD;
-  document.getElementById('endDate').value=todayYMD;
+  const today = new Date();
+  const ymd = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  
+  document.getElementById('startDate').value = ymd;
+  document.getElementById('endDate').value = ymd;
   calculate();
 });
 </script>
