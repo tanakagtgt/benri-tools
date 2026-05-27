@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>単価・コスパ比較ツール｜どれがお得？</title>
+<meta name="description" content="詰め替え・まとめ買いのコスパを瞬時に比較。100g単価計算・単価比較・コスパ計算ツール。どっちが安い？">
+
+<!-- OGP -->
+<meta property="og:title" content="単価・コスパ比較ツール｜どれがお得？">
+<meta property="og:description" content="詰め替え・まとめ買いのコスパを瞬時に比較。100g単価計算・単価比較・コスパ計算ツール。どっちが安い？">
+<meta property="og:image" content="ogp.png"><!-- 別途用意 1200×630px -->
+<meta property="og:url" content=""><!-- 公開後のURLを設定 -->
+<meta property="og:type" content="website">
+
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ===== ベースリセット（テンプレート準拠） ===== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #f4f6f9; color: #222;
+  font-family: 'BIZ UDPGothic', sans-serif;
+  min-height: 100vh; padding: 24px 14px 60px;
+  display: flex; flex-direction: column; align-items: center;
+  -webkit-text-size-adjust: 100%;
+}
+.container { width: 100%; max-width: 600px; }
+
+/* ===== ヘッダー（テンプレート準拠） ===== */
+header { text-align: center; margin-bottom: 22px; }
+h1 { font-size: clamp(20px,5vw,26px); font-weight:700; color:#1a56db; margin-bottom:4px; }
+.subtitle { font-size:11px; color:#666; line-height:1.8; }
+
+/* ===== カード（テンプレート準拠） ===== */
+.card {
+  background:#fff; border:1px solid #dde3ee; border-radius:10px;
+  padding:20px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,0.06);
+}
+
+/* ===== ラベル＋input共通（テンプレート準拠） ===== */
+.input-group { margin-bottom:14px; }
+.input-group label { display:block; font-size:11px; font-weight:700; color:#555; letter-spacing:0.08em; margin-bottom:5px; }
+.input-group input, .input-group select {
+  width:100%; border:1px solid #c7d0e0; border-radius:7px;
+  background:#f8fafd; color:#222; font-family:'BIZ UDPGothic',sans-serif;
+  font-size:16px; /* iPhoneズーム防止 */
+  padding:9px 10px; outline:none; transition:border-color 0.18s;
+  -webkit-appearance: none; appearance: none;
+}
+.input-group input:focus, .input-group select:focus { border-color:#1a56db; }
+/* numberスピナー非表示 */
+.input-group input[type="number"]::-webkit-inner-spin-button,
+.input-group input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+.input-group input[type="number"] { -moz-appearance: textfield; }
+
+/* ===== 3列グリッド（価格・容量・セット数） ===== */
+.input-grid-3 { display:grid; grid-template-columns:1fr 1fr 80px; gap:8px; margin-bottom:8px; }
+
+/* ===== セクションタイトル（テンプレート準拠） ===== */
+.section-title { font-size:11px; font-weight:700; color:#666; letter-spacing:0.08em; margin-bottom:10px; }
+
+/* ===== 商品カード（入力行） ===== */
+.product-row {
+  border:1px solid #dde3ee; border-radius:8px;
+  padding:12px 12px 6px; margin-bottom:10px;
+  background:#fafbfd; transition: border-color 0.15s;
+}
+.product-row:focus-within { border-color:#1a56db; }
+
+/* 商品ラベル行 */
+.product-header {
+  display:flex; align-items:center; gap:7px; margin-bottom:10px; flex-wrap:wrap;
+}
+.product-dot {
+  width:9px; height:9px; border-radius:50%; flex-shrink:0;
+}
+.product-name {
+  font-size:13px; font-weight:700; color:#333;
+}
+
+/* ===== 入力カード内の結果バッジ ===== */
+.inline-result {
+  display:none; /* 未計算時は非表示 */
+  align-items:center; gap:5px;
+  margin-left:auto; /* 右寄せ */
+  background:#e8f0fe; border:1px solid #c3d4f8; border-radius:6px;
+  padding:3px 9px; font-size:12px; font-weight:700; color:#1a56db;
+  white-space:nowrap; transition: background 0.2s, border-color 0.2s;
+  animation: fadeIn 0.2s ease;
+}
+.inline-result.show { display:flex; }
+.inline-result.is-best {
+  background:#1a56db; border-color:#1a56db; color:#fff;
+}
+/* 最安値時：入力カード枠を青くする */
+.product-row.is-best {
+  border-color:#1a56db; border-width:2px; background:#f0f5ff;
+}
+
+/* ===== 結果パネル（テンプレート準拠ベース） ===== */
+.result-panel {
+  background:#fff; border:1px solid #dde3ee; border-radius:10px;
+  margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,0.06); overflow:hidden;
+}
+
+/* 結果リスト */
+.result-list { padding:14px; }
+.result-empty {
+  text-align:center; padding:32px 16px;
+  color:#aaa; font-size:13px; line-height:2;
+}
+.result-empty .icon { font-size:28px; display:block; margin-bottom:6px; }
+
+/* 各結果行 */
+.result-item {
+  display:flex; align-items:center; gap:10px;
+  padding:11px 12px; border-radius:8px; margin-bottom:8px;
+  background:#f8fafd; border:1px solid #dde3ee;
+  animation: fadeIn 0.2s ease;
+  transition: background 0.15s, border-color 0.15s;
+}
+.result-item:last-child { margin-bottom:0; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(3px); } to { opacity:1; transform:translateY(0); } }
+
+/* 最安値強調 */
+.result-item.is-best {
+  background:#e8f0fe; border-color:#1a56db; border-width:2px;
+}
+
+/* ランクバッジ */
+.rank-badge {
+  width:28px; height:28px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:13px; font-weight:700; flex-shrink:0;
+  background:#e2e8f0; color:#64748b;
+}
+.result-item.is-best .rank-badge { background:#1a56db; color:#fff; }
+
+/* 商品情報 */
+.result-info { flex:1; min-width:0; }
+.result-name {
+  font-size:13px; font-weight:700; color:#333;
+  display:flex; align-items:center; gap:5px;
+}
+.result-item.is-best .result-name { color:#1a56db; }
+.result-price {
+  font-size:20px; font-weight:700; letter-spacing:-0.5px; color:#111; margin-top:1px;
+}
+.result-item.is-best .result-price { color:#1a56db; }
+
+/* 差額バッジ */
+.diff-badge {
+  font-size:11px; font-weight:700; padding:3px 8px;
+  border-radius:20px; white-space:nowrap; flex-shrink:0;
+}
+.diff-badge.best { background:#1a56db; color:#fff; }
+.diff-badge.other { background:#e2e8f0; color:#64748b; }
+
+/* コピーボタン（テンプレート準拠） */
+.btn-copy {
+  width:100%; background:#f1f5fd; border:1px solid #c3d4f8; border-radius:7px;
+  color:#1a56db; font-family:'BIZ UDPGothic',sans-serif; font-size:13px; font-weight:700;
+  padding:10px; cursor:pointer; transition:background 0.15s; margin-top:12px;
+}
+.btn-copy:hover { background:#dbeafe; }
+.btn-copy:disabled { opacity:0.4; cursor:not-allowed; }
+
+/* リセットボタン（テンプレートのbtn-calcベース） */
+.btn-reset {
+  width:100%; background:#f8fafd; border:1px solid #c7d0e0; border-radius:8px;
+  color:#555; font-family:'BIZ UDPGothic',sans-serif; font-size:14px; font-weight:700;
+  padding:11px; cursor:pointer; letter-spacing:0.06em; transition:background 0.15s;
+}
+.btn-reset:hover { background:#e2e8f0; }
+
+/* ===== 広告枠（CLS対策：高さ事前確保） ===== */
+.ad-slot {
+  width:100%; height:100px; /* 広告未表示時も固定 */
+  margin-bottom:14px; border-radius:8px;
+  background:#fff; border:1px dashed #c7d0e0;
+  display:flex; align-items:center; justify-content:center;
+  color:#bbb; font-size:11px;
+}
+
+/* ===== フッター（テンプレート準拠） ===== */
+footer { margin-top:30px; text-align:center; font-size:11px; color:#aaa; line-height:1.8; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ===== ヘッダー ===== -->
+  <header>
+    <h1>💴 単価・コスパ比較ツール</h1>
+    <p class="subtitle">
+      ※ 計算式: 単価 = 価格 ÷ (セット数 × 容量)<br>
+      ※ 2商品以上入力すると自動で比較します
+    </p>
+  </header>
+
+  <!-- ===== 入力カード ===== -->
+  <div class="card">
+    <div class="section-title">▶ 商品を入力</div>
+
+    <!-- 商品A -->
+    <div class="product-row" id="row-a">
+      <div class="product-header">
+        <span class="product-dot" style="background:#1a56db;"></span>
+        <span class="product-name">商品 A</span>
+        <span class="inline-result" id="inline-a"></span>
+      </div>
+      <div class="input-grid-3">
+        <div class="input-group" style="margin-bottom:0;">
+          <label for="a-price">価格（円）</label>
+          <input type="number" id="a-price" inputmode="decimal" min="0" step="1" placeholder="例: 298">
+        </div>
+        <div class="input-group" style="margin-bottom:0;">
+          <label for="a-volume">容量</label>
+          <input type="number" id="a-volume" inputmode="decimal" min="0" step="any" placeholder="例: 400">
+        </div>
+        <div class="input-group" style="margin-bottom:0;">
+          <label for="a-set">セット数</label>
+          <input type="number" id="a-set" inputmode="decimal" min="1" step="1" value="1">
+        </div>
+      </div>
+    </div>
+
+    <!-- 商品B -->
+    <div class="product-row" id="row-b">
+      <div class="product-header">
+        <span class="product-dot" style="background:#7c3aed;"></span>
+        <span class="product-name">商品 B</span>
+        <span class="inline-result" id="inline-b"></span>
+      </div>
+      <div class="input-grid-3">
+        <div class="input-group" style="margin-bottom:0;">
+          <label for="b-price">価格（円）</label>
+          <input type="number" id="b-price" inputmode="decimal" min="0" step="1" placeholder="例: 498">
+        </div>
+        <div class="input-group" style="margin-bottom:0;">
+          <label for="b-volume">容量</label>
+          <input type="number" id="b-volume" inputmode="decimal" min="0" step="any" placeholder="例: 700">
+        </div>
+        <div class="input-group" style="margin-bottom:0;">
+          <label for="b-set">セット数</label>
+          <input type="number" id="b-set" inputmode="decimal" min="1" step="1" value="1">
+        </div>
+      </div>
+    </div>
+
+    <!-- 商品C -->
+    <div class="product-row" id="row-c">
+      <div class="product-header">
+        <span class="product-dot" style="background:#059669;"></span>
+        <span class="product-name">商品 C</span>
+        <span class="inline-result" id="inline-c"></span>
+      </div>
+      <div class="input-grid-3">
+        <div class="input-group" style="margin-bottom:0;">
+          <label for="c-price">価格（円）</label>
+          <input type="number" id="c-price" inputmode="decimal" min="0" step="1" placeholder="例: 780">
+        </div>
+        <div class="input-group" style="margin-bottom:0;">
+          <label for="c-volume">容量</label>
+          <input type="number" id="c-volume" inputmode="decimal" min="0" step="any" placeholder="例: 1000">
+        </div>
+        <div class="input-group" style="margin-bottom:0;">
+          <label for="c-set">セット数</label>
+          <input type="number" id="c-set" inputmode="decimal" min="1" step="1" value="1">
+        </div>
+      </div>
+    </div>
+
+    <!-- 商品D -->
+    <div class="product-row" id="row-d">
+      <div class="product-header">
+        <span class="product-dot" style="background:#dc2626;"></span>
+        <span class="product-name">商品 D</span>
+        <span class="inline-result" id="inline-d"></span>
+      </div>
+      <div class="input-grid-3">
+        <div class="input-group" style="margin-bottom:0;">
+          <label for="d-price">価格（円）</label>
+          <input type="number" id="d-price" inputmode="decimal" min="0" step="1" placeholder="例: 1280">
+        </div>
+        <div class="input-group" style="margin-bottom:0;">
+          <label for="d-volume">容量</label>
+          <input type="number" id="d-volume" inputmode="decimal" min="0" step="any" placeholder="例: 2000">
+        </div>
+        <div class="input-group" style="margin-bottom:0;">
+          <label for="d-set">セット数</label>
+          <input type="number" id="d-set" inputmode="decimal" min="1" step="1" value="1">
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-reset" id="reset-btn" type="button">↺ 全部クリア</button>
+    <button class="btn-copy" id="btn-copy" disabled style="margin-top:8px;">📋 結果をコピー</button>
+  </div>
+
+  <!-- result-containerは非表示で残す（JS用） -->
+  <div id="result-container" style="display:none;" aria-live="polite"></div>
+
+  <!-- ===== 広告枠（CLS対策：高さ固定） ===== -->
+  <div class="ad-slot">広告エリア（300×100）</div>
+
+</div>
+
+<footer>
+  © 2025 単価・コスパ比較ツール<br>
+  計算式: 単価 = 価格 ÷ (セット数 × 容量)
+</footer>
+
+<!-- ===== JavaScript ===== -->
+<script>
+// =============================================================
+//  定数・設定
+// =============================================================
+/** localStorageのキー名 */
+const STORAGE_KEY = 'unitprice_v2';
+/** debounce時間(ms) */
+const DEBOUNCE_MS = 300;
+
+/**
+ * 商品定義
+ * 将来の商品追加はここにオブジェクトを追記するだけ
+ */
+const PRODUCTS = [
+  { id: 'a', label: '商品 A', color: '#1a56db' },
+  { id: 'b', label: '商品 B', color: '#7c3aed' },
+  { id: 'c', label: '商品 C', color: '#059669' },
+  { id: 'd', label: '商品 D', color: '#dc2626' },
+];
+
+// コピー用に最後の結果テキストを保持
+let lastResultText = '';
+
+// =============================================================
+//  入力値の取得
+//  戻り値: [{id, label, color, price, volume, unit, set}]
+// =============================================================
+function getInputValues() {
+  return PRODUCTS.map(p => ({
+    id:     p.id,
+    label:  p.label,
+    color:  p.color,
+    price:  parseFloat(document.getElementById(`${p.id}-price`).value),
+    volume: parseFloat(document.getElementById(`${p.id}-volume`).value),
+    set:    parseFloat(document.getElementById(`${p.id}-set`).value) || 1,
+  }));
+}
+
+// =============================================================
+//  単価計算
+//  @param {number} price   価格(円)
+//  @param {number} volume  容量
+//  @param {number} set     セット数
+//  @returns {number|null}  単価 or null(計算不可)
+// =============================================================
+function calcUnitPrice(price, volume, set) {
+  if (!isFinite(price) || !isFinite(volume) || volume <= 0 || set <= 0) return null;
+  return price / (set * volume);
+}
+
+// =============================================================
+//  単価の表示文字列を整形
+//  例: 0.75 → "¥0.750/g"  / 12.5 → "¥12.50/g"
+// =============================================================
+function formatUnitPrice(unitPrice) {
+  let str;
+  if (unitPrice < 1)       str = unitPrice.toFixed(3);
+  else if (unitPrice < 10) str = unitPrice.toFixed(2);
+  else                     str = unitPrice.toFixed(1);
+  str = str.replace(/\.?0+$/, '');
+  return `¥${str}`;
+}
+
+// =============================================================
+//  差額のパーセンテージ計算（最安値比）
+// =============================================================
+function calcDiffPercent(price, bestPrice) {
+  if (bestPrice <= 0) return 0;
+  return Math.round(((price - bestPrice) / bestPrice) * 100);
+}
+
+// =============================================================
+//  XSSエスケープ（将来的に商品名を編集可能にした際の安全対策）
+// =============================================================
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// =============================================================
+//  結果を画面に描画（renderResults）
+// =============================================================
+function renderResults() {
+  const container = document.getElementById('result-container');
+  const copyBtn   = document.getElementById('btn-copy');
+  const inputs    = getInputValues();
+
+  // 有効な商品だけ単価計算
+  const results = inputs
+    .map(p => ({ ...p, unitPrice: calcUnitPrice(p.price, p.volume, p.set) }))
+    .filter(p => p.unitPrice !== null);
+
+  // --- インライン結果バッジをリセット ---
+  PRODUCTS.forEach(p => {
+    const badge = document.getElementById(`inline-${p.id}`);
+    const row   = document.getElementById(`row-${p.id}`);
+    badge.classList.remove('show','is-best');
+    badge.textContent = '';
+    row.classList.remove('is-best');
+  });
+
+  // 入力不足 → プレースホルダー表示
+  if (results.length < 2) {
+    container.innerHTML = `
+      <div class="result-empty">
+        <span class="icon">📦</span>
+        2つ以上の商品を入力すると<br>自動で比較します
+      </div>`;
+    copyBtn.disabled = true;
+    lastResultText = '';
+    return;
+  }
+
+  // 単価の昇順ソート → ランク付け
+  results.sort((a, b) => a.unitPrice - b.unitPrice);
+  const bestPrice = results[0].unitPrice;
+
+  // コピー用テキストを組み立て
+  const lines = ['【単価・コスパ比較結果】'];
+
+  const cardsHTML = results.map((p, i) => {
+    const rank      = i + 1;
+    const isBest    = rank === 1;
+    const priceStr  = formatUnitPrice(p.unitPrice);
+    const diffPct   = calcDiffPercent(p.unitPrice, bestPrice);
+    const diffLabel = isBest ? '🏆 最安値' : `+${diffPct}%`;
+    const diffClass = isBest ? 'best' : 'other';
+
+    lines.push(`${rank}位 ${p.label}：${priceStr}${isBest ? '（最安値）' : `（+${diffPct}%）`}`);
+
+    // --- インライン結果バッジを更新 ---
+    const badge = document.getElementById(`inline-${p.id}`);
+    const row   = document.getElementById(`row-${p.id}`);
+    badge.textContent = `${rank}位　${priceStr}`;
+    badge.classList.add('show');
+    if (isBest) {
+      badge.classList.add('is-best');
+      badge.textContent = `🏆 1位　${priceStr}`;
+      row.classList.add('is-best');
+    }
+
+    return `
+      <div class="result-item${isBest ? ' is-best' : ''}">
+        <div class="rank-badge">${rank}</div>
+        <div class="result-info">
+          <div class="result-name">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${escHtml(p.color)};"></span>
+            ${escHtml(p.label)}
+          </div>
+          <div class="result-price">${escHtml(priceStr)}</div>
+        </div>
+        <div class="diff-badge ${diffClass}">${diffLabel}</div>
+      </div>`;
+  }).join('');
+
+  container.innerHTML = cardsHTML;
+  lastResultText = lines.join('\n');
+  copyBtn.disabled = false;
+}
+
+// =============================================================
+//  結果をクリップボードにコピー（copyResult）
+// =============================================================
+function copyResult() {
+  if (!lastResultText) return;
+  const btn = document.getElementById('btn-copy');
+  navigator.clipboard.writeText(lastResultText).then(() => {
+    btn.textContent = '✅ コピーしました！';
+    setTimeout(() => { btn.textContent = '📋 結果をコピー'; }, 2000);
+  }).catch(() => {
+    // フォールバック（古いブラウザ対応）
+    const ta = document.createElement('textarea');
+    ta.value = lastResultText;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.textContent = '✅ コピーしました！';
+    setTimeout(() => { btn.textContent = '📋 結果をコピー'; }, 2000);
+  });
+}
+
+// =============================================================
+//  全入力リセット（resetAll）
+// =============================================================
+function resetAll() {
+  PRODUCTS.forEach(p => {
+    document.getElementById(`${p.id}-price`).value  = '';
+    document.getElementById(`${p.id}-volume`).value = '';
+    document.getElementById(`${p.id}-set`).value    = '1';
+  });
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  renderResults();
+}
+
+// =============================================================
+//  localStorageへ保存（saveToStorage）
+// =============================================================
+function saveToStorage() {
+  try {
+    const data = {};
+    PRODUCTS.forEach(p => {
+      data[`${p.id}-price`]  = document.getElementById(`${p.id}-price`).value;
+      data[`${p.id}-volume`] = document.getElementById(`${p.id}-volume`).value;
+      data[`${p.id}-set`]    = document.getElementById(`${p.id}-set`).value;
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.warn('localStorage save failed:', e);
+  }
+}
+
+// =============================================================
+//  localStorageから復元（restoreFromStorage）
+// =============================================================
+function restoreFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    PRODUCTS.forEach(p => {
+      ['price','volume','set'].forEach(field => {
+        const val = data[`${p.id}-${field}`];
+        if (val !== undefined) document.getElementById(`${p.id}-${field}`).value = val;
+      });
+    });
+  } catch (e) {
+    console.warn('localStorage restore failed:', e);
+  }
+}
+
+// =============================================================
+//  debounce ユーティリティ
+// =============================================================
+function debounce(fn, ms) {
+  let timer;
+  return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
+}
+
+// =============================================================
+//  イベントリスナー登録（initEventListeners）
+// =============================================================
+function initEventListeners() {
+  const handleChange = debounce(() => { renderResults(); saveToStorage(); }, DEBOUNCE_MS);
+
+  PRODUCTS.forEach(p => {
+    ['price','volume','set'].forEach(field => {
+      const el = document.getElementById(`${p.id}-${field}`);
+      el.addEventListener('input', handleChange);
+    });
+  });
+
+  // リセットボタン
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    if (confirm('入力内容を全部クリアします。よろしいですか？')) resetAll();
+  });
+
+  // コピーボタン
+  document.getElementById('btn-copy').addEventListener('click', copyResult);
+}
+
+// =============================================================
+//  初期化
+// =============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  restoreFromStorage(); // 保存データ復元
+  initEventListeners(); // イベント登録
+  renderResults();      // 初期描画
+});
+</script>
+</body>
+</html>

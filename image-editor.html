@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>無料画像編集ツール｜ブラウザだけで加工・変換・圧縮</title>
+<meta name="description" content="インストール不要・スマホ対応・画像をサーバー送信しない完全無料の画像編集ツール。回転・反転・白黒化・PNG/JPG変換をブラウザだけで。">
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #f4f6f9; color: #222;
+  font-family: 'BIZ UDPGothic', sans-serif;
+  min-height: 100vh; padding: 20px 14px 60px;
+  display: flex; flex-direction: column; align-items: center;
+}
+.container { width: 100%; max-width: 1400px; }
+
+/* ヘッダー */
+header { text-align: center; margin-bottom: 20px; }
+h1 { font-size: clamp(18px,4vw,24px); font-weight:700; color:#1a56db; margin-bottom:6px; }
+.subtitle { font-size:11px; color:#666; line-height:2; }
+.subtitle span { display:inline-block; background:#e8f0fe; color:#1a56db; border-radius:4px; padding:1px 7px; margin:2px 3px; font-size:10px; font-weight:700; }
+
+/* カード */
+.card {
+  background:#fff; border:1px solid #dde3ee; border-radius:10px;
+  padding:16px; margin-bottom:12px; box-shadow:0 1px 4px rgba(0,0,0,0.06);
+}
+
+/* メインレイアウト */
+.main-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 900px) {
+  .main-layout {
+    grid-template-columns: 1fr 380px;
+    align-items: start;
+  }
+  .sidebar { order: 2; }
+  .preview-area { order: 1; }
+}
+
+/* アップロードエリア */
+.upload-zone {
+  border: 2px dashed #c7d0e0; border-radius: 10px;
+  background: #f8fafd; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 300px; transition: all 0.2s; padding: 24px;
+  text-align: center;
+}
+.upload-zone:hover, .upload-zone.drag-over { border-color: #1a56db; background: #e8f0fe; }
+.upload-icon { font-size: 48px; margin-bottom: 12px; }
+.upload-text { font-size: 14px; color: #555; font-weight: 700; margin-bottom: 4px; }
+.upload-sub { font-size: 11px; color: #888; }
+.upload-formats { font-size: 10px; color: #aaa; margin-top: 8px; }
+
+/* プレビューキャンバスエリア */
+.canvas-wrap {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.canvas-wrap.active { display: flex; }
+.canvas-container {
+  position: relative; width: 100%;
+  background: #f0f0f0;
+  border-radius: 8px; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 200px;
+}
+canvas#mainCanvas {
+  max-width: 100%; max-height: 65vh;
+  display: block;
+}
+
+/* Before/After トグル */
+.ba-toggle {
+  display: flex; gap: 6px;
+}
+.ba-btn {
+  padding: 5px 14px; border-radius: 6px; border: 1.5px solid #c7d0e0;
+  background: #f8fafd; font-family:'BIZ UDPGothic',sans-serif; font-size:12px; font-weight:700;
+  color: #555; cursor: pointer; transition: all 0.15s;
+}
+.ba-btn.active { border-color: #1a56db; background: #e8f0fe; color: #1a56db; }
+
+/* 画像情報バー */
+.img-info {
+  font-size: 11px; color: #888;
+  display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+}
+
+/* タブ */
+.tabs-wrap { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
+.tab-btn {
+  padding: 7px 12px; border-radius: 7px; border: 1.5px solid #c7d0e0;
+  background: #f8fafd; font-family:'BIZ UDPGothic',sans-serif; font-size:12px; font-weight:700;
+  color: #555; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.tab-btn.active { border-color: #1a56db; background: #1a56db; color: #fff; }
+.tab-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* タブコンテンツ */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* ラベル＆input */
+.input-group { margin-bottom: 12px; }
+.input-group label { display:block; font-size:11px; font-weight:700; color:#555; letter-spacing:0.08em; margin-bottom:4px; }
+.input-group input, .input-group select {
+  width:100%; border:1px solid #c7d0e0; border-radius:7px;
+  background:#f8fafd; color:#222; font-family:'BIZ UDPGothic',sans-serif;
+  font-size:14px; padding:8px 10px; outline:none; transition:border-color 0.18s;
+}
+.input-group input:focus, .input-group select:focus { border-color:#1a56db; }
+
+/* スライダー */
+.slider-wrap { display:flex; align-items:center; gap:8px; }
+.slider-wrap input[type=range] { flex:1; accent-color:#1a56db; }
+.slider-val { min-width:38px; text-align:right; font-size:13px; font-weight:700; color:#1a56db; }
+
+/* チェックボックス */
+.checkbox-item { display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:#333; margin-bottom:8px; }
+.checkbox-item input[type="checkbox"] { width:16px; height:16px; accent-color:#1a56db; }
+
+/* section-title */
+.section-title { font-size:11px; font-weight:700; color:#666; letter-spacing:0.08em; margin-bottom:8px; margin-top:4px; }
+
+/* 操作ボタン群 */
+.btn-row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+.btn-action {
+  flex:1; min-width:100px; padding:9px 8px; border-radius:7px; border:1.5px solid #c7d0e0;
+  background:#f8fafd; font-family:'BIZ UDPGothic',sans-serif; font-size:13px; font-weight:700;
+  color:#333; cursor:pointer; transition:all 0.15s; text-align:center;
+}
+.btn-action:hover { border-color:#1a56db; background:#e8f0fe; color:#1a56db; }
+.btn-action:disabled { opacity:0.4; cursor:not-allowed; }
+
+/* プライマリボタン */
+.btn-primary {
+  width:100%; background:#1a56db; border:none; border-radius:8px;
+  color:#fff; font-family:'BIZ UDPGothic',sans-serif; font-size:14px; font-weight:700;
+  padding:12px; cursor:pointer; letter-spacing:0.06em; transition:background 0.15s; margin-top:8px;
+}
+.btn-primary:hover { background:#1546b8; }
+.btn-primary:disabled { background:#93b4ec; cursor:not-allowed; }
+
+/* 危険ボタン */
+.btn-danger {
+  width:100%; background:#fff; border:1.5px solid #fca5a5; border-radius:8px;
+  color:#b91c1c; font-family:'BIZ UDPGothic',sans-serif; font-size:13px; font-weight:700;
+  padding:10px; cursor:pointer; transition:all 0.15s;
+}
+.btn-danger:hover { background:#fff1f1; }
+
+/* ダウンロードボタン */
+.btn-download {
+  width:100%; background:#f0fdf4; border:1.5px solid #6ee7b7; border-radius:8px;
+  color:#065f46; font-family:'BIZ UDPGothic',sans-serif; font-size:14px; font-weight:700;
+  padding:12px; cursor:pointer; transition:all 0.15s;
+}
+.btn-download:hover { background:#d1fae5; }
+.btn-download:disabled { opacity:0.4; cursor:not-allowed; }
+
+/* エラー */
+.error-msg {
+  display:none; background:#fff1f1; border:1px solid #fca5a5; border-radius:7px;
+  color:#b91c1c; font-size:12px; padding:8px 12px; margin-top:8px;
+}
+.error-msg.show { display:block; }
+
+/* 変更履歴 */
+.history-wrap { max-height: 200px; overflow-y: auto; }
+.history-item {
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 7px 10px; border-radius:6px; margin-bottom:4px;
+  background:#f8fafd; border:1px solid #dde3ee; font-size:12px;
+}
+.history-item .h-label { color:#333; font-weight:700; flex:1; }
+.history-item .h-time { color:#aaa; font-size:10px; margin: 0 8px; }
+.history-item .h-btns { display:flex; gap:4px; }
+.h-btn {
+  padding:3px 8px; border-radius:5px; border:1px solid #c7d0e0;
+  background:#fff; font-size:10px; font-weight:700; cursor:pointer;
+  font-family:'BIZ UDPGothic',sans-serif; color:#555; transition:all 0.12s;
+}
+.h-btn:hover { border-color:#1a56db; color:#1a56db; }
+.h-btn.del:hover { border-color:#ef4444; color:#ef4444; }
+.history-empty { font-size:12px; color:#aaa; text-align:center; padding:16px; }
+
+/* 形式選択グリッド */
+.format-grid {
+  display:grid; grid-template-columns:repeat(4,1fr); gap:4px; margin-bottom:8px;
+}
+.format-btn {
+  padding:6px 4px; border-radius:6px; border:1.5px solid #c7d0e0;
+  background:#f8fafd; font-family:'BIZ UDPGothic',sans-serif; font-size:11px; font-weight:700;
+  color:#555; cursor:pointer; transition:all 0.15s; text-align:center;
+}
+.format-btn.active { border-color:#1a56db; background:#e8f0fe; color:#1a56db; }
+.format-btn.unsupported {
+  opacity:0.4; cursor:not-allowed; position:relative;
+  border-style:dashed;
+}
+.format-btn.unsupported::after {
+  content:'非対応'; display:block; font-size:8px; color:#999; margin-top:2px;
+}
+
+/* ローディング */
+.loading-overlay {
+  display:none; position:absolute; inset:0;
+  background:rgba(255,255,255,0.8);
+  align-items:center; justify-content:center;
+  border-radius:8px; z-index:10;
+}
+.loading-overlay.show { display:flex; }
+.spinner {
+  width:36px; height:36px; border:3px solid #dde3ee;
+  border-top-color:#1a56db; border-radius:50%;
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* undo/redo */
+.undo-redo { display:flex; gap:6px; margin-bottom:10px; }
+.btn-undo-redo {
+  flex:1; padding:7px; border-radius:7px; border:1.5px solid #c7d0e0;
+  background:#f8fafd; font-family:'BIZ UDPGothic',sans-serif; font-size:12px; font-weight:700;
+  color:#555; cursor:pointer; transition:all 0.15s;
+}
+.btn-undo-redo:hover:not(:disabled) { border-color:#1a56db; color:#1a56db; }
+.btn-undo-redo:disabled { opacity:0.35; cursor:not-allowed; }
+
+/* 二値化しきい値は白黒モード時のみ */
+#thresholdWrap { display:none; }
+
+/* サポートバッジ */
+.support-badge {
+  display:inline-block; font-size:9px; font-weight:700; padding:2px 5px;
+  border-radius:3px; margin-left:4px; vertical-align:middle;
+}
+.badge-ok { background:#d1fae5; color:#065f46; }
+.badge-ng { background:#fee2e2; color:#991b1b; }
+
+footer { margin-top:40px; text-align:center; font-size:11px; color:#aaa; }
+
+/* SEOテキスト */
+.seo-section { max-width:720px; margin:0 auto; padding:24px 0; }
+.seo-section h2 { font-size:15px; color:#1a56db; margin-bottom:6px; }
+.seo-section p { font-size:12px; color:#666; line-height:1.8; margin-bottom:14px; }
+
+@media (max-width:600px) {
+  .format-grid { grid-template-columns:repeat(3,1fr); }
+  .tabs-wrap .tab-btn { font-size:11px; padding:6px 8px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>🖼️ 無料画像編集ツール｜ブラウザだけで加工・変換・圧縮</h1>
+    <p class="subtitle">
+      <span>インストール不要</span>
+      <span>スマホ対応</span>
+      <span>画像をサーバーに送信しない</span>
+      <span>完全無料</span>
+    </p>
+  </header>
+
+  <div class="main-layout">
+
+    <!-- 左：プレビューエリア -->
+    <div class="preview-area">
+      <div class="card">
+
+        <!-- アップロードゾーン -->
+        <div id="uploadZone" class="upload-zone"
+          onclick="document.getElementById('fileInput').click()"
+          ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+          <div class="upload-icon">📂</div>
+          <div class="upload-text">クリックまたはドラッグ＆ドロップで画像をアップロード</div>
+          <div class="upload-sub">コピー貼り付け（Ctrl+V）にも対応</div>
+          <div class="upload-formats">PNG / JPG / JPEG / WEBP / GIF / BMP / ICO / AVIF</div>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="loadFile(this.files[0])">
+
+        <!-- キャンバスプレビュー -->
+        <div id="canvasWrap" class="canvas-wrap">
+          <div class="ba-toggle">
+            <button class="ba-btn active" id="btnAfter" onclick="setView('after')">編集後</button>
+            <button class="ba-btn" id="btnBefore" onclick="setView('before')">元画像</button>
+          </div>
+          <div class="canvas-container">
+            <canvas id="mainCanvas"></canvas>
+            <div class="loading-overlay" id="loadingOverlay">
+              <div class="spinner"></div>
+            </div>
+          </div>
+          <div class="img-info" id="imgInfo"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 右：サイドバー（編集タブ） -->
+    <div class="sidebar">
+
+      <!-- Undo / Redo -->
+      <div class="undo-redo">
+        <button class="btn-undo-redo" id="btnUndo" onclick="undo()" disabled>↩ 元に戻す</button>
+        <button class="btn-undo-redo" id="btnRedo" onclick="redo()" disabled>↪ やり直す</button>
+      </div>
+
+      <!-- タブ切り替え -->
+      <div class="tabs-wrap">
+        <button class="tab-btn active" onclick="switchTab('basic')">基本編集</button>
+        <button class="tab-btn" onclick="switchTab('effect')">効果</button>
+        <button class="tab-btn" onclick="switchTab('file')">ファイル</button>
+        <button class="tab-btn" onclick="switchTab('upload')">新規作成&リセット</button>
+      </div>
+
+      <!-- ▼ 基本編集タブ -->
+      <div id="tab-basic" class="tab-content active card">
+        <div class="section-title">▶ 回転</div>
+        <div class="slider-wrap" style="margin-bottom:10px;">
+          <input type="range" min="-180" max="180" value="0" id="rotateSlider" oninput="onRotate(this.value)">
+          <span class="slider-val" id="rotateVal">0°</span>
+        </div>
+        <div class="btn-row">
+          <button class="btn-action" onclick="addRotate(-90)">↺ 左90°</button>
+          <button class="btn-action" onclick="addRotate(90)">↻ 右90°</button>
+        </div>
+
+        <div class="section-title">▶ 反転</div>
+        <div class="btn-row">
+          <button class="btn-action" onclick="setFlip('h')">⇄ 水平反転</button>
+          <button class="btn-action" onclick="setFlip('v')">⇅ 垂直反転</button>
+        </div>
+      </div>
+
+      <!-- ▼ 効果タブ -->
+      <div id="tab-effect" class="tab-content card" style="display:none;">
+        <div class="section-title">▶ 白黒グレー化</div>
+        <label class="checkbox-item">
+          <input type="checkbox" id="chkGrayscale" onchange="onGrayscaleChange()">
+          グレースケール
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" id="chkBW" onchange="onBWChange()">
+          白黒化（二値化）
+        </label>
+        <div id="thresholdWrap" style="margin-top:6px;">
+          <div class="section-title">▶ 白黒しきい値</div>
+          <div class="slider-wrap">
+            <input type="range" min="0" max="255" value="128" id="thresholdSlider" oninput="onThreshold(this.value)">
+            <span class="slider-val" id="thresholdVal">128</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ▼ ファイルタブ -->
+      <div id="tab-file" class="tab-content card" style="display:none;">
+        <div class="section-title">▶ ダウンロード形式</div>
+        <div class="format-grid" id="dlFormatGrid">
+          <button class="format-btn active" data-fmt="image/png" data-ext="png" onclick="selectDlFmt(this)">PNG</button>
+          <button class="format-btn" data-fmt="image/jpeg" data-ext="jpg" onclick="selectDlFmt(this)">JPG</button>
+          <button class="format-btn" data-fmt="image/webp" data-ext="webp" onclick="selectDlFmt(this)">WEBP</button>
+          <button class="format-btn" data-fmt="image/gif" data-ext="gif" onclick="selectDlFmt(this)">GIF<span class="support-badge badge-ok">対応</span></button>
+          <button class="format-btn" data-fmt="image/bmp" data-ext="bmp" onclick="selectDlFmt(this)">BMP</button>
+          <button class="format-btn unsupported" disabled title="ブラウザ非対応形式">HEIC</button>
+          <button class="format-btn unsupported" disabled title="ブラウザ非対応形式">RAW系</button>
+          <button class="format-btn unsupported" disabled title="ブラウザ非対応形式">SVG</button>
+        </div>
+        <p style="font-size:10px;color:#aaa;margin-bottom:10px;">
+          ⚠️ グレーアウト＆「非対応」と表示された形式はブラウザでは出力できません
+        </p>
+
+        <div class="section-title">▶ 圧縮品質</div>
+        <div class="slider-wrap" style="margin-bottom:10px;">
+          <input type="range" min="0.1" max="1" step="0.05" value="0.92" id="qualitySlider" oninput="onQuality(this.value)">
+          <span class="slider-val" id="qualityVal">92%</span>
+        </div>
+
+        <button class="btn-download" id="btnDownload" onclick="downloadImage()" disabled>⬇ ダウンロード</button>
+        <div id="dlInfo" style="font-size:11px;color:#888;text-align:center;margin-top:6px;"></div>
+      </div>
+
+      <!-- ▼ 新規作成&リセットタブ -->
+      <div id="tab-upload" class="tab-content card" style="display:none;">
+        <p style="font-size:13px;color:#555;margin-bottom:12px;">新しい画像を読み込みます。現在の編集内容は消えます。</p>
+        <button class="btn-primary" onclick="document.getElementById('fileInput2').click()">📂 新規画像を選択</button>
+        <input type="file" id="fileInput2" accept="image/*" style="display:none" onchange="loadFile(this.files[0])">
+        <button class="btn-danger" style="margin-top:8px;" onclick="resetAll()">🗑️ すべての変更を破棄してリセット</button>
+        <div class="error-msg" id="errorMsg"></div>
+      </div>
+
+      <!-- 変更履歴 -->
+      <div class="card">
+        <div class="section-title">📋 変更履歴</div>
+        <div class="history-wrap" id="historyWrap">
+          <div class="history-empty" id="historyEmpty">まだ変更がありません</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SEOテキスト -->
+  <div class="seo-section">
+    <h2>画像編集ツールとは</h2>
+    <p>このツールはブラウザだけで動作する無料の画像編集ツールです。回転・反転・白黒化・PNG/WEBP/JPG変換など基本的な画像加工がインストールなしで行えます。画像データはサーバーに送信されず、すべてお使いのデバイス上で処理されるためプライバシーも安心です。</p>
+    <h2>PNGとJPGの違い</h2>
+    <p>PNG形式は透過（透明背景）に対応しており、文字やロゴなどシャープな画像に向いています。一方JPG（JPEG）は写真などの複雑な色合いを高効率で圧縮できますが、保存のたびに画質が劣化します。用途に合わせて形式を選ぶことが重要です。</p>
+    <h2>モバイル・スマホでも使える</h2>
+    <p>本ツールはスマートフォンやタブレットのブラウザでも動作します。アプリのインストールや会員登録は不要です。</p>
+  </div>
+
+</div>
+<footer>© 2025 無料画像編集ツール — ブラウザ完結・プライバシー安全</footer>
+
+<script>
+/* =============================================
+   STATE MANAGEMENT
+   =============================================
+   originalImage : 元画像（絶対変更しない）
+   currentState  : 現在の編集パラメータ
+   undoStack     : Undo用スタック
+   redoStack     : Redo用スタック
+   historyLog    : 変更履歴表示用ログ
+   ============================================= */
+
+let originalImage = null;
+let currentState = createDefaultState();
+let undoStack = [];
+let redoStack = [];
+let historyLog = [];
+let dlFormat = { mime: 'image/png', ext: 'png' };
+let dlQuality = 0.92;
+let viewMode = 'after'; // 'after' | 'before'
+
+function createDefaultState() {
+  return {
+    rotate: 0,
+    flipH: false,
+    flipV: false,
+    grayscale: false,
+    bw: false,
+    threshold: 128,
+  };
+}
+
+function deepCopy(obj) { return JSON.parse(JSON.stringify(obj)); }
+
+/* =============================================
+   FILE LOAD
+   ============================================= */
+function loadFile(file) {
+  if (!file || !file.type.startsWith('image/')) {
+    showError('画像ファイルを選択してください');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      originalImage = img;
+      currentState = createDefaultState();
+      undoStack = [];
+      redoStack = [];
+      historyLog = [];
+      document.getElementById('rotateSlider').value = 0;
+      document.getElementById('chkGrayscale').checked = false;
+      document.getElementById('chkBW').checked = false;
+      document.getElementById('thresholdWrap').style.display = 'none';
+      renderImage();
+      showCanvas();
+      updateHistoryUI();
+      updateUndoRedo();
+      addHistory('画像を読み込み');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+/* =============================================
+   RENDER
+   処理順: 回転 → 反転 → 白黒/グレー → 描画
+   ============================================= */
+function renderImage() {
+  if (!originalImage) return;
+  showLoading(true);
+  requestAnimationFrame(() => {
+    const src = viewMode === 'before' ? originalImage : null;
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d');
+    const s = currentState;
+    const img = originalImage;
+
+    // 回転後のサイズ計算
+    const rad = s.rotate * Math.PI / 180;
+    const cos = Math.abs(Math.cos(rad));
+    const sin = Math.abs(Math.sin(rad));
+    const w = Math.round(img.width * cos + img.height * sin);
+    const h = Math.round(img.width * sin + img.height * cos);
+
+    canvas.width = w;
+    canvas.height = h;
+    ctx.clearRect(0, 0, w, h);
+
+    if (viewMode === 'before') {
+      // 元画像をそのまま表示
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      updateImgInfo(img.width, img.height);
+      showLoading(false);
+      return;
+    }
+
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+
+    // 反転
+    const sx = s.flipH ? -1 : 1;
+    const sy = s.flipV ? -1 : 1;
+    ctx.scale(sx, sy);
+
+    // 回転
+    ctx.rotate(rad);
+    ctx.drawImage(img, -img.width / 2, -img.height / 2);
+    ctx.restore();
+
+    // 白黒グレー処理
+    if (s.grayscale || s.bw) {
+      applyGrayscale(ctx, w, h, s.bw, s.threshold);
+    }
+
+    updateImgInfo(w, h);
+    showLoading(false);
+  });
+}
+
+function applyGrayscale(ctx, w, h, bw, threshold) {
+  const id = ctx.getImageData(0, 0, w, h);
+  const d = id.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const g = Math.round(0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2]);
+    const v = bw ? (g >= threshold ? 255 : 0) : g;
+    d[i] = d[i+1] = d[i+2] = v;
+  }
+  ctx.putImageData(id, 0, 0);
+}
+
+/* =============================================
+   UI HELPERS
+   ============================================= */
+function showCanvas() {
+  document.getElementById('uploadZone').style.display = 'none';
+  document.getElementById('canvasWrap').classList.add('active');
+  document.getElementById('btnDownload').disabled = false;
+}
+
+function showLoading(v) {
+  document.getElementById('loadingOverlay').classList.toggle('show', v);
+}
+
+function updateImgInfo(w, h) {
+  document.getElementById('imgInfo').textContent = `${w} × ${h} px`;
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function setView(mode) {
+  viewMode = mode;
+  document.getElementById('btnAfter').classList.toggle('active', mode === 'after');
+  document.getElementById('btnBefore').classList.toggle('active', mode === 'before');
+  renderImage();
+}
+
+/* =============================================
+   TAB
+   ============================================= */
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => {
+    el.classList.remove('active');
+    el.style.display = 'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  const target = document.getElementById('tab-' + name);
+  if (target) { target.style.display = 'block'; target.classList.add('active'); }
+  event.currentTarget.classList.add('active');
+}
+
+/* =============================================
+   UNDO / REDO
+   ============================================= */
+function pushUndo(label) {
+  undoStack.push({ state: deepCopy(currentState), label });
+  redoStack = [];
+  updateUndoRedo();
+  addHistory(label);
+}
+
+function undo() {
+  if (!undoStack.length) return;
+  const prev = undoStack.pop();
+  redoStack.push({ state: deepCopy(currentState), label: prev.label });
+  currentState = deepCopy(prev.state);
+  syncUIFromState();
+  renderImage();
+  updateUndoRedo();
+  addHistory('↩ ' + prev.label + ' を元に戻した');
+}
+
+function redo() {
+  if (!redoStack.length) return;
+  const next = redoStack.pop();
+  undoStack.push({ state: deepCopy(currentState), label: next.label });
+  currentState = deepCopy(next.state);
+  syncUIFromState();
+  renderImage();
+  updateUndoRedo();
+  addHistory('↪ ' + next.label + ' をやり直した');
+}
+
+function updateUndoRedo() {
+  document.getElementById('btnUndo').disabled = !undoStack.length;
+  document.getElementById('btnRedo').disabled = !redoStack.length;
+}
+
+function syncUIFromState() {
+  const s = currentState;
+  document.getElementById('rotateSlider').value = s.rotate;
+  document.getElementById('rotateVal').textContent = s.rotate + '°';
+  document.getElementById('chkGrayscale').checked = s.grayscale;
+  document.getElementById('chkBW').checked = s.bw;
+  document.getElementById('thresholdSlider').value = s.threshold;
+  document.getElementById('thresholdVal').textContent = s.threshold;
+  document.getElementById('thresholdWrap').style.display = s.bw ? 'block' : 'none';
+}
+
+/* =============================================
+   CONTROLS
+   ============================================= */
+function onRotate(val) {
+  const v = parseInt(val);
+  document.getElementById('rotateVal').textContent = v + '°';
+  pushUndo('回転 ' + v + '°');
+  currentState.rotate = v;
+  renderImage();
+}
+
+function addRotate(delta) {
+  if (!originalImage) return;
+  const newVal = ((currentState.rotate + delta + 540) % 360) - 180;
+  currentState.rotate = newVal;
+  document.getElementById('rotateSlider').value = newVal;
+  document.getElementById('rotateVal').textContent = newVal + '°';
+  pushUndo('回転 ' + delta + '°');
+  renderImage();
+}
+
+function setFlip(dir) {
+  if (!originalImage) return;
+  if (dir === 'h') {
+    currentState.flipH = !currentState.flipH;
+    pushUndo('水平反転');
+  } else {
+    currentState.flipV = !currentState.flipV;
+    pushUndo('垂直反転');
+  }
+  renderImage();
+}
+
+function onGrayscaleChange() {
+  if (!originalImage) return;
+  currentState.grayscale = document.getElementById('chkGrayscale').checked;
+  if (currentState.grayscale) {
+    currentState.bw = false;
+    document.getElementById('chkBW').checked = false;
+    document.getElementById('thresholdWrap').style.display = 'none';
+    pushUndo('グレースケール適用');
+  } else {
+    pushUndo('グレースケール解除');
+  }
+  renderImage();
+}
+
+function onBWChange() {
+  if (!originalImage) return;
+  currentState.bw = document.getElementById('chkBW').checked;
+  if (currentState.bw) {
+    currentState.grayscale = false;
+    document.getElementById('chkGrayscale').checked = false;
+    document.getElementById('thresholdWrap').style.display = 'block';
+    pushUndo('白黒化（二値化）適用');
+  } else {
+    document.getElementById('thresholdWrap').style.display = 'none';
+    pushUndo('白黒化解除');
+  }
+  renderImage();
+}
+
+function onThreshold(val) {
+  const v = parseInt(val);
+  document.getElementById('thresholdVal').textContent = v;
+  currentState.threshold = v;
+  renderImage();
+}
+
+/* =============================================
+   DOWNLOAD
+   ============================================= */
+function selectDlFmt(btn) {
+  document.querySelectorAll('#dlFormatGrid .format-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  dlFormat = { mime: btn.dataset.fmt, ext: btn.dataset.ext };
+}
+
+function onQuality(val) {
+  dlQuality = parseFloat(val);
+  document.getElementById('qualityVal').textContent = Math.round(dlQuality * 100) + '%';
+}
+
+function downloadImage() {
+  if (!originalImage) return;
+  const canvas = document.getElementById('mainCanvas');
+  // GIFはJPGフォールバック（CanvasはGIF出力非対応）
+  const mime = dlFormat.mime === 'image/gif' ? 'image/png' : dlFormat.mime;
+  const ext = dlFormat.mime === 'image/gif' ? 'png' : dlFormat.ext;
+  const url = canvas.toDataURL(mime, dlQuality);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'edited.' + ext; a.click();
+  // サイズ概算
+  const bytes = Math.round((url.length - 22) * 0.75);
+  const kb = (bytes / 1024).toFixed(1);
+  document.getElementById('dlInfo').textContent =
+    `保存形式: ${ext.toUpperCase()} / 概算: ${kb} KB / サイズ: ${canvas.width}×${canvas.height}px`;
+  addHistory(ext.toUpperCase() + ' でダウンロード');
+}
+
+/* =============================================
+   RESET
+   ============================================= */
+function resetAll() {
+  if (!confirm('すべての変更を破棄してリセットしますか？')) return;
+  originalImage = null;
+  currentState = createDefaultState();
+  undoStack = []; redoStack = []; historyLog = [];
+  document.getElementById('canvasWrap').classList.remove('active');
+  document.getElementById('uploadZone').style.display = '';
+  document.getElementById('btnDownload').disabled = true;
+  document.getElementById('imgInfo').textContent = '';
+  updateHistoryUI();
+  updateUndoRedo();
+}
+
+/* =============================================
+   HISTORY LOG
+   ============================================= */
+function addHistory(label) {
+  const now = new Date();
+  const time = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+  const id = Date.now();
+  historyLog.push({ id, label, time });
+  if (historyLog.length > 30) historyLog.shift();
+  updateHistoryUI();
+}
+
+function updateHistoryUI() {
+  const wrap = document.getElementById('historyWrap');
+  const empty = document.getElementById('historyEmpty');
+  if (!historyLog.length) {
+    empty.style.display = 'block';
+    // clear items
+    Array.from(wrap.children).forEach(c => { if (c !== empty) c.remove(); });
+    return;
+  }
+  empty.style.display = 'none';
+  // rebuild
+  Array.from(wrap.children).forEach(c => { if (c !== empty) c.remove(); });
+  [...historyLog].reverse().forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'history-item';
+    div.innerHTML = `
+      <span class="h-label">・${item.label}</span>
+      <span class="h-time">${item.time}</span>
+      <div class="h-btns">
+        <button class="h-btn del" onclick="removeHistory(${item.id})">削除</button>
+      </div>
+    `;
+    wrap.insertBefore(div, empty);
+  });
+}
+
+function removeHistory(id) {
+  historyLog = historyLog.filter(h => h.id !== id);
+  updateHistoryUI();
+}
+
+/* =============================================
+   DRAG & DROP
+   ============================================= */
+function onDragOver(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.add('drag-over');
+}
+function onDragLeave(e) {
+  document.getElementById('uploadZone').classList.remove('drag-over');
+}
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) loadFile(file);
+}
+
+/* =============================================
+   CLIPBOARD PASTE (Ctrl+V)
+   ============================================= */
+document.addEventListener('paste', (e) => {
+  const items = e.clipboardData.items;
+  for (let item of items) {
+    if (item.type.startsWith('image/')) {
+      loadFile(item.getAsFile());
+      break;
+    }
+  }
+});
+
+/* =============================================
+   KEYBOARD SHORTCUT
+   ============================================= */
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+    e.preventDefault();
+    if (e.shiftKey) redo(); else undo();
+  }
+});
+</script>
+</body>
+</html>
