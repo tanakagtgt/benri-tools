@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>コーヒー豆は何グラム必要かな？｜コーヒー抽出量計算ツール</title>
+<meta name="description" content="コーヒー豆の量から作れるコーヒー量を計算。出来上がり量から必要なコーヒー豆量やお湯量も自動計算できる無料ツール。">
+<meta property="og:title" content="コーヒー豆は何グラム必要かな？｜コーヒー抽出量計算ツール">
+<meta property="og:description" content="コーヒー豆の量から作れるコーヒー量を計算。出来上がり量から必要なコーヒー豆量やお湯量も自動計算できる無料ツール。">
+<meta property="og:type" content="website">
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ===== CSS変数 ===== */
+:root {
+  --bg:         #f4f6f9;
+  --bg2:        #ffffff;
+  --bg3:        #f8fafd;
+  --border:     #dde3ee;
+  --border2:    #c7d0e0;
+  --cream:      #222222;
+  --cream2:     #444444;
+  --cream3:     #1a56db;
+  --accent:     #1a56db;
+  --accent2:    #1546b8;
+  --muted:      #666666;
+  --font-main:  'BIZ UDPGothic', sans-serif;
+  --font-mono:  'DM Mono', monospace;
+  --radius:     10px;
+  --radius-sm:  7px;
+}
+
+/* ===== リセット＆ベース ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--cream);
+  font-family: var(--font-main);
+  min-height: 100vh;
+  padding: 28px 16px 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.container {
+  width: 100%;
+  max-width: 480px;
+}
+
+/* ===== ヘッダー ===== */
+header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.header-icon {
+  font-size: 36px;
+  display: block;
+  margin-bottom: 10px;
+  filter: none;
+}
+
+h1 {
+  font-size: clamp(18px, 5vw, 22px);
+  font-weight: 900;
+  color: var(--cream);
+  letter-spacing: 0.02em;
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+/* ===== カード共通 ===== */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.card-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+/* ===== 濃度ラジオボタン ===== */
+.strength-wrap {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.strength-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  background: var(--bg3);
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.strength-label input[type="radio"] {
+  display: none;
+}
+
+.strength-label:has(input:checked) {
+  border-color: var(--accent);
+  background: rgba(26, 86, 219, 0.08);
+}
+
+.strength-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--cream2);
+}
+
+.strength-ratio {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+
+.strength-label:has(input:checked) .strength-name {
+  color: var(--accent2);
+}
+
+.strength-label:has(input:checked) .strength-ratio {
+  color: var(--accent);
+}
+
+/* ===== 入力フィールド ===== */
+.input-wrap {
+  margin-bottom: 12px;
+}
+
+.input-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+
+.input-row {
+  position: relative;
+}
+
+.input-field {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--cream);
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 500;
+  padding: 12px 52px 12px 14px;
+  outline: none;
+  transition: border-color 0.15s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* iPhoneズーム防止：font-size 16px以上 */
+@media (max-width: 480px) {
+  .input-field { font-size: 18px; }
+}
+
+.input-field:focus {
+  border-color: var(--accent);
+}
+
+.input-field::placeholder {
+  color: var(--border2);
+}
+
+.input-unit {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+/* 入力中のフィールドをハイライト */
+.input-field.active {
+  border-color: var(--accent);
+  background: rgba(26, 86, 219, 0.04);
+}
+
+.input-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.input-divider::before,
+.input-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ===== 結果パネル ===== */
+.result-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 12px;
+  transition: border-color 0.3s ease;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.result-card.has-result {
+  border-color: var(--accent);
+}
+
+/* 結果ヘッダー（選択中の濃度表示） */
+.result-header {
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.result-header-label {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+.result-strength-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(26, 86, 219, 0.1);
+  border: 1px solid rgba(26, 86, 219, 0.25);
+  border-radius: 100px;
+  padding: 2px 10px;
+  font-family: var(--font-mono);
+}
+
+/* 結果グリッド（3項目） */
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+}
+
+.result-item {
+  padding: 18px 10px 16px;
+  text-align: center;
+  border-right: 1px solid var(--border);
+  transition: background 0.2s ease;
+}
+
+.result-item:last-child {
+  border-right: none;
+}
+
+.result-item.highlight {
+  background: rgba(26, 86, 219, 0.05);
+}
+
+.result-item-label {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.result-item-value {
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--cream3);
+  line-height: 1;
+  transition: color 0.2s ease, transform 0.15s ease;
+}
+
+.result-item-value.placeholder {
+  color: var(--border2);
+}
+
+.result-item-value.updated {
+  color: var(--accent2);
+  transform: scale(1.05);
+}
+
+.result-item-unit {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* ===== 注意書き ===== */
+.note {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.7;
+  padding: 12px 16px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+}
+
+/* ===== フッター ===== */
+footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--border2);
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ヘッダー -->
+  <header>
+    <span class="header-icon">☕</span>
+    <h1>コーヒー豆は何グラム必要かな？</h1>
+    <p class="subtitle">
+      豆の量 → 出来上がり量を計算<br>
+      出来上がり量 → 必要な豆の量を計算
+    </p>
+  </header>
+
+  <!-- 濃度選択カード -->
+  <div class="card">
+    <div class="card-title">▶ 抽出の濃さ</div>
+    <div class="strength-wrap">
+      <label class="strength-label">
+        <input type="radio" name="strength" value="18" id="s-thin">
+        <span class="strength-name">薄め</span>
+        <span class="strength-ratio">1 : 18</span>
+      </label>
+      <label class="strength-label">
+        <input type="radio" name="strength" value="15" id="s-mid" checked>
+        <span class="strength-name">標準</span>
+        <span class="strength-ratio">1 : 15</span>
+      </label>
+      <label class="strength-label">
+        <input type="radio" name="strength" value="13" id="s-strong">
+        <span class="strength-name">濃いめ</span>
+        <span class="strength-ratio">1 : 13</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- 入力カード -->
+  <div class="card">
+    <div class="card-title">▶ どちらかを入力してね</div>
+
+    <!-- 豆(g)入力 -->
+    <div class="input-wrap">
+      <label class="input-label" for="input-beans">コーヒー豆の量</label>
+      <div class="input-row">
+        <input
+          type="number"
+          id="input-beans"
+          class="input-field"
+          placeholder="例：20"
+          inputmode="decimal"
+          min="0"
+          step="0.1"
+        >
+        <span class="input-unit">g</span>
+      </div>
+    </div>
+
+    <div class="input-divider">または</div>
+
+    <!-- 出来上がり量(ml)入力 -->
+    <div class="input-wrap" style="margin-top:12px; margin-bottom:0;">
+      <label class="input-label" for="input-volume">出来上がり量</label>
+      <div class="input-row">
+        <input
+          type="number"
+          id="input-volume"
+          class="input-field"
+          placeholder="例：270"
+          inputmode="decimal"
+          min="0"
+          step="1"
+        >
+        <span class="input-unit">ml</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 結果パネル -->
+  <div class="result-card" id="result-card">
+    <div class="result-header">
+      <span class="result-header-label">計算結果</span>
+      <span class="result-strength-badge" id="result-strength-badge">標準 1:15</span>
+    </div>
+    <div class="result-grid">
+      <div class="result-item" id="result-item-beans">
+        <div class="result-item-label">コーヒー豆</div>
+        <div class="result-item-value placeholder" id="result-beans">—</div>
+        <div class="result-item-unit">g</div>
+      </div>
+      <div class="result-item" id="result-item-water">
+        <div class="result-item-label">お湯の量</div>
+        <div class="result-item-value placeholder" id="result-water">—</div>
+        <div class="result-item-unit">ml</div>
+      </div>
+      <div class="result-item" id="result-item-output">
+        <div class="result-item-label">出来上がり量</div>
+        <div class="result-item-value placeholder" id="result-output">—</div>
+        <div class="result-item-unit">ml</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 注意書き -->
+  <div class="note">
+    ※ 豆1gにつき約2mlのお湯を吸収する前提で計算しています。<br>
+    ※ 実際の出来上がり量は豆の種類や挽き方によって異なります。
+  </div>
+
+</div>
+
+<footer>© 2025 コーヒー抽出量計算ツール</footer>
+
+<script>
+/* ===== 定数 ===== */
+const ABSORPTION_RATE = 2; // 豆1gあたり吸収するお湯(ml)
+const DEBOUNCE_MS     = 300;
+const STORAGE_KEY     = 'coffee-calc-v1';
+
+/* ===== 状態管理 ===== */
+// lastInput: 最後に入力したフィールド（'beans' or 'volume'）
+let lastInput  = null;
+let debounceId = null;
+
+/* ===== DOM参照 ===== */
+const inputBeans  = document.getElementById('input-beans');
+const inputVolume = document.getElementById('input-volume');
+const resultCard  = document.getElementById('result-card');
+const elBeans     = document.getElementById('result-beans');
+const elWater     = document.getElementById('result-water');
+const elOutput    = document.getElementById('result-output');
+const elBadge     = document.getElementById('result-strength-badge');
+const itemBeans   = document.getElementById('result-item-beans');
+const itemWater   = document.getElementById('result-item-water');
+const itemOutput  = document.getElementById('result-item-output');
+
+/* ===== 入力値取得 ===== */
+function getBeansValue()  { return parseFloat(inputBeans.value); }
+function getVolumeValue() { return parseFloat(inputVolume.value); }
+
+/* ===== 抽出比率取得 ===== */
+function getRatio() {
+  const checked = document.querySelector('input[name="strength"]:checked');
+  return checked ? parseFloat(checked.value) : 15;
+}
+
+/* ===== 計算処理 ===== */
+// 豆(g) → お湯量(ml)・出来上がり量(ml)
+function calcFromBeans(beans, ratio) {
+  const water  = beans * ratio;
+  const output = water - beans * ABSORPTION_RATE;
+  return { beans, water, output };
+}
+
+// 出来上がり量(ml) → 豆量(g)・お湯量(ml)
+function calcFromVolume(volume, ratio) {
+  const beans  = volume / (ratio - ABSORPTION_RATE);
+  const water  = beans * ratio;
+  return { beans, water, output: volume };
+}
+
+/* ===== 丸め処理 ===== */
+function round1(val) {
+  return Math.round(val * 10) / 10;
+}
+
+/* ===== 表示更新 ===== */
+function updateDisplay(result) {
+  // 計算結果をセット（小数点第1位で四捨五入）
+  const bVal = round1(result.beans);
+  const wVal = round1(result.water);
+  const oVal = round1(result.output);
+
+  // 数値をセット＆placeholder解除
+  setResultValue(elBeans,  bVal);
+  setResultValue(elWater,  wVal);
+  setResultValue(elOutput, oVal);
+
+  // 結果カードの枠をアクティブに
+  resultCard.classList.add('has-result');
+
+  // 入力元に応じてハイライト
+  itemBeans.classList.toggle('highlight',  lastInput === 'beans');
+  itemOutput.classList.toggle('highlight', lastInput === 'volume');
+  itemWater.classList.remove('highlight');
+
+  // バッジ更新
+  updateBadge();
+}
+
+// 個別の値をセットしてアニメーション
+function setResultValue(el, val) {
+  el.textContent = val;
+  el.classList.remove('placeholder');
+  el.classList.add('updated');
+  setTimeout(() => el.classList.remove('updated'), 200);
+}
+
+// 濃度バッジ更新
+function updateBadge() {
+  const ratio = getRatio();
+  const nameMap = { 18: '薄め', 15: '標準', 13: '濃いめ' };
+  elBadge.textContent = `${nameMap[ratio] || '標準'} 1:${ratio}`;
+}
+
+/* ===== リセット表示 ===== */
+function resetDisplay() {
+  [elBeans, elWater, elOutput].forEach(el => {
+    el.textContent = '—';
+    el.classList.add('placeholder');
+    el.classList.remove('updated');
+  });
+  [itemBeans, itemWater, itemOutput].forEach(el => el.classList.remove('highlight'));
+  resultCard.classList.remove('has-result');
+  updateBadge();
+}
+
+/* ===== メイン計算処理 ===== */
+function calculate() {
+  const ratio = getRatio();
+
+  if (lastInput === 'beans') {
+    const beans = getBeansValue();
+    if (isNaN(beans) || beans <= 0) { resetDisplay(); return; }
+    updateDisplay(calcFromBeans(beans, ratio));
+
+  } else if (lastInput === 'volume') {
+    const volume = getVolumeValue();
+    if (isNaN(volume) || volume <= 0) { resetDisplay(); return; }
+    updateDisplay(calcFromVolume(volume, ratio));
+
+  } else {
+    // どちらも未入力
+    resetDisplay();
+  }
+
+  saveToStorage();
+}
+
+/* ===== debounce付き計算トリガー ===== */
+function triggerCalc() {
+  clearTimeout(debounceId);
+  debounceId = setTimeout(calculate, DEBOUNCE_MS);
+}
+
+/* ===== localStorage 保存 ===== */
+function saveToStorage() {
+  try {
+    const data = {
+      beans:     inputBeans.value,
+      volume:    inputVolume.value,
+      lastInput: lastInput,
+      strength:  getRatio()
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    // localStorageが使えない環境でも動作継続
+  }
+}
+
+/* ===== localStorage 復元 ===== */
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+
+    // 入力値を復元
+    if (data.beans)  inputBeans.value  = data.beans;
+    if (data.volume) inputVolume.value = data.volume;
+
+    // 濃度を復元
+    const radioMap = { 18: 's-thin', 15: 's-mid', 13: 's-strong' };
+    const radioId  = radioMap[data.strength];
+    if (radioId) document.getElementById(radioId).checked = true;
+
+    // 最後の入力を復元
+    lastInput = data.lastInput || null;
+
+    // フィールドのactiveスタイルを復元
+    if (lastInput === 'beans')  inputBeans.classList.add('active');
+    if (lastInput === 'volume') inputVolume.classList.add('active');
+
+    // 計算実行
+    if (lastInput) calculate();
+  } catch (e) {
+    // 復元失敗は無視
+  }
+}
+
+/* ===== イベントリスナー ===== */
+
+// 豆(g)入力
+inputBeans.addEventListener('input', () => {
+  lastInput = 'beans';
+  inputBeans.classList.add('active');
+  inputVolume.classList.remove('active');
+  triggerCalc();
+});
+
+// 出来上がり量(ml)入力
+inputVolume.addEventListener('input', () => {
+  lastInput = 'volume';
+  inputVolume.classList.add('active');
+  inputBeans.classList.remove('active');
+  triggerCalc();
+});
+
+// 濃度ラジオ変更（即時計算）
+document.querySelectorAll('input[name="strength"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    calculate();
+    saveToStorage();
+  });
+});
+
+/* ===== 初期化 ===== */
+updateBadge();
+loadFromStorage();
+</script>
+</body>
+</html>
