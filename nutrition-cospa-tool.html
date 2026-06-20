@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -12,409 +13,154 @@
   gtag('config', 'G-NXJCSR0EX1');
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>栄養コスパ比較ツール｜タンパク質・食物繊維・ビタミンの単価比較</title>
-<meta name="description" content="タンパク質・食物繊維・ビタミンなどの栄養素を最も安く摂れる食品を比較。栄養素1gあたりの価格、100円あたりの栄養量を自動計算できる無料ツール。">
-<meta property="og:title" content="栄養コスパ比較ツール｜最も安く栄養を摂れる食品は？">
-<meta property="og:description" content="タンパク質・食物繊維・ビタミンなどの栄養コスパを比較。食品・サプリ・プロテインのコスパを簡単チェック。">
-<meta property="og:type" content="website">
-<meta property="og:image" content="https://example.com/ogp.png">
-<link rel="canonical" href="https://example.com/nutrition-cospa/">
+<title>栄養コスパ比較ツール</title>
 <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebApplication",
-  "name": "栄養コスパ比較ツール",
-  "description": "タンパク質・食物繊維・ビタミンなどの栄養素を最も安く摂れる食品を比較できる無料ツール",
-  "applicationCategory": "HealthApplication",
-  "operatingSystem": "All",
-  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "JPY" }
-}
-</script>
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    { "@type": "Question", "name": "タンパク質のコスパが良い食品は？", "acceptedAnswer": { "@type": "Answer", "text": "一般的に鶏むね肉・卵・豆腐・納豆は高タンパクかつ低コストの代表食品です。このツールで実際の価格と栄養成分を入力して比較してみてください。" } },
-    { "@type": "Question", "name": "プロテインと鶏むね肉はどちらがお得？", "acceptedAnswer": { "@type": "Answer", "text": "価格・含有量により異なります。このツールに実際の購入価格と栄養成分表示を入力することで、タンパク質1gあたりの単価を正確に比較できます。" } },
-    { "@type": "Question", "name": "納豆と豆腐はどちらがお得？", "acceptedAnswer": { "@type": "Answer", "text": "地域や商品によって異なるため、実際の購入価格と栄養成分を入力して比較するのがもっとも正確です。" } },
-    { "@type": "Question", "name": "食物繊維を最も安く摂る方法は？", "acceptedAnswer": { "@type": "Answer", "text": "食物繊維は根菜類・豆類・きのこ類などに豊富です。このツールで入力して比較してみてください。" } },
-    { "@type": "Question", "name": "栄養コスパとは何ですか？", "acceptedAnswer": { "@type": "Answer", "text": "特定の栄養素を1g摂取するのにかかるコスト（円）のことです。単純な価格や容量だけでなく、目的の栄養素をどれだけ安く摂れるかを示す指標です。" } }
-  ]
-}
-</script>
-
 <style>
-/* ===== CSS変数 ===== */
-:root {
-  --blue: #1a56db;
-  --blue-light: #e8f0fe;
-  --green: #059669;
-  --green-light: #d1fae5;
-  --red: #dc2626;
-  --red-light: #fee2e2;
-  --bg: #f0f4f9;
-  --card: #ffffff;
-  --border: #dde3ee;
-  --text: #1a1f2e;
-  --text-mute: #6b7280;
-  --text-small: #9ca3af;
-  --radius: 10px;
-  --radius-sm: 7px;
-  --shadow: 0 1px 4px rgba(0,0,0,0.07);
-}
+:root{--blue:#1a56db;--blue-light:#e8f0fe;--green:#059669;--green-light:#d1fae5;--red:#dc2626;--red-light:#fee2e2;--bg:#f0f4f9;--card:#ffffff;--border:#dde3ee;--text:#1a1f2e;--text-mute:#6b7280;--text-small:#9ca3af;--radius:10px;--radius-sm:7px;--shadow:0 1px 4px rgba(0,0,0,0.07);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'BIZ UDPGothic',sans-serif;min-height:100vh;padding:20px 12px 80px;display:flex;flex-direction:column;align-items:center;}
+.container{width:100%;max-width:680px;}
+header{text-align:center;margin-bottom:20px;}
+h1{font-size:clamp(18px,5vw,24px);font-weight:700;color:var(--blue);margin-bottom:5px;line-height:1.3;}
+.subtitle{font-size:11px;color:var(--text-mute);line-height:1.8;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 16px;margin-bottom:12px;box-shadow:var(--shadow);}
+.section-title{font-size:11px;font-weight:700;color:var(--text-mute);letter-spacing:.08em;margin-bottom:10px;}
 
-/* ===== リセット ===== */
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'BIZ UDPGothic', sans-serif;
-  min-height: 100vh;
-  padding: 20px 12px 80px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.container { width: 100%; max-width: 600px; }
+/* ===== 入力テーブル ===== */
+.input-table-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);overflow-x:auto;}
+.input-table{width:100%;border-collapse:collapse;min-width:360px;}
+.input-table th,.input-table td{padding:6px 8px;vertical-align:middle;}
+.input-table thead th{font-size:11px;font-weight:700;color:var(--text-mute);letter-spacing:.06em;text-align:center;border-bottom:2px solid var(--border);padding-bottom:8px;}
+.input-table thead th.row-header{text-align:left;width:130px;}
+.input-table tbody tr:not(:last-child) td{border-bottom:1px solid var(--border);}
+.input-table tbody td.row-label{font-size:12px;font-weight:700;color:var(--text-mute);white-space:nowrap;padding-right:12px;}
+.input-table tbody td.row-label .opt{font-weight:400;font-size:10px;}
+.input-table input{width:100%;border:1px solid #c7d0e0;border-radius:var(--radius-sm);background:#f8fafd;color:var(--text);font-family:'BIZ UDPGothic',sans-serif;font-size:15px;padding:7px 8px;outline:none;transition:border-color .18s;-webkit-appearance:none;min-width:80px;}
+.input-table input:focus{border-color:var(--blue);}
+.badge-a{display:inline-block;background:#e8f0fe;color:var(--blue);font-size:12px;font-weight:700;padding:2px 10px;border-radius:20px;border:1px solid #c3d4f8;}
+.badge-b{display:inline-block;background:#d1fae5;color:#065f46;font-size:12px;font-weight:700;padding:2px 10px;border-radius:20px;border:1px solid #6ee7b7;}
+.badge-c{display:inline-block;background:#fef3c7;color:#92400e;font-size:12px;font-weight:700;padding:2px 10px;border-radius:20px;border:1px solid #fcd34d;}
 
-/* ===== ヘッダー ===== */
-header { text-align: center; margin-bottom: 20px; }
-h1 {
-  font-size: clamp(18px, 5vw, 24px);
-  font-weight: 700;
-  color: var(--blue);
-  margin-bottom: 5px;
-  line-height: 1.3;
-}
-.subtitle { font-size: 11px; color: var(--text-mute); line-height: 1.8; }
-
-/* ===== カード共通 ===== */
-.card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 18px 16px;
-  margin-bottom: 12px;
-  box-shadow: var(--shadow);
-}
-
-/* ===== セクションタイトル ===== */
-.section-title {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-mute);
-  letter-spacing: 0.08em;
-  margin-bottom: 10px;
-}
-
-/* ===== 入力グループ ===== */
-.input-group { margin-bottom: 12px; }
-.input-group label {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-mute);
-  letter-spacing: 0.06em;
-  margin-bottom: 5px;
-}
-.input-group input {
-  width: 100%;
-  border: 1px solid #c7d0e0;
-  border-radius: var(--radius-sm);
-  background: #f8fafd;
-  color: var(--text);
-  font-family: 'BIZ UDPGothic', sans-serif;
-  font-size: 16px; /* iPhoneズーム防止 */
-  padding: 9px 10px;
-  outline: none;
-  transition: border-color 0.18s;
-  -webkit-appearance: none;
-}
-.input-group input:focus { border-color: var(--blue); }
-
-/* ===== 2列グリッド ===== */
-.input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 0; }
-
-/* ===== 商品カード（縦並び） ===== */
-.product-section {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-  margin-bottom: 12px;
-  box-shadow: var(--shadow);
-}
-/* 商品ラベルバッジ */
-.product-label-badge {
-  display: inline-block;
-  background: var(--blue-light);
-  color: var(--blue);
-  font-size: 12px;
-  font-weight: 700;
-  padding: 3px 12px;
-  border-radius: 20px;
-  margin-bottom: 12px;
-  border: 1px solid #c3d4f8;
-}
-
-/* ===== 栄養素入力エリア ===== */
-.nutrient-inputs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 10px;
-}
-/* 任意栄養素は1列全幅 */
-.custom-nutrient-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 0;
-}
-
-/* ===== エラー ===== */
-.error-msg {
-  display: none;
-  background: var(--red-light);
-  border: 1px solid #fca5a5;
-  border-radius: var(--radius-sm);
-  color: var(--red);
-  font-size: 13px;
-  padding: 9px 12px;
-  margin-bottom: 10px;
-}
-.error-msg.show { display: block; }
-
-/* ===== 結果エリア ===== */
-#resultArea { display: none; }
-#resultArea.show { display: block; }
-
-/* ===== 最優秀商品バナー ===== */
-.best-banner {
-  background: linear-gradient(135deg, var(--blue) 0%, #2563eb 100%);
-  border-radius: var(--radius);
-  padding: 16px;
-  margin-bottom: 12px;
-  text-align: center;
-  box-shadow: var(--shadow);
-}
-.best-banner .crown { font-size: 28px; margin-bottom: 4px; }
-.best-banner .best-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: rgba(255,255,255,0.8);
-  letter-spacing: 0.1em;
-  margin-bottom: 4px;
-}
-.best-banner .best-name { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 4px; }
-.best-banner .best-price { font-size: 14px; color: rgba(255,255,255,0.85); }
-
-/* ===== 比較サマリー ===== */
-.summary-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px 16px;
-  margin-bottom: 12px;
-  box-shadow: var(--shadow);
-}
-.summary-title {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-mute);
-  letter-spacing: 0.08em;
-  margin-bottom: 10px;
-}
-.summary-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 13px;
-  padding: 5px 0;
-  border-bottom: 1px solid var(--border);
-}
-.summary-row:last-child { border-bottom: none; }
-.summary-row .s-label { color: var(--text-mute); }
-.summary-row .s-val { font-weight: 700; color: var(--text); }
-.summary-row .s-val.green { color: var(--green); }
-
-/* ===== ランキングリスト ===== */
-.ranking-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
-
-/* ===== 商品カード（ランキング結果） ===== */
-.result-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px 16px;
-  box-shadow: var(--shadow);
-  position: relative;
-}
-.result-card.rank-1 { border-left: 4px solid #f59e0b; }
-.result-card.rank-2 { border-left: 4px solid #9ca3af; }
-.result-card.rank-3 { border-left: 4px solid #b45309; }
-.result-card.rank-4 { border-left: 4px solid var(--border); }
-
-.rank-badge {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
-}
-.rank-badge.r1 { background: #fef3c7; color: #92400e; }
-.rank-badge.r2 { background: #f3f4f6; color: #374151; }
-.rank-badge.r3 { background: #fef3c7; color: #92400e; opacity: 0.7; }
-.rank-badge.r4 { background: #f9fafb; color: #9ca3af; }
-
-.result-card .p-name { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 8px; padding-right: 38px; }
-.product-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.metric-box {
-  background: #f8fafd;
-  border-radius: var(--radius-sm);
-  padding: 9px 10px;
-  border: 1px solid var(--border);
-}
-.m-label { font-size: 11px; color: var(--text-mute); margin-bottom: 3px; }
-.m-val { font-size: 18px; font-weight: 700; color: var(--text); }
-.m-val.highlight { color: var(--blue); }
-
-/* ===== シェアボタン ===== */
-.share-area {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px 16px;
-  margin-bottom: 12px;
-  box-shadow: var(--shadow);
-}
-.share-title { font-size: 11px; font-weight: 700; color: var(--text-mute); letter-spacing: 0.08em; margin-bottom: 10px; }
-.share-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.btn-share {
-  padding: 10px 6px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: #f8fafd;
-  font-family: 'BIZ UDPGothic', sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-mute);
-  cursor: pointer;
-  text-align: center;
-  transition: all 0.15s;
-}
-.btn-share:hover { background: var(--blue-light); border-color: var(--blue); color: var(--blue); }
-.btn-share.copied { background: var(--green-light); border-color: var(--green); color: var(--green); }
-
-/* ===== FAQ ===== */
-.faq-section { margin-bottom: 12px; }
-.faq-item {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  margin-bottom: 8px;
-  box-shadow: var(--shadow);
-  overflow: hidden;
-}
-.faq-q {
-  padding: 14px 16px;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text);
-  cursor: pointer;
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-}
-.faq-q::before { content: 'Q.'; color: var(--blue); font-size: 13px; flex-shrink: 0; margin-top: 1px; }
-.faq-q .faq-arrow { margin-left: auto; font-size: 12px; transition: transform 0.2s; flex-shrink: 0; }
-.faq-a { display: none; padding: 0 16px 14px 36px; font-size: 13px; color: var(--text-mute); line-height: 1.7; }
-.faq-item.open .faq-a { display: block; }
-.faq-item.open .faq-arrow { transform: rotate(180deg); }
-
-/* ===== 注意事項 ===== */
-.notice {
-  background: #fffbeb;
-  border: 1px solid #fcd34d;
-  border-radius: var(--radius-sm);
-  padding: 12px 14px;
-  font-size: 11px;
-  color: #92400e;
-  line-height: 1.8;
-  margin-bottom: 12px;
-}
-
-footer { margin-top: 24px; text-align: center; font-size: 11px; color: var(--text-small); }
-
-/* ===== 区切り線 ===== */
-.divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+.error-msg{display:none;background:var(--red-light);border:1px solid #fca5a5;border-radius:var(--radius-sm);color:var(--red);font-size:13px;padding:9px 12px;margin-bottom:10px;}
+.error-msg.show{display:block;}
+#resultArea{display:none;}
+#resultArea.show{display:block;}
+.best-banner{background:linear-gradient(135deg,var(--blue) 0%,#2563eb 100%);border-radius:var(--radius);padding:16px;margin-bottom:12px;text-align:center;box-shadow:var(--shadow);}
+.best-banner .crown{font-size:28px;margin-bottom:4px;}
+.best-banner .best-label{font-size:11px;font-weight:700;color:rgba(255,255,255,0.8);letter-spacing:.1em;margin-bottom:4px;}
+.best-banner .best-name{font-size:22px;font-weight:700;color:#fff;margin-bottom:4px;}
+.best-banner .best-price{font-size:14px;color:rgba(255,255,255,0.85);}
+.summary-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;box-shadow:var(--shadow);}
+.summary-title{font-size:11px;font-weight:700;color:var(--text-mute);letter-spacing:.08em;margin-bottom:10px;}
+.summary-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border);}
+.summary-row:last-child{border-bottom:none;}
+.summary-row .s-label{color:var(--text-mute);}
+.summary-row .s-val{font-weight:700;color:var(--text);}
+.summary-row .s-val.green{color:var(--green);}
+.ranking-list{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;}
+.result-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);position:relative;}
+.result-card.rank-1{border-left:4px solid #f59e0b;}
+.result-card.rank-2{border-left:4px solid #9ca3af;}
+.result-card.rank-3{border-left:4px solid #b45309;}
+.rank-badge{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;}
+.rank-badge.r1{background:#fef3c7;color:#92400e;}
+.rank-badge.r2{background:#f3f4f6;color:#374151;}
+.rank-badge.r3{background:#fef3c7;color:#92400e;opacity:.7;}
+.result-card .p-name{font-size:15px;font-weight:700;color:var(--text);margin-bottom:8px;padding-right:38px;}
+.product-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.metric-box{background:#f8fafd;border-radius:var(--radius-sm);padding:9px 10px;border:1px solid var(--border);}
+.m-label{font-size:11px;color:var(--text-mute);margin-bottom:3px;}
+.m-val{font-size:18px;font-weight:700;color:var(--text);}
+.m-val.highlight{color:var(--blue);}
+.share-area{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;box-shadow:var(--shadow);}
+.share-title{font-size:11px;font-weight:700;color:var(--text-mute);letter-spacing:.08em;margin-bottom:10px;}
+.share-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.btn-share{padding:10px 6px;border-radius:var(--radius-sm);border:1px solid var(--border);background:#f8fafd;font-family:'BIZ UDPGothic',sans-serif;font-size:13px;font-weight:700;color:var(--text-mute);cursor:pointer;text-align:center;transition:all .15s;}
+.btn-share:hover{background:var(--blue-light);border-color:var(--blue);color:var(--blue);}
+.btn-share.copied{background:var(--green-light);border-color:var(--green);color:var(--green);}
+.faq-section{margin-bottom:12px;}
+.faq-item{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;box-shadow:var(--shadow);overflow:hidden;}
+.faq-q{padding:14px 16px;font-size:14px;font-weight:700;color:var(--text);cursor:pointer;display:flex;align-items:flex-start;gap:8px;}
+.faq-q::before{content:'Q.';color:var(--blue);font-size:13px;flex-shrink:0;margin-top:1px;}
+.faq-q .faq-arrow{margin-left:auto;font-size:12px;transition:transform .2s;flex-shrink:0;}
+.faq-a{display:none;padding:0 16px 14px 36px;font-size:13px;color:var(--text-mute);line-height:1.7;}
+.faq-item.open .faq-a{display:block;}
+.faq-item.open .faq-arrow{transform:rotate(180deg);}
+.notice{background:#fffbeb;border:1px solid #fcd34d;border-radius:var(--radius-sm);padding:12px 14px;font-size:11px;color:#92400e;line-height:1.8;margin-bottom:12px;}
+footer{margin-top:24px;text-align:center;font-size:11px;color:var(--text-small);}
 </style>
 </head>
 <body>
 <div class="container">
-
-  <!-- ===== ヘッダー ===== -->
   <header>
     <h1>🥗 栄養コスパ比較ツール</h1>
-    <p class="subtitle">
-      タンパク質・食物繊維・ビタミンなどを<br>
-      最も安く摂れる食品がひと目でわかる
-    </p>
+    <p class="subtitle">タンパク質・食物繊維・ビタミンなどを<br>最も安く摂れる食品がひと目でわかる</p>
   </header>
 
-  <!-- ===== 商品A〜D（縦並び） ===== -->
-  <div id="productForms">
-    <!-- JSで生成 -->
+  <!-- ===== 入力テーブル ===== -->
+  <div class="input-table-wrap">
+    <table class="input-table">
+      <thead>
+        <tr>
+          <th class="row-header"></th>
+          <th><span class="badge-a">商品A</span></th>
+          <th><span class="badge-b">商品B</span></th>
+          <th><span class="badge-c">商品C</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="row-label">価格（円）</td>
+          <td><input type="number" id="price_0" inputmode="decimal" placeholder="例：198" oninput="debounceCalc()"></td>
+          <td><input type="number" id="price_1" inputmode="decimal" placeholder="例：198" oninput="debounceCalc()"></td>
+          <td><input type="number" id="price_2" inputmode="decimal" placeholder="例：198" oninput="debounceCalc()"></td>
+        </tr>
+        <tr>
+          <td class="row-label">内容量（g）</td>
+          <td><input type="number" id="amount_0" inputmode="decimal" placeholder="例：300" oninput="debounceCalc()"></td>
+          <td><input type="number" id="amount_1" inputmode="decimal" placeholder="例：300" oninput="debounceCalc()"></td>
+          <td><input type="number" id="amount_2" inputmode="decimal" placeholder="例：300" oninput="debounceCalc()"></td>
+        </tr>
+        <tr>
+          <td class="row-label">セット数</td>
+          <td><input type="number" id="sets_0" inputmode="decimal" placeholder="例：1" value="1" oninput="debounceCalc()"></td>
+          <td><input type="number" id="sets_1" inputmode="decimal" placeholder="例：1" value="1" oninput="debounceCalc()"></td>
+          <td><input type="number" id="sets_2" inputmode="decimal" placeholder="例：1" value="1" oninput="debounceCalc()"></td>
+        </tr>
+        <tr>
+          <td class="row-label">栄養表示基準量（g）<br><span class="opt">任意</span></td>
+          <td><input type="number" id="baseAmount_0" inputmode="decimal" placeholder="例：100" oninput="debounceCalc()"></td>
+          <td><input type="number" id="baseAmount_1" inputmode="decimal" placeholder="例：100" oninput="debounceCalc()"></td>
+          <td><input type="number" id="baseAmount_2" inputmode="decimal" placeholder="例：100" oninput="debounceCalc()"></td>
+        </tr>
+        <tr>
+          <td class="row-label">栄養量</td>
+          <td><input type="number" id="n_custom_0" inputmode="decimal" placeholder="例：20" oninput="debounceCalc()"></td>
+          <td><input type="number" id="n_custom_1" inputmode="decimal" placeholder="例：20" oninput="debounceCalc()"></td>
+          <td><input type="number" id="n_custom_2" inputmode="decimal" placeholder="例：20" oninput="debounceCalc()"></td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
   <div class="error-msg" id="errorMsg">少なくとも2商品分の情報を入力してください。</div>
 
-  <!-- ===== 結果エリア ===== -->
   <div id="resultArea">
-
-    <!-- 最優秀商品バナー -->
     <div class="best-banner">
       <div class="crown">🏆</div>
       <div class="best-label">最もコスパが良い商品 No.1</div>
       <div class="best-name" id="bestName">—</div>
       <div class="best-price" id="bestDetail">—</div>
     </div>
-
-    <!-- 比較サマリー -->
     <div class="summary-card">
       <div class="summary-title">▶ 比較サマリー</div>
-      <div class="summary-row">
-        <span class="s-label">比較栄養素</span>
-        <span class="s-val" id="summaryNutrient">—</span>
-      </div>
-      <div class="summary-row">
-        <span class="s-label">最安商品</span>
-        <span class="s-val green" id="summaryBest">—</span>
-      </div>
-      <div class="summary-row">
-        <span class="s-label">最高商品との差額</span>
-        <span class="s-val" id="summaryDiff">—</span>
-      </div>
-      <div class="summary-row">
-        <span class="s-label">最安は最高より何％お得</span>
-        <span class="s-val green" id="summaryPct">—</span>
-      </div>
+      <div class="summary-row"><span class="s-label">比較栄養素</span><span class="s-val" id="summaryNutrient">—</span></div>
+      <div class="summary-row"><span class="s-label">最安商品</span><span class="s-val green" id="summaryBest">—</span></div>
+      <div class="summary-row"><span class="s-label">最高商品との差額</span><span class="s-val" id="summaryDiff">—</span></div>
+      <div class="summary-row"><span class="s-label">最安は最高より何％お得</span><span class="s-val green" id="summaryPct">—</span></div>
     </div>
-
-    <!-- ランキング -->
     <div class="section-title" style="padding:0 4px;">▶ コスパランキング</div>
     <div class="ranking-list" id="rankingList"></div>
-
-    <!-- シェアエリア -->
     <div class="share-area">
       <div class="share-title">▶ 結果をシェア</div>
       <div class="share-btns">
@@ -424,14 +170,8 @@ footer { margin-top: 24px; text-align: center; font-size: 11px; color: var(--tex
     </div>
   </div>
 
-  <!-- ===== 注意事項 ===== -->
-  <div class="notice">
-    ⚠️ 計算結果は目安です。実際の栄養価は商品により異なります。<br>
-    価格変動やセール価格は考慮していません。<br>
-    最新の栄養成分表示を確認してください。
-  </div>
+  <div class="notice">⚠️ 計算結果は目安です。実際の栄養価は商品により異なります。<br>価格変動やセール価格は考慮していません。<br>最新の栄養成分表示を確認してください。</div>
 
-  <!-- ===== FAQ ===== -->
   <div class="faq-section">
     <div class="section-title" style="padding:0 4px;">▶ よくある質問</div>
     <div class="faq-item" onclick="toggleFaq(this)">
@@ -455,335 +195,154 @@ footer { margin-top: 24px; text-align: center; font-size: 11px; color: var(--tex
       <div class="faq-a">特定の栄養素を1g摂取するのにかかるコスト（円）のことです。単純な価格や容量だけでなく、目的の栄養素をどれだけ安く摂れるかを示す指標です。</div>
     </div>
   </div>
-
 </div>
 <footer>© 2025 栄養コスパ比較ツール</footer>
 
 <script>
-// ===== 定数 =====
-const PRODUCT_LABELS = ['商品A', '商品B', '商品C', '商品D'];
+const PRODUCT_LABELS=['商品A','商品B','商品C'];
+let debounceTimer=null;
 
-// 栄養素定義（key: ラベル・単位）
-// 全商品で常時表示する固定栄養素
-const NUTRIENTS = [
-  { key: 'protein',  label: 'タンパク質',  unit: 'g' },
-  { key: 'fiber',    label: '食物繊維',    unit: 'g' },
-  { key: 'vitc',     label: 'ビタミンC',   unit: 'mg' },
-  { key: 'calcium',  label: 'カルシウム',  unit: 'mg' },
-  { key: 'iron',     label: '鉄分',        unit: 'mg' },
-  { key: 'fat',      label: '脂質',        unit: 'g' },
-  { key: 'carb',     label: '炭水化物',    unit: 'g' },
-  { key: 'custom',   label: '',            unit: 'g' }, // 任意入力
-];
-
-let debounceTimer = null;
-
-// ===== アプリ初期化 =====
-function init() {
-  buildProductForms(); // 商品A〜Dカードを縦に生成
-  loadFromStorage();
-  loadFromUrl();
-  calculate();
-}
-
-// ===== 商品フォームを縦並びで生成 =====
-function buildProductForms() {
-  const container = document.getElementById('productForms');
-  container.innerHTML = '';
-
-  for (let i = 0; i < 4; i++) {
-    const section = document.createElement('div');
-    section.className = 'product-section';
-    section.id = `productSection_${i}`;
-
-    // 任意栄養素のみ1欄
-    let nutrientHTML = `
-      <div class="input-group" style="margin-bottom:0;">
-        <label>栄養量</label>
-        <input type="number" id="n_custom_${i}" inputmode="decimal" placeholder="例：20" oninput="debounceCalc()">
-      </div>`;
-
-    section.innerHTML = `
-      <div class="product-label-badge">${PRODUCT_LABELS[i]}</div>
-
-      <!-- 価格・内容量・セット数・基準量 -->
-      <div class="input-grid" style="margin-bottom:12px;">
-        <div class="input-group" style="margin-bottom:0;">
-          <label>価格（円）</label>
-          <input type="number" id="price_${i}" inputmode="decimal" placeholder="例：198" oninput="debounceCalc()">
-        </div>
-        <div class="input-group" style="margin-bottom:0;">
-          <label>内容量（g）</label>
-          <input type="number" id="amount_${i}" inputmode="decimal" placeholder="例：300" oninput="debounceCalc()">
-        </div>
-      </div>
-      <div class="input-grid" style="margin-bottom:12px;">
-        <div class="input-group" style="margin-bottom:0;">
-          <label>セット数</label>
-          <input type="number" id="sets_${i}" inputmode="decimal" placeholder="例：1" value="1" oninput="debounceCalc()">
-        </div>
-        <div></div>
-      </div>
-
-      <!-- 栄養素入力：価格欄と同幅の2列グリッドに統合 -->
-      <div class="input-grid" style="margin-top:0;">
-        <div class="input-group" style="margin-bottom:0;">
-          <label>栄養表示基準量（g）<span style="font-weight:400;"> 任意</span></label>
-          <input type="number" id="baseAmount_${i}" inputmode="decimal" placeholder="例：100" oninput="debounceCalc()">
-        </div>
-        ${nutrientHTML}
-      </div>
-    `;
-
-    container.appendChild(section);
-  }
-
-  // 任意栄養素のラベルを初期更新
-  updateCustomLabels();
-}
-
-
-
-// ===== 商品データを収集 =====
-function getProductData() {
-  const products = [];
-  for (let i = 0; i < 4; i++) {
-    const price   = parseFloat(document.getElementById(`price_${i}`)?.value);
-    const amount  = parseFloat(document.getElementById(`amount_${i}`)?.value);
-    const sets    = parseFloat(document.getElementById(`sets_${i}`)?.value) || 1;
-    const baseAmt = parseFloat(document.getElementById(`baseAmount_${i}`)?.value) || 100;
-
-    // 価格・内容量が入っていれば有効
-    if (isNaN(price) || isNaN(amount) || price <= 0 || amount <= 0) continue;
-
-    // 任意栄養素のみ収集
-    const nutrients = {};
-    const val = parseFloat(document.getElementById(`n_custom_${i}`)?.value);
-    if (!isNaN(val) && val > 0) nutrients['custom'] = val;
-
-    products.push({
-      idx: i,
-      label: PRODUCT_LABELS[i],
-      price, amount, sets, baseAmt,
-      nutrients
-    });
+function getProductData(){
+  const products=[];
+  for(let i=0;i<3;i++){
+    const price=parseFloat(document.getElementById(`price_${i}`)?.value);
+    const amount=parseFloat(document.getElementById(`amount_${i}`)?.value);
+    const sets=parseFloat(document.getElementById(`sets_${i}`)?.value)||1;
+    const baseAmt=parseFloat(document.getElementById(`baseAmount_${i}`)?.value)||100;
+    if(isNaN(price)||isNaN(amount)||price<=0||amount<=0)continue;
+    const nutrients={};
+    const val=parseFloat(document.getElementById(`n_custom_${i}`)?.value);
+    if(!isNaN(val)&&val>0)nutrients['custom']=val;
+    products.push({idx:i,label:PRODUCT_LABELS[i],price,amount,sets,baseAmt,nutrients});
   }
   return products;
 }
 
-// ===== 1商品1栄養素の計算 =====
-function computeProduct(p, nutrientKey) {
-  // 総容量 = 内容量 × セット数
-  const totalAmount = p.amount * p.sets;
-  const nutrientPerBase = p.nutrients[nutrientKey] ?? 0;
-  if (nutrientPerBase <= 0) return null;
-  // 総栄養量 = 総容量 ÷ 基準量 × 基準量あたり栄養量
-  const totalNutrient = (totalAmount / p.baseAmt) * nutrientPerBase;
-  if (totalNutrient <= 0) return null;
-  // 栄養素単価（円/g or 円/mg）
-  const unitCost = p.price / totalNutrient;
-  // 100円あたり栄養量
-  const per100yen = totalNutrient / p.price * 100;
-  return { unitCost, per100yen, totalNutrient };
+function computeProduct(p,nutrientKey){
+  const totalAmount=p.amount*p.sets;
+  const nutrientPerBase=p.nutrients[nutrientKey]??0;
+  if(nutrientPerBase<=0)return null;
+  const totalNutrient=(totalAmount/p.baseAmt)*nutrientPerBase;
+  if(totalNutrient<=0)return null;
+  const unitCost=p.price/totalNutrient;
+  const per100yen=totalNutrient/p.price*100;
+  return{unitCost,per100yen,totalNutrient};
 }
 
-// ===== 比較に使う栄養素はcustom固定 =====
-function getPrimaryNutrient(products) {
-  if (products.some(p => p.nutrients['custom'] !== undefined)) return 'custom';
-  return null;
-}
-
-// ===== 計算メイン =====
-function calculate() {
-
-  const products = getProductData();
-  const errorMsg = document.getElementById('errorMsg');
-  const resultArea = document.getElementById('resultArea');
-
-  // 2商品以上データが必要
-  if (products.length < 2) {
-    errorMsg.classList.add('show');
-    resultArea.classList.remove('show');
-    return;
-  }
+function calculate(){
+  const products=getProductData();
+  const errorMsg=document.getElementById('errorMsg');
+  const resultArea=document.getElementById('resultArea');
+  if(products.length<2){errorMsg.classList.add('show');resultArea.classList.remove('show');return;}
   errorMsg.classList.remove('show');
-
-  // 比較する主栄養素を決定（最初に入力値がある栄養素）
-  const primaryNutrient = getPrimaryNutrient(products);
-  if (!primaryNutrient) {
-    resultArea.classList.remove('show');
-    return;
-  }
-
-  // 各商品を計算・nullは除外
-  const results = products.map(p => {
-    const calc = computeProduct(p, primaryNutrient);
-    return calc ? { ...p, calc } : null;
+  const hasPrimary=products.some(p=>p.nutrients['custom']!==undefined);
+  if(!hasPrimary){resultArea.classList.remove('show');return;}
+  const results=products.map(p=>{
+    const calc=computeProduct(p,'custom');
+    return calc?{...p,calc}:null;
   }).filter(Boolean);
-
-  if (results.length < 2) {
-    resultArea.classList.remove('show');
-    return;
-  }
-
-  // コスパ順（単価が安い順）にソート
-  results.sort((a, b) => a.calc.unitCost - b.calc.unitCost);
-
-  // 栄養素ラベル・単位（任意入力のみなのでシンプルに固定）
-  const nutrientLabel = '栄養量';
-  const unit = '';
-
-  // ===== 結果表示 =====
+  if(results.length<2){resultArea.classList.remove('show');return;}
+  results.sort((a,b)=>a.calc.unitCost-b.calc.unitCost);
   resultArea.classList.add('show');
-
-  // 最優秀バナー
-  const best = results[0];
-  document.getElementById('bestName').textContent = best.label;
-  document.getElementById('bestDetail').textContent =
-    `栄養量1あたり ${best.calc.unitCost.toFixed(2)}円`;
-
-  // 比較サマリー
-  document.getElementById('summaryNutrient').textContent = nutrientLabel;
-  document.getElementById('summaryBest').textContent = best.label;
-
-  const worst = results[results.length - 1];
-  const diff = worst.calc.unitCost - best.calc.unitCost;
-  const pct = ((diff / worst.calc.unitCost) * 100).toFixed(1);
-  document.getElementById('summaryDiff').textContent = `1あたり ${diff.toFixed(2)}円の差`;
-  document.getElementById('summaryPct').textContent = `${pct}％お得`;
-
-  // ランキングリスト
-  const rankingList = document.getElementById('rankingList');
-  rankingList.innerHTML = '';
-  const rankClasses = ['rank-1', 'rank-2', 'rank-3', 'rank-4'];
-  const badgeClasses = ['r1', 'r2', 'r3', 'r4'];
-  const rankEmojis = ['🥇', '🥈', '🥉', '4'];
-
-  results.forEach((r, idx) => {
-    const div = document.createElement('div');
-    div.className = `result-card ${rankClasses[idx] || ''}`;
-    div.innerHTML = `
-      <div class="rank-badge ${badgeClasses[idx] || 'r4'}">${rankEmojis[idx] || idx + 1}</div>
-      <div class="p-name">${r.label}</div>
-      <div class="product-metrics">
-        <div class="metric-box">
-          <div class="m-label">栄養量1あたり</div>
-          <div class="m-val ${idx === 0 ? 'highlight' : ''}">${r.calc.unitCost.toFixed(2)}<span style="font-size:12px;font-weight:400;">円</span></div>
-        </div>
-        <div class="metric-box">
-          <div class="m-label">100円あたり栄養量</div>
-          <div class="m-val">${r.calc.per100yen.toFixed(1)}</div>
-        </div>
-      </div>
-    `;
+  const best=results[0];
+  document.getElementById('bestName').textContent=best.label;
+  document.getElementById('bestDetail').textContent=`栄養量1あたり ${best.calc.unitCost.toFixed(2)}円`;
+  document.getElementById('summaryNutrient').textContent='栄養量';
+  document.getElementById('summaryBest').textContent=best.label;
+  const worst=results[results.length-1];
+  const diff=worst.calc.unitCost-best.calc.unitCost;
+  const pct=((diff/worst.calc.unitCost)*100).toFixed(1);
+  document.getElementById('summaryDiff').textContent=`1あたり ${diff.toFixed(2)}円の差`;
+  document.getElementById('summaryPct').textContent=`${pct}％お得`;
+  const rankingList=document.getElementById('rankingList');
+  rankingList.innerHTML='';
+  const rankClasses=['rank-1','rank-2','rank-3'];
+  const badgeClasses=['r1','r2','r3'];
+  const rankEmojis=['🥇','🥈','🥉'];
+  results.forEach((r,idx)=>{
+    const div=document.createElement('div');
+    div.className=`result-card ${rankClasses[idx]||''}`;
+    div.innerHTML=`<div class="rank-badge ${badgeClasses[idx]||''}">${rankEmojis[idx]||idx+1}</div><div class="p-name">${r.label}</div><div class="product-metrics"><div class="metric-box"><div class="m-label">栄養量1あたり</div><div class="m-val ${idx===0?'highlight':''}">${r.calc.unitCost.toFixed(2)}<span style="font-size:12px;font-weight:400;">円</span></div></div><div class="metric-box"><div class="m-label">100円あたり栄養量</div><div class="m-val">${r.calc.per100yen.toFixed(1)}</div></div></div>`;
     rankingList.appendChild(div);
   });
-
   saveToStorage();
 }
 
-// ===== デバウンス計算 =====
-function debounceCalc() {
-  clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(calculate, 300);
-}
+function debounceCalc(){clearTimeout(debounceTimer);debounceTimer=setTimeout(calculate,300);}
+function toggleFaq(el){el.classList.toggle('open');}
 
-// ===== FAQトグル =====
-function toggleFaq(el) { el.classList.toggle('open'); }
-
-// ===== localStorage保存 =====
-function saveToStorage() {
-  const data = {};
-  for (let i = 0; i < 4; i++) {
-    data[`price_${i}`]      = document.getElementById(`price_${i}`)?.value || '';
-    data[`amount_${i}`]     = document.getElementById(`amount_${i}`)?.value || '';
-    data[`sets_${i}`]       = document.getElementById(`sets_${i}`)?.value || '1';
-    data[`baseAmount_${i}`] = document.getElementById(`baseAmount_${i}`)?.value || '';
-    data[`n_custom_${i}`] = document.getElementById(`n_custom_${i}`)?.value || '';
+function saveToStorage(){
+  const data={};
+  for(let i=0;i<3;i++){
+    ['price','amount','sets','baseAmount'].forEach(f=>{data[`${f}_${i}`]=document.getElementById(`${f}_${i}`)?.value||'';});
+    data[`n_custom_${i}`]=document.getElementById(`n_custom_${i}`)?.value||'';
   }
-  try { localStorage.setItem('nutritionCospa_v2', JSON.stringify(data)); } catch(e) {}
+  try{localStorage.setItem('nutritionCospa_v3',JSON.stringify(data));}catch(e){}
 }
 
-// ===== localStorage復元 =====
-function loadFromStorage() {
+function loadFromStorage(){
   let data;
-  try { data = JSON.parse(localStorage.getItem('nutritionCospa_v2') || '{}'); } catch(e) { return; }
-  if (!data || Object.keys(data).length === 0) return;
-
-  for (let i = 0; i < 4; i++) {
-    ['price', 'amount', 'sets', 'baseAmount'].forEach(f => {
-      const el = document.getElementById(`${f}_${i}`);
-      if (el && data[`${f}_${i}`]) el.value = data[`${f}_${i}`];
-    });
-    const el = document.getElementById(`n_custom_${i}`);
-    if (el && data[`n_custom_${i}`]) el.value = data[`n_custom_${i}`];
+  try{data=JSON.parse(localStorage.getItem('nutritionCospa_v3')||'{}');}catch(e){return;}
+  if(!data||Object.keys(data).length===0)return;
+  for(let i=0;i<3;i++){
+    ['price','amount','sets','baseAmount'].forEach(f=>{const el=document.getElementById(`${f}_${i}`);if(el&&data[`${f}_${i}`])el.value=data[`${f}_${i}`];});
+    const el=document.getElementById(`n_custom_${i}`);
+    if(el&&data[`n_custom_${i}`])el.value=data[`n_custom_${i}`];
   }
 }
 
-// ===== URLパラメータ化 =====
-function buildShareUrl() {
-  const params = new URLSearchParams();
-  for (let i = 0; i < 4; i++) {
-    const price = document.getElementById(`price_${i}`)?.value;
-    const amt   = document.getElementById(`amount_${i}`)?.value;
-    if (!price || !amt) continue;
-    params.set(`p${i}`, price);
-    params.set(`a${i}`, amt);
-    const sets = document.getElementById(`sets_${i}`)?.value;
-    if (sets && sets !== '1') params.set(`s${i}`, sets);
-    const base = document.getElementById(`baseAmount_${i}`)?.value;
-    if (base) params.set(`b${i}`, base);
-    const nv = document.getElementById(`n_custom_${i}`)?.value;
-    if (nv) params.set(`custom${i}`, nv);
+function buildShareUrl(){
+  const params=new URLSearchParams();
+  for(let i=0;i<3;i++){
+    const price=document.getElementById(`price_${i}`)?.value;
+    const amt=document.getElementById(`amount_${i}`)?.value;
+    if(!price||!amt)continue;
+    params.set(`p${i}`,price);params.set(`a${i}`,amt);
+    const sets=document.getElementById(`sets_${i}`)?.value;
+    if(sets&&sets!=='1')params.set(`s${i}`,sets);
+    const base=document.getElementById(`baseAmount_${i}`)?.value;
+    if(base)params.set(`b${i}`,base);
+    const nv=document.getElementById(`n_custom_${i}`)?.value;
+    if(nv)params.set(`custom${i}`,nv);
   }
-  return location.href.split('?')[0] + '?' + params.toString();
+  return location.href.split('?')[0]+'?'+params.toString();
 }
 
-// ===== URLから復元 =====
-function loadFromUrl() {
-  const params = new URLSearchParams(location.search);
-  if (!params.has('p0') && !params.has('p1')) return;
-  for (let i = 0; i < 4; i++) {
-    if (params.has(`p${i}`))      { const el = document.getElementById(`price_${i}`);     if (el) el.value = params.get(`p${i}`); }
-    if (params.has(`a${i}`))      { const el = document.getElementById(`amount_${i}`);    if (el) el.value = params.get(`a${i}`); }
-    if (params.has(`s${i}`))      { const el = document.getElementById(`sets_${i}`);      if (el) el.value = params.get(`s${i}`); }
-    if (params.has(`b${i}`))      { const el = document.getElementById(`baseAmount_${i}`);if (el) el.value = params.get(`b${i}`); }
-    if (params.has(`custom${i}`)) { const el = document.getElementById(`n_custom_${i}`);  if (el) el.value = params.get(`custom${i}`); }
+function loadFromUrl(){
+  const params=new URLSearchParams(location.search);
+  if(!params.has('p0')&&!params.has('p1'))return;
+  for(let i=0;i<3;i++){
+    if(params.has(`p${i}`)){const el=document.getElementById(`price_${i}`);if(el)el.value=params.get(`p${i}`);}
+    if(params.has(`a${i}`)){const el=document.getElementById(`amount_${i}`);if(el)el.value=params.get(`a${i}`);}
+    if(params.has(`s${i}`)){const el=document.getElementById(`sets_${i}`);if(el)el.value=params.get(`s${i}`);}
+    if(params.has(`b${i}`)){const el=document.getElementById(`baseAmount_${i}`);if(el)el.value=params.get(`b${i}`);}
+    if(params.has(`custom${i}`)){const el=document.getElementById(`n_custom_${i}`);if(el)el.value=params.get(`custom${i}`);}
   }
 }
 
-// ===== URLコピー =====
-function copyUrl() {
-  const url = buildShareUrl();
-  navigator.clipboard.writeText(url).then(() => {
-    const btn = document.getElementById('btnCopyUrl');
-    btn.textContent = '✅ コピーしました！';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = '🔗 URLをコピー'; btn.classList.remove('copied'); }, 2500);
-  }).catch(() => { prompt('このURLをコピーしてください', buildShareUrl()); });
+function copyUrl(){
+  const url=buildShareUrl();
+  navigator.clipboard.writeText(url).then(()=>{
+    const btn=document.getElementById('btnCopyUrl');
+    btn.textContent='✅ コピーしました！';btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='🔗 URLをコピー';btn.classList.remove('copied');},2500);
+  }).catch(()=>{prompt('このURLをコピーしてください',buildShareUrl());});
 }
 
-// ===== X（Twitter）シェア =====
-function shareX() {
-  const products = getProductData();
-  const primaryNutrient = getPrimaryNutrient(products);
-  if (!primaryNutrient) return;
-  const nutrientLabel = '栄養量';
-  let text = `【栄養コスパ比較】${nutrientLabel}のコスパ比較結果\n`;
-  const results = products.map(p => {
-    const calc = computeProduct(p, 'custom');
-    return calc ? { ...p, calc } : null;
-  }).filter(Boolean).sort((a, b) => a.calc.unitCost - b.calc.unitCost);
-  results.slice(0, 3).forEach((r, idx) => {
-    const emoji = ['🥇','🥈','🥉'][idx];
-    text += `${emoji}${r.label}：${r.calc.unitCost.toFixed(2)}円\n`;
-  });
-  text += '\n#栄養コスパ #タンパク質 #節約飯';
-  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+function shareX(){
+  const products=getProductData();
+  const hasPrimary=products.some(p=>p.nutrients['custom']!==undefined);
+  if(!hasPrimary)return;
+  let text='【栄養コスパ比較】栄養量のコスパ比較結果\n';
+  const results=products.map(p=>{const calc=computeProduct(p,'custom');return calc?{...p,calc}:null;}).filter(Boolean).sort((a,b)=>a.calc.unitCost-b.calc.unitCost);
+  results.slice(0,3).forEach((r,idx)=>{const emoji=['🥇','🥈','🥉'][idx];text+=`${emoji}${r.label}：${r.calc.unitCost.toFixed(2)}円\n`;});
+  text+='\n#栄養コスパ #タンパク質 #節約飯';
+  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`,'_blank');
 }
 
-// ===== 起動 =====
-init();
+loadFromStorage();
+loadFromUrl();
+calculate();
 </script>
 </body>
 </html>
