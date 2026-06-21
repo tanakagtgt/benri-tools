@@ -148,6 +148,43 @@ h1 { font-size: clamp(20px,5vw,26px); font-weight:700; color:#1a56db; margin-bot
 }
 .anim { animation:fadeUp 0.3s ease; }
 
+/* =====================================================
+   有給休暇・特別休暇 入力エリア
+   ===================================================== */
+.leave-area {
+  border-top: 1px solid #eaeff6;
+  padding-top: 14px;
+  margin-bottom: 16px;
+}
+.leave-title {
+  font-size: 11px; font-weight: 700; color: #666;
+  letter-spacing: 0.08em; margin-bottom: 10px;
+}
+.leave-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.leave-group label {
+  display: block; font-size: 11px; font-weight: 700;
+  color: #555; letter-spacing: 0.08em; margin-bottom: 5px;
+}
+.leave-group input[type="number"] {
+  width: 100%; border: 1px solid #c7d0e0; border-radius: 7px;
+  background: #f8fafd; color: #222;
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 16px; /* iPhoneズーム防止：16px以上必須 */
+  padding: 9px 10px; outline: none; transition: border-color 0.18s;
+  min-height: 44px; /* タッチターゲット確保 */
+}
+.leave-group input[type="number"]:focus { border-color: #1a56db; }
+.leave-note {
+  font-size: 11px; color: #999; margin-top: 8px; line-height: 1.6;
+}
+
+/* サブ結果：有給等の表示色 */
+.b-leave { color: #7c3aed; } /* 紫：有給・特別休暇系 */
+
 /* カレンダー */
 .calendar-area { display:none; }
 .calendar-area.show { display:block; animation:fadeUp 0.3s ease; }
@@ -300,6 +337,62 @@ footer { margin-top:30px; text-align:center; font-size:11px; color:#aaa; }
       </div>
     </div>
 
+    <!-- =====================================================
+         有給休暇・特別休暇などの除外日数
+         - 日数を直接入力して営業日から差し引く方式
+         - 夏季・病休・慶弔等の個別区分で入力可能
+         ===================================================== -->
+    <div class="leave-area">
+      <div class="leave-title">▶ 有給休暇・特別休暇などを除外する（任意）</div>
+      <div class="leave-grid">
+        <div class="leave-group">
+          <label for="leaveAnnual">有給休暇（日）</label>
+          <input
+            type="number"
+            id="leaveAnnual"
+            inputmode="numeric"
+            placeholder="例：3"
+            min="0"
+            oninput="calculate()"
+          >
+        </div>
+        <div class="leave-group">
+          <label for="leaveSummer">夏季休暇（日）</label>
+          <input
+            type="number"
+            id="leaveSummer"
+            inputmode="numeric"
+            placeholder="例：5"
+            min="0"
+            oninput="calculate()"
+          >
+        </div>
+        <div class="leave-group">
+          <label for="leaveSick">病気・特別休暇（日）</label>
+          <input
+            type="number"
+            id="leaveSick"
+            inputmode="numeric"
+            placeholder="例：1"
+            min="0"
+            oninput="calculate()"
+          >
+        </div>
+        <div class="leave-group">
+          <label for="leaveOther">その他休暇（日）</label>
+          <input
+            type="number"
+            id="leaveOther"
+            inputmode="numeric"
+            placeholder="例：2"
+            min="0"
+            oninput="calculate()"
+          >
+        </div>
+      </div>
+      <p class="leave-note">※ 入力した合計日数を営業日数から差し引きます</p>
+    </div>
+
     <button class="btn-calc" onclick="calculate()">営業日数を計算する</button>
     <div class="error-msg" id="errorMsg"></div>
   </div>
@@ -314,7 +407,8 @@ footer { margin-top:30px; text-align:center; font-size:11px; color:#aaa; }
       <div class="result-reiwa" id="resultReiwa"></div>
     </div>
     <div class="breakdown-wrap">
-      <div class="breakdown">
+      <!-- サブ結果：4列（有給等が0のときは3列に戻す制御はJSで行う） -->
+      <div class="breakdown" id="breakdownGrid" style="grid-template-columns:repeat(4,1fr);">
         <div class="breakdown-item">
           <div class="b-num b-total placeholder" id="bTotal">—</div>
           <div class="b-label">総日数</div>
@@ -326,6 +420,11 @@ footer { margin-top:30px; text-align:center; font-size:11px; color:#aaa; }
         <div class="breakdown-item">
           <div class="b-num b-holiday placeholder" id="bHoliday">—</div>
           <div class="b-label">祝日等</div>
+        </div>
+        <!-- 有給等の合計：0のときは非表示 -->
+        <div class="breakdown-item" id="bLeaveItem" style="display:none;">
+          <div class="b-num b-leave placeholder" id="bLeave">—</div>
+          <div class="b-label">有給等</div>
         </div>
       </div>
       <div class="holiday-section" id="holidaySection">
@@ -577,7 +676,17 @@ function calculate(){
     cur.setDate(cur.getDate()+1);
   }
 
-  const eigyo=total-weekends-holidays;
+  // ============================================================
+  // 有給・特別休暇などの合計日数を取得（未入力・負値は0扱い）
+  // ============================================================
+  const leaveAnnual = Math.max(0, parseInt(document.getElementById('leaveAnnual').value)  || 0);
+  const leaveSummer = Math.max(0, parseInt(document.getElementById('leaveSummer').value)  || 0);
+  const leaveSick   = Math.max(0, parseInt(document.getElementById('leaveSick').value)    || 0);
+  const leaveOther  = Math.max(0, parseInt(document.getElementById('leaveOther').value)   || 0);
+  const totalLeave  = leaveAnnual + leaveSummer + leaveSick + leaveOther;
+
+  // 実働営業日数 = 営業日 - 有給等（マイナスにはならない）
+  const eigyo = Math.max(0, total - weekends - holidays - totalLeave);
 
   const numEl=document.getElementById('resultNum');
   numEl.textContent=eigyo;
@@ -591,6 +700,21 @@ function calculate(){
   setBreakdown('bTotal',total);
   setBreakdown('bWeekend',weekends);
   setBreakdown('bHoliday',holidays);
+
+  // 有給等がある場合のみ4列目を表示、なければ非表示＆3列レイアウトに戻す
+  const leaveItem = document.getElementById('bLeaveItem');
+  const grid      = document.getElementById('breakdownGrid');
+  if(totalLeave > 0){
+    setBreakdown('bLeave', totalLeave);
+    leaveItem.style.display = '';
+    grid.style.gridTemplateColumns = 'repeat(4,1fr)';
+  } else {
+    leaveItem.style.display = 'none';
+    grid.style.gridTemplateColumns = 'repeat(3,1fr)';
+    // プレースホルダーに戻す
+    const el = document.getElementById('bLeave');
+    el.textContent = '—'; el.classList.add('placeholder');
+  }
 
   const listEl=document.getElementById('holidayList');
   const secEl=document.getElementById('holidaySection');
@@ -625,9 +749,12 @@ function resetDisplay(){
   numEl.textContent='—'; numEl.classList.add('placeholder');
   document.getElementById('resultUnitEl').style.visibility='hidden';
   document.getElementById('resultReiwa').textContent='';
-  ['bTotal','bWeekend','bHoliday'].forEach(id=>{
+  ['bTotal','bWeekend','bHoliday','bLeave'].forEach(id=>{
     const el=document.getElementById(id); el.textContent='—'; el.classList.add('placeholder');
   });
+  // 有給列を非表示に戻す
+  document.getElementById('bLeaveItem').style.display='none';
+  document.getElementById('breakdownGrid').style.gridTemplateColumns='repeat(3,1fr)';
   document.getElementById('holidaySection').style.display='none';
   ['btnCopyText','btnCopyCalendar','btnCopyList'].forEach(id=>{
     document.getElementById(id).disabled=true;
@@ -646,11 +773,29 @@ function copyText(){
   if(!lastCalc) return;
   const {start, end, eigyo, total, weekends, holidays} = lastCalc;
   
+  // 有給等の合計を取得（コピー時にも反映）
+  const leaveAnnualC = Math.max(0, parseInt(document.getElementById('leaveAnnual').value) || 0);
+  const leaveSummerC = Math.max(0, parseInt(document.getElementById('leaveSummer').value) || 0);
+  const leaveSickC   = Math.max(0, parseInt(document.getElementById('leaveSick').value)   || 0);
+  const leaveOtherC  = Math.max(0, parseInt(document.getElementById('leaveOther').value)  || 0);
+  const totalLeaveC  = leaveAnnualC + leaveSummerC + leaveSickC + leaveOtherC;
+
+  // 有給等がある場合は内訳も追記する
+  const leaveBreakdown = (() => {
+    if(totalLeaveC === 0) return '';
+    const parts = [];
+    if(leaveAnnualC > 0) parts.push(`有給休暇 ${leaveAnnualC}日`);
+    if(leaveSummerC > 0) parts.push(`夏季休暇 ${leaveSummerC}日`);
+    if(leaveSickC   > 0) parts.push(`病気・特別休暇 ${leaveSickC}日`);
+    if(leaveOtherC  > 0) parts.push(`その他休暇 ${leaveOtherC}日`);
+    return `\n有給等：${totalLeaveC}日（${parts.join('・')}）を除く`;
+  })();
+
   const text = `【営業日計算結果】
 期間：${formatSlashingDate(start, true)} 〜 ${formatSlashingDate(end, true)}
 期間：${toReiwa(start, true)}　～${toReiwa(end, true)}
 営業日数：${eigyo}日
-（総日数 ${total}日 ／ 土日等 ${weekends}日 ／ 祝日等 ${holidays}日を除く）`;
+（総日数 ${total}日 ／ 土日等 ${weekends}日 ／ 祝日等 ${holidays}日を除く${leaveBreakdown}）`;
 
   doCopy('btnCopyText', text, '📋 結果をテキストでコピー');
 }
