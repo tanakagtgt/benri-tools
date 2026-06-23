@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <link rel="canonical" href="https://arigato-tools.com/jikyu-calculator.html">
 
-<!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXJCSR0EX1"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -13,13 +12,11 @@
   gtag('config', 'G-NXJCSR0EX1');
 </script>
 
-<!-- スマホズーム防止：font-size 16px以上を徹底すること -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>実質時給計算ツール｜手取り・拘束時給を計算</title>
 <meta name="description" content="給与明細・源泉徴収票から実質時給を計算。額面・手取り・ボーナス込み・拘束時間ベースの4種類の時給をまとめて確認できます。">
 
-<!-- OGP -->
 <meta property="og:title"       content="実質時給計算ツール｜手取り・拘束時給を計算">
 <meta property="og:description" content="給与明細・源泉徴収票から実質時給を計算。額面・手取り・ボーナス込み・拘束時間ベースの4種類の時給をまとめて確認できます。">
 <meta property="og:image"       content="https://arigato-tools.com/ogp/jikyu-calculator.png">
@@ -28,7 +25,6 @@
 <meta property="og:site_name"   content="ありがとうツール">
 <meta name="twitter:card"       content="summary_large_image">
 
-<!-- Googleフォント：CLSを最小化するためpreconnect -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
@@ -36,18 +32,17 @@
 <style>
 /* =====================================================
    CSS変数（色・サイズの一元管理）
-   色変更はここだけ触ればOK
    ===================================================== */
 :root {
-  --color-primary:        #1a56db;   /* メインカラー（青） */
+  --color-primary:        #1a56db;
   --color-primary-hover:  #1546b8;
-  --color-primary-bg:     #e8f0fe;   /* 薄青背景 */
+  --color-primary-bg:     #e8f0fe;
   --color-primary-border: #c3d4f8;
-  --color-bg:             #f4f6f9;   /* ページ背景 */
-  --color-card:           #fff;      /* カード背景 */
-  --color-input-bg:       #f8fafd;   /* input背景 */
-  --color-border:         #dde3ee;   /* 標準ボーダー */
-  --color-border-input:   #c7d0e0;   /* input枠 */
+  --color-bg:             #f4f6f9;
+  --color-card:           #fff;
+  --color-input-bg:       #f8fafd;
+  --color-border:         #dde3ee;
+  --color-border-input:   #c7d0e0;
   --color-text:           #222;
   --color-text-sub:       #555;
   --color-text-muted:     #666;
@@ -74,7 +69,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  -webkit-text-size-adjust: 100%; /* iPhoneフォントサイズ自動調整を無効化 */
+  -webkit-text-size-adjust: 100%;
 }
 
 .container { width: 100%; max-width: 600px; }
@@ -131,7 +126,7 @@ body {
 .recommend-link:hover { background: #dbeafe; }
 
 /* =====================================================
-   広告エリア（CLS対策：高さ固定で事前確保）
+   広告エリア（CLS対策：高さ固定）
    ===================================================== */
 .ad-area {
   width: 100%;
@@ -141,12 +136,12 @@ body {
   margin-bottom: 14px;
   text-align: center;
   padding: 8px 0;
-  height: 116px; /* CLSを防ぐためmin-heightではなくheightで固定 */
+  height: 116px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  overflow: hidden; /* 広告が溢れても高さを維持 */
+  overflow: hidden;
 }
 .ad-area-label { font-size: 10px; color: #bbb; letter-spacing: 0.08em; margin-bottom: 4px; }
 
@@ -154,8 +149,6 @@ body {
    ヘッダー
    ===================================================== */
 header { text-align: center; margin-bottom: 22px; }
-
-/* h1: SEO重要。ツールのキーワードを含める */
 h1 {
   font-size: clamp(20px, 5vw, 26px);
   font-weight: 700;
@@ -176,7 +169,7 @@ h1 {
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
-/* セクションタイトル（カード内の区切り見出し） */
+/* セクションタイトル */
 .section-title {
   font-size: 11px;
   font-weight: 700;
@@ -189,18 +182,16 @@ h1 {
 
 /* =====================================================
    input共通
-   ★ font-size: 16px以上必須（未満だとiPhoneがズームする）
+   font-size 16px以上：iPhoneズーム防止
    ===================================================== */
-.input-group { margin-bottom: 0; } /* グリッド内はgapで管理 */
-
 .input-group label {
   display: block;
-  font-size: 11px; /* ラベルは入力欄ではないのでズームしない → 小さくてOK */
+  font-size: 11px;
   font-weight: 700;
   color: var(--color-text-sub);
   letter-spacing: 0.05em;
   margin-bottom: 5px;
-  white-space: nowrap;      /* 3列時にラベルが折り返さないように */
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -212,15 +203,15 @@ h1 {
   background: var(--color-input-bg);
   color: var(--color-text);
   font-family: 'BIZ UDPGothic', sans-serif;
-  font-size: 16px; /* ★ iPhoneズーム防止のため16px固定（変更禁止） */
+  font-size: 16px; /* ★ iPhoneズーム防止のため16px固定 */
   padding: 10px 8px;
   outline: none;
   transition: border-color 0.18s;
-  min-height: 44px; /* 片手タップのため最低44px確保 */
+  min-height: 44px; /* タッチターゲット確保 */
 }
 .input-group input:focus { border-color: var(--color-primary); }
 
-/* 自動計算フィールド（readonly）：青背景で「触らないでいい」ことを視覚的に示す */
+/* 自動計算フィールド（readonly）：青背景で視覚的に区別 */
 .input-group input[readonly] {
   background: var(--color-primary-bg);
   color: var(--color-primary);
@@ -230,8 +221,10 @@ h1 {
 }
 
 /* =====================================================
-   3列グリッド（横並び入力）
+   レイアウトグリッド各種
    ===================================================== */
+
+/* 3列グリッド */
 .input-grid-3 {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -239,9 +232,24 @@ h1 {
   margin-bottom: 12px;
 }
 
-/* =====================================================
-   自動計算バッジ（ラベル横の小さいタグ）
-   ===================================================== */
+/* 演算記号付き3列グリッド（労働時間 × 日数 ＝ 月間時間） */
+.input-grid-calc {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  gap: 6px;
+  align-items: end;
+  margin-bottom: 12px;
+}
+.grid-operator {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  padding-bottom: 12px;
+  text-align: center;
+  min-width: 12px;
+}
+
+/* 自動計算バッジ */
 .auto-badge {
   display: inline-block;
   background: var(--color-primary-bg);
@@ -255,9 +263,7 @@ h1 {
   letter-spacing: 0.04em;
 }
 
-/* =====================================================
-   入力ヒントテキスト（グリッド下の補足説明）
-   ===================================================== */
+/* 補足ヒント文字 */
 .input-hint {
   font-size: 10px;
   color: var(--color-text-label);
@@ -266,9 +272,7 @@ h1 {
   line-height: 1.5;
 }
 
-/* =====================================================
-   計算ボタン
-   ===================================================== */
+/* 計算ボタン */
 .btn-calc {
   width: 100%;
   background: var(--color-primary);
@@ -276,20 +280,18 @@ h1 {
   border-radius: var(--radius-btn);
   color: #fff;
   font-family: 'BIZ UDPGothic', sans-serif;
-  font-size: 16px; /* ★ 16px固定 */
+  font-size: 16px;
   font-weight: 700;
   padding: 14px;
   cursor: pointer;
   letter-spacing: 0.06em;
   transition: background 0.15s;
-  min-height: 50px; /* 親指で押しやすいサイズ */
+  min-height: 50px;
   margin-top: 16px;
 }
 .btn-calc:hover { background: var(--color-primary-hover); }
 
-/* =====================================================
-   エラーメッセージ
-   ===================================================== */
+/* エラーメッセージ */
 .error-msg {
   display: none;
   background: var(--color-error-bg);
@@ -314,7 +316,7 @@ h1 {
   overflow: hidden;
 }
 
-/* メイン結果（①給与時給：大きく表示） */
+/* メイン結果（一番大きい数字エリア） */
 .result-main {
   display: flex;
   flex-direction: column;
@@ -346,7 +348,7 @@ h1 {
 }
 .result-sub { font-size: 12px; color: var(--color-text-muted); margin-top: 6px; }
 
-/* サブ結果（②③④：3列ボックス） */
+/* サブ結果（3列ボックス） */
 .breakdown-wrap { padding: 16px; }
 .breakdown {
   display: grid;
@@ -361,7 +363,7 @@ h1 {
   padding: 11px 6px;
   text-align: center;
 }
-/* ②手取り時給を強調表示（最も重要な指標のため） */
+/* ハイライト（手取り時給を強調） */
 .breakdown-item.highlight {
   background: var(--color-primary-bg);
   border-color: var(--color-primary-border);
@@ -374,18 +376,11 @@ h1 {
 }
 .b-num.placeholder { color: #ccc; }
 .breakdown-item.highlight .b-num { color: var(--color-primary); }
-.b-label {
-  font-size: 10px;
-  color: #777;
-  margin-top: 3px;
-  line-height: 1.4;
-}
+.b-label { font-size: 10px; color: #777; margin-top: 3px; line-height: 1.4; }
 .breakdown-item.highlight .b-label { color: var(--color-primary); font-weight: 700; }
 .b-unit { font-size: 9px; color: #999; }
 
-/* =====================================================
-   コピーボタン
-   ===================================================== */
+/* コピーボタン */
 .btn-copy {
   width: 100%;
   background: #f1f5fd;
@@ -404,7 +399,7 @@ h1 {
 .btn-copy:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* =====================================================
-   フッター
+   フッター・リセットリンク
    ===================================================== */
 footer {
   margin-top: 30px;
@@ -412,14 +407,24 @@ footer {
   font-size: 11px;
   color: var(--color-text-label);
 }
-.footer-back {
-  display: inline-block;
+.footer-links {
   margin-top: 8px;
-  color: var(--color-primary);
-  font-size: 11px;
-  text-decoration: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
 }
-.footer-back:hover { text-decoration: underline; }
+.footer-link { color: var(--color-primary); text-decoration: none; }
+.footer-link:hover { text-decoration: underline; }
+.btn-reset-link {
+  background: none;
+  border: none;
+  color: #e11d48;
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 11px;
+  cursor: pointer;
+}
+.btn-reset-link:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -434,7 +439,6 @@ footer {
     </div>
   </div>
 
-  <!-- ヘッダー：h1はSEOキーワードを含むツール名 -->
   <header>
     <h1>💴 実質時給計算ツール</h1>
     <p class="subtitle">
@@ -443,25 +447,17 @@ footer {
     </p>
   </header>
 
-  <!-- ========== 入力カード ========== -->
   <div class="card">
 
-    <!-- ▼ 月次情報（給与明細から） -->
+    <!-- ▼ セクション①：月次情報 -->
     <div class="section-title">▶ 月次情報（給与明細から）</div>
-
-    <!--
-      3列グリッド：総支給額 / 控除額合計 / 手取り額
-      ・手取りは直接入力優先（わかる人向け）
-      ・手取り未入力なら「総支給額 - 控除額」で自動補完
-      ・手取りを空欄に戻すと自動補完モードに戻る
-    -->
     <div class="input-grid-3">
       <div class="input-group">
         <label for="grossPay">総支給額(円)</label>
         <input
           type="number" id="grossPay"
           inputmode="numeric"
-          placeholder="例：280000"
+          placeholder="例：200,000"
           oninput="onInputChange()"
         >
       </div>
@@ -470,13 +466,12 @@ footer {
         <input
           type="number" id="deduction"
           inputmode="numeric"
-          placeholder="例：60000"
+          placeholder="例：46,000"
           oninput="onInputChange()"
         >
       </div>
       <div class="input-group">
-        <!-- 手取りは直接入力優先・未入力時は総支給-控除で自動補完 -->
-        <label for="netPay">手取り額(円)</label>
+        <label for="netPay">手取り額(円)(自動)</label>
         <input
           type="number" id="netPay"
           inputmode="numeric"
@@ -487,36 +482,32 @@ footer {
     </div>
     <p class="input-hint">※ 手取り額がわかる場合はそちらを優先。未入力なら総支給額－控除額で自動補完します。</p>
 
-    <!-- ▼ 労働時間 -->
-    <div class="section-title">▶ 労働時間</div>
-
-    <!--
-      3列グリッド：1日実労働時間 / 月間労働日数 / 月間労働時間（自動）
-      ・月間労働時間 = 1日の時間 × 日数（自動計算・readonly）
-      ・年間労働時間も月間 × 12 で自動連動
-    -->
-    <div class="input-grid-3">
+    <!-- ▼ セクション②：月間労働時間（× で結ぶレイアウト） -->
+    <div class="section-title">▶ 月間労働時間</div>
+    <div class="input-grid-calc">
       <div class="input-group">
-        <label for="hoursPerDay">1日実労働時間(時間)</label>
+        <label for="hoursPerDay">1日の労働時間</label>
         <input
           type="number" id="hoursPerDay"
           inputmode="decimal"
-          placeholder="例：7.75"
+          placeholder="例：8"
           oninput="onInputChange()"
         >
       </div>
+      <div class="grid-operator">×</div>
       <div class="input-group">
-        <label for="workDays">月間労働日数(日)</label>
+        <label for="workDays">月の出勤日数</label>
         <input
           type="number" id="workDays"
           inputmode="numeric"
-          placeholder="例：20"
+          placeholder="例：22"
           oninput="onInputChange()"
         >
       </div>
+      <div class="grid-operator">＝</div>
       <div class="input-group">
-        <!-- 1日の時間 × 日数 で自動計算 -->
-        <label for="monthlyHours">月間労働時間(時間)<span class="auto-badge">自動</span></label>
+        <!-- 自動バッジ：readonly の視覚的補足 -->
+        <label for="monthlyHours">月間労働時間<span class="auto-badge">自動</span></label>
         <input
           type="number" id="monthlyHours"
           readonly
@@ -526,21 +517,15 @@ footer {
       </div>
     </div>
 
-    <!-- ▼ 拘束時間（1日あたり） -->
+    <!-- ▼ セクション③：拘束時間（通勤・準備を含む実拘束） -->
     <div class="section-title">▶ 拘束時間（1日あたり）</div>
-
-    <!--
-      3列グリッド：往復通勤（分） / 準備・休憩等（分） / 1日の拘束時間（自動）
-      ・1日の拘束時間 = 実労働時間 + (通勤 + 休憩等) / 60
-      ・月間拘束時間 = 1日の拘束時間 × 労働日数 → ④拘束時給の計算に使用
-    -->
     <div class="input-grid-3">
       <div class="input-group">
         <label for="commuteMin">往復通勤時間(分)</label>
         <input
           type="number" id="commuteMin"
           inputmode="numeric"
-          placeholder="例：30"
+          placeholder="例：60"
           oninput="onInputChange()"
         >
       </div>
@@ -554,7 +539,7 @@ footer {
         >
       </div>
       <div class="input-group">
-        <!-- 実労働時間 + (通勤+休憩) / 60 で自動計算 -->
+        <!-- 労働時間＋通勤＋準備を合計して自動出力 -->
         <label for="constraintH">1日の拘束時間(時間)<span class="auto-badge">自動</span></label>
         <input
           type="number" id="constraintH"
@@ -565,36 +550,92 @@ footer {
       </div>
     </div>
 
-    <!-- ▼ 年次情報（源泉徴収票から） -->
+    <!-- ▼ セクション④：年次情報（源泉徴収票＋残業時間） -->
     <div class="section-title">▶ 年次情報（源泉徴収票から）</div>
-
-    <!--
-      3列グリッド：年間支払金額 / 年間労働時間（自動・手動上書き可） / 営業日数ツールリンク
-      ・年間労働時間 = 月間労働時間 × 12（手動入力した場合は自動計算を上書きしない）
-      ・手動入力を空欄に戻すと自動計算モードに戻る
-    -->
-    <div class="input-grid-3">
+    <div class="input-grid-3" style="margin-bottom: 8px;">
       <div class="input-group">
-        <label for="annualPay">年間支払金額(円)</label>
+        <label for="annualPay">支払金額(円)</label>
         <input
           type="number" id="annualPay"
           inputmode="numeric"
-          placeholder="例：3800000"
+          placeholder="例：3,200,000"
           oninput="onInputChange()"
         >
       </div>
       <div class="input-group">
-        <!-- 月間労働時間 × 12 で自動補完。手動入力すると自動計算を上書きしない -->
-        <label for="annualHours">年間労働時間(時間)<span class="auto-badge">自動</span></label>
+        <label for="socialIns">社会保険料等(円)</label>
         <input
-          type="number" id="annualHours"
+          type="number" id="socialIns"
           inputmode="numeric"
-          placeholder="自動 or 手入力"
-          oninput="onAnnualHoursManual()"
+          placeholder="例：460,000"
+          oninput="onInputChange()"
         >
       </div>
       <div class="input-group">
-        <!-- 正確な営業日数が必要な場合に誘導 -->
+        <label for="withholdingTax">源泉徴収税額(円)</label>
+        <input
+          type="number" id="withholdingTax"
+          inputmode="numeric"
+          placeholder="例：58,000"
+          oninput="onInputChange()"
+        >
+      </div>
+    </div>
+
+    <div class="input-grid-3" style="margin-bottom: 8px;">
+      <div class="input-group">
+        <!-- 住民税：以前は自動補完だったが、入力ミスのもとなので手動入力に変更 -->
+        <label for="residenceTax">住民税(円)</label>
+        <input
+          type="number" id="residenceTax"
+          inputmode="numeric"
+          placeholder="例：110,000"
+          oninput="onInputChange()"
+        >
+      </div>
+      <div class="input-group">
+        <!-- 年間時間外労働時間：新規追加フィールド -->
+        <label for="overtimeHours">年間残業時間(時間)</label>
+        <input
+          type="number" id="overtimeHours"
+          inputmode="numeric"
+          placeholder="例：100"
+          oninput="onInputChange()"
+        >
+      </div>
+      <div class="input-group">
+        <!-- 年間手取り額：支払金額－社保－源泉－住民税 で自動計算 -->
+        <label for="annualNetPay">年間手取り額(円)<span class="auto-badge">自動</span></label>
+        <input
+          type="number" id="annualNetPay"
+          readonly
+          placeholder="自動入力"
+          tabindex="-1"
+        >
+      </div>
+    </div>
+
+    <div class="input-grid-3">
+      <div class="input-group">
+        <label for="annualWorkDays">年間出勤日数(日)</label>
+        <input
+          type="number" id="annualWorkDays"
+          inputmode="numeric"
+          placeholder="例：240"
+          oninput="onInputChange()"
+        >
+      </div>
+      <div class="input-group">
+        <!-- 年間労働時間 = 拘束時間 × 出勤日数 + 残業時間 -->
+        <label for="annualHours">年間拘束時間(時間)<span class="auto-badge">自動</span></label>
+        <input
+          type="number" id="annualHours"
+          readonly
+          placeholder="自動入力"
+          tabindex="-1"
+        >
+      </div>
+      <div class="input-group">
         <label>営業日数を調べる</label>
         <a
           href="/eigyobi-calculator.html"
@@ -604,8 +645,8 @@ footer {
             height:44px; background:var(--color-primary-bg);
             border:1px solid var(--color-primary-border);
             border-radius:var(--radius-input);
-            color:var(--color-primary); font-size:12px; font-weight:700;
-            text-decoration:none; text-align:center; padding:4px;
+            color:var(--color-primary); font-size:11px; font-weight:700;
+            text-decoration:none; text-align:center; padding:2px;
           "
         >📅 営業日数<br>計算ツール→</a>
       </div>
@@ -614,13 +655,11 @@ footer {
     <button class="btn-calc" onclick="calculate()">計算する</button>
     <div class="error-msg" id="errorMsg"></div>
   </div>
-  <!-- /.card -->
 
-  <!-- ========== 結果パネル ========== -->
+  <!-- 結果パネル -->
   <div class="result-panel">
-
-    <!-- ① 給与時給（メイン・大きく表示） -->
     <div class="result-main">
+      <!-- ① 給与時給（額面）をメインに表示 -->
       <div class="result-label">① 給与時給（額面）</div>
       <div>
         <span class="result-number placeholder" id="resultNum">—</span>
@@ -629,92 +668,79 @@ footer {
       <div class="result-sub" id="resultSub">月間総支給額 ÷ 月間労働時間</div>
     </div>
 
-    <!-- ②③④ サブ結果（3列） -->
     <div class="breakdown-wrap">
       <div class="breakdown">
-
-        <!-- ② 手取り時給（強調：実生活に最も直結するため） -->
+        <!-- ② 手取り時給（ハイライト：最も重要な指標） -->
         <div class="breakdown-item highlight">
           <div class="b-num placeholder" id="bHandori">—</div>
           <div class="b-unit">円／時</div>
           <div class="b-label">② 手取り時給</div>
         </div>
-
-        <!-- ③ ボーナス込み時給（年収ベースの実力値） -->
+        <!-- ③ ボーナス込み時給（年間手取り ÷ 年間拘束時間） -->
         <div class="breakdown-item">
           <div class="b-num placeholder" id="bBonus">—</div>
           <div class="b-unit">円／時</div>
           <div class="b-label">③ ボーナス込み時給</div>
         </div>
-
-        <!-- ④ 拘束時給（通勤・休憩込みの実質コスト） -->
+        <!-- ④ 拘束時給（通勤・準備込みの実コスト） -->
         <div class="breakdown-item">
           <div class="b-num placeholder" id="bKosoku">—</div>
           <div class="b-unit">円／時</div>
           <div class="b-label">④ 拘束時給</div>
         </div>
-
       </div>
       <button class="btn-copy" id="btnCopy" onclick="copyResult()" disabled>📋 結果をコピー</button>
     </div>
-
   </div>
-  <!-- /.result-panel -->
 
-  <!-- 広告エリア（CLS対策：height固定で事前確保） -->
+  <!-- 広告エリア（CLS対策：height固定） -->
   <div class="ad-area">
     <div class="ad-area-label">スポンサー</div>
-    <!-- ここにAdSenseコードを貼る（推奨：レスポンシブ広告 or 320×100） -->
-    <!-- <ins class="adsbygoogle" ...></ins> -->
+    <!-- ここにAdSenseコードを貼る -->
   </div>
 
 </div><!-- /.container -->
 
 <footer>
-  © 2025 実質時給計算ツール<br>
-  <a class="footer-back" href="/index.html">← ツール一覧に戻る</a>
+  <span>© 2025 実質時給計算ツール</span>
+  <div class="footer-links">
+    <a class="footer-link" href="/index.html">← ツール一覧に戻る</a>
+    <span>|</span>
+    <button class="btn-reset-link" onclick="resetAllInputs()">🔄 数値をリセット</button>
+  </div>
 </footer>
 
 <script>
 /* =====================================================
-   設定（★ツールごとに書き換える箇所）
+   設定
    ===================================================== */
-
-// tools.json内のid（自分自身をおすすめから除外するため）
 const CURRENT_TOOL_ID = 'jikyu-calculator';
+const STORAGE_KEY     = 'jikyu-calculator_inputs';
 
-// localStorage保存キー（ツール固有の名前にする・他ツールと重複しないこと）
-const STORAGE_KEY = 'jikyu-calculator_inputs';
-
-// 保存対象のinput id一覧（自動計算フィールドは除外・手動入力のみ保存）
+// LocalStorageに保存したいフィールドのid一覧
+// ★ 削除：afterDeduction, totalDeductions
+// ★ 追加：overtimeHours, residenceTax（手動入力に変更）
 const STORAGE_FIELDS = [
-  'grossPay',    // 月間総支給額
-  'deduction',   // 月間控除額合計
-  'netPay',      // 月間手取り額（手動入力優先）
-  'hoursPerDay', // 1日の実労働時間
-  'workDays',    // 月間労働日数
-  'commuteMin',  // 往復通勤時間（分）
-  'breakMin',    // 準備・休憩等（分）
-  'annualPay',   // 源泉徴収票 支払金額
-  'annualHours', // 年間労働時間（手動上書き用）
+  'grossPay', 'deduction', 'netPay',
+  'hoursPerDay', 'workDays',
+  'commuteMin', 'breakMin',
+  'annualPay', 'socialIns', 'withholdingTax',
+  'residenceTax', 'overtimeHours', 'annualWorkDays'
 ];
 
 /* =====================================================
-   状態管理（手動入力フラグ）
+   状態管理
    ===================================================== */
-
-// 年間労働時間を手動入力したか（true → 自動計算で上書きしない）
-let annualHoursManual = false;
-
-// 手取り額を手動入力したか（true → 総支給-控除の自動補完をしない）
+// 手取り額を手動入力したかどうかのフラグ
+// trueのとき自動補完をスキップする
 let netPayManual = false;
 
 /* =====================================================
-   初期化（DOMロード完了後に実行）
+   初期化
    ===================================================== */
 document.addEventListener('DOMContentLoaded', () => {
-  loadRecommends(); // おすすめツールを非同期で読み込む
-  restoreInputs();  // LocalStorageから前回入力値を復元
+  loadRecommends();  // おすすめツールを非同期で読み込む
+  restoreInputs();   // LocalStorageから入力値を復元
 });
 
 /* =====================================================
@@ -724,7 +750,7 @@ async function loadRecommends() {
   try {
     const res   = await fetch('/tools.json');
     const tools = await res.json();
-    // 自分以外をシャッフルして2件表示
+    // 自分自身を除外してランダムに2件表示
     const others = tools.filter(t => t.id !== CURRENT_TOOL_ID);
     const picks  = others.sort(() => Math.random() - 0.5).slice(0, 2);
     const wrap   = document.getElementById('recommendLinks');
@@ -733,30 +759,23 @@ async function loadRecommends() {
       `<a class="recommend-link" href="${t.url}">${t.emoji} ${t.name}</a>`
     ).join('');
   } catch (e) {
-    // 読み込み失敗時はエリアを空にする（エラー表示しない）
     document.getElementById('recommendLinks').textContent = '';
   }
 }
 
 /* =====================================================
-   手動入力ハンドラ
-   手取り・年間労働時間は「空欄に戻したら自動補完に戻る」仕様
+   手取り額の手動入力フラグ管理
+   - 手動で値を入れた → 自動補完をスキップ
+   - 空にした → 自動補完を再開
    ===================================================== */
-
-// 手取り額を手動入力した時（空欄 → 自動補完モードに戻す）
 function onNetPayManual() {
   netPayManual = document.getElementById('netPay').value !== '';
   onInputChange();
 }
 
-// 年間労働時間を手動入力した時（空欄 → 自動計算モードに戻す）
-function onAnnualHoursManual() {
-  annualHoursManual = document.getElementById('annualHours').value !== '';
-  onInputChange();
-}
-
 /* =====================================================
-   入力変更時のハンドラ（保存 → 自動フィールド更新 → 計算）
+   入力変更時のハンドラ
+   保存 → 自動フィールド更新 → 計算 の順で実行
    ===================================================== */
 function onInputChange() {
   saveInputs();
@@ -766,128 +785,159 @@ function onInputChange() {
 
 /* =====================================================
    自動計算フィールドの更新
-   月間労働時間 / 年間労働時間 / 1日の拘束時間 / 手取り額（補完）
+   readonly の input に計算済みの値を書き込む
    ===================================================== */
 function updateAutoFields() {
-  const hoursPerDay = parseFloat(document.getElementById('hoursPerDay').value);
-  const workDays    = parseFloat(document.getElementById('workDays').value);
-  const commuteMin  = parseFloat(document.getElementById('commuteMin').value) || 0;
-  const breakMin    = parseFloat(document.getElementById('breakMin').value)    || 0;
+  const hoursPerDay    = parseFloat(document.getElementById('hoursPerDay').value);
+  const workDays       = parseFloat(document.getElementById('workDays').value);
+  const commuteMin     = parseFloat(document.getElementById('commuteMin').value)    || 0;
+  const breakMin       = parseFloat(document.getElementById('breakMin').value)       || 0;
+  const annualWorkDays = parseFloat(document.getElementById('annualWorkDays').value);
+  const overtimeHours  = parseFloat(document.getElementById('overtimeHours').value)  || 0;
+  const annualPay      = parseFloat(document.getElementById('annualPay').value);
+  const socialIns      = parseFloat(document.getElementById('socialIns').value)       || 0;
+  const withholdingTax = parseFloat(document.getElementById('withholdingTax').value)  || 0;
+  const residenceTax   = parseFloat(document.getElementById('residenceTax').value)    || 0;
 
-  // ── 月間労働時間：1日の時間 × 労働日数 ──
+  // ── 月間労働時間 = 1日の労働時間 × 出勤日数 ──
   if (!isNaN(hoursPerDay) && !isNaN(workDays)) {
-    const monthlyH = round2(hoursPerDay * workDays);
-    document.getElementById('monthlyHours').value = monthlyH;
-
-    // 年間労働時間：月間 × 12（手動入力中は上書きしない）
-    if (!annualHoursManual) {
-      document.getElementById('annualHours').value = round2(monthlyH * 12);
-    }
+    document.getElementById('monthlyHours').value = round2(hoursPerDay * workDays);
   } else {
     document.getElementById('monthlyHours').value = '';
-    if (!annualHoursManual) document.getElementById('annualHours').value = '';
   }
 
-  // ── 1日の拘束時間：実労働時間 + (通勤 + 休憩) / 60 ──
+  // ── 1日の拘束時間 = 労働時間 + (通勤+準備) / 60 ──
+  let constraintH = 0;
   if (!isNaN(hoursPerDay)) {
-    document.getElementById('constraintH').value =
-      round2(hoursPerDay + (commuteMin + breakMin) / 60);
+    constraintH = hoursPerDay + (commuteMin + breakMin) / 60;
+    document.getElementById('constraintH').value = round2(constraintH);
   } else {
     document.getElementById('constraintH').value = '';
   }
 
-  // ── 手取り額の自動補完：手動入力がない場合のみ総支給 - 控除 ──
+  // ── 年間拘束時間 = 拘束時間 × 出勤日数 + 残業時間 ──
+  if (constraintH > 0 && !isNaN(annualWorkDays)) {
+    const total = constraintH * annualWorkDays + overtimeHours;
+    document.getElementById('annualHours').value = round2(total);
+  } else {
+    document.getElementById('annualHours').value = '';
+  }
+
+  // ── 月間手取り額の自動補完（手動入力していない場合のみ） ──
   if (!netPayManual) {
     const grossPay  = parseFloat(document.getElementById('grossPay').value);
     const deduction = parseFloat(document.getElementById('deduction').value);
     document.getElementById('netPay').value =
       (!isNaN(grossPay) && !isNaN(deduction)) ? grossPay - deduction : '';
   }
+
+  // ── 年間手取り額 = 支払金額 − 社保 − 源泉 − 住民税 ──
+  // ★ 旧バージョン：afterDeduction, totalDeductions で住民税を自動補完していた
+  //   → 入力項目を減らしてシンプル化。住民税は直接入力で対応。
+  if (!isNaN(annualPay)) {
+    const annualNetPayVal = annualPay - socialIns - withholdingTax - residenceTax;
+    document.getElementById('annualNetPay').value = annualNetPayVal > 0 ? Math.round(annualNetPayVal) : 0;
+  } else {
+    document.getElementById('annualNetPay').value = '';
+  }
 }
 
 /* =====================================================
-   入力値取得（calculateResult()に渡す）
+   【入力取得】
+   計算に使う値を一括で取り出す
    ===================================================== */
 function calculateInputs() {
   return {
-    grossPay:    parseFloat(document.getElementById('grossPay').value),
-    netPay:      parseFloat(document.getElementById('netPay').value),
-    monthlyH:    parseFloat(document.getElementById('monthlyHours').value),
-    constraintH: parseFloat(document.getElementById('constraintH').value),
-    workDays:    parseFloat(document.getElementById('workDays').value),
-    annualPay:   parseFloat(document.getElementById('annualPay').value),
-    annualH:     parseFloat(document.getElementById('annualHours').value),
+    grossPay:       parseFloat(document.getElementById('grossPay').value),
+    netPay:         parseFloat(document.getElementById('netPay').value),
+    monthlyH:       parseFloat(document.getElementById('monthlyHours').value),
+    constraintH:    parseFloat(document.getElementById('constraintH').value),
+    workDays:       parseFloat(document.getElementById('workDays').value),
+    annualNetPay:   parseFloat(document.getElementById('annualNetPay').value),
+    annualH:        parseFloat(document.getElementById('annualHours').value),
   };
 }
 
 /* =====================================================
-   計算ロジック
-   @param {object} inp - calculateInputs()の戻り値
-   @returns {object|null} 結果オブジェクト / 最低限入力不足はnull
+   【計算】
+   4種類の時給を算出する
+   @returns {object|null} 入力不正はnull
    ===================================================== */
 function calculateResult(inp) {
-  // 最低限：月間総支給額と月間労働時間がないと計算不可
+  // 最低限必要な値：総支給額 と 月間労働時間
   if (isNaN(inp.grossPay) || isNaN(inp.monthlyH) || inp.monthlyH <= 0) return null;
 
-  // ① 給与時給（額面）：月間総支給額 ÷ 月間労働時間
+  // ① 給与時給（額面）= 月間総支給 ÷ 月間労働時間
   const jikyuGross = inp.grossPay / inp.monthlyH;
 
-  // ② 手取り時給：手取り額 ÷ 月間労働時間（手取り未入力なら null）
+  // ② 手取り時給 = 月間手取り ÷ 月間労働時間
   const jikyuNet = (!isNaN(inp.netPay) && inp.netPay > 0)
-    ? inp.netPay / inp.monthlyH : null;
+    ? inp.netPay / inp.monthlyH
+    : null;
 
-  // ③ ボーナス込み時給：支払金額 ÷ 年間労働時間（どちらか未入力なら null）
-  const jikyuBonus = (!isNaN(inp.annualPay) && !isNaN(inp.annualH) && inp.annualH > 0)
-    ? inp.annualPay / inp.annualH : null;
+  // ③ ボーナス込み時給 = 年間手取り ÷ 年間拘束時間
+  //    年間情報が揃っていない場合はnull（未計算表示）
+  const jikyuBonus = (!isNaN(inp.annualNetPay) && inp.annualNetPay > 0
+    && !isNaN(inp.annualH) && inp.annualH > 0)
+    ? inp.annualNetPay / inp.annualH
+    : null;
 
-  // ④ 拘束時給：手取り額 ÷ 月間拘束時間（= 1日の拘束時間 × 労働日数）
-  //    手取り・拘束時間・日数のいずれかが未入力なら null
+  // ④ 拘束時給 = 月間手取り ÷ 月間拘束時間（通勤・準備込み）
   const monthlyConstraintH = (!isNaN(inp.constraintH) && !isNaN(inp.workDays))
-    ? inp.constraintH * inp.workDays : NaN;
+    ? inp.constraintH * inp.workDays
+    : NaN;
   const jikyuKosoku = (!isNaN(inp.netPay) && inp.netPay > 0
     && !isNaN(monthlyConstraintH) && monthlyConstraintH > 0)
-    ? inp.netPay / monthlyConstraintH : null;
+    ? inp.netPay / monthlyConstraintH
+    : null;
 
   return { jikyuGross, jikyuNet, jikyuBonus, jikyuKosoku };
 }
 
 /* =====================================================
-   結果表示（displayResult → DOM反映）
+   【表示】
+   計算結果をDOMに反映する
    ===================================================== */
 function displayResult(r) {
-  const fmt = v => v !== null ? Math.round(v).toLocaleString() : '—';
+  // null → '—'（未計算）、数値 → 整数に丸めてカンマ区切り
+  const fmt = v => v !== null ? Math.round(v).toLocaleString() : null;
 
-  // ヘルパー：値をセット＋placeholderクラス制御
   const setVal = (id, val) => {
     const el = document.getElementById(id);
-    el.textContent = fmt(val);
-    el.classList.toggle('placeholder', val === null);
+    if (val !== null) {
+      el.textContent = fmt(val);
+      el.classList.remove('placeholder');
+    } else {
+      el.textContent = '—';
+      el.classList.add('placeholder');
+    }
   };
 
-  setVal('resultNum', r.jikyuGross); // ① 給与時給（メイン）
-  setVal('bHandori',  r.jikyuNet);   // ② 手取り時給
-  setVal('bBonus',    r.jikyuBonus); // ③ ボーナス込み時給
-  setVal('bKosoku',   r.jikyuKosoku);// ④ 拘束時給
+  setVal('resultNum', r.jikyuGross);
+  setVal('bHandori',  r.jikyuNet);
+  setVal('bBonus',    r.jikyuBonus);
+  setVal('bKosoku',   r.jikyuKosoku);
 
-  document.getElementById('btnCopy').disabled = false; // コピーボタンを有効化
+  document.getElementById('btnCopy').disabled = false;
 }
 
 /* =====================================================
-   コピー文字列（クリップボードに書き込む内容）
+   【コピー文字列】
+   クリップボードに書き込むテキストを組み立てる
    ===================================================== */
 function buildCopyText(r) {
   const fmt = v => v !== null ? Math.round(v).toLocaleString() + ' 円/時' : '（未計算）';
   return [
     '【実質時給 計算結果】',
-    `① 給与時給（額面）　：${fmt(r.jikyuGross)}`,
-    `② 手取り時給　　　　：${fmt(r.jikyuNet)}`,
-    `③ ボーナス込み時給　：${fmt(r.jikyuBonus)}`,
-    `④ 拘束時給　　　　　：${fmt(r.jikyuKosoku)}`,
+    `① 給与時給（額面） ：${fmt(r.jikyuGross)}`,
+    `② 手取り時給     ：${fmt(r.jikyuNet)}`,
+    `③ ボーナス込み時給 ：${fmt(r.jikyuBonus)}`,
+    `④ 拘束時給      ：${fmt(r.jikyuKosoku)}`,
   ].join('\n');
 }
 
 /* =====================================================
-   計算メイン処理（入力取得 → 計算 → 表示）
+   計算メイン処理
    ===================================================== */
 function calculate() {
   const inp    = calculateInputs();
@@ -895,9 +945,9 @@ function calculate() {
   const errEl  = document.getElementById('errorMsg');
 
   if (result === null) {
-    // 最低限の入力が揃っていない：静かにリセット（エラー表示なし）
+    // 未入力段階ではエラー表示しない（静かに無視）
     errEl.classList.remove('show');
-    reset();
+    resetOutputs();
     return;
   }
 
@@ -906,11 +956,12 @@ function calculate() {
 }
 
 /* =====================================================
-   リセット（結果をプレースホルダーに戻す）
+   結果表示をプレースホルダーに戻す
    ===================================================== */
-function reset() {
+function resetOutputs() {
   ['resultNum', 'bHandori', 'bBonus', 'bKosoku'].forEach(id => {
     const el = document.getElementById(id);
+    if (!el) return;
     el.textContent = '—';
     el.classList.add('placeholder');
   });
@@ -918,7 +969,32 @@ function reset() {
 }
 
 /* =====================================================
-   コピー処理（clipboard API + 古いブラウザ向けフォールバック）
+   全数値クリア（リセットリンク用）
+   ===================================================== */
+function resetAllInputs() {
+  // 入力フィールドをすべて空に
+  STORAGE_FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+
+  // 自動フィールドも空に
+  ['monthlyHours', 'constraintH', 'annualHours', 'annualNetPay'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+
+  // フラグをリセット
+  netPayManual = false;
+
+  // LocalStorage削除
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+
+  resetOutputs();
+}
+
+/* =====================================================
+   コピー処理
    ===================================================== */
 function copyResult() {
   const result = calculateResult(calculateInputs());
@@ -931,7 +1007,7 @@ function copyResult() {
     btn.textContent = '✅ コピーしました！';
     setTimeout(() => { btn.textContent = '📋 結果をコピー'; }, 2000);
   }).catch(() => {
-    // clipboard API非対応ブラウザ向けフォールバック
+    // clipboard API非対応ブラウザのフォールバック
     const ta = document.createElement('textarea');
     ta.value = text;
     ta.style.cssText = 'position:fixed;opacity:0;';
@@ -944,7 +1020,6 @@ function copyResult() {
 
 /* =====================================================
    LocalStorage：入力値を保存
-   プライベートモード等で使えない場合は無視
    ===================================================== */
 function saveInputs() {
   try {
@@ -958,7 +1033,7 @@ function saveInputs() {
 }
 
 /* =====================================================
-   LocalStorage：入力値を復元（ページ読み込み時）
+   LocalStorage：入力値を復元
    ===================================================== */
 function restoreInputs() {
   try {
@@ -972,31 +1047,19 @@ function restoreInputs() {
       if (el) el.value = data[id];
     });
 
-    // 手動入力フラグを復元（空欄でない場合は手動入力とみなす）
-    if (data['netPay']      && data['netPay']      !== '') netPayManual      = true;
-    if (data['annualHours'] && data['annualHours'] !== '') annualHoursManual = true;
+    // 手取り額を手動入力していた場合はフラグを立て直す
+    if (data['netPay'] && data['netPay'] !== '') netPayManual = true;
 
-    // 復元後：自動フィールドを更新 → 計算実行
+    // 自動フィールドを再計算してから表示
     updateAutoFields();
     calculate();
-  } catch (e) {
-    // パース失敗時は無視（壊れたデータはそのまま放置）
-  }
+  } catch (e) {}
 }
 
 /* =====================================================
-   ユーティリティ
+   ユーティリティ：小数点2桁に丸める
    ===================================================== */
-
-// 小数第2位で四捨五入（時間表示のガタつき防止）
 function round2(v) { return Math.round(v * 100) / 100; }
-
-// エラー表示ヘルパー（将来のバリデーション強化時に使う）
-function showError(msg) {
-  const el = document.getElementById('errorMsg');
-  el.textContent = msg;
-  el.classList.add('show');
-}
 </script>
 </body>
 </html>
