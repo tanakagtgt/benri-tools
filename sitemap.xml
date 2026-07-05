@@ -1,14 +1,68 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://arigato-tools.com/</loc></url>
-  <url><loc>https://arigato-tools.com/age</loc></url>
-  <url><loc>https://arigato-tools.com/eigyobi-count</loc></url>
-  <url><loc>https://arigato-tools.com/jyutakuro-n</loc></url>
-  <url><loc>https://arigato-tools.com/nisa</loc></url>
-  <url><loc>https://arigato-tools.com/pdf_image_converter</loc></url>
-  <url><loc>https://arigato-tools.com/wareki</loc></url>
-  <url><loc>https://arigato-tools.com/image-editor</loc></url>
-  <url><loc>https://arigato-tools.com/nutrition-cospa-tool</loc></url>
-  <url><loc>https://arigato-tools.com/unit-price-compare</loc></url>
-  <url><loc>https://arigato-tools.com/coffee-calculator</loc></url>
+
+  <url>
+    <loc>https://arigato-tools.com/</loc>
+  </url>
+
+  <url>
+    <loc>https://arigato-tools.com/age</loc>
+  </url>
+
+  <url>
+    <loc>https://arigato-tools.com/chintai-sougaku</loc>
+  </url>
+
+  <url>
+    <loc>https://arigato-tools.com/coffee-calculator</loc>
+  </url>
+
+  <url>
+    <loc>https://arigato-tools.com/eigyobi-count</loc>
+  </url>
+
+  <url>
+    <loc>https://arigato-tools.com/function-calculator</loc>
+  </url>
+
+  <url>
+    <loc>https://arigato-tools.com/image-editor</loc>
+  </url>
+
+  <url>
+    <loc>https://arigato-tools.com/jidouteate-calculator</loc>
+  </url>
+
+  <url>
+    <loc>https://arigato-tools.com/jikyu-calculator</loc>
+  </url>
+
+  <url>
+    <loc>https://arigato-tools.com/jyutakuro-n</loc>
+  </url>
+
+  <url>
+    <loc>https://arigato-tools.com/mitumorisho-seikyuusho</loc>
+  </url>
+
+  <url>
+    <loc>https://arigato-tools.com/nisa</loc>
+  </url>
+
+  <url>
+    <loc>https://arigato-tools.com/nutrition-cospa-tool</loc>
+  </url>
+
+  <url>
+    <loc>https://arigato-tools.com/pdf_image_converter</loc>
+  </url>
+
+  <url>
+    <loc>https://arigato-tools.com/unit-price-compare</loc>
+  </url>
+
+  <url>
+    <loc>https://arigato-tools.com/wareki</loc>
+  </url>
+
 </urlset>
