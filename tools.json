@@ -1,0 +1,18 @@
+[
+  { "id": "age", "name": "年齢計算ツール", "url": "https://arigato-tools.com/age", "emoji": "🎂" },
+  { "id": "eigyobi-count", "name": "営業日計算ツール", "url": "https://arigato-tools.com/eigyobi-count", "emoji": "📅" },
+  { "id": "debt-repayment-simulator", "name": "借金返済シミュレーションツール", "url": "https://arigato-tools.com/debt-repayment-simulator", "emoji": "💳" },
+  { "id": "jyutakuro-n", "name": "住宅ローン算定ツール", "url": "https://arigato-tools.com/jyutakuro-n", "emoji": "🏠" },
+  { "id": "chintai-sougaku", "name": "賃貸総額シミュレーター", "url": "https://arigato-tools.com/chintai-sougaku", "emoji": "🏢" },
+  { "id": "nisa", "name": "積立NISAシミュレーター", "url": "https://arigato-tools.com/nisa", "emoji": "📈" },
+  { "id": "pdf_image_converter", "name": "PDF⇔画像 変換ツール", "url": "https://arigato-tools.com/pdf_image_converter", "emoji": "🖼️" },
+  { "id": "wareki", "name": "和暦⇔西暦 変換ツール", "url": "https://arigato-tools.com/wareki", "emoji": "🗓️" },
+  { "id": "function-calculator", "name": "関数電卓（sin・cos・√対応）", "url": "https://arigato-tools.com/function-calculator", "emoji": "🔧" },
+  { "id": "image-editor", "name": "画像編集ツール", "url": "https://arigato-tools.com/image-editor", "emoji": "🖌️" },
+  { "id": "unit-price-compare", "name": "単価比較ツール", "url": "https://arigato-tools.com/unit-price-compare", "emoji": "💴" },
+  { "id": "nutrition-cospa-tool", "name": "栄養コスパ比較ツール", "url": "https://arigato-tools.com/nutrition-cospa-tool", "emoji": "🥦" },
+  { "id": "coffee-calculator", "name": "コーヒー豆とお湯計算ツール", "url": "https://arigato-tools.com/coffee-calculator", "emoji": "☕" },
+  { "id": "jikyu-calculator", "name": "実質時給計算ツール", "url": "https://arigato-tools.com/jikyu-calculator", "emoji": "⏱️" },
+  { "id": "jidouteate-calculator", "name": "児童手当計算ツール", "url": "https://arigato-tools.com/jidouteate-calculator", "emoji": "👶" },
+  { "id": "mitumorisho-seikyuusho", "name": "見積書・請求書 作成ツール", "url": "https://arigato-tools.com/mitumorisho-seikyuusho", "emoji": "🧾" }
+]
