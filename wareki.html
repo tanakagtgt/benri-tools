@@ -11,14 +11,41 @@
   gtag('js', new Date());
   gtag('config', 'G-NXJCSR0EX1');
 </script>
+<!--
+  =====================================================
+  【テンプレート使用時の書き換えチェックリスト（軽量版）】
+  ★ = 必須　☆ = ツールに応じて調整
+
+  ★ canonical          → 正しいURLに書き換える（済）
+  ★ <title>            → ツール名（25文字以内推奨）（済）
+  ★ meta description   → 80〜120文字（済）
+  ★ og:title / description / url → 上と同内容でOK（済）
+  ★ og:image           → OGP画像URL（1200×630px）※未設定なら追加検討
+  ★ h1テキスト         → ツール名（検索キーワード含める）（済）
+  ★ common.cssのリンク → 本番環境の実パスに書き換える（済）
+  ★ common.jsのリンク  → 本番環境の実パスに書き換える（</body>直前）（済）
+  ★ CURRENT_TOOL_ID / STORAGE_KEY / STORAGE_FIELDS（済）
+  ☆ このツールは変換系のため、標準の
+    INPUT_LABELS / RESULT_LABELS / calculateInputs() / calculateResult() /
+    displayResult() は使わず、西暦を基準に全項目を同期する
+    syncFromSeireki() 方式に置き換えている（意図的な設計）
+  ☆ 結果コピーボタンも標準4ボタン
+    （btnCopyText/btnCopyUrlInputs/btnQrInputs/btnCopyExcel）ではなく、
+    「結果をコピー」「エクセル用コピー」の2ボタン構成に変更（意図的な設計）
+  ☆ 入力項目（input-grid、toggle、checkbox等）→ ツールに応じて追加削除（済）
+  ☆ サブ結果（bA/bB/bC）→ このツールでは不使用のため未使用（削除済み扱い）
+  ※ 共通のUI・処理（footer、シェア、コピー、QR、保存復元等）は
+    common.js / common.css 側にあるので、このファイルでは触らない
+  =====================================================
+-->
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>年齢西暦和暦変換ツール｜年齢・西暦・和暦を瞬時に変換</title>
-<meta name="description" content="令和・平成・昭和の和暦と西暦、年齢を双方向で即座に変換。十干・十二支も同時表示、前後年の一覧表付き。スマホでも使いやすい無料の和暦変換ツール。">
+<meta name="description" content="令和・平成・昭和の和暦と西暦、年齢を双方向で即座に変換。十干・十二支、学年・厄年・長寿祝いも表示、前後年の一覧表付き。スマホでも使いやすい無料の和暦変換ツール。">
 
 <meta property="og:title" content="年齢西暦和暦変換ツール｜年齢・西暦・和暦を瞬時に変換">
-<meta property="og:description" content="令和・平成・昭和の和暦と西暦、年齢を双方向で即座に変換。十干・十二支も同時表示、前後年の一覧表付き。スマホでも使いやすい無料の和暦変換ツール。">
+<meta property="og:description" content="令和・平成・昭和の和暦と西暦、年齢を双方向で即座に変換。十干・十二支、学年・厄年・長寿祝いも表示、前後年の一覧表付き。スマホでも使いやすい無料の和暦変換ツール。">
 <meta property="og:url" content="https://arigato-tools.com/wareki">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="便利ツール集">
@@ -78,10 +105,65 @@
 .etto-display strong { color:var(--color-primary); font-size:16px; margin-left:2px; }
 
 /* =====================================================
+   ①追加：学年・厄年・長寿祝い（入力年＝生まれ年扱いで計算した「今現在」の状態）
+   ===================================================== */
+.extra-info {
+  display:flex; flex-wrap:wrap; justify-content:center; gap:8px;
+  margin:0 0 14px;
+}
+.extra-info-item {
+  font-size:12px; color:var(--color-text-sub);
+  background:var(--color-input-bg); border:1px solid var(--color-border);
+  border-radius:20px; padding:6px 13px;
+  transition:all 0.15s;
+}
+.extra-info-item strong { color:var(--color-text); margin-left:3px; }
+/* 該当あり（厄年・長寿祝いに当たる年）は色を変えて目立たせる */
+.extra-info-item.hit {
+  background:var(--color-primary-bg);
+  border-color:var(--color-primary-border);
+}
+.extra-info-item.hit strong { color:var(--color-primary); }
+
+/* ③追加：結果コピー行を2分割（左：結果をコピー／右：エクセル用コピー） */
+.result-copy-row {
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:8px;
+}
+.result-copy-row .btn-copy { margin-bottom:0; }
+
+/* =====================================================
    年表（前後年一覧）
    ===================================================== */
 .table-section { margin-bottom:14px; }
-.table-note { font-size:11px; color:var(--color-text-muted); margin-bottom:10px; line-height:1.6; }
+.table-note { font-size:11px; color:var(--color-text-muted); margin-bottom:8px; line-height:1.6; }
+
+/* ②追加：年表の追加列（学年／厄年／長寿祝い）の表示切り替えトグル */
+.col-toggle-wrap {
+  display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;
+}
+.col-toggle-item {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:7px 13px; border-radius:20px;
+  border:1px solid var(--color-border-input);
+  background:var(--color-input-bg);
+  font-family:'BIZ UDPGothic',sans-serif;
+  font-size:12px; font-weight:700; color:var(--color-text-sub);
+  cursor:pointer; transition:all 0.15s; min-height:36px;
+  user-select:none;
+}
+.col-toggle-item input { display:none; } /* 見た目はチェックボックスでなくピル型トグルにする */
+.col-toggle-item.active {
+  border-color:var(--color-primary);
+  background:var(--color-primary-bg);
+  color:var(--color-primary);
+}
+
+/* 補足キャプション（学年・厄年・長寿祝いの算出根拠を明記） */
+.col-note {
+  font-size:10px; color:#98a2b8; line-height:1.7; margin-bottom:10px;
+}
 
 .era-table-wrap { overflow-x:auto; max-height:620px; overflow-y:auto; }
 .era-table { width:100%; border-collapse:collapse; font-size:13px; }
@@ -90,10 +172,12 @@
   padding:8px 5px; text-align:center; border:1px solid var(--color-border);
   font-size:11px; letter-spacing:0.02em;
   position:sticky; top:0;
+  white-space:nowrap;
 }
 .era-table td {
   padding:7px 5px; text-align:center; border:1px solid #eaeff6;
   color:#333; transition:background 0.1s; cursor:pointer;
+  white-space:nowrap;
 }
 .era-table tr:nth-child(even) td { background:#fafbfd; }
 .era-table tr:hover td { background:var(--color-primary-bg); }
@@ -108,6 +192,36 @@
   font-weight:700;
 }
 .era-table tr.current-row td.era-invalid { color:#9aa6c9; }
+
+/* ②追加：全10列（西暦〜長寿祝い）は、テーブル(#yearTable)に対応する
+   show-xxx クラスが付いた時だけCSSで表示する（初期は全列いったん非表示）
+   → 行の再描画なしで軽量に切り替えできる。列を増やす時はここに1行足すだけでOK */
+.era-table th[data-col],
+.era-table td[data-col] { display:none; }
+#yearTable.show-seireki  th[data-col="seireki"],
+#yearTable.show-seireki  td[data-col="seireki"]  { display:table-cell; }
+#yearTable.show-showa    th[data-col="showa"],
+#yearTable.show-showa    td[data-col="showa"]    { display:table-cell; }
+#yearTable.show-heisei   th[data-col="heisei"],
+#yearTable.show-heisei   td[data-col="heisei"]   { display:table-cell; }
+#yearTable.show-reiwa    th[data-col="reiwa"],
+#yearTable.show-reiwa    td[data-col="reiwa"]    { display:table-cell; }
+#yearTable.show-jikkan   th[data-col="jikkan"],
+#yearTable.show-jikkan   td[data-col="jikkan"]   { display:table-cell; }
+#yearTable.show-juunishi th[data-col="juunishi"],
+#yearTable.show-juunishi td[data-col="juunishi"] { display:table-cell; }
+#yearTable.show-age      th[data-col="age"],
+#yearTable.show-age      td[data-col="age"]      { display:table-cell; }
+#yearTable.show-gakunen th[data-col="gakunen"],
+#yearTable.show-gakunen td[data-col="gakunen"] { display:table-cell; }
+#yearTable.show-yakudoshi th[data-col="yakudoshi"],
+#yearTable.show-yakudoshi td[data-col="yakudoshi"] { display:table-cell; }
+#yearTable.show-choju th[data-col="choju"],
+#yearTable.show-choju td[data-col="choju"] { display:table-cell; }
+
+/* 厄年・長寿祝いに該当する行のセルは色を変えて目立たせる */
+.era-table td.hit-yaku { color:#b91c1c; font-weight:700; }
+.era-table td.hit-choju { color:#7c3aed; font-weight:700; }
 </style>
 </head>
 <body>
@@ -124,7 +238,7 @@
 
   <header>
     <h1>🔧 和暦⇔西暦 変換ツール</h1>
-    <p class="subtitle">西暦・昭和・平成・令和・年齢のどれかを入力すると全部自動で変換<br>十干・十二支、前後年の一覧表つき</p>
+    <p class="subtitle">西暦・昭和・平成・令和・年齢のどれかを入力すると全部自動で変換<br>十干・十二支、学年・厄年・長寿祝い、前後年の一覧表つき</p>
   </header>
 
   <!-- 変換カード -->
@@ -171,18 +285,82 @@
       <span>十二支：<strong id="shishiVal">—</strong></span>
     </div>
 
-    <button class="btn-copy" id="btnCopy" onclick="copyResult()">📋 結果をコピー</button>
+    <!-- ①追加：学年・厄年・長寿祝い（入力年を生まれ年とみなし、現在時点で判定） -->
+    <div class="extra-info" id="extraInfo">
+      <span class="extra-info-item" id="gakunenInfo">🎓 学年：<strong>—</strong></span>
+      <span class="extra-info-item" id="yakudoshiInfo">⚠️ 厄年：<strong>—</strong></span>
+      <span class="extra-info-item" id="chojuInfo">🎉 長寿祝い：<strong>—</strong></span>
+    </div>
+
+    <!-- ③追加：結果コピー行を2分割 -->
+    <div class="result-copy-row">
+      <button class="btn-copy" id="btnCopy" onclick="copyResult()">📋 結果をコピー</button>
+      <button class="btn-copy" id="btnCopyTableExcel" onclick="copyTableExcel()">📊 エクセル用コピー</button>
+    </div>
   </div>
 
   <!-- 年表（入力年の前後：過去5年・未来30年以上／最大150行） -->
   <div class="card table-section">
     <div class="card-title">年表</div>
     <div class="table-note" id="tableNote">入力した年の過去5年〜未来30年以上（当年も含め最大150行）を表示。行タップでその年にジャンプ</div>
+
+    <!-- ②追加：全10列の表示切り替え（西暦〜年齢の基本7列も含めて全部ON/OFF可能）
+         - 初期状態は西暦/昭和/平成/令和/十干/十二支/年齢の7列がON、学年/厄年/長寿祝いはOFF
+         - チェック状態はCOLUMN_DEFS（JS側）が唯一の定義元。将来列を増やす時はCOLUMN_DEFSと
+           このHTML、テーブルth/tdのdata-colを揃えて追加すればOK -->
+    <div class="col-toggle-wrap" id="colToggleWrap">
+      <label class="col-toggle-item active" id="toggleColSeireki">
+        <input type="checkbox" id="colSeireki" checked onchange="onColumnToggle()">西暦
+      </label>
+      <label class="col-toggle-item active" id="toggleColShowa">
+        <input type="checkbox" id="colShowa" checked onchange="onColumnToggle()">昭和
+      </label>
+      <label class="col-toggle-item active" id="toggleColHeisei">
+        <input type="checkbox" id="colHeisei" checked onchange="onColumnToggle()">平成
+      </label>
+      <label class="col-toggle-item active" id="toggleColReiwa">
+        <input type="checkbox" id="colReiwa" checked onchange="onColumnToggle()">令和
+      </label>
+      <label class="col-toggle-item active" id="toggleColJikkan">
+        <input type="checkbox" id="colJikkan" checked onchange="onColumnToggle()">十干
+      </label>
+      <label class="col-toggle-item active" id="toggleColJuunishi">
+        <input type="checkbox" id="colJuunishi" checked onchange="onColumnToggle()">十二支
+      </label>
+      <label class="col-toggle-item active" id="toggleColAge">
+        <input type="checkbox" id="colAge" checked onchange="onColumnToggle()">年齢
+      </label>
+      <label class="col-toggle-item" id="toggleColGakunen">
+        <input type="checkbox" id="colGakunen" onchange="onColumnToggle()">学年
+      </label>
+      <label class="col-toggle-item" id="toggleColYakudoshi">
+        <input type="checkbox" id="colYakudoshi" onchange="onColumnToggle()">厄年
+      </label>
+      <label class="col-toggle-item" id="toggleColChoju">
+        <input type="checkbox" id="colChoju" onchange="onColumnToggle()">長寿祝い
+      </label>
+    </div>
+    <div class="col-note">
+      ※学年は「4/2〜翌4/1生まれ・満6歳で入学」と仮定した概算です（早生まれの方は実際とズレる場合あり）／
+      厄年は数え年・神社本庁準拠の一般的な基準／長寿祝いは満年齢基準（現代の一般的な祝い方）
+    </div>
+
+    <!-- 初期表示クラス（show-seireki〜show-age）はCOLUMN_DEFSのdefaultOnと一致させておく。
+         JS初期化時にrestoreColumnPrefs()が上書きするので、ここは「保存なし初回アクセス時」の保険 -->
     <div class="era-table-wrap" id="eraTableWrap">
-      <table class="era-table" id="yearTable">
+      <table class="era-table show-seireki show-showa show-heisei show-reiwa show-jikkan show-juunishi show-age" id="yearTable">
         <thead>
           <tr>
-            <th>西暦</th><th>昭和</th><th>平成</th><th>令和</th><th>十干</th><th>十二支</th><th>年齢</th>
+            <th data-col="seireki">西暦</th>
+            <th data-col="showa">昭和</th>
+            <th data-col="heisei">平成</th>
+            <th data-col="reiwa">令和</th>
+            <th data-col="jikkan">十干</th>
+            <th data-col="juunishi">十二支</th>
+            <th data-col="age">年齢</th>
+            <th data-col="gakunen">学年</th>
+            <th data-col="yakudoshi">厄年</th>
+            <th data-col="choju">長寿祝い</th>
           </tr>
         </thead>
         <tbody id="yearTableBody"></tbody>
@@ -270,26 +448,103 @@ function etto(y){ return ETTO[((y-4)%12+12)%12]; }
 function jikkan(y){ return JIKKAN[((y-4)%10+10)%10]; }
 
 /* =====================================================
-   西暦を基準に「昭和・平成・令和・年齢・十干・十二支・年表」を
-   まとめて同期する中心関数
+   ①追加：学年・厄年・長寿祝い　計算ロジック
+
+   ★前提（すべて概算であることを明記）
+   ・学年：生年月日ではなく「生まれ年（西暦）」のみで計算するため、
+     「4/2〜翌年4/1生まれ・満6歳になった直後の4月に小学校入学」と仮定。
+     早生まれ（1〜3月生まれ）の方は実際の学年と最大1年ズレる可能性あり。
+   ・厄年：神社本庁の一般的な基準（数え年）。
+     男性=25・42(大厄)・61歳／女性=19・33(大厄)・37・61歳、前後1年が前厄・後厄。
+     数え年は本ツールでは「満年齢＋1」で簡易計算（誕生日の前後は考慮しない概算）。
+   ・長寿祝い：満年齢基準（現代の一般的な祝い方。還暦のみ満60歳＝数え61歳）。
+   ===================================================== */
+
+// 学年（L: 1〜6=小学、7〜9=中学、10〜12=高校）
+function gakunenLabel(targetYear, birthYear){
+  const L = targetYear - birthYear - 5;
+  if (L >= 1 && L <= 6)  return `小学${L}年`;
+  if (L >= 7 && L <= 9)  return `中学${L - 6}年`;
+  if (L >= 10 && L <= 12) return `高校${L - 9}年`;
+  if (L >= -5 && L <= 0) return '未就学';
+  return '-';
+}
+
+// 厄年（男女１列にまとめて表示）
+const YAKU_MALE_MAINS   = [25, 42, 61]; // 大厄:42
+const YAKU_FEMALE_MAINS = [19, 33, 37, 61]; // 大厄:33
+function yakuPart(kazoedoshi, mains, taiyaku){
+  for (const m of mains) {
+    if (kazoedoshi === m - 1) return '前厄';
+    if (kazoedoshi === m)     return (m === taiyaku) ? '本厄(大厄)' : '本厄';
+    if (kazoedoshi === m + 1) return '後厄';
+  }
+  return null;
+}
+function yakudoshiLabel(age){
+  const kazoedoshi = age + 1; // 数え年の簡易概算（満年齢＋1）
+  const male   = yakuPart(kazoedoshi, YAKU_MALE_MAINS, 42);
+  const female = yakuPart(kazoedoshi, YAKU_FEMALE_MAINS, 33);
+  if (!male && !female) return '-';
+  const parts = [];
+  if (male)   parts.push(`男:${male}`);
+  if (female) parts.push(`女:${female}`);
+  return parts.join(' / ');
+}
+
+// 長寿祝い（満年齢基準）
+const CHOJU_MAP = {
+  60:'還暦', 70:'古希', 77:'喜寿', 80:'傘寿', 88:'米寿',
+  90:'卒寿', 99:'白寿', 100:'百寿', 108:'茶寿', 111:'皇寿',
+};
+function chojuLabel(age){
+  return CHOJU_MAP[age] || '-';
+}
+
+/* =====================================================
+   西暦を基準に「昭和・平成・令和・年齢・十干・十二支・
+   学年・厄年・長寿祝い・年表」をまとめて同期する中心関数
    - .valueへのプログラム的な代入はinputイベントを発火しないので
      ループの心配なし
-   - スクロール（ジャンプ）はここではやらない（①の要望：自動ジャンプ廃止）
+   - スクロール（ジャンプ）はここではやらない（自動ジャンプ廃止）
    ===================================================== */
 function syncFromSeireki(seireki){
   const todayY = new Date().getFullYear();
+  const currentAge = todayY - seireki;
 
   document.getElementById('inputSeireki').value = seireki;
   document.getElementById('inputShowa').value  = seireki - ERAS.showa.offset;
   document.getElementById('inputHeisei').value = seireki - ERAS.heisei.offset;
   document.getElementById('inputReiwa').value  = seireki - ERAS.reiwa.offset;
-  document.getElementById('inputAge').value    = todayY - seireki;
+  document.getElementById('inputAge').value    = currentAge;
 
   document.getElementById('jikkanVal').textContent = jikkan(seireki);
   document.getElementById('shishiVal').textContent = etto(seireki);
 
+  updateExtraInfo(seireki, currentAge, todayY);
   renderYearTable(seireki);
   saveInputs(); // common.js：西暦だけlocalStorageに保存
+}
+
+/* =====================================================
+   ①追加：学年・厄年・長寿祝いバッジの更新
+   - 入力年（西暦）を生まれ年とみなし、「今現在」時点で判定する
+   ===================================================== */
+function updateExtraInfo(birthYear, currentAge, todayY){
+  const g  = gakunenLabel(todayY, birthYear);
+  const yk = yakudoshiLabel(currentAge);
+  const ch = chojuLabel(currentAge);
+
+  const gEl  = document.getElementById('gakunenInfo');
+  const ykEl = document.getElementById('yakudoshiInfo');
+  const chEl = document.getElementById('chojuInfo');
+
+  gEl.innerHTML  = `学年：<strong>${g}</strong>`;
+  ykEl.innerHTML = `️厄年：<strong>${yk}</strong>`;
+  chEl.innerHTML = `長寿祝い：<strong>${ch}</strong>`;
+
+  ykEl.classList.toggle('hit', yk !== '-');
+  chEl.classList.toggle('hit', ch !== '-');
 }
 
 /* =====================================================
@@ -324,6 +579,66 @@ function onAgeInput(){
 }
 
 /* =====================================================
+   ②追加：年表の全10列（西暦〜長寿祝い）の表示切り替え
+   - 列の定義はここ（COLUMN_DEFS）が唯一の元ネタ。
+     将来列を増やす時は、①HTML側にチェックボックスとdata-col付きth/td、
+     ②CSSにshow-xxxルール、③ここに1行追加、の3点だけでOK
+   - チェックのON/OFFで #yearTable にクラスを付け外しするだけ
+     （行の再描画はしない＝軽量）
+   - 選択状態はlocalStorageに保存し、次回アクセス時も復元
+   ===================================================== */
+const COLUMN_DEFS = [
+  { key:'seireki',   inputId:'colSeireki',   wrapId:'toggleColSeireki',   defaultOn:true  },
+  { key:'showa',     inputId:'colShowa',     wrapId:'toggleColShowa',     defaultOn:true  },
+  { key:'heisei',    inputId:'colHeisei',    wrapId:'toggleColHeisei',    defaultOn:true  },
+  { key:'reiwa',     inputId:'colReiwa',     wrapId:'toggleColReiwa',     defaultOn:true  },
+  { key:'jikkan',    inputId:'colJikkan',    wrapId:'toggleColJikkan',    defaultOn:true  },
+  { key:'juunishi',  inputId:'colJuunishi',  wrapId:'toggleColJuunishi',  defaultOn:true  },
+  { key:'age',       inputId:'colAge',       wrapId:'toggleColAge',       defaultOn:true  },
+  { key:'gakunen',   inputId:'colGakunen',   wrapId:'toggleColGakunen',   defaultOn:false },
+  { key:'yakudoshi', inputId:'colYakudoshi', wrapId:'toggleColYakudoshi', defaultOn:false },
+  { key:'choju',     inputId:'colChoju',     wrapId:'toggleColChoju',     defaultOn:false },
+];
+
+function onColumnToggle(){
+  const table = document.getElementById('yearTable');
+  const state = {};
+
+  COLUMN_DEFS.forEach(col => {
+    const on = document.getElementById(col.inputId).checked;
+    table.classList.toggle('show-' + col.key, on);
+    document.getElementById(col.wrapId).classList.toggle('active', on);
+    state[col.key] = on;
+  });
+
+  try {
+    localStorage.setItem('wareki_columns', JSON.stringify(state));
+  } catch (e) {
+    // プライベートモード等でlocalStorageが使えない場合は無視
+  }
+}
+
+function restoreColumnPrefs(){
+  try {
+    const raw = localStorage.getItem('wareki_columns');
+    if (!raw) {
+      // 保存なし＝初回アクセス。COLUMN_DEFSのdefaultOnをそのまま反映するだけでOK
+      onColumnToggle();
+      return;
+    }
+    const p = JSON.parse(raw);
+    COLUMN_DEFS.forEach(col => {
+      // 保存データに無いキー（旧バージョンからの引き継ぎ等）はdefaultOnにフォールバック
+      const on = (p[col.key] !== undefined) ? !!p[col.key] : col.defaultOn;
+      document.getElementById(col.inputId).checked = on;
+    });
+    onColumnToggle();
+  } catch (e) {
+    // パース失敗時は無視
+  }
+}
+
+/* =====================================================
    年表描画
    - 開始：基準年-5年
    - 終了：基準年+30年 と 実際の「今年」の遅い方まで（＝今年は必ず含む）
@@ -355,14 +670,24 @@ function renderYearTable(baseY){
     const heiseiCls = (y >= ERAS.heisei.start && y <= ERAS.heisei.end) ? '' : ' class="era-invalid"';
     const reiwaCls  = (y >= ERAS.reiwa.start) ? '' : ' class="era-invalid"';
 
+    // ①追加：学年・厄年・長寿祝い（その年時点の年齢基準で判定）
+    const gakunen = gakunenLabel(y, baseY);
+    const yaku    = yakudoshiLabel(age);
+    const choju   = chojuLabel(age);
+    const yakuCls  = (yaku  !== '-') ? ' class="hit-yaku"'  : '';
+    const chojuCls = (choju !== '-') ? ' class="hit-choju"' : '';
+
     tr.innerHTML = `
-      <td class="year-w">${y}</td>
-      <td${showaCls}>${showaNen}</td>
-      <td${heiseiCls}>${heiseiNen}</td>
-      <td${reiwaCls}>${reiwaNen}</td>
-      <td>${jikkan(y)}</td>
-      <td>${etto(y)}</td>
-      <td>${age}</td>
+      <td class="year-w" data-col="seireki">${y}</td>
+      <td data-col="showa"${showaCls}>${showaNen}</td>
+      <td data-col="heisei"${heiseiCls}>${heiseiNen}</td>
+      <td data-col="reiwa"${reiwaCls}>${reiwaNen}</td>
+      <td data-col="jikkan">${jikkan(y)}</td>
+      <td data-col="juunishi">${etto(y)}</td>
+      <td data-col="age">${age}</td>
+      <td data-col="gakunen">${gakunen}</td>
+      <td data-col="yakudoshi"${yakuCls}>${yaku}</td>
+      <td data-col="choju"${chojuCls}>${choju}</td>
     `;
     tr.addEventListener('click', () => syncFromSeireki(y));
     tbody.appendChild(tr);
@@ -383,7 +708,7 @@ function jumpToTable(){
 }
 
 /* =====================================================
-   結果をテキストでコピー
+   結果をテキストでコピー（①追加：学年・厄年・長寿祝いも含める）
    ===================================================== */
 function copyResult(){
   const seireki = document.getElementById('inputSeireki').value;
@@ -393,6 +718,9 @@ function copyResult(){
   const age     = document.getElementById('inputAge').value;
   const jk = document.getElementById('jikkanVal').textContent;
   const sh = document.getElementById('shishiVal').textContent;
+  const g  = document.querySelector('#gakunenInfo strong').textContent;
+  const yk = document.querySelector('#yakudoshiInfo strong').textContent;
+  const ch = document.querySelector('#chojuInfo strong').textContent;
 
   const text = [
     `西暦${seireki}年`,
@@ -402,9 +730,74 @@ function copyResult(){
     `年齢：${age}歳`,
     `十干：${jk}`,
     `十二支：${sh}`,
+    `学年：${g}`,
+    `厄年：${yk}`,
+    `長寿祝い：${ch}`,
   ].join('\n');
 
   copyToClipboard(text, 'btnCopy', '📋 結果をコピー');
+}
+
+/* =====================================================
+   ③追加：エクセル貼り付け用（タブ区切り）でコピー
+   - 出力内容：①「メイン結果」（現在入力中の西暦の結果）1行
+             ＋②「年表」（②の☑で選択中の列だけ／基本7列は常に含む）
+   - 列構成は年表側（#yearTable の表示中th）に完全に合わせる
+     → メイン結果と年表を同じ列見出しでそのまま縦につなげてコピペできる
+   ===================================================== */
+function copyTableExcel(){
+  const table = document.getElementById('yearTable');
+  const headerCells = Array.from(table.querySelectorAll('thead th'));
+  const visibleIdx = [];
+  const headers = [];
+
+  // 現在チェックONの列（学年／厄年／長寿祝い）だけを対象に含める
+  headerCells.forEach((th, idx) => {
+    const col = th.getAttribute('data-col');
+    const isExtraCol = !!col;
+    const visible = !isExtraCol || table.classList.contains('show-' + col);
+    if (visible) {
+      visibleIdx.push(idx);
+      headers.push(th.textContent.trim());
+    }
+  });
+
+  // --- ①メイン結果（現在の入力値）を、年表と同じ列順で1行作る ---
+  // 年表の列順：西暦/昭和/平成/令和/十干/十二支/年齢/学年/厄年/長寿祝い
+  const mainValues = {
+    '西暦':   document.getElementById('inputSeireki').value,
+    '昭和':   document.getElementById('inputShowa').value,
+    '平成':   document.getElementById('inputHeisei').value,
+    '令和':   document.getElementById('inputReiwa').value,
+    '十干':   document.getElementById('jikkanVal').textContent,
+    '十二支': document.getElementById('shishiVal').textContent,
+    '年齢':   document.getElementById('inputAge').value,
+    '学年':   document.querySelector('#gakunenInfo strong').textContent,
+    '厄年':   document.querySelector('#yakudoshiInfo strong').textContent,
+    '長寿祝い': document.querySelector('#chojuInfo strong').textContent,
+  };
+  const mainRow = headers.map(h => mainValues[h] ?? '').join('\t');
+
+  // --- ②年表本体（表示中の列だけ） ---
+  const tableRows = [];
+  table.querySelectorAll('#yearTableBody tr').forEach(tr => {
+    const tds = Array.from(tr.children);
+    const line = visibleIdx.map(i => (tds[i] ? tds[i].textContent.trim() : '')).join('\t');
+    tableRows.push(line);
+  });
+
+  // --- 結合：メイン結果見出し＋値 → 空行 → 年表見出し＋全行 ---
+  const output = [
+    '■メイン結果（入力中の西暦）',
+    headers.join('\t'),
+    mainRow,
+    '',
+    '■年表',
+    headers.join('\t'),
+    ...tableRows,
+  ].join('\n');
+
+  copyToClipboard(output, 'btnCopyTableExcel', '📊 エクセル用コピー');
 }
 
 /* =====================================================
@@ -422,7 +815,7 @@ function buildShareUrl(){
   return location.href.split('?')[0];
 }
 function buildShareText(){
-  return '和暦⇔西暦変換ツール\n西暦・和暦・年齢がどれからでも一発変換！';
+  return '和暦⇔西暦変換ツール\n西暦・和暦・年齢・学年・厄年・長寿祝いがどれからでも一発変換！';
 }
 
 /* =====================================================
@@ -439,10 +832,17 @@ function shareLine(){
 }
 
 /* =====================================================
-   リセット
+   リセット（②追加：列の表示設定もあわせてリセット）
    ===================================================== */
 function resetWareki(){
   resetAll();
+
+  document.getElementById('colGakunen').checked   = false;
+  document.getElementById('colYakudoshi').checked = false;
+  document.getElementById('colChoju').checked     = false;
+  try { localStorage.removeItem('wareki_columns'); } catch (e) {}
+  onColumnToggle();
+
   syncFromSeireki(new Date().getFullYear());
 }
 
@@ -450,6 +850,7 @@ function resetWareki(){
    初期表示
    ===================================================== */
 document.addEventListener('DOMContentLoaded', () => {
+  restoreColumnPrefs();
   const el = document.getElementById('inputSeireki');
   if (!el.value) {
     syncFromSeireki(new Date().getFullYear());
