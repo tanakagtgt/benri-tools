@@ -11,6 +11,33 @@
   gtag('js', new Date());
   gtag('config', 'G-NXJCSR0EX1');
 </script>
+<!--
+  =====================================================
+  【テンプレート使用時の書き換えチェックリスト（軽量版）】
+  ★ = 必須　☆ = ツールに応じて調整
+
+  ★ canonical          → 正しいURLに書き換える（済）
+  ★ <title>            → ツール名（25文字以内推奨）（済）
+  ★ meta description   → 80〜120文字（済）
+  ★ og:title / description / url → 上と同内容でOK（済）
+  ★ og:image           → OGP画像URL（1200×630px）※未設定なら追加検討
+  ★ h1テキスト         → ツール名（検索キーワード含める）（済）
+  ★ common.cssのリンク → 本番環境の実パスに書き換える（済）
+  ★ common.jsのリンク  → 本番環境の実パスに書き換える（</body>直前）（済）
+  ★ CURRENT_TOOL_ID / STORAGE_KEY / STORAGE_FIELDS（済）
+  ☆ このツールは変換系のため、標準の
+    INPUT_LABELS / RESULT_LABELS / calculateInputs() / calculateResult() /
+    displayResult() は使わず、西暦を基準に全項目を同期する
+    syncFromSeireki() 方式に置き換えている（意図的な設計）
+  ☆ 結果コピーボタンも標準4ボタン
+    （btnCopyText/btnCopyUrlInputs/btnQrInputs/btnCopyExcel）ではなく、
+    「結果をコピー」「エクセル用コピー」の2ボタン構成に変更（意図的な設計）
+  ☆ 入力項目（input-grid、toggle、checkbox等）→ ツールに応じて追加削除（済）
+  ☆ サブ結果（bA/bB/bC）→ このツールでは不使用のため未使用（削除済み扱い）
+  ※ 共通のUI・処理（footer、シェア、コピー、QR、保存復元等）は
+    common.js / common.css 側にあるので、このファイルでは触らない
+  =====================================================
+-->
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -166,11 +193,25 @@
 }
 .era-table tr.current-row td.era-invalid { color:#9aa6c9; }
 
-/* ②追加：学年・厄年・長寿祝いの列は初期は非表示。
-   テーブル(#yearTable)に show-xxx クラスが付いた時だけCSSで表示する
-   → 行の再描画なしで軽量に切り替えできる */
+/* ②追加：全10列（西暦〜長寿祝い）は、テーブル(#yearTable)に対応する
+   show-xxx クラスが付いた時だけCSSで表示する（初期は全列いったん非表示）
+   → 行の再描画なしで軽量に切り替えできる。列を増やす時はここに1行足すだけでOK */
 .era-table th[data-col],
 .era-table td[data-col] { display:none; }
+#yearTable.show-seireki  th[data-col="seireki"],
+#yearTable.show-seireki  td[data-col="seireki"]  { display:table-cell; }
+#yearTable.show-showa    th[data-col="showa"],
+#yearTable.show-showa    td[data-col="showa"]    { display:table-cell; }
+#yearTable.show-heisei   th[data-col="heisei"],
+#yearTable.show-heisei   td[data-col="heisei"]   { display:table-cell; }
+#yearTable.show-reiwa    th[data-col="reiwa"],
+#yearTable.show-reiwa    td[data-col="reiwa"]    { display:table-cell; }
+#yearTable.show-jikkan   th[data-col="jikkan"],
+#yearTable.show-jikkan   td[data-col="jikkan"]   { display:table-cell; }
+#yearTable.show-juunishi th[data-col="juunishi"],
+#yearTable.show-juunishi td[data-col="juunishi"] { display:table-cell; }
+#yearTable.show-age      th[data-col="age"],
+#yearTable.show-age      td[data-col="age"]      { display:table-cell; }
 #yearTable.show-gakunen th[data-col="gakunen"],
 #yearTable.show-gakunen td[data-col="gakunen"] { display:table-cell; }
 #yearTable.show-yakudoshi th[data-col="yakudoshi"],
@@ -263,8 +304,32 @@
     <div class="card-title">年表</div>
     <div class="table-note" id="tableNote">入力した年の過去5年〜未来30年以上（当年も含め最大150行）を表示。行タップでその年にジャンプ</div>
 
-    <!-- ②追加：追加列の表示切り替え（初期は西暦/昭和/平成/令和/年齢/十干/十二支のみ表示） -->
+    <!-- ②追加：全10列の表示切り替え（西暦〜年齢の基本7列も含めて全部ON/OFF可能）
+         - 初期状態は西暦/昭和/平成/令和/十干/十二支/年齢の7列がON、学年/厄年/長寿祝いはOFF
+         - チェック状態はCOLUMN_DEFS（JS側）が唯一の定義元。将来列を増やす時はCOLUMN_DEFSと
+           このHTML、テーブルth/tdのdata-colを揃えて追加すればOK -->
     <div class="col-toggle-wrap" id="colToggleWrap">
+      <label class="col-toggle-item active" id="toggleColSeireki">
+        <input type="checkbox" id="colSeireki" checked onchange="onColumnToggle()">西暦
+      </label>
+      <label class="col-toggle-item active" id="toggleColShowa">
+        <input type="checkbox" id="colShowa" checked onchange="onColumnToggle()">昭和
+      </label>
+      <label class="col-toggle-item active" id="toggleColHeisei">
+        <input type="checkbox" id="colHeisei" checked onchange="onColumnToggle()">平成
+      </label>
+      <label class="col-toggle-item active" id="toggleColReiwa">
+        <input type="checkbox" id="colReiwa" checked onchange="onColumnToggle()">令和
+      </label>
+      <label class="col-toggle-item active" id="toggleColJikkan">
+        <input type="checkbox" id="colJikkan" checked onchange="onColumnToggle()">十干
+      </label>
+      <label class="col-toggle-item active" id="toggleColJuunishi">
+        <input type="checkbox" id="colJuunishi" checked onchange="onColumnToggle()">十二支
+      </label>
+      <label class="col-toggle-item active" id="toggleColAge">
+        <input type="checkbox" id="colAge" checked onchange="onColumnToggle()">年齢
+      </label>
       <label class="col-toggle-item" id="toggleColGakunen">
         <input type="checkbox" id="colGakunen" onchange="onColumnToggle()">🎓 学年
       </label>
@@ -280,11 +345,19 @@
       厄年は数え年・神社本庁準拠の一般的な基準／長寿祝いは満年齢基準（現代の一般的な祝い方）
     </div>
 
+    <!-- 初期表示クラス（show-seireki〜show-age）はCOLUMN_DEFSのdefaultOnと一致させておく。
+         JS初期化時にrestoreColumnPrefs()が上書きするので、ここは「保存なし初回アクセス時」の保険 -->
     <div class="era-table-wrap" id="eraTableWrap">
-      <table class="era-table" id="yearTable">
+      <table class="era-table show-seireki show-showa show-heisei show-reiwa show-jikkan show-juunishi show-age" id="yearTable">
         <thead>
           <tr>
-            <th>西暦</th><th>昭和</th><th>平成</th><th>令和</th><th>十干</th><th>十二支</th><th>年齢</th>
+            <th data-col="seireki">西暦</th>
+            <th data-col="showa">昭和</th>
+            <th data-col="heisei">平成</th>
+            <th data-col="reiwa">令和</th>
+            <th data-col="jikkan">十干</th>
+            <th data-col="juunishi">十二支</th>
+            <th data-col="age">年齢</th>
             <th data-col="gakunen">学年</th>
             <th data-col="yakudoshi">厄年</th>
             <th data-col="choju">長寿祝い</th>
@@ -506,28 +579,40 @@ function onAgeInput(){
 }
 
 /* =====================================================
-   ②追加：年表の追加列（学年／厄年／長寿祝い）の表示切り替え
+   ②追加：年表の全10列（西暦〜長寿祝い）の表示切り替え
+   - 列の定義はここ（COLUMN_DEFS）が唯一の元ネタ。
+     将来列を増やす時は、①HTML側にチェックボックスとdata-col付きth/td、
+     ②CSSにshow-xxxルール、③ここに1行追加、の3点だけでOK
    - チェックのON/OFFで #yearTable にクラスを付け外しするだけ
      （行の再描画はしない＝軽量）
    - 選択状態はlocalStorageに保存し、次回アクセス時も復元
    ===================================================== */
+const COLUMN_DEFS = [
+  { key:'seireki',   inputId:'colSeireki',   wrapId:'toggleColSeireki',   defaultOn:true  },
+  { key:'showa',     inputId:'colShowa',     wrapId:'toggleColShowa',     defaultOn:true  },
+  { key:'heisei',    inputId:'colHeisei',    wrapId:'toggleColHeisei',    defaultOn:true  },
+  { key:'reiwa',     inputId:'colReiwa',     wrapId:'toggleColReiwa',     defaultOn:true  },
+  { key:'jikkan',    inputId:'colJikkan',    wrapId:'toggleColJikkan',    defaultOn:true  },
+  { key:'juunishi',  inputId:'colJuunishi',  wrapId:'toggleColJuunishi',  defaultOn:true  },
+  { key:'age',       inputId:'colAge',       wrapId:'toggleColAge',       defaultOn:true  },
+  { key:'gakunen',   inputId:'colGakunen',   wrapId:'toggleColGakunen',   defaultOn:false },
+  { key:'yakudoshi', inputId:'colYakudoshi', wrapId:'toggleColYakudoshi', defaultOn:false },
+  { key:'choju',     inputId:'colChoju',     wrapId:'toggleColChoju',     defaultOn:false },
+];
+
 function onColumnToggle(){
   const table = document.getElementById('yearTable');
+  const state = {};
 
-  const gOn = document.getElementById('colGakunen').checked;
-  const yOn = document.getElementById('colYakudoshi').checked;
-  const cOn = document.getElementById('colChoju').checked;
-
-  table.classList.toggle('show-gakunen', gOn);
-  table.classList.toggle('show-yakudoshi', yOn);
-  table.classList.toggle('show-choju', cOn);
-
-  document.getElementById('toggleColGakunen').classList.toggle('active', gOn);
-  document.getElementById('toggleColYakudoshi').classList.toggle('active', yOn);
-  document.getElementById('toggleColChoju').classList.toggle('active', cOn);
+  COLUMN_DEFS.forEach(col => {
+    const on = document.getElementById(col.inputId).checked;
+    table.classList.toggle('show-' + col.key, on);
+    document.getElementById(col.wrapId).classList.toggle('active', on);
+    state[col.key] = on;
+  });
 
   try {
-    localStorage.setItem('wareki_columns', JSON.stringify({ g:gOn, y:yOn, c:cOn }));
+    localStorage.setItem('wareki_columns', JSON.stringify(state));
   } catch (e) {
     // プライベートモード等でlocalStorageが使えない場合は無視
   }
@@ -536,11 +621,17 @@ function onColumnToggle(){
 function restoreColumnPrefs(){
   try {
     const raw = localStorage.getItem('wareki_columns');
-    if (!raw) return;
+    if (!raw) {
+      // 保存なし＝初回アクセス。COLUMN_DEFSのdefaultOnをそのまま反映するだけでOK
+      onColumnToggle();
+      return;
+    }
     const p = JSON.parse(raw);
-    document.getElementById('colGakunen').checked   = !!p.g;
-    document.getElementById('colYakudoshi').checked = !!p.y;
-    document.getElementById('colChoju').checked     = !!p.c;
+    COLUMN_DEFS.forEach(col => {
+      // 保存データに無いキー（旧バージョンからの引き継ぎ等）はdefaultOnにフォールバック
+      const on = (p[col.key] !== undefined) ? !!p[col.key] : col.defaultOn;
+      document.getElementById(col.inputId).checked = on;
+    });
     onColumnToggle();
   } catch (e) {
     // パース失敗時は無視
@@ -587,13 +678,13 @@ function renderYearTable(baseY){
     const chojuCls = (choju !== '-') ? ' class="hit-choju"' : '';
 
     tr.innerHTML = `
-      <td class="year-w">${y}</td>
-      <td${showaCls}>${showaNen}</td>
-      <td${heiseiCls}>${heiseiNen}</td>
-      <td${reiwaCls}>${reiwaNen}</td>
-      <td>${jikkan(y)}</td>
-      <td>${etto(y)}</td>
-      <td>${age}</td>
+      <td class="year-w" data-col="seireki">${y}</td>
+      <td data-col="showa"${showaCls}>${showaNen}</td>
+      <td data-col="heisei"${heiseiCls}>${heiseiNen}</td>
+      <td data-col="reiwa"${reiwaCls}>${reiwaNen}</td>
+      <td data-col="jikkan">${jikkan(y)}</td>
+      <td data-col="juunishi">${etto(y)}</td>
+      <td data-col="age">${age}</td>
       <td data-col="gakunen">${gakunen}</td>
       <td data-col="yakudoshi"${yakuCls}>${yaku}</td>
       <td data-col="choju"${chojuCls}>${choju}</td>
@@ -648,9 +739,11 @@ function copyResult(){
 }
 
 /* =====================================================
-   ③追加：年表をエクセル貼り付け用（タブ区切り）でコピー
-   - 現在チェックで表示されている列だけを出力する
-   - 基本7列（西暦〜年齢）は常に含める
+   ③追加：エクセル貼り付け用（タブ区切り）でコピー
+   - 出力内容：①「メイン結果」（現在入力中の西暦の結果）1行
+             ＋②「年表」（②の☑で選択中の列だけ／基本7列は常に含む）
+   - 列構成は年表側（#yearTable の表示中th）に完全に合わせる
+     → メイン結果と年表を同じ列見出しでそのまま縦につなげてコピペできる
    ===================================================== */
 function copyTableExcel(){
   const table = document.getElementById('yearTable');
@@ -658,6 +751,7 @@ function copyTableExcel(){
   const visibleIdx = [];
   const headers = [];
 
+  // 現在チェックONの列（学年／厄年／長寿祝い）だけを対象に含める
   headerCells.forEach((th, idx) => {
     const col = th.getAttribute('data-col');
     const isExtraCol = !!col;
@@ -668,14 +762,42 @@ function copyTableExcel(){
     }
   });
 
-  const rows = [headers.join('\t')];
+  // --- ①メイン結果（現在の入力値）を、年表と同じ列順で1行作る ---
+  // 年表の列順：西暦/昭和/平成/令和/十干/十二支/年齢/学年/厄年/長寿祝い
+  const mainValues = {
+    '西暦':   document.getElementById('inputSeireki').value,
+    '昭和':   document.getElementById('inputShowa').value,
+    '平成':   document.getElementById('inputHeisei').value,
+    '令和':   document.getElementById('inputReiwa').value,
+    '十干':   document.getElementById('jikkanVal').textContent,
+    '十二支': document.getElementById('shishiVal').textContent,
+    '年齢':   document.getElementById('inputAge').value,
+    '学年':   document.querySelector('#gakunenInfo strong').textContent,
+    '厄年':   document.querySelector('#yakudoshiInfo strong').textContent,
+    '長寿祝い': document.querySelector('#chojuInfo strong').textContent,
+  };
+  const mainRow = headers.map(h => mainValues[h] ?? '').join('\t');
+
+  // --- ②年表本体（表示中の列だけ） ---
+  const tableRows = [];
   table.querySelectorAll('#yearTableBody tr').forEach(tr => {
     const tds = Array.from(tr.children);
     const line = visibleIdx.map(i => (tds[i] ? tds[i].textContent.trim() : '')).join('\t');
-    rows.push(line);
+    tableRows.push(line);
   });
 
-  copyToClipboard(rows.join('\n'), 'btnCopyTableExcel', '📊 エクセル用コピー');
+  // --- 結合：メイン結果見出し＋値 → 空行 → 年表見出し＋全行 ---
+  const output = [
+    '■メイン結果（入力中の西暦）',
+    headers.join('\t'),
+    mainRow,
+    '',
+    '■年表',
+    headers.join('\t'),
+    ...tableRows,
+  ].join('\n');
+
+  copyToClipboard(output, 'btnCopyTableExcel', '📊 エクセル用コピー');
 }
 
 /* =====================================================
