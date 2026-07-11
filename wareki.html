@@ -15,10 +15,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>和暦⇔西暦変換ツール｜令和・平成・昭和を瞬時に変換</title>
-<meta name="description" content="令和・平成・昭和の和暦と西暦を双方向で即座に変換。十干・十二支も同時表示、前後年の一覧表付き。スマホでも使いやすい無料の和暦変換ツール。">
+<meta name="description" content="令和・平成・昭和の和暦と西暦、年齢を双方向で即座に変換。十干・十二支も同時表示、前後年の一覧表付き。スマホでも使いやすい無料の和暦変換ツール。">
 
 <meta property="og:title" content="和暦⇔西暦変換ツール｜令和・平成・昭和を瞬時に変換">
-<meta property="og:description" content="令和・平成・昭和の和暦と西暦を双方向で即座に変換。十干・十二支も同時表示、前後年の一覧表付き。スマホでも使いやすい無料の和暦変換ツール。">
+<meta property="og:description" content="令和・平成・昭和の和暦と西暦、年齢を双方向で即座に変換。十干・十二支も同時表示、前後年の一覧表付き。スマホでも使いやすい無料の和暦変換ツール。">
 <meta property="og:url" content="https://arigato-tools.com/wareki">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="便利ツール集">
@@ -38,68 +38,61 @@
      ★このツール固有のCSS
      ===================================================== -->
 <style>
-/* カード内タイトル */
+/* カード内タイトル（説明文を入れるので複数行OKにしてる） */
 .card-title {
-  font-size:12px; font-weight:700; color:var(--color-primary); letter-spacing:0.1em;
+  font-size:12px; font-weight:700; color:var(--color-primary); letter-spacing:0.05em;
   margin-bottom:16px; border-bottom:2px solid var(--color-primary-bg); padding-bottom:8px;
+  line-height:1.7;
 }
-
-/* 入力ラベル共通 */
-.input-label { font-size:11px; font-weight:700; color:var(--color-text-sub); letter-spacing:0.08em; }
-.wareki-input-group { display:flex; flex-direction:column; gap:5px; }
-.wareki-input-group input {
-  width:100%; border:1px solid var(--color-border-input); border-radius:7px;
-  background:var(--color-input-bg); color:var(--color-text); font-family:'BIZ UDPGothic',sans-serif;
-  outline:none; transition:border-color 0.18s;
-  -webkit-appearance:none; appearance:none;
-}
-.wareki-input-group input:focus { border-color:var(--color-primary); }
-.wareki-input-group input::-webkit-inner-spin-button,
-.wareki-input-group input::-webkit-outer-spin-button { -webkit-appearance:none; }
 
 /* =====================================================
-   変換エリア：左に西暦（大）、右に昭和/平成/令和（縦並び）
-   どれか1つ入力→他は自動計算（JS側で同期）
+   変換エリア：2列グリッド（西暦/昭和/ジャンプ/平成/年齢/令和）
+   すべて common.css の .input-group を流用してサイズを統一
    ===================================================== */
-.convert-grid { display:flex; gap:14px; margin-bottom:16px; }
-
-.convert-seireki { flex:1; display:flex; flex-direction:column; gap:5px; }
-.convert-seireki input {
-  font-size:24px; font-weight:700; text-align:center;
-  padding:14px 8px; min-height:58px;
+.convert-grid {
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:10px 12px;
+  margin-bottom:6px;
 }
+/* グリッド内では.input-group標準のmargin-bottomを打ち消してgapに任せる */
+.convert-grid .input-group { margin-bottom:0; }
 
-.convert-eras { flex:1; display:flex; flex-direction:column; gap:8px; }
-.convert-eras input { font-size:16px; padding:8px 10px; min-height:38px; }
+/* ジャンプボタン（西暦の下・平成の左に配置） */
+.jump-cell { display:flex; flex-direction:column; gap:5px; }
+.jump-cell .input-label { visibility:hidden; } /* 他欄とラベル高さを揃えるためのダミー */
+.btn-jump {
+  width:100%; background:var(--color-primary-bg); border:1px solid var(--color-primary-border);
+  border-radius:var(--radius-input); color:var(--color-primary); font-family:'BIZ UDPGothic',sans-serif;
+  font-size:14px; font-weight:700; padding:10px; cursor:pointer; transition:background 0.15s;
+  min-height:44px;
+}
+.btn-jump:hover { background:#dbeafe; }
 
 /* 十干・十二支表示 */
 .etto-display {
   display:flex; justify-content:center; gap:22px;
   font-size:13px; color:var(--color-text-sub);
-  margin-bottom:14px; letter-spacing:0.05em;
+  margin:14px 0; letter-spacing:0.05em;
 }
 .etto-display strong { color:var(--color-primary); font-size:16px; margin-left:2px; }
-
-@media (max-width:380px) {
-  .convert-grid { flex-direction:column; }
-}
 
 /* =====================================================
    年表（前後年一覧）
    ===================================================== */
 .table-section { margin-bottom:14px; }
-.table-note { font-size:11px; color:var(--color-text-muted); margin-bottom:10px; }
+.table-note { font-size:11px; color:var(--color-text-muted); margin-bottom:10px; line-height:1.6; }
 
-.era-table-wrap { overflow-x:auto; max-height:420px; overflow-y:auto; }
+.era-table-wrap { overflow-x:auto; max-height:620px; overflow-y:auto; }
 .era-table { width:100%; border-collapse:collapse; font-size:13px; }
 .era-table th {
   background:#f0f4fb; color:var(--color-primary); font-weight:700;
-  padding:8px 6px; text-align:center; border:1px solid var(--color-border);
-  font-size:11px; letter-spacing:0.04em;
+  padding:8px 5px; text-align:center; border:1px solid var(--color-border);
+  font-size:11px; letter-spacing:0.02em;
   position:sticky; top:0;
 }
 .era-table td {
-  padding:7px 6px; text-align:center; border:1px solid #eaeff6;
+  padding:7px 5px; text-align:center; border:1px solid #eaeff6;
   color:#333; transition:background 0.1s; cursor:pointer;
 }
 .era-table tr:nth-child(even) td { background:#fafbfd; }
@@ -131,30 +124,45 @@
 
   <header>
     <h1>🔧 和暦⇔西暦 変換ツール</h1>
-    <p class="subtitle">西暦・昭和・平成・令和のどれかを入力すると全部自動で変換<br>十干・十二支、前後年の一覧表つき</p>
+    <p class="subtitle">西暦・昭和・平成・令和・年齢のどれかを入力すると全部自動で変換<br>十干・十二支、前後年の一覧表つき</p>
   </header>
 
   <!-- 変換カード -->
   <div class="card">
-    <div class="card-title">変換</div>
+    <div class="card-title">
+      どれに入力しても変化されます。<br>
+      「現在の年齢」に入力すると生まれ年が分かります。
+    </div>
+
     <div class="convert-grid">
-      <div class="convert-seireki">
+      <!-- 1行目：西暦／昭和 -->
+      <div class="input-group">
         <label class="input-label" for="inputSeireki">西暦</label>
         <input type="number" id="inputSeireki" inputmode="numeric" placeholder="例：2024" oninput="onSeirekiInput()">
       </div>
-      <div class="convert-eras">
-        <div class="wareki-input-group">
-          <label class="input-label" for="inputShowa">昭和</label>
-          <input type="number" id="inputShowa" inputmode="numeric" placeholder="例：65" oninput="onShowaInput()">
-        </div>
-        <div class="wareki-input-group">
-          <label class="input-label" for="inputHeisei">平成</label>
-          <input type="number" id="inputHeisei" inputmode="numeric" placeholder="例：6" oninput="onHeiseiInput()">
-        </div>
-        <div class="wareki-input-group">
-          <label class="input-label" for="inputReiwa">令和</label>
-          <input type="number" id="inputReiwa" inputmode="numeric" placeholder="例：6" oninput="onReiwaInput()">
-        </div>
+      <div class="input-group">
+        <label class="input-label" for="inputShowa">昭和</label>
+        <input type="number" id="inputShowa" inputmode="numeric" placeholder="例：65" oninput="onShowaInput()">
+      </div>
+
+      <!-- 2行目：ジャンプボタン／平成 -->
+      <div class="input-group jump-cell">
+        <label class="input-label" for="btnJump">ジャンプ</label>
+        <button type="button" class="btn-jump" id="btnJump" onclick="jumpToTable()">🔍 年表へジャンプ</button>
+      </div>
+      <div class="input-group">
+        <label class="input-label" for="inputHeisei">平成</label>
+        <input type="number" id="inputHeisei" inputmode="numeric" placeholder="例：6" oninput="onHeiseiInput()">
+      </div>
+
+      <!-- 3行目：現在の年齢／令和 -->
+      <div class="input-group">
+        <label class="input-label" for="inputAge">現在の年齢</label>
+        <input type="number" id="inputAge" inputmode="numeric" placeholder="例：36" oninput="onAgeInput()">
+      </div>
+      <div class="input-group">
+        <label class="input-label" for="inputReiwa">令和</label>
+        <input type="number" id="inputReiwa" inputmode="numeric" placeholder="例：6" oninput="onReiwaInput()">
       </div>
     </div>
 
@@ -166,14 +174,16 @@
     <button class="btn-copy" id="btnCopy" onclick="copyResult()">📋 結果をコピー</button>
   </div>
 
-  <!-- 年表（入力年の前後：過去5年・未来20年） -->
+  <!-- 年表（入力年の前後：過去5年・未来30年以上／最大150行） -->
   <div class="card table-section">
     <div class="card-title">年表</div>
-    <div class="table-note">入力した年の過去5年〜未来20年を表示（行タップでその年にジャンプ）</div>
-    <div class="era-table-wrap">
+    <div class="table-note" id="tableNote">入力した年の過去5年〜未来30年以上（当年も含め最大150行）を表示。行タップでその年にジャンプ</div>
+    <div class="era-table-wrap" id="eraTableWrap">
       <table class="era-table" id="yearTable">
         <thead>
-          <tr><th>西暦</th><th>昭和</th><th>平成</th><th>令和</th><th>十干</th><th>十二支</th></tr>
+          <tr>
+            <th>西暦</th><th>昭和</th><th>平成</th><th>令和</th><th>十干</th><th>十二支</th><th>年齢</th>
+          </tr>
         </thead>
         <tbody id="yearTableBody"></tbody>
       </table>
@@ -239,7 +249,7 @@
 /* =====================================================
    設定（common.js側のloadRecommends／保存復元で使用）
    - 保存対象は西暦（inputSeireki）だけでOK
-     → 復元時にそこから他3つ・十干十二支・年表を再計算する
+     → 復元時にそこから他4つ・十干十二支・年表を再計算する
    ===================================================== */
 const CURRENT_TOOL_ID = 'wareki';
 const STORAGE_KEY = 'wareki_inputs';
@@ -247,8 +257,6 @@ const STORAGE_FIELDS = ['inputSeireki'];
 
 /* =====================================================
    元号定義（オフセット＋実在範囲）
-   - オフセット：西暦 - offset = その元号の年数
-   - start/end：実在した西暦範囲（範囲外は年表で薄字表示に使う）
    ===================================================== */
 const ERAS = {
   showa:  { name:'昭和', offset:1925, start:1926, end:1989 },
@@ -262,16 +270,20 @@ function etto(y){ return ETTO[((y-4)%12+12)%12]; }
 function jikkan(y){ return JIKKAN[((y-4)%10+10)%10]; }
 
 /* =====================================================
-   西暦を基準に「昭和・平成・令和・十干・十二支・年表」を
+   西暦を基準に「昭和・平成・令和・年齢・十干・十二支・年表」を
    まとめて同期する中心関数
    - .valueへのプログラム的な代入はinputイベントを発火しないので
      ループの心配なし
+   - スクロール（ジャンプ）はここではやらない（①の要望：自動ジャンプ廃止）
    ===================================================== */
 function syncFromSeireki(seireki){
+  const todayY = new Date().getFullYear();
+
   document.getElementById('inputSeireki').value = seireki;
   document.getElementById('inputShowa').value  = seireki - ERAS.showa.offset;
   document.getElementById('inputHeisei').value = seireki - ERAS.heisei.offset;
   document.getElementById('inputReiwa').value  = seireki - ERAS.reiwa.offset;
+  document.getElementById('inputAge').value    = todayY - seireki;
 
   document.getElementById('jikkanVal').textContent = jikkan(seireki);
   document.getElementById('shishiVal').textContent = etto(seireki);
@@ -286,41 +298,58 @@ function syncFromSeireki(seireki){
    ===================================================== */
 function onSeirekiInput(){
   const v = parseInt(document.getElementById('inputSeireki').value, 10);
-  if(isNaN(v)) return;
+  if (isNaN(v)) return;
   syncFromSeireki(v);
 }
 function onShowaInput(){
   const nen = parseInt(document.getElementById('inputShowa').value, 10);
-  if(isNaN(nen)) return;
+  if (isNaN(nen)) return;
   syncFromSeireki(nen + ERAS.showa.offset);
 }
 function onHeiseiInput(){
   const nen = parseInt(document.getElementById('inputHeisei').value, 10);
-  if(isNaN(nen)) return;
+  if (isNaN(nen)) return;
   syncFromSeireki(nen + ERAS.heisei.offset);
 }
 function onReiwaInput(){
   const nen = parseInt(document.getElementById('inputReiwa').value, 10);
-  if(isNaN(nen)) return;
+  if (isNaN(nen)) return;
   syncFromSeireki(nen + ERAS.reiwa.offset);
+}
+function onAgeInput(){
+  const age = parseInt(document.getElementById('inputAge').value, 10);
+  if (isNaN(age)) return;
+  const birthYear = new Date().getFullYear() - age;
+  syncFromSeireki(birthYear);
 }
 
 /* =====================================================
-   年表描画（基準年の過去5年〜未来20年、計26行）
-   - 元号の実在範囲外は .era-invalid で薄字表示（-30等もそのまま表示）
-   - 行タップでその年に一発ジャンプ
+   年表描画
+   - 開始：基準年-5年
+   - 終了：基準年+30年 と 実際の「今年」の遅い方まで（＝今年は必ず含む）
+   - ただし合計150行を超える場合は150行で打ち切り
    ===================================================== */
 function renderYearTable(baseY){
+  const todayY = new Date().getFullYear();
+  const MAX_ROWS = 150;
+
+  const startY = baseY - 5;
+  let endY = Math.max(baseY + 30, todayY);
+  if (endY - startY + 1 > MAX_ROWS) {
+    endY = startY + MAX_ROWS - 1;
+  }
+
   const tbody = document.getElementById('yearTableBody');
   tbody.innerHTML = '';
 
-  for (let y = baseY - 5; y <= baseY + 20; y++) {
+  for (let y = startY; y <= endY; y++) {
     const tr = document.createElement('tr');
     if (y === baseY) tr.className = 'current-row';
 
     const showaNen  = y - ERAS.showa.offset;
     const heiseiNen = y - ERAS.heisei.offset;
     const reiwaNen  = y - ERAS.reiwa.offset;
+    const age       = todayY - y;
 
     const showaCls  = (y >= ERAS.showa.start  && y <= ERAS.showa.end)  ? '' : ' class="era-invalid"';
     const heiseiCls = (y >= ERAS.heisei.start && y <= ERAS.heisei.end) ? '' : ' class="era-invalid"';
@@ -333,13 +362,24 @@ function renderYearTable(baseY){
       <td${reiwaCls}>${reiwaNen}</td>
       <td>${jikkan(y)}</td>
       <td>${etto(y)}</td>
+      <td>${age}</td>
     `;
     tr.addEventListener('click', () => syncFromSeireki(y));
     tbody.appendChild(tr);
   }
+}
 
-  const current = tbody.querySelector('.current-row');
-  if (current) current.scrollIntoView({ behavior:'smooth', block:'center' });
+/* =====================================================
+   ①「ジャンプ」ボタン：年表内の現在行まで明示的にスクロール
+   （数値入力のたびの自動スクロールは廃止し、これに一本化）
+   ===================================================== */
+function jumpToTable(){
+  const current = document.querySelector('#yearTableBody .current-row');
+  if (current) {
+    current.scrollIntoView({ behavior:'smooth', block:'center' });
+  } else {
+    document.getElementById('eraTableWrap').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
 }
 
 /* =====================================================
@@ -350,6 +390,7 @@ function copyResult(){
   const showa   = document.getElementById('inputShowa').value;
   const heisei  = document.getElementById('inputHeisei').value;
   const reiwa   = document.getElementById('inputReiwa').value;
+  const age     = document.getElementById('inputAge').value;
   const jk = document.getElementById('jikkanVal').textContent;
   const sh = document.getElementById('shishiVal').textContent;
 
@@ -358,6 +399,7 @@ function copyResult(){
     `昭和${showa}年`,
     `平成${heisei}年`,
     `令和${reiwa}年`,
+    `年齢：${age}歳`,
     `十干：${jk}`,
     `十二支：${sh}`,
   ].join('\n');
@@ -367,7 +409,6 @@ function copyResult(){
 
 /* =====================================================
    common.jsのrestoreInputs()が呼ぶcalculate()をこのツール用に定義
-   - localStorageに保存されていた西暦から全部再計算する
    ===================================================== */
 function calculate(){
   const v = parseInt(document.getElementById('inputSeireki').value, 10);
@@ -375,13 +416,13 @@ function calculate(){
 }
 
 /* =====================================================
-   共有用URL／テキスト（common.jsのshareUrl／QRで使用）
+   共有用URL／テキスト
    ===================================================== */
 function buildShareUrl(){
   return location.href.split('?')[0];
 }
 function buildShareText(){
-  return '和暦⇔西暦変換ツール\n西暦・昭和・平成・令和がどれからでも一発変換！';
+  return '和暦⇔西暦変換ツール\n西暦・和暦・年齢がどれからでも一発変換！';
 }
 
 /* =====================================================
@@ -399,8 +440,6 @@ function shareLine(){
 
 /* =====================================================
    リセット
-   - common.jsのresetAll()でlocalStorage削除＋入力欄クリア
-   - そのあと今日の年を基準に再同期して分かりやすい初期状態に戻す
    ===================================================== */
 function resetWareki(){
   resetAll();
@@ -409,8 +448,6 @@ function resetWareki(){
 
 /* =====================================================
    初期表示
-   - common.js側のDOMContentLoadedでrestoreInputs()が先に走る
-   - 保存データが無くinputSeirekiが空のままなら、ここで今年を初期値にする
    ===================================================== */
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('inputSeireki');
