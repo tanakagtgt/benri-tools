@@ -1,0 +1,597 @@
+/* =====================================================
+   CSS変数（色・サイズの一元管理）
+   色変更はここだけ触ればOK
+   ===================================================== */
+:root {
+  --color-primary:     #1a56db;   /* メインカラー（青） */
+  --color-primary-hover: #1546b8;
+  --color-primary-bg:  #e8f0fe;   /* 薄青背景 */
+  --color-primary-border: #c3d4f8;
+  --color-bg:          #f4f6f9;   /* ページ背景 */
+  --color-card:        #fff;      /* カード背景 */
+  --color-input-bg:    #f8fafd;   /* input背景 */
+  --color-border:      #dde3ee;   /* 標準ボーダー */
+  --color-border-input:#c7d0e0;   /* input枠 */
+  --color-text:        #222;
+  --color-text-sub:    #555;
+  --color-text-muted:  #666;
+  --color-text-label:  #aaa;
+  --color-error-bg:    #fff1f1;
+  --color-error-border:#fca5a5;
+  --color-error-text:  #b91c1c;
+  --radius-card:       10px;
+  --radius-btn:        8px;
+  --radius-input:      7px;
+}
+
+/* =====================================================
+   ベースリセット・ボディ
+   ===================================================== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'BIZ UDPGothic', sans-serif;
+  min-height: 100vh;
+  padding: 24px 14px 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* iPhoneのフォントサイズ自動調整を無効化 */
+  -webkit-text-size-adjust: 100%;
+}
+
+.container { width: 100%; max-width: 600px; }
+
+/* =====================================================
+   ナビ：戻るボタン＋おすすめツール
+   ===================================================== */
+.back-to-index {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #f1f5fd;
+  border: 1px solid var(--color-primary-border);
+  border-radius: var(--radius-input);
+  color: var(--color-primary);
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 13px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.btn-back:hover { background: #dbeafe; }
+
+.recommend-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  border-left: 2px solid var(--color-border);
+  padding-left: 10px;
+}
+.recommend-label { font-size: 10px; color: var(--color-text-label); white-space: nowrap; }
+.recommend-link {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-primary);
+  text-decoration: none;
+  white-space: nowrap;
+  background: var(--color-primary-bg);
+  border-radius: 5px;
+  padding: 3px 8px;
+  transition: background 0.15s;
+}
+.recommend-link:hover { background: #dbeafe; }
+
+/* =====================================================
+   広告エリア（CLS対策：高さを固定で事前確保）
+   ===================================================== */
+.ad-area {
+  width: 100%;
+  background: var(--color-input-bg);
+  border: 1px dashed var(--color-border-input);
+  border-radius: var(--radius-card);
+  margin-bottom: 14px;
+  text-align: center;
+  padding: 8px 0;
+  /* CLSを防ぐため min-height ではなく height で固定 */
+  height: 116px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden; /* 広告が溢れても高さを維持 */
+}
+.ad-area-label {
+  font-size: 10px;
+  color: #bbb;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+
+/* =====================================================
+   ヘッダー
+   ===================================================== */
+header { text-align: center; margin-bottom: 22px; }
+
+/* h1: SEO重要。ツールのキーワードを含める */
+h1 {
+  font-size: clamp(20px, 5vw, 26px);
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 4px;
+}
+.subtitle {
+  /* 11pxはズームを引き起こさない（入力欄ではないため許容） */
+  font-size: 11px;
+  color: var(--color-text-muted);
+  line-height: 1.8;
+}
+
+/* =====================================================
+   カード（入力・設定エリア共通）
+   ===================================================== */
+.card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 20px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+/* =====================================================
+   ラベル＋input共通
+   font-size 16px以上：iPhoneの自動ズームを防ぐ
+   ===================================================== */
+.input-group { margin-bottom: 14px; }
+.input-group label {
+  display: block;
+  font-size: 11px; /* ラベルは小さくてOK（入力欄ではない） */
+  font-weight: 700;
+  color: var(--color-text-sub);
+  letter-spacing: 0.08em;
+  margin-bottom: 5px;
+}
+
+/* ★ font-size: 16px 以上必須（16px未満だとiPhoneがズームする） */
+.input-group input,
+.input-group select {
+  width: 100%;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-input);
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 16px; /* ★ 15px→16px に修正（iPhoneズーム防止） */
+  padding: 10px 10px; /* 少し広げてタップしやすく */
+  outline: none;
+  transition: border-color 0.18s;
+  /* 片手タップのため最低44pxのタッチターゲット確保 */
+  min-height: 44px;
+}
+.input-group input:focus,
+.input-group select:focus { border-color: var(--color-primary); }
+
+/* 2列グリッド（横並び入力） */
+.input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+/* セクションタイトル */
+.section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+
+/* =====================================================
+   トグルボタン（2択切り替え）
+   ===================================================== */
+.toggle-wrap { display: flex; gap: 8px; margin-bottom: 12px; }
+.toggle-btn {
+  flex: 1;
+  padding: 10px 6px;
+  border-radius: var(--radius-input);
+  border: 2px solid var(--color-border-input);
+  background: var(--color-input-bg);
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 14px; /* 13px→14pxに（視認性アップ） */
+  font-weight: 700;
+  color: var(--color-text-sub);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+  min-height: 44px; /* タッチターゲット確保 */
+}
+.toggle-btn.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+}
+
+/* =====================================================
+   チェックボックス
+   ===================================================== */
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px; /* 13px→14px */
+  color: #333;
+  margin-bottom: 8px;
+  min-height: 44px; /* タッチターゲット確保 */
+}
+.checkbox-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+/* =====================================================
+   計算ボタン
+   ===================================================== */
+.btn-calc {
+  width: 100%;
+  background: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-btn);
+  color: #fff;
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 16px; /* ★ 15px→16px */
+  font-weight: 700;
+  padding: 14px;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  transition: background 0.15s;
+  min-height: 50px; /* 親指で押しやすいサイズ */
+}
+.btn-calc:hover { background: var(--color-primary-hover); }
+
+/* =====================================================
+   エラーメッセージ
+   ===================================================== */
+.error-msg {
+  display: none;
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
+  border-radius: var(--radius-input);
+  color: var(--color-error-text);
+  font-size: 13px;
+  padding: 9px 13px;
+  margin-top: 10px;
+}
+.error-msg.show { display: block; }
+
+/* =====================================================
+   結果パネル
+   ===================================================== */
+.result-panel {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  margin-bottom: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+
+/* メイン結果（大きい数字エリア） */
+.result-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(135deg, #e8f0fe 0%, #f0fdf4 100%);
+  border-bottom: 1px solid var(--color-border);
+  padding: 20px 16px 16px;
+  text-align: center;
+}
+.result-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: 0.1em;
+  margin-bottom: 4px;
+}
+.result-number {
+  font-size: clamp(56px, 16vw, 80px);
+  font-weight: 700;
+  color: #111;
+  line-height: 1;
+}
+.result-number.placeholder { color: #bbb; }
+.result-unit {
+  font-size: 16px;
+  color: var(--color-text-sub);
+  font-weight: 700;
+  margin-left: 4px;
+}
+.result-sub {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 6px;
+}
+
+/* サブ結果（3列ボックス） */
+.breakdown-wrap { padding: 16px; }
+.breakdown {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.breakdown-item {
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-btn);
+  padding: 11px 6px;
+  text-align: center;
+}
+.b-num {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.b-num.placeholder { color: #ccc; }
+.b-label {
+  font-size: 11px;
+  color: #777;
+  margin-top: 2px;
+}
+
+/* =====================================================
+   コピーボタン（旧・単体ボタン用。互換のため残置）
+   ===================================================== */
+.btn-copy {
+  width: 100%;
+  background: #f1f5fd;
+  border: 1px solid var(--color-primary-border);
+  border-radius: var(--radius-input);
+  color: var(--color-primary);
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 11px;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-bottom: 8px;
+  min-height: 44px;
+}
+.btn-copy:hover { background: #dbeafe; }
+.btn-copy:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* =====================================================
+   ③ 結果アクションボタン（テキストコピー／PDF／QR／Excelコピー）
+   2列×2行グリッドで縦幅を節約（片手操作・1画面収まり重視）
+   ===================================================== */
+.copy-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.btn-action {
+  background: #f1f5fd;
+  border: 1px solid var(--color-primary-border);
+  border-radius: var(--radius-input);
+  color: var(--color-primary);
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  text-align: center;
+  min-height: 44px; /* タッチターゲット確保 */
+}
+.btn-action:hover { background: #dbeafe; }
+.btn-action:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-action.copied {
+  background: #d1fae5;
+  border-color: #059669;
+  color: #065f46;
+}
+
+/* =====================================================
+   シェアエリア（結果パネル外・別カードとして配置）
+   ===================================================== */
+.share-area {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.share-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+
+/* シェアボタン共通：4列グリッド（★ 3列→4列に変更：QRボタン追加のため） */
+.share-btns {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.btn-share {
+  padding: 10px 4px; /* 4列になったので左右余白を少し詰める */
+  border-radius: var(--radius-input);
+  border: 1px solid var(--color-border);
+  background: var(--color-input-bg);
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 12px; /* 13px→12px（4列で幅が狭まるため） */
+  font-weight: 700;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+  min-height: 44px; /* タッチターゲット確保 */
+}
+.btn-share:hover {
+  background: var(--color-primary-bg);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+/* URLコピー完了フィードバック */
+.btn-share.copied {
+  background: #d1fae5;
+  border-color: #059669;
+  color: #065f46;
+}
+/* 𝕏（Twitter）ボタン専用色（公式ブラック） */
+.btn-share.x-post {
+  background: #000;
+  border-color: #000;
+  color: #fff;
+}
+.btn-share.x-post:hover { background: #222; border-color: #222; color: #fff; }
+
+/* LINEボタン専用色（公式グリーン #06c755） */
+.btn-share.line {
+  background: #e8f8ea;
+  border-color: #06c755;
+  color: #06c755;
+}
+.btn-share.line:hover { background: #c8f0cc; }
+
+/* QRコードボタン専用色（紫系：QRっぽい印象） */
+.btn-share.qr {
+  background: #f3f0ff;
+  border-color: #7c3aed;
+  color: #7c3aed;
+}
+.btn-share.qr:hover { background: #ede9fe; }
+
+/* =====================================================
+   QRコードモーダル
+   - QRボタン押したらオーバーレイで中央表示
+   - タップ外側（オーバーレイ部分）or ✕ボタンで閉じる
+   ===================================================== */
+.qr-modal-overlay {
+  display: none;                   /* 初期は非表示 */
+  position: fixed;
+  inset: 0;                        /* top/right/bottom/left: 0 の省略形 */
+  background: rgba(0, 0, 0, 0.55); /* 半透明黒背景 */
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+.qr-modal-overlay.show {
+  display: flex; /* 表示時はflexで画面中央に配置 */
+}
+.qr-modal {
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px 20px 18px;
+  text-align: center;
+  max-width: 280px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
+  position: relative;
+}
+.qr-modal-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-sub);
+  margin-bottom: 14px;
+  letter-spacing: 0.06em;
+}
+/* qrcode.jsがcanvasをここに挿入する */
+#qrCanvas {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+/* モーダル内にURLを小さく表示（読み取り確認用） */
+.qr-modal-url {
+  font-size: 10px;
+  color: #aaa;
+  word-break: break-all; /* 長いURLも折り返して表示 */
+  margin-bottom: 14px;
+}
+.qr-modal-close {
+  background: var(--color-primary-bg);
+  border: 1px solid var(--color-primary-border);
+  border-radius: var(--radius-btn);
+  color: var(--color-primary);
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 24px;
+  cursor: pointer;
+  min-height: 44px; /* タッチターゲット確保 */
+  transition: background 0.15s;
+}
+.qr-modal-close:hover { background: #dbeafe; }
+
+/* =====================================================
+   ② リセットボタン
+   ===================================================== */
+.btn-reset {
+  width: 100%;
+  background: #fff8f0;                 /* 薄いオレンジ背景でリセット系の印象 */
+  border: 1px solid #f5c6a0;
+  border-radius: var(--radius-btn);
+  color: #c05a00;
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-bottom: 14px;
+  min-height: 44px;                    /* タッチターゲット確保 */
+  letter-spacing: 0.04em;
+}
+.btn-reset:hover { background: #ffe8d0; }
+
+/* =====================================================
+   ① 下部ナビ（上部 .back-to-index と同じスタイルを流用）
+   ===================================================== */
+.bottom-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+/* =====================================================
+   フッター
+   ===================================================== */
+footer {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--color-text-label);
+}
+.footer-back {
+  display: inline-block;
+  margin-top: 8px;
+  color: var(--color-primary);
+  font-size: 11px;
+  text-decoration: none;
+}
+.footer-back:hover { text-decoration: underline; }
