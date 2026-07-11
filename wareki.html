@@ -2,7 +2,6 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<!-- ★canonical：実際の公開URLに合わせて確認してな（ここでは仮でwarekiとしてる） -->
 <link rel="canonical" href="https://arigato-tools.com/wareki">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXJCSR0EX1"></script>
@@ -16,10 +15,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>和暦⇔西暦変換ツール｜令和・平成・昭和を瞬時に変換</title>
-<meta name="description" content="令和・平成・昭和の和暦と西暦を双方向で即座に変換。昭和元年（1926年）から令和まで完全対応。スマホでも使いやすい無料の和暦変換ツール。">
+<meta name="description" content="令和・平成・昭和の和暦と西暦を双方向で即座に変換。十干・十二支も同時表示、前後年の一覧表付き。スマホでも使いやすい無料の和暦変換ツール。">
 
 <meta property="og:title" content="和暦⇔西暦変換ツール｜令和・平成・昭和を瞬時に変換">
-<meta property="og:description" content="令和・平成・昭和の和暦と西暦を双方向で即座に変換。昭和元年（1926年）から令和まで完全対応。スマホでも使いやすい無料の和暦変換ツール。">
+<meta property="og:description" content="令和・平成・昭和の和暦と西暦を双方向で即座に変換。十干・十二支も同時表示、前後年の一覧表付き。スマホでも使いやすい無料の和暦変換ツール。">
 <meta property="og:url" content="https://arigato-tools.com/wareki">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="便利ツール集">
@@ -32,137 +31,90 @@
 <!-- QRコード生成ライブラリ（common.jsのshowQrで使用） -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-<!-- ★共通CSS（body/container/header/card/footer/nav/share-area等）本番パスに書き換える -->
+<!-- ★共通CSS 本番パスに書き換える -->
 <link rel="stylesheet" href="/common.css">
 
 <!-- =====================================================
-     ★このツール固有のCSS（タブ／和暦入力行／結果リスト／早見表）
-     - common.cssには無い専用パーツのみここに残してる
-     - .result-panel 等、common.cssと同名のクラスも一部あるが
-       このツールは表示形式が違うため、あえてここで上書きしてる
-       （common.css読み込みの後にこの<style>があるので上書きが効く）
+     ★このツール固有のCSS
      ===================================================== -->
 <style>
-/* カード内タイトル（早見表カードの見出し） */
+/* カード内タイトル */
 .card-title {
   font-size:12px; font-weight:700; color:var(--color-primary); letter-spacing:0.1em;
   margin-bottom:16px; border-bottom:2px solid var(--color-primary-bg); padding-bottom:8px;
 }
 
-/* タブ切り替え（和暦→西暦／西暦→和暦） */
-.tab-bar {
-  display:flex; background:#f0f4fb; border-radius:8px;
-  padding:3px; margin-bottom:20px; gap:3px;
-}
-.tab-btn {
-  flex:1; padding:10px 6px; border:none; border-radius:6px;
-  font-family:'BIZ UDPGothic',sans-serif; font-size:13px; font-weight:700;
-  cursor:pointer; transition:all 0.18s; color:#666; background:transparent;
-  letter-spacing:0.04em; min-height:40px;
-}
-.tab-btn.active {
-  background:#fff; color:var(--color-primary);
-  box-shadow:0 1px 4px rgba(26,86,219,0.15);
-}
-
-/* 入力行（元号セレクト＋年入力を横並び） */
-.input-section { margin-bottom:16px; }
-.input-row { display:flex; gap:8px; align-items:flex-end; }
-.wareki-input-group { display:flex; flex-direction:column; gap:5px; }
-.wareki-input-group.era-select { flex:0 0 auto; min-width:90px; }
-.wareki-input-group.year-input { flex:1; }
+/* 入力ラベル共通 */
 .input-label { font-size:11px; font-weight:700; color:var(--color-text-sub); letter-spacing:0.08em; }
-
-.wareki-input-group select,
-.wareki-input-group input[type="number"] {
+.wareki-input-group { display:flex; flex-direction:column; gap:5px; }
+.wareki-input-group input {
   width:100%; border:1px solid var(--color-border-input); border-radius:7px;
   background:var(--color-input-bg); color:var(--color-text); font-family:'BIZ UDPGothic',sans-serif;
-  font-size:16px; padding:9px 10px; outline:none; transition:border-color 0.18s;
-  -webkit-appearance:none; appearance:none; min-height:44px;
+  outline:none; transition:border-color 0.18s;
+  -webkit-appearance:none; appearance:none;
 }
-.wareki-input-group select {
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
-  background-repeat:no-repeat; background-position:right 10px center; padding-right:28px;
-}
-.wareki-input-group select:focus,
-.wareki-input-group input[type="number"]:focus { border-color:var(--color-primary); }
-.wareki-input-group input[type="number"]::-webkit-inner-spin-button,
-.wareki-input-group input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+.wareki-input-group input:focus { border-color:var(--color-primary); }
+.wareki-input-group input::-webkit-inner-spin-button,
+.wareki-input-group input::-webkit-outer-spin-button { -webkit-appearance:none; }
 
-/* 変換ボタン（common.cssの.btn-calcを流用せず専用色を維持） */
-.btn-convert {
-  width:100%; background:var(--color-primary); border:none; border-radius:8px;
-  color:#fff; font-family:'BIZ UDPGothic',sans-serif; font-size:15px; font-weight:700;
-  padding:13px; cursor:pointer; letter-spacing:0.06em; transition:background 0.15s,transform 0.1s;
-  margin-bottom:10px; min-height:48px;
-}
-.btn-convert:hover { background:var(--color-primary-hover); }
-.btn-convert:active { transform:scale(0.98); }
+/* =====================================================
+   変換エリア：左に西暦（大）、右に昭和/平成/令和（縦並び）
+   どれか1つ入力→他は自動計算（JS側で同期）
+   ===================================================== */
+.convert-grid { display:flex; gap:14px; margin-bottom:16px; }
 
-/* 変換結果パネル（独自レイアウトのためcommon.cssの.result-panel等を上書き） */
-.result-panel {
-  background:var(--color-card); border:1px solid var(--color-border); border-radius:var(--radius-card);
-  margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,0.06);
-  overflow:hidden; display:none;
+.convert-seireki { flex:1; display:flex; flex-direction:column; gap:5px; }
+.convert-seireki input {
+  font-size:24px; font-weight:700; text-align:center;
+  padding:14px 8px; min-height:58px;
 }
-.result-panel.show { display:block; animation:fadeUp 0.3s ease; }
-.result-main {
-  display:flex; flex-direction:column; align-items:center;
-  background:linear-gradient(135deg,#e8f0fe 0%,#f0fdf4 100%);
-  border-bottom:1px solid var(--color-border);
-  padding:20px 16px 16px; text-align:center;
-}
-.result-label { font-size:12px; font-weight:700; color:var(--color-primary); letter-spacing:0.1em; margin-bottom:6px; }
-.result-value { font-size:clamp(28px,8vw,42px); font-weight:700; color:#111; line-height:1.2; }
-.result-sub { font-size:13px; color:var(--color-text-sub); margin-top:6px; }
 
-.result-list-wrap { padding:16px; }
-.result-list-title { font-size:11px; font-weight:700; color:#888; letter-spacing:0.08em; margin-bottom:10px; }
-.result-list { display:flex; flex-direction:column; gap:8px; }
-.result-item {
-  display:flex; justify-content:space-between; align-items:center;
-  background:var(--color-input-bg); border:1px solid var(--color-border); border-radius:8px;
-  padding:11px 14px; font-size:14px;
-}
-.result-item-label { color:var(--color-text-sub); font-size:12px; }
-.result-item-value { font-weight:700; color:var(--color-primary); font-size:15px; }
+.convert-eras { flex:1; display:flex; flex-direction:column; gap:8px; }
+.convert-eras input { font-size:16px; padding:8px 10px; min-height:38px; }
 
-/* 早見表 */
+/* 十干・十二支表示 */
+.etto-display {
+  display:flex; justify-content:center; gap:22px;
+  font-size:13px; color:var(--color-text-sub);
+  margin-bottom:14px; letter-spacing:0.05em;
+}
+.etto-display strong { color:var(--color-primary); font-size:16px; margin-left:2px; }
+
+@media (max-width:380px) {
+  .convert-grid { flex-direction:column; }
+}
+
+/* =====================================================
+   年表（前後年一覧）
+   ===================================================== */
 .table-section { margin-bottom:14px; }
-.era-tabs { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
-.era-tab-btn {
-  padding:7px 16px; border:1px solid var(--color-border-input); border-radius:99px;
-  font-family:'BIZ UDPGothic',sans-serif; font-size:13px; font-weight:700;
-  cursor:pointer; transition:all 0.15s; color:var(--color-text-sub); background:var(--color-input-bg);
-  min-height:36px;
-}
-.era-tab-btn.active { background:var(--color-primary); color:#fff; border-color:var(--color-primary); }
+.table-note { font-size:11px; color:var(--color-text-muted); margin-bottom:10px; }
 
-.era-table-wrap { overflow-x:auto; }
+.era-table-wrap { overflow-x:auto; max-height:420px; overflow-y:auto; }
 .era-table { width:100%; border-collapse:collapse; font-size:13px; }
 .era-table th {
   background:#f0f4fb; color:var(--color-primary); font-weight:700;
-  padding:8px 10px; text-align:center; border:1px solid var(--color-border);
-  font-size:11px; letter-spacing:0.06em;
+  padding:8px 6px; text-align:center; border:1px solid var(--color-border);
+  font-size:11px; letter-spacing:0.04em;
+  position:sticky; top:0;
 }
 .era-table td {
-  padding:7px 10px; text-align:center; border:1px solid #eaeff6;
-  color:#333; transition:background 0.1s;
+  padding:7px 6px; text-align:center; border:1px solid #eaeff6;
+  color:#333; transition:background 0.1s; cursor:pointer;
 }
 .era-table tr:nth-child(even) td { background:#fafbfd; }
-.era-table tr:hover td { background:var(--color-primary-bg); cursor:pointer; }
+.era-table tr:hover td { background:var(--color-primary-bg); }
 .era-table td.year-w { font-weight:700; color:var(--color-primary); }
-.era-table td.year-j { color:#333; }
 
-@keyframes fadeUp {
-  from { opacity:0; transform:translateY(8px); }
-  to   { opacity:1; transform:translateY(0); }
-}
+/* 対象外の元号（存在しない年）は薄いグレーで区別 */
+.era-invalid { color:#c5cad6; }
 
-@media (max-width:380px) {
-  .input-row { flex-direction:column; }
-  .wareki-input-group.era-select { min-width:unset; width:100%; }
+/* 現在入力中の年の行をハイライト */
+.era-table tr.current-row td {
+  background:var(--color-primary-bg);
+  font-weight:700;
 }
+.era-table tr.current-row td.era-invalid { color:#9aa6c9; }
 </style>
 </head>
 <body>
@@ -179,82 +131,51 @@
 
   <header>
     <h1>🔧 和暦⇔西暦 変換ツール</h1>
-    <p class="subtitle">令和・平成・昭和の和暦と西暦を瞬時に変換<br>昭和元年（1926年）から令和まで対応</p>
+    <p class="subtitle">西暦・昭和・平成・令和のどれかを入力すると全部自動で変換<br>十干・十二支、前後年の一覧表つき</p>
   </header>
 
   <!-- 変換カード -->
   <div class="card">
-    <div class="tab-bar">
-      <button class="tab-btn active" id="tabWareki" onclick="switchTab('wareki')">和暦 → 西暦</button>
-      <button class="tab-btn" id="tabSeireki" onclick="switchTab('seireki')">西暦 → 和暦</button>
-    </div>
-
-    <!-- 和暦→西暦 -->
-    <div id="paneWareki">
-      <div class="input-section">
-        <div class="input-row">
-          <div class="wareki-input-group era-select">
-            <label class="input-label" for="eraSelect">元号</label>
-            <select id="eraSelect" onchange="onEraChange()">
-              <option value="reiwa">令和</option>
-              <option value="heisei">平成</option>
-              <option value="showa">昭和</option>
-            </select>
-          </div>
-          <div class="wareki-input-group year-input">
-            <label class="input-label" for="warekiYear">年</label>
-            <input type="number" id="warekiYear" min="1" max="99" placeholder="例: 3" value="" oninput="saveInputs()">
-          </div>
-        </div>
+    <div class="card-title">変換</div>
+    <div class="convert-grid">
+      <div class="convert-seireki">
+        <label class="input-label" for="inputSeireki">西暦</label>
+        <input type="number" id="inputSeireki" inputmode="numeric" placeholder="例：2024" oninput="onSeirekiInput()">
       </div>
-      <button class="btn-convert" onclick="convertWareki()">西暦に変換</button>
-      <div class="error-msg" id="errWareki"></div>
-    </div>
-
-    <!-- 西暦→和暦 -->
-    <div id="paneSeireki" style="display:none">
-      <div class="input-section">
+      <div class="convert-eras">
         <div class="wareki-input-group">
-          <label class="input-label" for="seirekiYear">西暦（年）</label>
-          <input type="number" id="seirekiYear" min="1926" max="2100" placeholder="例: 2024" value="" oninput="saveInputs()">
+          <label class="input-label" for="inputShowa">昭和</label>
+          <input type="number" id="inputShowa" inputmode="numeric" placeholder="例：65" oninput="onShowaInput()">
+        </div>
+        <div class="wareki-input-group">
+          <label class="input-label" for="inputHeisei">平成</label>
+          <input type="number" id="inputHeisei" inputmode="numeric" placeholder="例：6" oninput="onHeiseiInput()">
+        </div>
+        <div class="wareki-input-group">
+          <label class="input-label" for="inputReiwa">令和</label>
+          <input type="number" id="inputReiwa" inputmode="numeric" placeholder="例：6" oninput="onReiwaInput()">
         </div>
       </div>
-      <button class="btn-convert" onclick="convertSeireki()">和暦に変換</button>
-      <div class="error-msg" id="errSeireki"></div>
     </div>
+
+    <div class="etto-display">
+      <span>十干：<strong id="jikkanVal">—</strong></span>
+      <span>十二支：<strong id="shishiVal">—</strong></span>
+    </div>
+
+    <button class="btn-copy" id="btnCopy" onclick="copyResult()">📋 結果をコピー</button>
   </div>
 
-  <!-- 変換結果パネル（このツール専用レイアウト） -->
-  <div class="result-panel" id="resultPanel">
-    <div class="result-main">
-      <div class="result-label" id="resultLabel">変換結果</div>
-      <div class="result-value" id="resultValue">—</div>
-      <div class="result-sub" id="resultSub"></div>
-    </div>
-    <div class="result-list-wrap">
-      <div class="result-list-title">関連情報</div>
-      <div class="result-list" id="resultList"></div>
-      <button class="btn-copy" id="btnCopy" onclick="copyResult()">📋 結果をコピー</button>
-    </div>
-  </div>
-
-  <!-- 早見表 -->
+  <!-- 年表（入力年の前後：過去5年・未来20年） -->
   <div class="card table-section">
-    <div class="card-title">早見表</div>
-    <div class="era-tabs">
-      <button class="era-tab-btn active" onclick="showTable('reiwa')">令和</button>
-      <button class="era-tab-btn" onclick="showTable('heisei')">平成</button>
-      <button class="era-tab-btn" onclick="showTable('showa')">昭和</button>
-    </div>
+    <div class="card-title">年表</div>
+    <div class="table-note">入力した年の過去5年〜未来20年を表示（行タップでその年にジャンプ）</div>
     <div class="era-table-wrap">
-      <table class="era-table" id="eraTable">
+      <table class="era-table" id="yearTable">
         <thead>
-          <tr>
-            <th>和暦</th><th>西暦</th><th>干支</th>
-            <th>和暦</th><th>西暦</th><th>干支</th>
-          </tr>
+          <tr><th>西暦</th><th>昭和</th><th>平成</th><th>令和</th><th>十干</th><th>十二支</th></tr>
         </thead>
-        <tbody id="eraTableBody"></tbody>
+        <tbody id="yearTableBody"></tbody>
       </table>
     </div>
   </div>
@@ -270,7 +191,7 @@
     </div>
   </div>
 
-  <!-- リセットボタン（共通resetAll＋このツール専用の後処理をまとめて実行） -->
+  <!-- リセットボタン -->
   <button class="btn-reset" onclick="resetWareki()">🔄 入力値をリセット</button>
 
   <!-- 下部ナビ（共通・書き換え不要） -->
@@ -308,7 +229,7 @@
   <a class="footer-back" href="https://docs.google.com/forms/d/e/1FAIpQLSfUe9UzcRcIRFb4TmDAYKsZ75CcGRjF8Z7Ar_u7a4KgyyNyzQ/viewform?usp=publish-editor" target="_blank" rel="noopener">💡 作ってほしいツール・ご意見はこちら</a>
 </footer>
 
-<!-- ★共通JS（loadRecommends／シェア／コピー／保存復元等）本番パスに書き換える -->
+<!-- ★共通JS 本番パスに書き換える -->
 <script src="/common.js"></script>
 
 <!-- =====================================================
@@ -317,227 +238,140 @@
 <script>
 /* =====================================================
    設定（common.js側のloadRecommends／保存復元で使用）
+   - 保存対象は西暦（inputSeireki）だけでOK
+     → 復元時にそこから他3つ・十干十二支・年表を再計算する
    ===================================================== */
 const CURRENT_TOOL_ID = 'wareki';
 const STORAGE_KEY = 'wareki_inputs';
-const STORAGE_FIELDS = ['eraSelect', 'warekiYear', 'seirekiYear'];
+const STORAGE_FIELDS = ['inputSeireki'];
 
 /* =====================================================
-   元号定義（開始年・終了年（西暦）・オフセット）
+   元号定義（オフセット＋実在範囲）
+   - オフセット：西暦 - offset = その元号の年数
+   - start/end：実在した西暦範囲（範囲外は年表で薄字表示に使う）
    ===================================================== */
 const ERAS = {
-  reiwa:  { name:'令和', start:2019, end:9999, offset:2018 },  // 令和1年=2019年
-  heisei: { name:'平成', start:1989, end:2019, offset:1988 },  // 平成1年=1989年
-  showa:  { name:'昭和', start:1926, end:1989, offset:1925 },  // 昭和1年=1926年
+  showa:  { name:'昭和', offset:1925, start:1926, end:1989 },
+  heisei: { name:'平成', offset:1988, start:1989, end:2019 },
+  reiwa:  { name:'令和', offset:2018, start:2019, end:9999 },
 };
-// 同年切り替え備考
-// 平成1年=1989年1月8日〜、昭和64年=1989年1月7日まで
-// 令和1年=2019年5月1日〜、平成31年=2019年4月30日まで
-// UIでは年単位で処理し、重複年は両方表示
 
-const ETTO = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
-function etto(y){ return ETTO[(y-4)%12<0?(y-4)%12+12:(y-4)%12]; }
+const ETTO   = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+const JIKKAN = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+function etto(y){ return ETTO[((y-4)%12+12)%12]; }
+function jikkan(y){ return JIKKAN[((y-4)%10+10)%10]; }
 
 /* =====================================================
-   タブ切り替え
+   西暦を基準に「昭和・平成・令和・十干・十二支・年表」を
+   まとめて同期する中心関数
+   - .valueへのプログラム的な代入はinputイベントを発火しないので
+     ループの心配なし
    ===================================================== */
-let currentTab = 'wareki';
-function switchTab(tab){
-  currentTab = tab;
-  document.getElementById('tabWareki').classList.toggle('active', tab==='wareki');
-  document.getElementById('tabSeireki').classList.toggle('active', tab==='seireki');
-  document.getElementById('paneWareki').style.display  = tab==='wareki'  ? '' : 'none';
-  document.getElementById('paneSeireki').style.display = tab==='seireki' ? '' : 'none';
-  document.getElementById('resultPanel').classList.remove('show');
-  document.getElementById('errWareki').classList.remove('show');
-  document.getElementById('errSeireki').classList.remove('show');
-}
+function syncFromSeireki(seireki){
+  document.getElementById('inputSeireki').value = seireki;
+  document.getElementById('inputShowa').value  = seireki - ERAS.showa.offset;
+  document.getElementById('inputHeisei').value = seireki - ERAS.heisei.offset;
+  document.getElementById('inputReiwa').value  = seireki - ERAS.reiwa.offset;
 
-function onEraChange(){
-  const era = document.getElementById('eraSelect').value;
-  const inp = document.getElementById('warekiYear');
-  inp.value = '';
-  if(era==='reiwa')  inp.max = new Date().getFullYear()-2018+5;
-  if(era==='heisei') inp.max = 31;
-  if(era==='showa')  inp.max = 64;
-  saveInputs(); // common.js：現在の入力値をlocalStorageに保存
+  document.getElementById('jikkanVal').textContent = jikkan(seireki);
+  document.getElementById('shishiVal').textContent = etto(seireki);
+
+  renderYearTable(seireki);
+  saveInputs(); // common.js：西暦だけlocalStorageに保存
 }
 
 /* =====================================================
-   和暦 → 西暦
+   各入力欄のハンドラ
+   - どれか1つ変更されたら、そこから西暦を逆算してsyncFromSeireki
    ===================================================== */
-function convertWareki(){
-  const errEl = document.getElementById('errWareki');
-  errEl.classList.remove('show');
-  const eraKey = document.getElementById('eraSelect').value;
-  const era = ERAS[eraKey];
-  const nen = parseInt(document.getElementById('warekiYear').value, 10);
-
-  if(!nen || nen < 1){
-    errEl.textContent='年を入力してください（1以上）'; errEl.classList.add('show'); return;
-  }
-  const maxNen = era.end - era.start + 1;
-  if(nen > maxNen){
-    errEl.textContent=`${era.name}は${maxNen}年までです`; errEl.classList.add('show'); return;
-  }
-
-  const seireki = era.offset + nen;
-  const nenStr = nen===1 ? '元' : String(nen);
-
-  showResult(
-    `${seireki}年`,
-    `${era.name}${nenStr}年`,
-    [
-      { label:'西暦', value:`${seireki}年` },
-      { label:'干支', value:etto(seireki) },
-      { label:'和暦（正式）', value:`${era.name}${nenStr}年` },
-    ],
-    `${era.name}${nenStr}年 → ${seireki}年 (${etto(seireki)})`
-  );
+function onSeirekiInput(){
+  const v = parseInt(document.getElementById('inputSeireki').value, 10);
+  if(isNaN(v)) return;
+  syncFromSeireki(v);
+}
+function onShowaInput(){
+  const nen = parseInt(document.getElementById('inputShowa').value, 10);
+  if(isNaN(nen)) return;
+  syncFromSeireki(nen + ERAS.showa.offset);
+}
+function onHeiseiInput(){
+  const nen = parseInt(document.getElementById('inputHeisei').value, 10);
+  if(isNaN(nen)) return;
+  syncFromSeireki(nen + ERAS.heisei.offset);
+}
+function onReiwaInput(){
+  const nen = parseInt(document.getElementById('inputReiwa').value, 10);
+  if(isNaN(nen)) return;
+  syncFromSeireki(nen + ERAS.reiwa.offset);
 }
 
 /* =====================================================
-   西暦 → 和暦
+   年表描画（基準年の過去5年〜未来20年、計26行）
+   - 元号の実在範囲外は .era-invalid で薄字表示（-30等もそのまま表示）
+   - 行タップでその年に一発ジャンプ
    ===================================================== */
-function convertSeireki(){
-  const errEl = document.getElementById('errSeireki');
-  errEl.classList.remove('show');
-  const y = parseInt(document.getElementById('seirekiYear').value, 10);
-
-  if(!y){
-    errEl.textContent='西暦を入力してください'; errEl.classList.add('show'); return;
-  }
-  if(y < 1926){
-    errEl.textContent='対応範囲は昭和元年（1926年）以降です'; errEl.classList.add('show'); return;
-  }
-  if(y > 2100){
-    errEl.textContent='2100年以降は対応していません'; errEl.classList.add('show'); return;
-  }
-
-  const matches = [];
-  for(const [key, era] of Object.entries(ERAS)){
-    if(y >= era.start && y <= era.end){
-      const nen = y - era.offset;
-      const nenStr = nen===1 ? '元' : String(nen);
-      matches.push({ label:era.name, value:`${era.name}${nenStr}年（${y}年）`, nen, nenStr, era });
-    }
-  }
-  const primary = matches[0];
-  const items = matches.map(m=>({
-    label:m.era.name, value:`${m.era.name}${m.nenStr}年`
-  }));
-  items.push({ label:'干支', value:etto(y) });
-
-  showResult(
-    `${primary.era.name}${primary.nenStr}年`,
-    `西暦${y}年`,
-    items,
-    matches.map(m=>`${m.era.name}${m.nenStr}年`).join(' / ') + `（${y}年・${etto(y)}）`
-  );
-}
-
-/* =====================================================
-   結果表示
-   ===================================================== */
-let lastCopyText = '';
-function showResult(main, sub, items, copyText){
-  lastCopyText = copyText;
-  document.getElementById('resultValue').textContent = main;
-  document.getElementById('resultSub').textContent   = sub;
-
-  const list = document.getElementById('resultList');
-  list.innerHTML = '';
-  items.forEach(item=>{
-    const div = document.createElement('div');
-    div.className = 'result-item';
-    div.innerHTML = `<span class="result-item-label">${item.label}</span><span class="result-item-value">${item.value}</span>`;
-    list.appendChild(div);
-  });
-
-  document.getElementById('resultPanel').classList.add('show');
-  document.getElementById('resultPanel').scrollIntoView({behavior:'smooth', block:'nearest'});
-}
-
-function copyResult(){
-  if(!lastCopyText) return;
-  // common.jsのcopyToClipboardを流用（ボタンフィードバック付き）
-  copyToClipboard(lastCopyText, 'btnCopy', '📋 結果をコピー');
-}
-
-/* =====================================================
-   早見表
-   ===================================================== */
-let currentEraTable = 'reiwa';
-function showTable(eraKey){
-  currentEraTable = eraKey;
-  document.querySelectorAll('.era-tab-btn').forEach((btn,i)=>{
-    const keys=['reiwa','heisei','showa'];
-    btn.classList.toggle('active', keys[i]===eraKey);
-  });
-  renderTable(eraKey);
-}
-
-function renderTable(eraKey){
-  const era = ERAS[eraKey];
-  const rows = [];
-  const startY = era.start;
-  const endY = Math.min(era.end, eraKey==='reiwa'? new Date().getFullYear()+2 : era.end);
-
-  for(let y=startY; y<=endY; y++){
-    const nen = y - era.offset;
-    const nenStr = nen===1 ? '元' : String(nen);
-    rows.push({ wareki:`${era.name}${nenStr}年`, seireki:y, etto:etto(y) });
-  }
-  const tbody = document.getElementById('eraTableBody');
+function renderYearTable(baseY){
+  const tbody = document.getElementById('yearTableBody');
   tbody.innerHTML = '';
-  for(let i=0; i<rows.length; i+=2){
+
+  for (let y = baseY - 5; y <= baseY + 20; y++) {
     const tr = document.createElement('tr');
-    const r1 = rows[i];
-    const r2 = rows[i+1];
+    if (y === baseY) tr.className = 'current-row';
+
+    const showaNen  = y - ERAS.showa.offset;
+    const heiseiNen = y - ERAS.heisei.offset;
+    const reiwaNen  = y - ERAS.reiwa.offset;
+
+    const showaCls  = (y >= ERAS.showa.start  && y <= ERAS.showa.end)  ? '' : ' class="era-invalid"';
+    const heiseiCls = (y >= ERAS.heisei.start && y <= ERAS.heisei.end) ? '' : ' class="era-invalid"';
+    const reiwaCls  = (y >= ERAS.reiwa.start) ? '' : ' class="era-invalid"';
+
     tr.innerHTML = `
-      <td class="year-j">${r1.wareki}</td>
-      <td class="year-w">${r1.seireki}</td>
-      <td>${r1.etto}</td>
-      ${r2 ? `<td class="year-j">${r2.wareki}</td><td class="year-w">${r2.seireki}</td><td>${r2.etto}</td>` : '<td></td><td></td><td></td>'}
+      <td class="year-w">${y}</td>
+      <td${showaCls}>${showaNen}</td>
+      <td${heiseiCls}>${heiseiNen}</td>
+      <td${reiwaCls}>${reiwaNen}</td>
+      <td>${jikkan(y)}</td>
+      <td>${etto(y)}</td>
     `;
-    tr.addEventListener('click', ()=>fillFromTable(r1.seireki));
+    tr.addEventListener('click', () => syncFromSeireki(y));
     tbody.appendChild(tr);
   }
-}
 
-function fillFromTable(seireki){
-  document.getElementById('seirekiYear').value = seireki;
-  switchTab('seireki');
-  convertSeireki();
-  saveInputs();
-  window.scrollTo({top:0,behavior:'smooth'});
+  const current = tbody.querySelector('.current-row');
+  if (current) current.scrollIntoView({ behavior:'smooth', block:'center' });
 }
 
 /* =====================================================
-   Enterキー対応
+   結果をテキストでコピー
    ===================================================== */
-document.addEventListener('keydown', e=>{
-  if(e.key==='Enter'){
-    if(currentTab==='wareki') convertWareki();
-    else convertSeireki();
-  }
-});
+function copyResult(){
+  const seireki = document.getElementById('inputSeireki').value;
+  const showa   = document.getElementById('inputShowa').value;
+  const heisei  = document.getElementById('inputHeisei').value;
+  const reiwa   = document.getElementById('inputReiwa').value;
+  const jk = document.getElementById('jikkanVal').textContent;
+  const sh = document.getElementById('shishiVal').textContent;
+
+  const text = [
+    `西暦${seireki}年`,
+    `昭和${showa}年`,
+    `平成${heisei}年`,
+    `令和${reiwa}年`,
+    `十干：${jk}`,
+    `十二支：${sh}`,
+  ].join('\n');
+
+  copyToClipboard(text, 'btnCopy', '📋 結果をコピー');
+}
 
 /* =====================================================
    common.jsのrestoreInputs()が呼ぶcalculate()をこのツール用に定義
-   - 保存されていた値をタブに応じて自動変換する
-   - 空欄のときはエラーを出さず静かに何もしない
+   - localStorageに保存されていた西暦から全部再計算する
    ===================================================== */
 function calculate(){
-  if(currentTab === 'wareki'){
-    const nen = document.getElementById('warekiYear').value;
-    if(nen === '') return;
-    convertWareki();
-  } else {
-    const y = document.getElementById('seirekiYear').value;
-    if(y === '') return;
-    convertSeireki();
-  }
+  const v = parseInt(document.getElementById('inputSeireki').value, 10);
+  if (!isNaN(v)) syncFromSeireki(v);
 }
 
 /* =====================================================
@@ -547,12 +381,12 @@ function buildShareUrl(){
   return location.href.split('?')[0];
 }
 function buildShareText(){
-  return '和暦⇔西暦変換ツール\n令和・平成・昭和と西暦を瞬時に変換できます！';
+  return '和暦⇔西暦変換ツール\n西暦・昭和・平成・令和がどれからでも一発変換！';
 }
 
 /* =====================================================
-   𝕏／LINEシェア（このツールは計算結果に依存せず常にシェア可能なため
-   common.js標準版（結果必須）を上書きしてシンプル化）
+   𝕏／LINEシェア（結果に依存せず常にシェア可能にするため
+   common.js標準版を上書きしてシンプル化）
    ===================================================== */
 function shareX(){
   const text = buildShareText() + '\n' + buildShareUrl();
@@ -564,23 +398,26 @@ function shareLine(){
 }
 
 /* =====================================================
-   リセット（common.jsのresetAll＋このツール専用の後処理）
-   - 入力欄クリア＋localStorage削除はresetAll()に任せる
-   - 結果パネル非表示・タブを初期状態に戻すのはこのツール側で追加
+   リセット
+   - common.jsのresetAll()でlocalStorage削除＋入力欄クリア
+   - そのあと今日の年を基準に再同期して分かりやすい初期状態に戻す
    ===================================================== */
 function resetWareki(){
-  resetAll(); // common.js：STORAGE_FIELDSクリア＋localStorage削除
-  document.getElementById('resultPanel').classList.remove('show');
-  document.getElementById('errWareki').classList.remove('show');
-  document.getElementById('errSeireki').classList.remove('show');
-  switchTab('wareki');
+  resetAll();
+  syncFromSeireki(new Date().getFullYear());
 }
 
 /* =====================================================
-   初期化（早見表の初期表示）
-   - おすすめ読込／入力値復元はcommon.js側のDOMContentLoadedで実行される
+   初期表示
+   - common.js側のDOMContentLoadedでrestoreInputs()が先に走る
+   - 保存データが無くinputSeirekiが空のままなら、ここで今年を初期値にする
    ===================================================== */
-renderTable('reiwa');
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('inputSeireki');
+  if (!el.value) {
+    syncFromSeireki(new Date().getFullYear());
+  }
+});
 </script>
 </body>
 </html>
