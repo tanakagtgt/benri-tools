@@ -227,14 +227,8 @@
 <body>
 <div class="container">
 
-  <!-- ナビ：ツール一覧に戻るボタン＋おすすめツール（共通・書き換え不要） -->
-  <div class="back-to-index">
-    <a class="btn-back" href="/index.html">← ツール一覧に戻る</a>
-    <div class="recommend-wrap">
-      <span class="recommend-label">おすすめ：</span>
-      <span id="recommendLinks">読み込み中…</span>
-    </div>
-  </div>
+  <!-- ナビ：ツール一覧に戻るボタン＋おすすめツール（共通・common.jsが自動注入。触らない） -->
+  <div id="topNavSlot"></div>
 
   <header>
     <h1>🔧 和暦⇔西暦 変換ツール</h1>
@@ -368,54 +362,25 @@
     </div>
   </div>
 
-  <!-- シェアエリア（共通・書き換え不要） -->
-  <div class="share-area">
-    <div class="share-title">▶ このツールをシェア</div>
-    <div class="share-btns">
-      <button class="btn-share" id="btnShareUrl" onclick="shareUrl()">🔗 URLをコピー</button>
-      <button class="btn-share x-post" onclick="shareX()">𝕏 ポストする</button>
-      <button class="btn-share line" onclick="shareLine()">💬 LINEで送る</button>
-      <button class="btn-share qr" onclick="showQr()">📷 QRコード</button>
-    </div>
-  </div>
+  <!-- シェアエリア（共通・common.jsが自動注入。触らない） -->
+  <div id="shareAreaSlot"></div>
 
-  <!-- リセットボタン -->
-  <button class="btn-reset" onclick="resetWareki()">🔄 入力値をリセット</button>
+  <!-- リセットボタン（共通・common.jsが自動注入。触らない） -->
+  <div id="resetBtnSlot"></div>
 
-  <!-- 下部ナビ（共通・書き換え不要） -->
-  <div class="bottom-nav">
-    <a class="btn-back" href="/index.html">← ツール一覧に戻る</a>
-    <div class="recommend-wrap">
-      <span class="recommend-label">おすすめ：</span>
-      <span id="recommendLinks2">読み込み中…</span>
-    </div>
-  </div>
+  <!-- 下部ナビ（共通・common.jsが自動注入。触らない） -->
+  <div id="bottomNavSlot"></div>
 
-  <!-- 広告エリア（共通・書き換え不要） -->
-  <div class="ad-area">
-    <div class="ad-area-label">スポンサー</div>
-    <!-- ここにAdSenseコードを貼る -->
-  </div>
+  <!-- 広告エリア（共通・common.jsが自動注入。触らない） -->
+  <div id="adAreaSlot"></div>
 
 </div><!-- /.container -->
 
-<!-- QRコードモーダル（共通・書き換え不要） -->
-<div class="qr-modal-overlay" id="qrModalOverlay" onclick="closeQrOnOverlay(event)">
-  <div class="qr-modal">
-    <div class="qr-modal-title" id="qrModalTitle">📷 QRコードでシェア</div>
-    <div id="qrCanvas"></div>
-    <div class="qr-modal-url" id="qrUrl"></div>
-    <button class="qr-modal-close" onclick="hideQr()">✕ 閉じる</button>
-  </div>
-</div>
+<!-- QRコードモーダル（共通・common.jsが自動注入。触らない） -->
+<div id="qrModalSlot"></div>
 
-<!-- フッター（共通・書き換え不要） -->
-<footer>
-  © 2025 和暦⇔西暦変換ツール<br>
-  <a class="footer-back" href="https://x.com/arigaitu" target="_blank" rel="noopener">🐦 作成者X</a>
-  ・
-  <a class="footer-back" href="https://docs.google.com/forms/d/e/1FAIpQLSfUe9UzcRcIRFb4TmDAYKsZ75CcGRjF8Z7Ar_u7a4KgyyNyzQ/viewform?usp=publish-editor" target="_blank" rel="noopener">💡 作ってほしいツール・ご意見はこちら</a>
-</footer>
+<!-- フッター（共通・common.jsが自動注入。触らない） -->
+<div id="footerSlot"></div>
 
 <!-- ★共通JS 本番パスに書き換える -->
 <script src="/common.js"></script>
@@ -832,11 +797,11 @@ function shareLine(){
 }
 
 /* =====================================================
-   リセット（②追加：列の表示設定もあわせてリセット）
+   リセット時の追加処理（②追加：列の表示設定もあわせてリセット）
+   - common.jsのhandleReset()がresetAll()の後に自動で呼ぶ
+   - resetAll()自体はここで呼ばない（二重実行防止）
    ===================================================== */
-function resetWareki(){
-  resetAll();
-
+function onResetExtra(){
   document.getElementById('colGakunen').checked   = false;
   document.getElementById('colYakudoshi').checked = false;
   document.getElementById('colChoju').checked     = false;
