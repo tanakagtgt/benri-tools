@@ -30,7 +30,18 @@ let currentToggle = 'A';
 document.addEventListener('DOMContentLoaded', () => {
   loadRecommends();  // おすすめツールを非同期で読み込む
   restoreInputs();   // LocalStorageから入力値を復元
+  setCopyrightYear(); // フッターの©年号を自動表示
 });
+
+/* =====================================================
+   フッター©年号の自動表示
+   - htmlの <span id="copyrightYear"></span> に現在年を挿入
+   - ツール側での書き換えは一切不要（完全共通）
+   ===================================================== */
+function setCopyrightYear() {
+  const el = document.getElementById('copyrightYear');
+  if (el) el.textContent = new Date().getFullYear();
+}
 
 /* =====================================================
    おすすめツール読み込み（tools.jsonから）
