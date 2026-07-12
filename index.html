@@ -29,6 +29,51 @@
   .desc { font-size: 0.85rem; color: #666; margin-top: 6px; line-height: 1.6; }
 
   /* =====================================================
+     検索ボックス（ツール名＋説明文をキーワードで絞り込み）
+     - 片手操作しやすいよう幅いっぱい＆タップ領域を広めに確保
+     - font-size 16px以上（iPhoneの自動ズーム防止）
+     ===================================================== */
+  .search-wrap {
+    position: relative;
+    margin: 14px 0 16px;
+  }
+  #toolSearch {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 16px;
+    padding: 12px 40px 12px 14px;
+    border: 1px solid var(--color-border-input, #c7d0e0);
+    border-radius: var(--radius-input, 7px);
+    background: var(--color-input-bg, #f8fafd);
+    color: #333;
+  }
+  .search-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    color: #999;
+    font-size: 18px;
+    padding: 6px 8px;
+    cursor: pointer;
+    display: none; /* 入力があるときだけJSで表示 */
+  }
+  .search-count {
+    font-size: 0.8rem;
+    color: #888;
+    margin: -8px 0 12px 2px;
+  }
+  .no-result {
+    display: none; /* 該当0件のときだけJSで表示 */
+    text-align: center;
+    color: #888;
+    font-size: 0.9rem;
+    padding: 24px 0;
+  }
+
+  /* =====================================================
      以下、20260701layout-template.html のフッター系パーツを移植
      （CSS変数はテンプレートに合わせて最小限だけ定義）
      ===================================================== */
@@ -239,6 +284,19 @@
 <body>
 <h1>便利ツール集</h1>
 <p>無料・登録不要ですぐ使える計算・変換ツールをまとめています。</p>
+
+<!-- =====================================================
+     検索ボックス（★将来ツールが増えても触らなくてOK）
+     - input時にsearchTools()が発火し、tool-listのli要素を
+       ツール名＋説明文でリアルタイム絞り込み
+     - li追加時はこのJSに手を加える必要なし
+     ===================================================== -->
+<div class="search-wrap">
+  <input type="text" id="toolSearch" inputmode="search" placeholder="🔍 ツール名やキーワードで検索（例：住宅ローン）" oninput="searchTools()">
+  <button class="search-clear" id="searchClearBtn" onclick="clearSearch()">✕</button>
+</div>
+<div class="search-count" id="searchCount"></div>
+
 <ul class="tool-list" id="toolList">
   <li>
     <a href="age.html">年齢計算ツール</a>
@@ -310,6 +368,9 @@
   </li>
 </ul>
 
+<!-- 検索結果0件のときだけJSで表示するメッセージ -->
+<div class="no-result" id="noResultMsg">😢 該当するツールが見つかりませんでした</div>
+
 <!-- =====================================================
      ここから 20260701layout-template.html のフッター構成を移植
      ・シェアエリア／下部ナビ／広告エリア／フッター
@@ -343,7 +404,7 @@
 
 <!-- フッター -->
 <footer>
-  © 2025 便利ツール集<br>
+  © 2026 アリガイツ<br>
   <a class="footer-back" href="https://x.com/arigaitsu" target="_blank" rel="noopener">🐦 作成者X</a>
   ・
   <a class="footer-back" href="https://docs.google.com/forms/d/e/1FAIpQLSfUe9UzcRcIRFb4TmDAYKsZ75CcGRjF8Z7Ar_u7a4KgyyNyzQ/viewform?usp=publish-editor" target="_blank" rel="noopener">💡 作ってほしいツール・ご意見はこちら</a>
@@ -392,7 +453,61 @@ function loadRecommendsFromList() {
 
 document.addEventListener('DOMContentLoaded', () => {
   loadRecommendsFromList();
+  updateSearchCount(); // 初期表示時に全件数をカウント表示
 });
+
+/* =====================================================
+   【検索】ツール名＋説明文をキーワードで絞り込み
+   - #toolList li を毎回全走査してtext-content一致判定
+   - ツールが増えてもロジック変更不要（li追加だけでOK）
+   ===================================================== */
+function searchTools() {
+  const keyword = document.getElementById('toolSearch').value.trim().toLowerCase();
+  const items = document.querySelectorAll('#toolList li');
+
+  // ✕クリアボタンはキーワードがあるときだけ表示
+  document.getElementById('searchClearBtn').style.display = keyword ? 'block' : 'none';
+
+  let visibleCount = 0;
+
+  items.forEach(li => {
+    const name = li.querySelector('a')?.textContent.toLowerCase() || '';
+    const desc = li.querySelector('.desc')?.textContent.toLowerCase() || '';
+    const isMatch = !keyword || name.includes(keyword) || desc.includes(keyword);
+
+    li.style.display = isMatch ? '' : 'none';
+    if (isMatch) visibleCount++;
+  });
+
+  // 0件のときだけ「見つかりませんでした」を表示
+  document.getElementById('noResultMsg').style.display = visibleCount === 0 ? 'block' : 'none';
+
+  updateSearchCount(visibleCount);
+}
+
+/* =====================================================
+   【検索クリア】✕ボタンで入力欄をリセットして全件表示に戻す
+   ===================================================== */
+function clearSearch() {
+  const input = document.getElementById('toolSearch');
+  input.value = '';
+  searchTools();
+  input.focus();
+}
+
+/* =====================================================
+   【件数表示】「全◯件」または「◯件ヒット」を出す
+   @param {number} [count] - 表示中の件数（未指定なら全件数を数える）
+   ===================================================== */
+function updateSearchCount(count) {
+  const total = document.querySelectorAll('#toolList li').length;
+  const keyword = document.getElementById('toolSearch').value.trim();
+  const shown = typeof count === 'number' ? count : total;
+
+  document.getElementById('searchCount').textContent = keyword
+    ? `${shown}件ヒット（全${total}件中）`
+    : `全${total}件`;
+}
 
 
 /* =====================================================
