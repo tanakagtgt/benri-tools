@@ -28,10 +28,101 @@ let currentToggle = 'A';
    初期化
    ===================================================== */
 document.addEventListener('DOMContentLoaded', () => {
+  injectCommonUI(); // 共通UIブロック（ナビ/広告/シェア/リセット/QR/フッター）を注入
   loadRecommends();  // おすすめツールを非同期で読み込む
   restoreInputs();   // LocalStorageから入力値を復元
   setCopyrightYear(); // フッターの©年号を自動表示
 });
+
+/* =====================================================
+   共通UIブロックの一括注入
+   - htmlには空の<div id="◯◯Slot"></div>だけ置いておく
+   - ここでHTMLを一括生成して差し込む
+   - common.jsをここだけ直せば全ツール一括反映される
+   対象スロット：
+     #topNavSlot    → 上部ナビ（ツール一覧に戻る＋おすすめ）
+     #bottomNavSlot → 下部ナビ（同上）
+     #adAreaSlot    → 広告エリア
+     #shareAreaSlot → シェアエリア
+     #resetBtnSlot  → リセットボタン
+     #qrModalSlot   → QRコードモーダル
+     #footerSlot    → フッター
+   ===================================================== */
+function injectCommonUI() {
+  const topNav = document.getElementById('topNavSlot');
+  if (topNav) topNav.outerHTML = `
+<div class="back-to-index">
+  <a class="btn-back" href="/index.html">← ツール一覧に戻る</a>
+  <div class="recommend-wrap">
+    <span class="recommend-label">おすすめ：</span>
+    <span id="recommendLinks">読み込み中…</span>
+  </div>
+</div>`;
+
+  const bottomNav = document.getElementById('bottomNavSlot');
+  if (bottomNav) bottomNav.outerHTML = `
+<div class="bottom-nav">
+  <a class="btn-back" href="/index.html">← ツール一覧に戻る</a>
+  <div class="recommend-wrap">
+    <span class="recommend-label">おすすめ：</span>
+    <span id="recommendLinks2">読み込み中…</span>
+  </div>
+</div>`;
+
+  const adArea = document.getElementById('adAreaSlot');
+  if (adArea) adArea.outerHTML = `
+<div class="ad-area">
+  <div class="ad-area-label">スポンサー</div>
+  <!-- ここにAdSenseコードを貼る -->
+</div>`;
+
+  const shareArea = document.getElementById('shareAreaSlot');
+  if (shareArea) shareArea.outerHTML = `
+<div class="share-area">
+  <div class="share-title">▶ このツールをシェア</div>
+  <div class="share-btns">
+    <button class="btn-share" id="btnShareUrl" onclick="shareUrl()">🔗 URLをコピー</button>
+    <button class="btn-share x-post" onclick="shareX()">𝕏 ポストする</button>
+    <button class="btn-share line" onclick="shareLine()">💬 LINEで送る</button>
+    <button class="btn-share qr" onclick="showQr()">📷 QRコード</button>
+  </div>
+</div>`;
+
+  const resetBtn = document.getElementById('resetBtnSlot');
+  if (resetBtn) resetBtn.outerHTML = `<button class="btn-reset" onclick="handleReset()">🔄 入力値をリセット</button>`;
+
+  const qrModal = document.getElementById('qrModalSlot');
+  if (qrModal) qrModal.outerHTML = `
+<div class="qr-modal-overlay" id="qrModalOverlay" onclick="closeQrOnOverlay(event)">
+  <div class="qr-modal">
+    <div class="qr-modal-title" id="qrModalTitle">📷 QRコードでシェア</div>
+    <div id="qrCanvas"></div>
+    <div class="qr-modal-url" id="qrUrl"></div>
+    <button class="qr-modal-close" onclick="hideQr()">✕ 閉じる</button>
+  </div>
+</div>`;
+
+  const footer = document.getElementById('footerSlot');
+  if (footer) footer.outerHTML = `
+<footer>
+  © <span id="copyrightYear"></span> アリガイツ<br>
+  <a class="footer-back" href="https://x.com/arigaitsu" target="_blank" rel="noopener">🐦 作成者X</a>
+  ・
+  <a class="footer-back" href="https://docs.google.com/forms/d/e/1FAIpQLSfUe9UzcRcIRFb4TmDAYKsZ75CcGRjF8Z7Ar_u7a4KgyyNyzQ/viewform?usp=publish-editor" target="_blank" rel="noopener">💡 作ってほしいツール・ご意見はこちら</a>
+</footer>`;
+}
+
+/* =====================================================
+   リセットボタンの共通ハンドラ
+   - 常にresetAll()（標準の入力値クリア）を実行
+   - ツール固有の追加リセット処理が必要な場合は、
+     各ツールのHTML内<script>で onResetExtra() を定義しておけば
+     ここから自動的に呼ばれる（未定義なら何もしない）
+   ===================================================== */
+function handleReset() {
+  resetAll();
+  if (typeof onResetExtra === 'function') onResetExtra();
+}
 
 /* =====================================================
    フッター©年号の自動表示
