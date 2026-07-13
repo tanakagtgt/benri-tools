@@ -35,6 +35,10 @@
 <!-- Chart.js CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
+<!-- ★共通CSS（ナビ・カード・ボタン等の基本部品）本番パスに書き換える -->
+<link rel="stylesheet" href="/common.css">
+
+<!-- ここから下はこのツール固有のスタイル（フェーズ表・グラフ・一時金イベント等） -->
 <style>
 /* =====================================================
    CSS変数（色・サイズの一元管理）
@@ -266,24 +270,25 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 .phase-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 480px;
+  table-layout: fixed;
+  min-width: 380px;
 }
 .phase-table th {
   font-size: 11px;
   font-weight: 700;
   color: #fff;
   letter-spacing: 0.04em;
-  padding: 9px 6px;
+  padding: 7px 5px;
   text-align: center;
   border: 1px solid #fff;
 }
-.phase-table th.col-head  { background: #eef2fb; color: var(--color-text-sub); }
-.phase-table th.col-early { background: var(--color-early); }
-.phase-table th.col-mid   { background: var(--color-mid); }
-.phase-table th.col-late  { background: var(--color-late); }
+.phase-table th.col-head  { background: #eef2fb; color: var(--color-text-sub); width: 21%; }
+.phase-table th.col-early { background: var(--color-early); width: 26%; }
+.phase-table th.col-mid   { background: var(--color-mid); width: 26%; }
+.phase-table th.col-late  { background: var(--color-late); width: 26%; }
 
 .phase-table td {
-  padding: 7px 6px;
+  padding: 5px 4px;
   border: 1px solid #eaeff6;
   vertical-align: middle;
 }
@@ -292,18 +297,22 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
   font-weight: 700;
   color: var(--color-text-sub);
   background: var(--color-input-bg);
-  white-space: nowrap;
+  line-height: 1.3;
   text-align: left;
-  padding-left: 10px;
+  padding-left: 8px;
 }
+.phase-table td.row-head span { display: block; margin-top: 1px; }
 .phase-table td.cell-early { background: rgba(59,130,246,0.05); }
 .phase-table td.cell-mid   { background: rgba(34,197,94,0.05); }
 .phase-table td.cell-late  { background: rgba(245,158,11,0.05); }
 
-/* セル内の入力ラッパー */
-.cell-input-wrap { position: relative; display: flex; align-items: center; }
+/* セル内の入力ラッパー
+   ★min-height/paddingは縮小しても、font-sizeは16px未満にしない
+   （16px未満にするとiPhoneでフォーカス時に自動ズームが発生するため） */
+.cell-input-wrap { position: relative; display: flex; align-items: center; gap: 3px; }
 .cell-input-wrap input {
-  width: 100%;
+  flex: 1 1 0%;
+  min-width: 0;
   border: 1px solid var(--color-border-input);
   border-radius: 6px;
   background: #fff;
@@ -311,22 +320,43 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
   text-align: right;
   font-family: 'BIZ UDPGothic', sans-serif;
   font-size: 16px;
-  padding: 8px 28px 8px 6px;
+  padding: 6px 22px 6px 4px;
   outline: none;
   transition: border-color 0.18s;
-  min-height: 44px;
+  min-height: 36px;
   -webkit-appearance: none;
   appearance: none;
 }
 .cell-input-wrap input:focus { border-color: var(--color-primary); }
 .cell-unit {
   position: absolute;
-  right: 6px;
+  right: 5px;
   font-size: 10px;
   color: #888;
   font-weight: 700;
   pointer-events: none;
 }
+
+/* ±切り替えボタン（毎月積立額・積立増減率のように負数を取りうる項目のみ）
+   ★スマホの数字キーパッド（inputmode="decimal"）には「−」キーが無い機種が多いため、
+     タップで符号反転できるボタンを添えている */
+.btn-sign {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 32px;
+  border: 1px solid var(--color-border-input);
+  border-radius: 6px;
+  background: #f3f5fa;
+  color: var(--color-text-sub);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.btn-sign:active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
 
 /* フェーズ補足・合計年数 */
 .phase-hint {
@@ -792,14 +822,8 @@ footer { margin-top: 16px; text-align: center; font-size: 11px; color: var(--col
 <body>
 <div class="container">
 
-  <!-- ===== 上部ナビ ===== -->
-  <div class="back-to-index">
-    <a class="btn-back" href="/index.html">← ツール一覧に戻る</a>
-    <div class="recommend-wrap">
-      <span class="recommend-label">おすすめ：</span>
-      <span id="recommendLinks">読み込み中…</span>
-    </div>
-  </div>
+  <!-- ナビ：ツール一覧に戻るボタン＋おすすめツール（共通・common.jsが自動注入。触らない） -->
+  <div id="topNavSlot"></div>
 
   <!-- ===== ヘッダー ===== -->
   <header>
@@ -855,22 +879,25 @@ footer { margin-top: 16px; text-align: center; font-size: 11px; color: var(--col
 
           <!-- 毎月積立額 -->
           <tr>
-            <td class="row-head">毎月積立額<br><span style="font-weight:400;color:#999;">（万円／マイナス可）</span></td>
+            <td class="row-head">毎月積立額<br><span style="font-weight:400;color:#999;">(マイナス可)</span></td>
             <td class="cell-early">
               <div class="cell-input-wrap">
-                <input type="number" id="monthly_early" inputmode="decimal" step="0.1" value="3" placeholder="3">
+                <button type="button" class="btn-sign" onclick="toggleSign('monthly_early')" aria-label="符号切替">±</button>
+                <input type="number" id="monthly_early" inputmode="decimal" step="0.1" placeholder="3">
                 <span class="cell-unit">万</span>
               </div>
             </td>
             <td class="cell-mid">
               <div class="cell-input-wrap">
-                <input type="number" id="monthly_mid" inputmode="decimal" step="0.1" value="5" placeholder="5">
+                <button type="button" class="btn-sign" onclick="toggleSign('monthly_mid')" aria-label="符号切替">±</button>
+                <input type="number" id="monthly_mid" inputmode="decimal" step="0.1" placeholder="5">
                 <span class="cell-unit">万</span>
               </div>
             </td>
             <td class="cell-late">
               <div class="cell-input-wrap">
-                <input type="number" id="monthly_late" inputmode="decimal" step="0.1" value="-10" placeholder="-10">
+                <button type="button" class="btn-sign" onclick="toggleSign('monthly_late')" aria-label="符号切替">±</button>
+                <input type="number" id="monthly_late" inputmode="decimal" step="0.1" placeholder="-10">
                 <span class="cell-unit">万</span>
               </div>
             </td>
@@ -881,19 +908,19 @@ footer { margin-top: 16px; text-align: center; font-size: 11px; color: var(--col
             <td class="row-head">積立年数</td>
             <td class="cell-early">
               <div class="cell-input-wrap">
-                <input type="number" id="years_early" inputmode="numeric" min="0" max="60" step="1" value="10" placeholder="10">
+                <input type="number" id="years_early" inputmode="numeric" min="0" max="60" step="1" placeholder="10">
                 <span class="cell-unit">年</span>
               </div>
             </td>
             <td class="cell-mid">
               <div class="cell-input-wrap">
-                <input type="number" id="years_mid" inputmode="numeric" min="0" max="60" step="1" value="15" placeholder="15">
+                <input type="number" id="years_mid" inputmode="numeric" min="0" max="60" step="1" placeholder="15">
                 <span class="cell-unit">年</span>
               </div>
             </td>
             <td class="cell-late">
               <div class="cell-input-wrap">
-                <input type="number" id="years_late" inputmode="numeric" min="0" max="60" step="1" value="10" placeholder="10">
+                <input type="number" id="years_late" inputmode="numeric" min="0" max="60" step="1" placeholder="10">
                 <span class="cell-unit">年</span>
               </div>
             </td>
@@ -904,19 +931,19 @@ footer { margin-top: 16px; text-align: center; font-size: 11px; color: var(--col
             <td class="row-head">年利回り<br><span style="font-weight:400;color:#999;">（税引前）</span></td>
             <td class="cell-early">
               <div class="cell-input-wrap">
-                <input type="number" id="rate_early" inputmode="decimal" step="0.1" value="5" placeholder="5">
+                <input type="number" id="rate_early" inputmode="decimal" step="0.1" placeholder="5">
                 <span class="cell-unit">%</span>
               </div>
             </td>
             <td class="cell-mid">
               <div class="cell-input-wrap">
-                <input type="number" id="rate_mid" inputmode="decimal" step="0.1" value="5" placeholder="5">
+                <input type="number" id="rate_mid" inputmode="decimal" step="0.1" placeholder="5">
                 <span class="cell-unit">%</span>
               </div>
             </td>
             <td class="cell-late">
               <div class="cell-input-wrap">
-                <input type="number" id="rate_late" inputmode="decimal" step="0.1" value="3" placeholder="3">
+                <input type="number" id="rate_late" inputmode="decimal" step="0.1" placeholder="3">
                 <span class="cell-unit">%</span>
               </div>
             </td>
@@ -924,22 +951,25 @@ footer { margin-top: 16px; text-align: center; font-size: 11px; color: var(--col
 
           <!-- ② 積立増減率（年率。0=変化なし、正=昇給、負=生活費増でマイナス） -->
           <tr>
-            <td class="row-head">積立増減率<br><span style="font-weight:400;color:#999;">（年率／0＝変化なし）</span></td>
+            <td class="row-head">年積立増減率<br><span style="font-weight:400;color:#999;">(0＝変化なし)</span></td>
             <td class="cell-early">
               <div class="cell-input-wrap">
-                <input type="number" id="growth_early" inputmode="decimal" step="0.1" value="0" placeholder="0">
+                <button type="button" class="btn-sign" onclick="toggleSign('growth_early')" aria-label="符号切替">±</button>
+                <input type="number" id="growth_early" inputmode="decimal" step="0.1" placeholder="0">
                 <span class="cell-unit">%</span>
               </div>
             </td>
             <td class="cell-mid">
               <div class="cell-input-wrap">
-                <input type="number" id="growth_mid" inputmode="decimal" step="0.1" value="2" placeholder="2">
+                <button type="button" class="btn-sign" onclick="toggleSign('growth_mid')" aria-label="符号切替">±</button>
+                <input type="number" id="growth_mid" inputmode="decimal" step="0.1" placeholder="2">
                 <span class="cell-unit">%</span>
               </div>
             </td>
             <td class="cell-late">
               <div class="cell-input-wrap">
-                <input type="number" id="growth_late" inputmode="decimal" step="0.1" value="-2" placeholder="-2">
+                <button type="button" class="btn-sign" onclick="toggleSign('growth_late')" aria-label="符号切替">±</button>
+                <input type="number" id="growth_late" inputmode="decimal" step="0.1" placeholder="-2">
                 <span class="cell-unit">%</span>
               </div>
             </td>
@@ -1127,37 +1157,32 @@ footer { margin-top: 16px; text-align: center; font-size: 11px; color: var(--col
 
   </div>
 
-  <!-- ===== シェアエリア ===== -->
-  <div class="share-area">
-    <div class="share-title">▶ このツールをシェア</div>
-    <div class="share-btns">
-      <button class="btn-share"        id="btnShareUrl" onclick="shareUrl()">🔗 URLをコピー</button>
-      <button class="btn-share x-post"                   onclick="shareX()">𝕏 ポストする</button>
-      <button class="btn-share line"                      onclick="shareLine()">💬 LINEで送る</button>
-    </div>
-  </div>
+  <!-- シェアエリア（共通・common.jsが自動注入。触らない） -->
+  <div id="shareAreaSlot"></div>
 
-  <!-- ===== リセットボタン ===== -->
-  <button class="btn-reset" onclick="resetAll()">🔄 入力値をリセット</button>
+  <!-- リセットボタン（共通・common.jsが自動注入。触らない） -->
+  <div id="resetBtnSlot"></div>
 
-  <!-- ===== 下部ナビ ===== -->
-  <div class="bottom-nav">
-    <a class="btn-back" href="/index.html">← ツール一覧に戻る</a>
-    <div class="recommend-wrap">
-      <span class="recommend-label">おすすめ：</span>
-      <span id="recommendLinks2">読み込み中…</span>
-    </div>
-  </div>
+  <!-- 下部ナビ（共通・common.jsが自動注入。触らない） -->
+  <div id="bottomNavSlot"></div>
 
-  <!-- ===== 広告エリア ===== -->
-  <div class="ad-area">
-    <div class="ad-area-label">スポンサー</div>
-    <!-- ここにAdSenseコードを貼る（推奨：レスポンシブ広告 or 320×100） -->
-  </div>
+  <!-- 広告エリア（共通・common.jsが自動注入。触らない） -->
+  <div id="adAreaSlot"></div>
 
 </div><!-- /.container -->
-<footer>© 2025 arigato-tools</footer>
 
+<!-- QRコードモーダル（共通・common.jsが自動注入。触らない） -->
+<div id="qrModalSlot"></div>
+
+<!-- フッター（共通・common.jsが自動注入。触らない） -->
+<div id="footerSlot"></div>
+
+<!-- ★共通JS（loadRecommends／シェア／コピー／保存復元／共通UI注入等）本番パスに書き換える -->
+<script src="/common.js"></script>
+
+<!-- =====================================================
+     ★ここから下だけがツール固有部分
+     ===================================================== -->
 <script>
 /* =====================================================
    設定（ツール固有の定数）
@@ -1186,16 +1211,36 @@ let eventRowCount = 0; // 行のユニークIDカウンター
 
 /* =====================================================
    初期化
+   - injectCommonUI／loadRecommends／restoreInputs／フッター年号表示は
+     common.js側のDOMContentLoadedで実行済み（restoreInputsは
+     このツール固有の上書き版が呼ばれる）
+   - ここではこのツール固有の初期化のみ行う
    ===================================================== */
 document.addEventListener('DOMContentLoaded', () => {
-  loadRecommends();
-  restoreInputs();
   updateTotalYears();
-  // デフォルトでイベント行を1つ表示しておく
+  // データ復元でイベント行が入らなかった場合、デフォルトで1つ表示しておく
   if (document.getElementById('eventList').children.length === 0) {
     addEventRow(5, -300);  // 例：5年目 -300万円
   }
 });
+
+/* =====================================================
+   符号切り替え（±ボタン）
+   - スマホの数字キーパッド（inputmode="decimal"）には
+     「−」キーが無い機種が多く、直接マイナス入力しづらいための対策
+   - 毎月積立額／積立増減率のように負数を取りうる項目にのみ設置
+   ===================================================== */
+function toggleSign(id) {
+  const el  = document.getElementById(id);
+  const val = parseFloat(el.value);
+  if (isNaN(val) || val === 0) {
+    el.value = el.value; // 空欄や0はそのまま（符号反転の意味がないため）
+  } else {
+    el.value = -val;
+  }
+  el.dispatchEvent(new Event('input', { bubbles: true })); // saveInputs()等を発火
+  el.focus();
+}
 
 /* =====================================================
    合計運用年数の自動更新
@@ -1294,30 +1339,6 @@ function readEvents() {
     }
   });
   return events;
-}
-
-/* =====================================================
-   おすすめツール読み込み
-   ===================================================== */
-async function loadRecommends() {
-  try {
-    const res   = await fetch('/tools.json');
-    const tools = await res.json();
-    const picks = tools
-      .filter(t => t.id !== CURRENT_TOOL_ID)
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 2);
-
-    const html = picks.length > 0
-      ? picks.map(t => `<a class="recommend-link" href="${t.url}">${t.emoji} ${t.name}</a>`).join('')
-      : '';
-
-    document.getElementById('recommendLinks').innerHTML  = html;
-    document.getElementById('recommendLinks2').innerHTML = html;
-  } catch (e) {
-    document.getElementById('recommendLinks').textContent  = '';
-    document.getElementById('recommendLinks2').textContent = '';
-  }
 }
 
 /* =====================================================
@@ -1991,6 +2012,9 @@ function showError(msg) {
 
 /* =====================================================
    シェア系
+   ★shareX/shareLineはcommon.js版だとcalculateInputs()/
+   　calculateResult()が前提のため、このツールでは
+   　lastRowsベースのbuildShareText()を使う専用版で上書きする
    ===================================================== */
 function buildShareUrl()  { return location.href.split('?')[0]; }
 
@@ -2002,15 +2026,7 @@ function buildShareText() {
   return `積立NISAシミュレーター（3フェーズ対応）\n昇給率・一時金イベントにも対応した将来資産シミュレーターです！`;
 }
 
-function shareUrl() {
-  const url = buildShareUrl();
-  const btn = document.getElementById('btnShareUrl');
-  navigator.clipboard.writeText(url).then(() => {
-    btn.textContent = '✅ コピーしました！';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = '🔗 URLをコピー'; btn.classList.remove('copied'); }, 2500);
-  }).catch(() => { prompt('このURLをコピーしてください', url); });
-}
+// shareUrl() は common.js の共通版（buildShareUrl()を使う）をそのまま利用する
 
 function shareX() {
   const text = buildShareText() + '\n' + buildShareUrl();
