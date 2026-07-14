@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>音声カット・切り出しツール（MP3/WAV/M4A対応）</title>
   <meta name="description" content="ブラウザ上で音声ファイル（MP3, WAV, M4A）をデコードし、必要な部分だけを安全かつ一瞬で切り出せる完全ローカル型の音声カット・分割ツールです。">
-  <link rel="canonical" href="https://arigato-tools.com/audio-splitter">
+  <link rel="canonical" href="https://arigato-tools.com/audio-splitter.html">
   
   <meta property="og:title" content="音声カット・切り出しツール（MP3/WAV/M4A対応）">
   <meta property="og:description" content="安全・高速にブラウザ上で音声ファイルをカット！MP3, WAV, M4Aの切り出しに対応した完全無料・登録不要のツール。">
-  <meta property="og:url" content="https://arigato-tools.com/audio-splitter">
+  <meta property="og:url" content="https://arigato-tools.com/audio-splitter.html">
   <meta property="og:image" content="https://arigato-tools.com/images/audio-splitter-ogp.png">
   <meta property="og:type" content="website">
 
@@ -61,6 +61,81 @@
       width: 120px;
       color: var(--color-text-sub);
     }
+
+    /* --- 新設：音声プレーヤーのスタイル --- */
+    .player-container {
+      background: #f1f5f9;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-card);
+      padding: 20px;
+      margin-bottom: 20px;
+      display: none; /* 初期状態は非表示 */
+    }
+    .player-time-display {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      font-family: monospace;
+      color: var(--color-text-sub);
+      margin-top: 5px;
+    }
+    .player-seekbar {
+      width: 100%;
+      height: 6px;
+      cursor: pointer;
+      accent-color: var(--color-primary);
+    }
+    .player-controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 15px 0;
+    }
+    .player-btn {
+      background: #fff;
+      border: 1px solid var(--color-border-input);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .player-btn:hover {
+      background: #e2e8f0;
+    }
+    .point-setter-box {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .point-btn {
+      font-size: 12px;
+      padding: 8px;
+      background: #fff;
+      border: 1px solid var(--color-primary);
+      color: var(--color-primary);
+      border-radius: var(--radius-btn);
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .point-btn:hover {
+      background: var(--color-primary-bg);
+    }
+    .clear-btn {
+      grid-column: span 2;
+      border-color: #cbd5e1;
+      color: #64748b;
+    }
+    .clear-btn:hover {
+      background: #f1f5f9;
+    }
+    /* ------------------------------------ */
+
     .split-range-box {
       margin-top: 20px;
       display: none; /* 初期状態は非表示 */
@@ -145,6 +220,27 @@
         </table>
       </div>
 
+      <div class="player-container" id="playerContainer">
+        <input type="range" id="seekBar" class="player-seekbar" value="0" min="0" step="0.1">
+        <div class="player-time-display">
+          <span id="playerCurrentTime">0:00.0</span>
+          <span id="playerTotalTime">0:00.0</span>
+        </div>
+        
+        <div class="player-controls">
+          <button type="button" class="player-btn" id="btnRewind" title="10秒戻る">⏪</button>
+          <button type="button" class="player-btn" id="btnPlayPause" title="再生">▶️</button>
+          <button type="button" class="player-btn" id="btnStop" title="停止">⏹</button>
+          <button type="button" class="player-btn" id="btnForward" title="10秒進む">⏩</button>
+        </div>
+
+        <div class="point-setter-box">
+          <button type="button" class="point-btn" id="btnSetStart">👇 再生位置を開始位置にする</button>
+          <button type="button" class="point-btn" id="btnSetEnd">👆 再生位置を終了位置にする</button>
+          <button type="button" class="point-btn clear-btn" id="btnClearPoints">🧹 分割点をリセット</button>
+        </div>
+      </div>
+
       <div class="split-range-box" id="splitControl">
         <div class="range-inputs">
           <div>
@@ -174,6 +270,8 @@
   </main>
 
   <div id="footerSlot"></div>
+
+  <audio id="hiddenAudio" style="display: none;"></audio>
 
   <script src="audio-splitter.js"></script>
 
@@ -205,6 +303,7 @@
        ===================================================== */
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('audioFile');
+    const hiddenAudio = document.getElementById('hiddenAudio');
 
     // エリアクリックでファイルダイアログ表示
     dropzone.addEventListener('click', () => fileInput.click());
@@ -243,6 +342,11 @@
       dropzone.querySelector('p').textContent = '音声をデコード中...（少々お待ちください）';
       
       try {
+        // 音声プレイヤーにソースをセット
+        const audioUrl = URL.createObjectURL(file);
+        hiddenAudio.src = audioUrl;
+        hiddenAudio.load();
+
         // audio-splitter.js のデコードを走らせる
         const duration = await splitter.loadFile(file);
         durationLimit = duration;
@@ -258,8 +362,16 @@
         document.getElementById('endTime').max = duration.toFixed(2);
         document.getElementById('startTime').max = duration.toFixed(2);
 
+        // プレーヤーのシークバー初期化
+        const seekBar = document.getElementById('seekBar');
+        seekBar.max = duration;
+        seekBar.value = 0;
+        document.getElementById('playerTotalTime').textContent = formatTime(duration);
+        document.getElementById('playerCurrentTime').textContent = formatTime(0);
+
         // 各種非表示にしていたUIを出現させる
         document.getElementById('audioInfo').style.display = 'block';
+        document.getElementById('playerContainer').style.display = 'block'; // プレーヤー表示
         document.getElementById('splitControl').style.display = 'block';
         document.getElementById('resultArea').style.display = 'none';
 
@@ -279,11 +391,125 @@
     }
 
     /* =====================================================
-       ④ 共通テンプレート要件: ロジック定義
+       ④ プレーヤー制御ロジック
+       ===================================================== */
+    const btnPlayPause = document.getElementById('btnPlayPause');
+    const btnStop = document.getElementById('btnStop');
+    const btnRewind = document.getElementById('btnRewind');
+    const btnForward = document.getElementById('btnForward');
+    const seekBar = document.getElementById('seekBar');
+    const playerCurrentTime = document.getElementById('playerCurrentTime');
+
+    // 再生・一時停止トグル
+    btnPlayPause.addEventListener('click', () => {
+      if (hiddenAudio.paused) {
+        hiddenAudio.play();
+        btnPlayPause.textContent = '⏸';
+      } else {
+        hiddenAudio.pause();
+        btnPlayPause.textContent = '▶️';
+      }
+    });
+
+    // 停止
+    btnStop.addEventListener('click', () => {
+      hiddenAudio.pause();
+      hiddenAudio.currentTime = 0;
+      btnPlayPause.textContent = '▶️';
+      updatePlayerUI();
+    });
+
+    // 10秒戻る
+    btnRewind.addEventListener('click', () => {
+      hiddenAudio.currentTime = Math.max(0, hiddenAudio.currentTime - 10);
+      updatePlayerUI();
+    });
+
+    // 10秒進む
+    btnForward.addEventListener('click', () => {
+      hiddenAudio.currentTime = Math.min(durationLimit, hiddenAudio.currentTime + 10);
+      updatePlayerUI();
+    });
+
+    // シークバー操作
+    seekBar.addEventListener('input', () => {
+      hiddenAudio.currentTime = seekBar.value;
+      playerCurrentTime.textContent = formatTime(seekBar.value);
+    });
+
+    // オーディオ再生中のUI同期
+    hiddenAudio.addEventListener('timeupdate', () => {
+      if (!seekBar.matches(':active')) { // ユーザーがシークバーをドラッグ中でなければ更新
+        updatePlayerUI();
+      }
+    });
+
+    hiddenAudio.addEventListener('ended', () => {
+      btnPlayPause.textContent = '▶️';
+    });
+
+    function updatePlayerUI() {
+      seekBar.value = hiddenAudio.currentTime;
+      playerCurrentTime.textContent = formatTime(hiddenAudio.currentTime);
+    }
+
+    // 秒数を「分:秒.ミリ秒」の形式にフォーマットする関数
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60);
+      const ms = Math.floor((seconds % 1) * 10);
+      return `${m}:${s.toString().padStart(2, '0')}.${ms}`;
+    }
+
+    /* =====================================================
+       ⑤ 分割点（開始・終了位置）の指定・リセットロジック
+       ===================================================== */
+    const btnSetStart = document.getElementById('btnSetStart');
+    const btnSetEnd = document.getElementById('btnSetEnd');
+    const btnClearPoints = document.getElementById('btnClearPoints');
+    const startTimeInput = document.getElementById('startTime');
+    const endTimeInput = document.getElementById('endTime');
+
+    // 現在の再生位置を開始位置にする
+    btnSetStart.addEventListener('click', () => {
+      const current = hiddenAudio.currentTime;
+      const endVal = parseFloat(endTimeInput.value) || durationLimit;
+
+      if (current >= endVal) {
+        alert('開始位置は、終了位置より手前に設定してください。');
+        return;
+      }
+      startTimeInput.value = current.toFixed(2);
+      saveInputs();
+    });
+
+    // 現在の再生位置を終了位置にする
+    btnSetEnd.addEventListener('click', () => {
+      const current = hiddenAudio.currentTime;
+      const startVal = parseFloat(startTimeInput.value) || 0;
+
+      if (current <= startVal) {
+        alert('終了位置は、開始位置より後ろに設定してください。');
+        return;
+      }
+      endTimeInput.value = current.toFixed(2);
+      saveInputs();
+    });
+
+    // 分割点をリセット
+    btnClearPoints.addEventListener('click', () => {
+      startTimeInput.value = "0.00";
+      endTimeInput.value = durationLimit.toFixed(2);
+      saveInputs();
+    });
+
+
+    /* =====================================================
+       ⑥ 共通テンプレート要件: ロジック定義
        ===================================================== */
     function calculateInputs() {
-      const start = parseFloat(document.getElementById('startTime').value) || 0;
-      let end = parseFloat(document.getElementById('endTime').value) || 0;
+      const start = parseFloat(startTimeInput.value) || 0;
+      let end = parseFloat(endTimeInput.value) || 0;
 
       // 入力値制限
       if (start < 0) return null;
@@ -307,11 +533,10 @@
 
     function displayResult(result) {
       if (!result) return;
-      // 今回はリアルタイム出力がないため、common.js用の保存確認としてのみ動かす
     }
 
     /* =====================================================
-       ⑤ 切り出し・ダウンロード処理の実行
+       ⑦ 切り出し・ダウンロード処理の実行
        ===================================================== */
     document.getElementById('cutBtn').addEventListener('click', () => {
       const inputs = calculateInputs();
@@ -354,7 +579,7 @@
     });
 
     /* =====================================================
-       ⑥ シェア用テキスト生成（common.jsから呼ばれる）
+       ⑧ シェア用テキスト生成（common.jsから呼ばれる）
        ===================================================== */
     function buildShareText(result) {
       if (!result) return '安全・高速なブラウザ完結型の音声カットツール！';
@@ -366,10 +591,14 @@
     }
 
     /* =====================================================
-       ⑦ リセットボタン拡張（リセット時に表示を隠す）
+       ⑨ リセットボタン拡張（リセット時に表示を隠す）
        ===================================================== */
     function onResetExtra() {
+      hiddenAudio.pause();
+      hiddenAudio.src = '';
+      btnPlayPause.textContent = '▶️';
       document.getElementById('audioInfo').style.display = 'none';
+      document.getElementById('playerContainer').style.display = 'none'; // プレーヤーも非表示に
       document.getElementById('splitControl').style.display = 'none';
       document.getElementById('resultArea').style.display = 'none';
       dropzone.querySelector('p').innerHTML = '<strong>ここに音声ファイルをドラッグ＆ドロップ</strong>';
