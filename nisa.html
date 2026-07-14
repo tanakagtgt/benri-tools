@@ -683,6 +683,26 @@ table.result-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 }
 .btn-copy:hover { background: #dbeafe; }
 
+/* ③要望：コピー行を2分割（テキストコピー／Excel用コピー） */
+.copy-btn-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+.copy-btn-row .btn-copy { margin-top: 0; font-size: 12px; padding: 11px 6px; }
+/* Excel用コピーはExcelを連想する緑系に色分け */
+.btn-copy.excel {
+  background: #eafaf0;
+  border-color: #86e3ae;
+  color: #0f7a3d;
+}
+.btn-copy.excel:hover { background: #d3f5df; }
+/* スマホ幅が狭い時は縦積みにして押しやすくする */
+@media (max-width: 360px) {
+  .copy-btn-row { grid-template-columns: 1fr; }
+}
+
 /* =====================================================
    シェアエリア
    ===================================================== */
@@ -761,20 +781,43 @@ table.result-table { width: 100%; border-collapse: collapse; font-size: 12px; }
   background: var(--color-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
-  padding: 16px 18px;
+  padding: 14px 18px;
   margin-bottom: 14px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
   font-size: 12px;
   color: var(--color-text-sub);
   line-height: 1.9;
 }
+/* ③ タイトルをボタン化してタップで開閉（デフォルトは閉じておく） */
 .calc-note-title {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: none;
+  border: none;
+  padding: 2px 0;
   font-size: 11px;
   font-weight: 700;
+  font-family: 'BIZ UDPGothic', sans-serif;
   color: var(--color-text-muted);
   letter-spacing: 0.08em;
-  margin-bottom: 12px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 32px;
 }
+.calc-note-arrow {
+  font-size: 10px;
+  color: var(--color-text-label);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+/* 開いている時は矢印を90度回転 */
+.calc-note-title[aria-expanded="true"] .calc-note-arrow { transform: rotate(90deg); }
+/* 本体：デフォルト非表示。JSでdisplay切替 */
+.calc-note-body { display: none; margin-top: 10px; }
+.calc-note-body.show { display: block; }
 /* 各項目のブロック */
 .calc-item {
   margin-bottom: 12px;
@@ -845,7 +888,7 @@ footer { margin-top: 16px; text-align: center; font-size: 11px; color: var(--col
           <input
             type="number" id="principal"
             inputmode="decimal" min="0" max="100000" step="1"
-            value="0" placeholder="0"
+            placeholder="0"
           >
           <span class="input-unit">万円</span>
         </div>
@@ -856,7 +899,7 @@ footer { margin-top: 16px; text-align: center; font-size: 11px; color: var(--col
           <input
             type="number" id="currentAge"
             inputmode="numeric" min="1" max="99" step="1"
-            value="35" placeholder="35"
+            placeholder="35"
           >
           <span class="input-unit">歳</span>
         </div>
@@ -876,6 +919,29 @@ footer { margin-top: 16px; text-align: center; font-size: 11px; color: var(--col
           </tr>
         </thead>
         <tbody>
+
+          <!-- 積立年数（①要望：先頭に配置） -->
+          <tr>
+            <td class="row-head">積立年数</td>
+            <td class="cell-early">
+              <div class="cell-input-wrap">
+                <input type="number" id="years_early" inputmode="numeric" min="0" max="60" step="1" placeholder="10">
+                <span class="cell-unit">年</span>
+              </div>
+            </td>
+            <td class="cell-mid">
+              <div class="cell-input-wrap">
+                <input type="number" id="years_mid" inputmode="numeric" min="0" max="60" step="1" placeholder="15">
+                <span class="cell-unit">年</span>
+              </div>
+            </td>
+            <td class="cell-late">
+              <div class="cell-input-wrap">
+                <input type="number" id="years_late" inputmode="numeric" min="0" max="60" step="1" placeholder="10">
+                <span class="cell-unit">年</span>
+              </div>
+            </td>
+          </tr>
 
           <!-- 毎月積立額 -->
           <tr>
@@ -899,29 +965,6 @@ footer { margin-top: 16px; text-align: center; font-size: 11px; color: var(--col
                 <button type="button" class="btn-sign" onclick="toggleSign('monthly_late')" aria-label="符号切替">±</button>
                 <input type="number" id="monthly_late" inputmode="decimal" step="0.1" placeholder="-10">
                 <span class="cell-unit">万</span>
-              </div>
-            </td>
-          </tr>
-
-          <!-- 積立年数 -->
-          <tr>
-            <td class="row-head">積立年数</td>
-            <td class="cell-early">
-              <div class="cell-input-wrap">
-                <input type="number" id="years_early" inputmode="numeric" min="0" max="60" step="1" placeholder="10">
-                <span class="cell-unit">年</span>
-              </div>
-            </td>
-            <td class="cell-mid">
-              <div class="cell-input-wrap">
-                <input type="number" id="years_mid" inputmode="numeric" min="0" max="60" step="1" placeholder="15">
-                <span class="cell-unit">年</span>
-              </div>
-            </td>
-            <td class="cell-late">
-              <div class="cell-input-wrap">
-                <input type="number" id="years_late" inputmode="numeric" min="0" max="60" step="1" placeholder="10">
-                <span class="cell-unit">年</span>
               </div>
             </td>
           </tr>
@@ -979,22 +1022,8 @@ footer { margin-top: 16px; text-align: center; font-size: 11px; color: var(--col
       </table>
     </div>
 
-    <p class="phase-hint">
-      ※ 毎月積立額にマイナスを入れると取り崩しとして計算します<br>
-      ※ 積立増減率：毎年2%昇給なら+2、インフレで生活費2%増（積立減）なら-2<br>
-      ※ 積立増減率は各年初の積立額に複利で乗算されます（取り崩しフェーズでも有効）<br>
-      ※ 年数を0にするとそのフェーズはスキップされます
-    </p>
-    <div class="phase-total-years">合計運用年数：<span id="totalYearsDisp">35年</span></div>
-
-    <button class="btn-calc" onclick="simulate()">▶ シミュレーション実行</button>
-    <div class="error-msg"    id="errMsg"></div>
-    <div class="bankrupt-msg" id="bankruptMsg"></div>
-  </div>
-
-  <!-- ===== ③ 一時金イベントカード ===== -->
-  <div class="card">
-    <div class="section-title">▶ 一時金イベント（任意）</div>
+    <!-- ②要望：一時金イベントを「年積立増減率」の下に移動（フェーズ表の直後） -->
+    <div class="section-title" style="margin-top:18px;">▶ 一時金イベント（任意）</div>
 
     <!-- 列ラベル -->
     <div class="event-header">
@@ -1013,6 +1042,18 @@ footer { margin-top: 16px; text-align: center; font-size: 11px; color: var(--col
       ※ 支出（家購入・教育費など）はマイナス、収入（退職金・相続など）はプラスで入力<br>
       ※ 同じ年に複数のイベントを設定できます
     </p>
+
+    <p class="phase-hint">
+      ※ 毎月積立額にマイナスを入れると取り崩しとして計算します<br>
+      ※ 積立増減率：毎年2%昇給なら+2、インフレで生活費2%増（積立減）なら-2<br>
+      ※ 積立増減率は各年初の積立額に複利で乗算されます（取り崩しフェーズでも有効）<br>
+      ※ 年数を0にするとそのフェーズはスキップされます
+    </p>
+    <div class="phase-total-years">合計運用年数：<span id="totalYearsDisp">35年</span></div>
+
+    <button class="btn-calc" onclick="simulate()">▶ シミュレーション実行</button>
+    <div class="error-msg"    id="errMsg"></div>
+    <div class="bankrupt-msg" id="bankruptMsg"></div>
   </div>
 
   <!-- ===== 結果パネル（計算後にshow） ===== -->
@@ -1076,7 +1117,11 @@ footer { margin-top: 16px; text-align: center; font-size: 11px; color: var(--col
           <tbody id="tableBody"></tbody>
         </table>
       </div>
-      <button class="btn-copy" onclick="copyTable()">📋 結果をコピー</button>
+      <!-- ③要望：テキストコピーとExcel用コピーを2分割で並べる -->
+      <div class="copy-btn-row">
+        <button class="btn-copy" id="btnCopyText" onclick="copyTable()">📄 テキストでコピー</button>
+        <button class="btn-copy excel" id="btnCopyExcel" onclick="copyResultExcel()">📊 Excel用コピー</button>
+      </div>
     </div>
   </div>
 
@@ -1088,13 +1133,25 @@ footer { margin-top: 16px; text-align: center; font-size: 11px; color: var(--col
   </div>
 
   <!-- ===== 計算方法の説明カード ===== -->
+  <!-- ③要望：通常は隠しておき、タップで開閉できるアコーディオンにする -->
   <div class="calc-note">
-    <div class="calc-note-title">▶ 計算方法について</div>
+    <button type="button" class="calc-note-title" id="calcNoteToggle" onclick="toggleCalcNote()" aria-expanded="false" aria-controls="calcNoteBody">
+      <span>計算方法について</span>
+      <span class="calc-note-arrow">▶</span>
+    </button>
+
+    <div class="calc-note-body" id="calcNoteBody">
 
     <!-- 表示タイミング -->
     <div class="calc-item">
       <div class="calc-item-label">📅 表示値のタイミング</div>
       <div class="calc-desc">「N年目」は<strong>N年目終了時点</strong>の資産額です。</div>
+    </div>
+
+    <!-- ①要望：入力欄が空欄の場合の扱い（全項目に拡大） -->
+    <div class="calc-item">
+      <div class="calc-item-label">✏️ 入力欄が空欄の場合</div>
+      <div class="calc-desc">積立年数・毎月積立額・年利回り・年積立増減率など、各入力欄は空欄のままでもエラーにならず計算できます。空欄の項目はすべて「0」として扱われます（例：積立年数が空欄＝そのフェーズは0年としてスキップ）。</div>
     </div>
 
     <!-- 月次複利 -->
@@ -1155,6 +1212,7 @@ footer { margin-top: 16px; text-align: center; font-size: 11px; color: var(--col
       <div class="calc-desc">グラフの棒（青）は資産総額をそのまま表示しています。一時金発生年は棒が濃くなり、▼（支出）▲（収入）マーカーと金額を棒の上に表示します。</div>
     </div>
 
+    </div><!-- /.calc-note-body -->
   </div>
 
   <!-- シェアエリア（共通・common.jsが自動注入。触らない） -->
@@ -1218,11 +1276,21 @@ let eventRowCount = 0; // 行のユニークIDカウンター
    ===================================================== */
 document.addEventListener('DOMContentLoaded', () => {
   updateTotalYears();
-  // データ復元でイベント行が入らなかった場合、デフォルトで1つ表示しておく
+  // ②要望：データ復元でイベント行が入らなかった場合、空欄（プレースホルダーのみ）の1行を表示しておく
   if (document.getElementById('eventList').children.length === 0) {
-    addEventRow(5, -300);  // 例：5年目 -300万円
+    addEventRow();
   }
 });
+
+/* =====================================================
+   ③ 計算方法カードの開閉トグル（デフォルトは閉じておく）
+   ===================================================== */
+function toggleCalcNote() {
+  const btn  = document.getElementById('calcNoteToggle');
+  const body = document.getElementById('calcNoteBody');
+  const opened = body.classList.toggle('show');
+  btn.setAttribute('aria-expanded', opened ? 'true' : 'false');
+}
 
 /* =====================================================
    符号切り替え（±ボタン）
@@ -1372,10 +1440,13 @@ function fmtManDisp(yen) {
    ===================================================== */
 function readPhase(suffix) {
   return {
-    monthly: parseFloat(document.getElementById('monthly_' + suffix).value),
-    years:   parseInt(document.getElementById('years_'    + suffix).value, 10),
-    rate:    parseFloat(document.getElementById('rate_'    + suffix).value),
-    // ② 積立増減率（%/年）。空欄・NaNは0扱い
+    // ①要望：毎月積立額が空欄でも計算を継続できるよう、未入力・NaNは0扱いにする
+    monthly: parseFloat(document.getElementById('monthly_' + suffix).value) || 0,
+    // 積立年数が空欄でも計算を継続できるよう、未入力・NaNは0扱いにする
+    years:   parseInt(document.getElementById('years_'    + suffix).value, 10) || 0,
+    // ①要望：年利回りが空欄でも計算を継続できるよう、未入力・NaNは0扱いにする
+    rate:    parseFloat(document.getElementById('rate_'    + suffix).value) || 0,
+    // 積立増減率（%/年）。空欄・NaNは0扱い
     growth:  parseFloat(document.getElementById('growth_'  + suffix).value) || 0,
   };
 }
@@ -1419,17 +1490,15 @@ function simulate() {
   // バリデーション
   let totalYears = 0;
   for (const p of phaseDefs) {
-    const { monthly, years, rate } = p.data;
-    if (isNaN(years) || years < 0 || years > 60) {
+    const { years, rate } = p.data;
+    // ①②要望：空欄は readPhase() 側で 0 に変換済みなので、ここではエラーにせず範囲外の値のみチェックする
+    if (years < 0 || years > 60) {
       showError(`「${p.label}」の積立年数は0〜60年で入力してください`);
       return;
     }
-    if (years > 0) {
-      if (isNaN(monthly)) { showError(`「${p.label}」の毎月積立額を入力してください`); return; }
-      if (isNaN(rate) || rate < -20 || rate > 30) {
-        showError(`「${p.label}」の年利回りは-20〜30%で入力してください`);
-        return;
-      }
+    if (years > 0 && (rate < -20 || rate > 30)) {
+      showError(`「${p.label}」の年利回りは-20〜30%で入力してください`);
+      return;
     }
     totalYears += years;
   }
@@ -1894,9 +1963,9 @@ function copyTable() {
   });
 
   navigator.clipboard.writeText(text).then(() => {
-    const btn = document.querySelector('.btn-copy');
+    const btn = document.getElementById('btnCopyText');
     btn.textContent = '✅ コピーしました！';
-    setTimeout(() => { btn.textContent = '📋 結果をコピー'; }, 2000);
+    setTimeout(() => { btn.textContent = '📄 テキストでコピー'; }, 2000);
   }).catch(() => {
     const ta = document.createElement('textarea');
     ta.value = text;
@@ -1904,9 +1973,93 @@ function copyTable() {
     ta.select();
     document.execCommand('copy');
     document.body.removeChild(ta);
-    const btn = document.querySelector('.btn-copy');
+    const btn = document.getElementById('btnCopyText');
     btn.textContent = '✅ コピーしました！';
-    setTimeout(() => { btn.textContent = '📋 結果をコピー'; }, 2000);
+    setTimeout(() => { btn.textContent = '📄 テキストでコピー'; }, 2000);
+  });
+}
+
+/* =====================================================
+   ③要望：Excel用コピー
+   - タブ区切り（\t）で出力し、Excelにそのまま貼り付けると
+     セルが自動的に分かれるようにしている
+   - 内容：①結果パネルのサマリー（最終資産総額・投資元本・運用収益・
+     収益率・フェーズ別サマリー）＋②年別シミュレーション結果テーブル
+   ===================================================== */
+function copyResultExcel() {
+  if (!lastRows.length) return;
+
+  const rows          = lastRows;
+  const finalRow       = rows[rows.length - 1];
+  const totalInvested  = finalRow.principalAmt;
+  // 運用収益＝全年分のprofit合算（renderResultと同じロジック）
+  const cumProfit      = rows.reduce((s, r) => s + r.profit, 0);
+  const profitRateNum  = totalInvested !== 0
+    ? (cumProfit / Math.abs(totalInvested) * 100).toFixed(1)
+    : '0.0';
+
+  // ヒーロー部分（最終資産総額）のラベル・値・補足
+  const heroLabel = lastMeta.bankrupt ? '破産（資産が枯渇しました）' : '最終資産総額';
+  const heroSub   = lastMeta.bankrupt
+    ? `${lastMeta.bankruptAtYear}年目で資産が0円になりました`
+    : `${finalRow.year}年後${finalRow.age ? '（' + finalRow.age + '歳）' : ''}の資産総額`;
+
+  const lines = [];
+
+  // ----- サマリー部分（タブ区切り：ラベル／値／補足） -----
+  lines.push(['最終資産総額', fmtManDisp(finalRow.total), heroSub].join('\t'));
+  if (lastMeta.bankrupt) lines.push([heroLabel].join('\t'));
+  lines.push(['投資元本合計', fmtMan(totalInvested)].join('\t'));
+  lines.push(['運用収益', (cumProfit >= 0 ? '+' : '') + fmtMan(cumProfit)].join('\t'));
+  lines.push(['収益率', (parseFloat(profitRateNum) >= 0 ? '+' : '') + profitRateNum + '%'].join('\t'));
+
+  // ----- フェーズ別サマリー -----
+  lastMeta.phaseDefs.forEach(p => {
+    const phaseRows = rows.filter(r => r.phase === p.key);
+    if (phaseRows.length === 0) {
+      lines.push([`${p.label}`, '未実施'].join('\t'));
+      return;
+    }
+    const last       = phaseRows[phaseRows.length - 1];
+    const growthDisp = p.data.growth !== 0 ? `増減${p.data.growth > 0 ? '+' : ''}${p.data.growth}%` : '増減なし';
+    const sub        = `月${p.data.monthly >= 0 ? '+' : ''}${p.data.monthly}万 / ${p.data.rate}% / ${growthDisp}`;
+    lines.push([`${p.label}（${phaseRows.length}年）`, fmtManDisp(last.total), sub].join('\t'));
+  });
+
+  // ----- 空行区切り -----
+  lines.push('');
+
+  // ----- 年別シミュレーション結果テーブル -----
+  lines.push(['経過年', '年齢', '積立額/月', '投資元本', '運用収益', '資産総額'].join('\t'));
+  rows.forEach(r => {
+    const ageStr  = r.age ? r.age + '歳' : '—';
+    const monthly = (r.monthlyYen >= 0 ? '+' : '') + (r.monthlyYen / 10000).toFixed(1) + '万';
+    lines.push([
+      `${r.year}年目`,
+      ageStr,
+      monthly,
+      fmtMan(r.principalAmt),
+      (r.profit >= 0 ? '+' : '') + fmtMan(r.profit),
+      fmtMan(r.total),
+    ].join('\t'));
+  });
+
+  const text = lines.join('\n');
+
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('btnCopyExcel');
+    btn.textContent = '✅ コピーしました！';
+    setTimeout(() => { btn.textContent = '📊 Excel用コピー'; }, 2000);
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    const btn = document.getElementById('btnCopyExcel');
+    btn.textContent = '✅ コピーしました！';
+    setTimeout(() => { btn.textContent = '📊 Excel用コピー'; }, 2000);
   });
 }
 
@@ -1974,23 +2127,23 @@ function restoreInputs() {
    入力値リセット（LocalStorageも削除）
    ===================================================== */
 function resetAll() {
-  // フェーズフィールドをデフォルト値に戻す
-  const defaults = {
-    principal:     '0',
-    currentAge:    '35',
-    monthly_early: '3',   years_early: '10', rate_early: '5',  growth_early: '0',
-    monthly_mid:   '5',   years_mid:   '15', rate_mid:   '5',  growth_mid:   '2',
-    monthly_late:  '-10', years_late:  '10', rate_late:  '3',  growth_late:  '-2',
-  };
-  Object.entries(defaults).forEach(([id, val]) => {
+  // ②要望：初期値は入れず、すべてプレースホルダー（グレー表示）だけの空欄に戻す
+  //   ※ 積立年数などが空欄でも calculate 側で0扱いになるため計算は継続できる
+  const fieldIds = [
+    'principal', 'currentAge',
+    'monthly_early', 'years_early', 'rate_early', 'growth_early',
+    'monthly_mid',   'years_mid',   'rate_mid',   'growth_mid',
+    'monthly_late',  'years_late',  'rate_late',  'growth_late',
+  ];
+  fieldIds.forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.value = val;
+    if (el) el.value = '';
   });
 
-  // イベント行をリセット（デフォルト1行）
+  // 一時金イベント行も空欄でリセット（プレースホルダーのみ表示）
   document.getElementById('eventList').innerHTML = '';
   eventRowCount = 0;
-  addEventRow(5, -300);
+  addEventRow();
 
   updateTotalYears();
 
