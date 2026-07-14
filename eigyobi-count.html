@@ -11,509 +11,273 @@
   gtag('js', new Date());
   gtag('config', 'G-NXJCSR0EX1');
 </script>
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>営業日計算ツール｜土日祝を除く日数を瞬時に計算</title>
-<meta name="description" content="2つの日付を入力するだけで、土日・祝日を除いた営業日数を自動計算。工期管理・契約業務に便利な無料ツール。">
+<meta name="description" content="2つの日付を入力するだけで、土日・祝日・複数の休業期間を除いた営業日数を自動計算。工期管理・契約業務に便利な無料ツール。">
+
+<meta property="og:title" content="営業日計算ツール｜土日祝を除く日数を瞬時に計算">
+<meta property="og:description" content="2つの日付を入力するだけで、土日・祝日・複数の休業期間を除いた営業日数を自動計算。工期管理・契約業務に便利な無料ツール。">
+<meta property="og:url" content="https://arigato-tools.com/eigyobi-count">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="便利ツール集">
+<meta name="twitter:card" content="summary_large_image">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
 
-<!-- QRコード生成ライブラリ（qrcode.js）CDN読み込み：シェアエリアのQRコードボタンで使用 -->
+<!-- QRコード生成ライブラリ（common.jsのshowQrで使用） -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<!-- ★共通CSS（container/card/btn-calc/result-panel/breakdown/nav/share/QR/footer等の基本スタイルはここに集約） -->
+<link rel="stylesheet" href="/common.css">
+
+<!-- =====================================================
+     ★このツール固有のスタイル
+     - common.cssでカバーされない「日付レンジ入力」「休業期間の複数行リスト」
+       「祝日一覧」「カレンダー表示」「サブ結果の色分け」だけをここに追加する
+     ===================================================== -->
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  background: #f4f6f9;
-  color: #222;
-  font-family: 'BIZ UDPGothic', sans-serif;
-  min-height: 100vh;
-  padding: 24px 14px 60px;
-  display: flex; flex-direction: column; align-items: center;
-}
-.container { width: 100%; max-width: 600px; }
-
-header { text-align: center; margin-bottom: 22px; }
-h1 { font-size: clamp(20px,5vw,26px); font-weight:700; color:#1a56db; margin-bottom:4px; letter-spacing:0.03em; }
-.subtitle { font-size:11px; color:#666; line-height:1.8; }
-
-.card {
-  background:#fff; border:1px solid #dde3ee; border-radius:10px;
-  padding:20px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,0.06);
-}
-
-/* 日付と日数調整エリアの二段組グリッド */
+/* 開始日→終了日のレンジ入力（.input-groupを2つ矢印でつなぐレイアウト） */
 .date-grid {
   display: grid;
-  grid-template-columns: 1fr 28px 1fr;
-  gap: 12px 10px;
+  grid-template-columns: 1fr 24px 1fr;
+  gap: 10px;
   align-items: end;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
-.date-group label { display:block; font-size:11px; font-weight:700; color:#555; letter-spacing:0.08em; margin-bottom:5px; }
-
-.date-group input[type="date"],
-.date-group input[type="number"] {
-  width:100%; border:1px solid #c7d0e0; border-radius:7px;
-  background:#f8fafd; color:#222; font-family:'BIZ UDPGothic',sans-serif;
-  font-size:15px; padding:9px 10px; outline:none; transition:border-color 0.18s;
+.arrow-center { text-align: center; color: #aaa; font-size: 18px; padding-bottom: 9px; }
+@media (max-width: 440px) {
+  .date-grid { grid-template-columns: 1fr; gap: 8px 0; }
+  .arrow-center { display: none; }
 }
-.date-group input[type="date"]:focus,
-.date-group input[type="number"]:focus { border-color:#1a56db; }
 
-.arrow-center { text-align:center; color:#aaa; font-size:18px; padding-bottom:9px; }
-.space-center { text-align:center; }
-
-/* 除外オプションエリア */
-.options-area { border-top:1px solid #eaeff6; padding-top:14px; margin-bottom:16px; }
-.options-title { font-size:11px; font-weight:700; color:#666; letter-spacing:0.08em; margin-bottom:10px; }
-.checkbox-list { display:flex; flex-direction:column; gap:8px; }
-.checkbox-item { display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:#333; user-select:none; }
-.checkbox-item input[type="checkbox"] { width:16px; height:16px; accent-color:#1a56db; cursor:pointer; flex-shrink:0; }
-
-.btn-calc {
-  width:100%; background:#1a56db; border:none; border-radius:8px;
-  color:#fff; font-family:'BIZ UDPGothic',sans-serif; font-size:15px; font-weight:700;
-  padding:13px; cursor:pointer; letter-spacing:0.06em; transition:background 0.15s,transform 0.1s;
+/* details/summary を「タップで開閉できるセクション見出し」として使う共通スタイル
+   ※ options-area（除外オプション）と leave-area（有給・休業期間）の両方で使用 */
+.fold-section { border-top: 1px solid #eaeff6; padding-top: 12px; margin-bottom: 14px; }
+.fold-section summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  color: #666;
+  letter-spacing: 0.04em;
+  list-style: none;         /* デフォルトの▶マーカーを消して絵文字で統一 */
+  padding: 4px 0;
+  min-height: 32px;         /* タップ領域確保 */
+  display: flex;
+  align-items: center;
 }
-.btn-calc:hover { background:#1546b8; }
-.btn-calc:active { transform:scale(0.98); }
+.fold-section summary::-webkit-details-marker { display: none; }
+.fold-section summary .fold-hint { color: #aaa; font-weight: 400; margin-left: 6px; }
+.fold-section[open] summary { color: #1a56db; margin-bottom: 8px; }
+.checkbox-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
 
-.error-msg {
-  display:none; background:#fff1f1; border:1px solid #fca5a5; border-radius:7px;
-  color:#b91c1c; font-size:13px; padding:9px 13px; margin-top:10px;
-}
-.error-msg.show { display:block; }
+/* サブ結果6項目の色分け（総日数／休日合計／土日／祝日等／指定休日／追加休暇日） */
+.b-total     { color: #222; }
+.b-offtotal  { color: #b45309; } /* 休日合計：合算値なので少し濃いめの琥珀 */
+.b-weekend   { color: #d97706; } /* 土日 */
+.b-specified { color: #0891b2; } /* 月～金の指定休日 */
+.b-holiday   { color: #dc2626; } /* 祝日等 */
+.b-leave     { color: #7c3aed; } /* 有給休暇・休業期間（追加休暇日） */
 
-/* 結果パネル */
-.result-panel {
-  background:#fff; border:1px solid #dde3ee; border-radius:10px;
-  margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,0.06);
-  overflow:hidden;
-}
-.result-main {
-  display:flex; flex-direction:column; align-items:center;
-  background:linear-gradient(135deg,#e8f0fe 0%,#f0fdf4 100%);
-  border-bottom:1px solid #dde3ee;
-  padding:20px 16px 16px; text-align:center;
-}
-.result-label { font-size:12px; font-weight:700; color:#1a56db; letter-spacing:0.1em; margin-bottom:4px; }
-.result-number { font-size:clamp(56px,16vw,80px); font-weight:700; color:#111; line-height:1; }
-.result-number.placeholder { color:#bbb; }
-.result-unit { font-size:16px; color:#555; font-weight:700; margin-left:4px; }
+/* 日付範囲まわりの補足テキスト（メイン結果の下） */
+.result-sub-dates { text-align: center; }
+.result-sub-dates .reiwa-line { font-size: 11px; color: #666; margin-top: 2px; }
 
-/* 令和表記 */
-.result-reiwa { font-size:12px; color:#444; margin-top:8px; line-height:1.5; text-align:center; }
-
-.breakdown-wrap { padding:16px; }
-.breakdown {
-  display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px;
-}
-.breakdown-item {
-  background:#f8fafd; border:1px solid #dde3ee; border-radius:8px;
-  padding:11px 6px; text-align:center;
-}
-.b-num { font-size:22px; font-weight:700; }
-.b-num.placeholder { color:#ccc; }
-.b-label { font-size:11px; color:#777; margin-top:2px; }
-.b-total    { color:#222; }
-.b-offtotal { color:#b45309; } /* 休日合計：琥珀系（合算値なので少し濃いめ） */
-.b-weekend  { color:#d97706; } /* 土日 */
-.b-specified{ color:#0891b2; } /* 月～金の指定休日：シアン系で区別 */
-.b-holiday  { color:#dc2626; } /* 祝日等 */
-
+/* 期間内の祝日一覧 */
 .holiday-section {
-  background:#fff8f8; border:1px solid #fde8e8; border-radius:8px;
-  padding:12px 14px; margin-bottom:12px;
-  max-height:180px; overflow-y:auto; display:none;
+  background: #fff8f8; border: 1px solid #fde8e8; border-radius: 8px;
+  padding: 12px 14px; margin-bottom: 12px;
+  max-height: 180px; overflow-y: auto; display: none;
 }
-.holiday-section::-webkit-scrollbar { width:4px; }
-.holiday-section::-webkit-scrollbar-thumb { background:#e0c0c0; border-radius:99px; }
-.holiday-header { font-size:11px; font-weight:700; color:#888; letter-spacing:0.08em; margin-bottom:8px; }
-.holiday-list { list-style:none; }
+.holiday-header { font-size: 11px; font-weight: 700; color: #888; letter-spacing: 0.08em; margin-bottom: 8px; }
+.holiday-list { list-style: none; }
 .holiday-list li {
-  display:flex; justify-content:space-between; font-size:13px;
-  padding:5px 0; border-bottom:1px solid #f5e4e4; color:#dc2626;
+  display: flex; justify-content: space-between; font-size: 13px;
+  padding: 5px 0; border-bottom: 1px solid #f5e4e4; color: #dc2626;
 }
-.holiday-list li:last-child { border-bottom:none; }
-.holiday-name { color:#888; }
-
-.copy-buttons { display:flex; flex-direction:column; gap:8px; }
-.btn-copy {
-  width:100%; background:#f1f5fd; border:1px solid #c3d4f8; border-radius:7px;
-  color:#1a56db; font-family:'BIZ UDPGothic',sans-serif; font-size:13px; font-weight:700;
-  padding:10px; cursor:pointer; transition:background 0.15s;
-}
-.btn-copy:hover { background:#dbeafe; }
-.btn-copy:disabled { opacity:0.4; cursor:not-allowed; }
-.btn-copy.excel-btn { color:#217346; border-color:#a8d5b5; background:#f0faf4; }
-.btn-copy.excel-btn:hover { background:#d4edda; }
-
-@keyframes fadeUp {
-  from { opacity:0; transform:translateY(8px); }
-  to   { opacity:1; transform:translateY(0); }
-}
-.anim { animation:fadeUp 0.3s ease; }
+.holiday-list li:last-child { border-bottom: none; }
+.holiday-name { color: #888; }
 
 /* =====================================================
-   有給休暇・特別休暇 入力エリア
+   休業期間：複数登録リスト（②で追加した部分）
+   - 1行＝1期間（開始日・終了日・削除ボタン）
+   - 「＋ 期間を追加」で行を増やせる／将来的に「理由メモ」欄などを
+     追加したくなったら .kyugyo-row の中に input を1つ増やすだけでよい構造
    ===================================================== */
-.leave-area {
-  border-top: 1px solid #eaeff6;
-  padding-top: 14px;
-  margin-bottom: 16px;
+.kyugyo-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px; margin-top: 12px;
 }
-.leave-title {
-  font-size: 11px; font-weight: 700; color: #666;
-  letter-spacing: 0.08em; margin-bottom: 10px;
+.kyugyo-header .section-title-sm { font-size: 11px; font-weight: 700; color: #666; letter-spacing: 0.08em; }
+.btn-add-kyugyo {
+  background: #f1f5fd; border: 1px solid #c3d4f8; border-radius: 7px;
+  color: #1a56db; font-family: 'BIZ UDPGothic', sans-serif; font-size: 12px; font-weight: 700;
+  padding: 7px 12px; cursor: pointer; min-height: 32px; white-space: nowrap;
+  transition: background 0.15s;
 }
-.leave-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+.btn-add-kyugyo:hover { background: #dbeafe; }
+
+.kyugyo-empty { font-size: 12px; color: #999; padding: 6px 2px 10px; }
+
+.kyugyo-row {
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 8px; flex-wrap: wrap;
 }
-.leave-group label {
-  display: block; font-size: 11px; font-weight: 700;
-  color: #555; letter-spacing: 0.08em; margin-bottom: 5px;
-}
-.leave-group input[type="number"] {
-  width: 100%; border: 1px solid #c7d0e0; border-radius: 7px;
+.kyugyo-row input[type="date"] {
+  flex: 1 1 120px; min-width: 120px;
+  border: 1px solid #c7d0e0; border-radius: 7px;
   background: #f8fafd; color: #222;
   font-family: 'BIZ UDPGothic', sans-serif;
-  font-size: 16px; /* iPhoneズーム防止：16px以上必須 */
-  padding: 9px 10px; outline: none; transition: border-color 0.18s;
-  min-height: 44px; /* タッチターゲット確保 */
+  font-size: 16px; /* iPhoneズーム防止 */
+  padding: 9px 8px; outline: none; min-height: 44px;
+  transition: border-color 0.18s;
 }
-.leave-group input[type="number"]:focus { border-color: #1a56db; }
-.leave-note {
-  font-size: 11px; color: #999; margin-top: 8px; line-height: 1.6;
+.kyugyo-row input[type="date"]:focus { border-color: #1a56db; }
+.kyugyo-row .kyugyo-arrow { color: #aaa; font-size: 14px; flex: 0 0 auto; }
+.btn-remove-kyugyo {
+  flex: 0 0 auto;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 1px solid #f5c6c6;
+  background: #fff5f5;
+  color: #d33;
+  font-size: 14px; font-weight: 700;
+  cursor: pointer;
+  min-height: 36px;
+  transition: background 0.15s;
 }
+.btn-remove-kyugyo:hover { background: #ffe0e0; }
 
-/* サブ結果：有給等の表示色 */
-.b-leave { color: #7c3aed; } /* 紫：有給・特別休暇系 */
+.leave-note { font-size: 11px; color: #999; margin-top: 8px; line-height: 1.6; }
 
-/* カレンダー */
-.calendar-area { display:none; }
-.calendar-area.show { display:block; animation:fadeUp 0.3s ease; }
-.cal-section-title { font-size:13px; font-weight:700; color:#333; margin-bottom:12px; }
-.calendar-legend { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
-.legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:#555; }
-.legend-dot { width:13px; height:13px; border-radius:3px; flex-shrink:0; }
-.ld-business { background:#dbeafe; border:1px solid #93c5fd; }
-.ld-weekend  { background:#fef3c7; border:1px solid #fcd34d; }
-.ld-holiday  { background:#fee2e2; border:1px solid #fca5a5; }
-.ld-outside  { background:#f3f4f6; border:1px solid #d1d5db; }
-.ld-leave    { background:#ede9fe; border:1px solid #c4b5fd; }
-
-.cal-month-block { margin-bottom:22px; }
-.cal-month-block:last-child { margin-bottom:0; }
-
-.cal-month-header {
-  display:flex; align-items:center; justify-content:space-between;
-  margin-bottom:8px;
+/* =====================================================
+   カレンダー表示（details化してデフォルトは畳んでおく＝1画面に収める工夫）
+   ===================================================== */
+.calendar-area { display: none; }
+.calendar-area.show { display: block; }
+.calendar-area details summary {
+  cursor: pointer;
+  font-size: 13px; font-weight: 700; color: #333;
+  list-style: none; padding: 4px 0; min-height: 36px;
+  display: flex; align-items: center;
 }
-.cal-month-label { font-size:13px; font-weight:700; color:#1a56db; letter-spacing:0.04em; }
+.calendar-area details summary::-webkit-details-marker { display: none; }
+.calendar-legend { display: flex; gap: 12px; flex-wrap: wrap; margin: 12px 0 16px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #555; }
+.legend-dot { width: 13px; height: 13px; border-radius: 3px; flex-shrink: 0; }
+.ld-business { background: #dbeafe; border: 1px solid #93c5fd; }
+.ld-weekend  { background: #fef3c7; border: 1px solid #fcd34d; }
+.ld-holiday  { background: #fee2e2; border: 1px solid #fca5a5; }
+.ld-outside  { background: #f3f4f6; border: 1px solid #d1d5db; }
+.ld-leave    { background: #ede9fe; border: 1px solid #c4b5fd; }
+
+.cal-month-block { margin-bottom: 22px; }
+.cal-month-block:last-child { margin-bottom: 0; }
+.cal-month-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.cal-month-label { font-size: 13px; font-weight: 700; color: #1a56db; letter-spacing: 0.04em; }
 .cal-month-count {
-  font-size:12px; font-weight:700; color:#1a56db;
-  background:#e8f0fe; border:1px solid #c3d4f8; border-radius:99px;
-  padding:2px 10px;
+  font-size: 12px; font-weight: 700; color: #1a56db;
+  background: #e8f0fe; border: 1px solid #c3d4f8; border-radius: 99px;
+  padding: 2px 10px;
 }
-
-.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
-.cal-head { text-align:center; font-size:11px; font-weight:700; padding:4px 2px; color:#555; }
-.cal-head.sun { color:#dc2626; }
-.cal-head.sat { color:#1d4ed8; }
-
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; }
+.cal-head { text-align: center; font-size: 11px; font-weight: 700; padding: 4px 2px; color: #555; }
+.cal-head.sun { color: #dc2626; }
+.cal-head.sat { color: #1d4ed8; }
 .cal-cell {
-  aspect-ratio:1; display:flex; flex-direction:column;
-  align-items:center; justify-content:center;
-  border-radius:5px; border:1px solid transparent;
-  position:relative; gap:1px;
+  aspect-ratio: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  border-radius: 5px; border: 1px solid transparent;
+  position: relative; gap: 1px;
 }
-.cal-date { font-size:clamp(11px,2.5vw,13px); font-weight:700; line-height:1; }
+.cal-date { font-size: clamp(11px,2.5vw,13px); font-weight: 700; line-height: 1; }
 .cal-count {
-  font-size:clamp(9px,2vw,10px); font-weight:700; line-height:1;
-  color:#1a56db; background:#fff; border-radius:99px;
-  padding:0 3px; min-width:14px; text-align:center;
+  font-size: clamp(9px,2vw,10px); font-weight: 700; line-height: 1;
+  color: #1a56db; background: #fff; border-radius: 99px;
+  padding: 0 3px; min-width: 14px; text-align: center;
 }
-
-.cal-cell.empty   { background:transparent; border-color:transparent; }
-.cal-cell.outside { background:#f3f4f6; border-color:#e5e7eb; }
-.cal-cell.outside .cal-date { color:#bbb; font-size:clamp(10px,2.3vw,12px); }
-
-.cal-cell.business     { background:#dbeafe; border-color:#93c5fd; }
-.cal-cell.business .cal-date { color:#1e3a8a; }
-.cal-cell.weekend-sun  { background:#fef3c7; border-color:#fcd34d; }
-.cal-cell.weekend-sun .cal-date { color:#92400e; }
-.cal-cell.weekend-sat  { background:#fef3c7; border-color:#fcd34d; }
-.cal-cell.weekend-sat .cal-date { color:#1d4ed8; }
-.cal-cell.holiday-wday { background:#fee2e2; border-color:#fca5a5; }
-.cal-cell.holiday-wday .cal-date { color:#991b1b; }
-.cal-cell.holiday-wend { background:#fde8e8; border-color:#f87171; }
-.cal-cell.holiday-wend .cal-date { color:#b91c1c; }
-
-.cal-cell.leave-kyugyo { background:#ede9fe; border-color:#c4b5fd; }
-.cal-cell.leave-kyugyo .cal-date { color:#5b21b6; }
-
+.cal-cell.empty   { background: transparent; border-color: transparent; }
+.cal-cell.outside { background: #f3f4f6; border-color: #e5e7eb; }
+.cal-cell.outside .cal-date { color: #bbb; font-size: clamp(10px,2.3vw,12px); }
+.cal-cell.business     { background: #dbeafe; border-color: #93c5fd; }
+.cal-cell.business .cal-date { color: #1e3a8a; }
+.cal-cell.weekend-sun  { background: #fef3c7; border-color: #fcd34d; }
+.cal-cell.weekend-sun .cal-date { color: #92400e; }
+.cal-cell.weekend-sat  { background: #fef3c7; border-color: #fcd34d; }
+.cal-cell.weekend-sat .cal-date { color: #1d4ed8; }
+.cal-cell.holiday-wday { background: #fee2e2; border-color: #fca5a5; }
+.cal-cell.holiday-wday .cal-date { color: #991b1b; }
+.cal-cell.holiday-wend { background: #fde8e8; border-color: #f87171; }
+.cal-cell.holiday-wend .cal-date { color: #b91c1c; }
+.cal-cell.leave-kyugyo { background: #ede9fe; border-color: #c4b5fd; }
+.cal-cell.leave-kyugyo .cal-date { color: #5b21b6; }
 .cal-cell.range-s::after,
 .cal-cell.range-e::after {
-  content:''; position:absolute; inset:0; border-radius:5px;
-  border:2px solid #1a56db; pointer-events:none;
+  content: ''; position: absolute; inset: 0; border-radius: 5px;
+  border: 2px solid #1a56db; pointer-events: none;
 }
-.cal-cell.today-mark { outline:2px solid #f59e0b; outline-offset:1px; }
-
-footer { margin-top:30px; text-align:center; font-size:11px; color:#aaa; }
-.footer-back { display:inline-block; margin-top:8px; color:#1a56db; font-size:11px; text-decoration:none; }
-.footer-back:hover { text-decoration:underline; }
-
-/* =====================================================
-   ナビ：戻るボタン＋おすすめツール
-   （上部 .back-to-index と下部 .bottom-nav の両方で共通利用）
-   ===================================================== */
-.back-to-index,
-.bottom-nav {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-}
-
-.btn-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: #f1f5fd;
-  border: 1px solid #c3d4f8;
-  border-radius: 7px;
-  color: #1a56db;
-  font-family: 'BIZ UDPGothic', sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 7px 13px;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background 0.15s;
-  white-space: nowrap;
-}
-.btn-back:hover { background: #dbeafe; }
-
-.recommend-wrap {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  border-left: 2px solid #dde3ee;
-  padding-left: 10px;
-}
-.recommend-label { font-size: 10px; color: #aaa; white-space: nowrap; }
-.recommend-link {
-  font-size: 11px;
-  font-weight: 700;
-  color: #1a56db;
-  text-decoration: none;
-  white-space: nowrap;
-  background: #e8f0fe;
-  border-radius: 5px;
-  padding: 3px 8px;
-  transition: background 0.15s;
-}
-.recommend-link:hover { background: #dbeafe; }
-
-/* =====================================================
-   広告エリア（CLS対策：高さを固定で事前確保）
-   ===================================================== */
-.ad-area {
-  width: 100%;
-  background: #f8fafd;
-  border: 1px dashed #c7d0e0;
-  border-radius: 10px;
-  margin-bottom: 14px;
-  text-align: center;
-  padding: 8px 0;
-  height: 116px; /* CLSを防ぐため min-height ではなく height で固定 */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-.ad-area-label { font-size: 10px; color: #bbb; letter-spacing: 0.08em; margin-bottom: 4px; }
-
-/* =====================================================
-   シェアエリア（結果パネルの下・別カードとして配置）
-   ===================================================== */
-.share-area {
-  background: #fff;
-  border: 1px solid #dde3ee;
-  border-radius: 10px;
-  padding: 14px 16px;
-  margin-bottom: 14px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-}
-.share-title {
-  font-size: 11px;
-  font-weight: 700;
-  color: #666;
-  letter-spacing: 0.08em;
-  margin-bottom: 10px;
-}
-/* シェアボタン共通：4列グリッド */
-.share-btns {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-}
-.btn-share {
-  padding: 10px 4px;
-  border-radius: 7px;
-  border: 1px solid #dde3ee;
-  background: #f8fafd;
-  font-family: 'BIZ UDPGothic', sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  color: #666;
-  cursor: pointer;
-  text-align: center;
-  transition: all 0.15s;
-  min-height: 44px; /* タッチターゲット確保 */
-}
-.btn-share:hover { background: #e8f0fe; border-color: #1a56db; color: #1a56db; }
-/* URLコピー完了フィードバック */
-.btn-share.copied { background: #d1fae5; border-color: #059669; color: #065f46; }
-/* 𝕏（Twitter）ボタン専用色（公式ブラック） */
-.btn-share.x-post { background: #000; border-color: #000; color: #fff; }
-.btn-share.x-post:hover { background: #222; border-color: #222; color: #fff; }
-/* LINEボタン専用色（公式グリーン） */
-.btn-share.line { background: #e8f8ea; border-color: #06c755; color: #06c755; }
-.btn-share.line:hover { background: #c8f0cc; }
-/* QRコードボタン専用色（紫系） */
-.btn-share.qr { background: #f3f0ff; border-color: #7c3aed; color: #7c3aed; }
-.btn-share.qr:hover { background: #ede9fe; }
-
-/* =====================================================
-   QRコードモーダル
-   ===================================================== */
-.qr-modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  z-index: 1000;
-  align-items: center;
-  justify-content: center;
-}
-.qr-modal-overlay.show { display: flex; }
-.qr-modal {
-  background: #fff;
-  border-radius: 14px;
-  padding: 24px 20px 18px;
-  text-align: center;
-  max-width: 280px;
-  width: 90%;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
-  position: relative;
-}
-.qr-modal-title { font-size: 13px; font-weight: 700; color: #555; margin-bottom: 14px; letter-spacing: 0.06em; }
-#qrCanvas { display: flex; justify-content: center; margin-bottom: 12px; }
-.qr-modal-url { font-size: 10px; color: #aaa; word-break: break-all; margin-bottom: 14px; }
-.qr-modal-close {
-  background: #e8f0fe;
-  border: 1px solid #c3d4f8;
-  border-radius: 8px;
-  color: #1a56db;
-  font-family: 'BIZ UDPGothic', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  padding: 10px 24px;
-  cursor: pointer;
-  min-height: 44px;
-  transition: background 0.15s;
-}
-.qr-modal-close:hover { background: #dbeafe; }
-
-/* =====================================================
-   リセットボタン（入力値をすべてクリア）
-   ===================================================== */
-.btn-reset {
-  width: 100%;
-  background: #fff8f0; /* 薄いオレンジ背景でリセット系の印象 */
-  border: 1px solid #f5c6a0;
-  border-radius: 8px;
-  color: #c05a00;
-  font-family: 'BIZ UDPGothic', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  padding: 12px;
-  cursor: pointer;
-  transition: background 0.15s;
-  margin-bottom: 14px;
-  min-height: 44px;
-  letter-spacing: 0.04em;
-}
-.btn-reset:hover { background: #ffe8d0; }
-
-@media (max-width:440px) {
-  .date-grid { grid-template-columns:1fr; gap:8px 0; }
-  .arrow-center, .space-center { display:none; }
-}
+.cal-cell.today-mark { outline: 2px solid #f59e0b; outline-offset: 1px; }
 </style>
+
 </head>
 <body>
 <div class="container">
 
-  <!-- =====================================================
-       ナビ：ツール一覧に戻るボタン＋おすすめツール
-       ・おすすめは tools.json から非同期取得（loadRecommends()）
-       ===================================================== -->
-  <div class="back-to-index">
-    <a class="btn-back" href="/index.html">← ツール一覧に戻る</a>
-    <div class="recommend-wrap">
-      <span class="recommend-label">おすすめ：</span>
-      <span id="recommendLinks">読み込み中…</span>
-    </div>
-  </div>
+  <!-- ナビ：ツール一覧に戻るボタン＋おすすめツール（共通・common.jsが自動注入。触らない） -->
+  <div id="topNavSlot"></div>
 
   <header>
     <h1>📅 営業日計算ツール</h1>
     <p class="subtitle">
-      ※ 土日・祝日・振替休日・年末年始を除いた営業日数を自動計算<br>
-      ※ 開始日・終了日を含む日数で計算<br>
-      ※ 祝日は2020〜2030年の日本の祝日に対応<br>
-      ※ 開始日から〇日後・終了日の〇日前シミュレーションに対応
+      ※ 土日・祝日・振替休日・年末年始・休業期間を除いた営業日数を自動計算<br>
+      ※ 開始日・終了日を含む日数で計算（祝日は2020〜2030年に対応）
     </p>
   </header>
 
+  <!-- =====================================================
+       入力カード
+       ===================================================== -->
   <div class="card">
+
+    <!-- 基本の期間入力＋〇日後／〇日前シミュレーター -->
     <div class="date-grid">
-      <div class="date-group">
-        <label>開始日</label>
-        <input type="date" id="startDate" oninput="calculate()">
+      <div class="input-group">
+        <label for="startDate">開始日</label>
+        <input type="date" id="startDate" inputmode="numeric" oninput="onInputChange()">
       </div>
       <div class="arrow-center">→</div>
-      <div class="date-group">
-        <label>終了日</label>
-        <input type="date" id="endDate" oninput="calculate()">
+      <div class="input-group">
+        <label for="endDate">終了日</label>
+        <input type="date" id="endDate" inputmode="numeric" oninput="onInputChange()">
       </div>
-
-      <div class="date-group">
-        <label style="color:#1a56db;">開始日から〇日後</label>
-        <input type="number" id="daysAfter" placeholder="日数を入力" oninput="calcFutureDate()">
+    </div>
+    <div class="date-grid">
+      <div class="input-group">
+        <label for="daysAfter" style="color:#1a56db;">開始日から〇日後</label>
+        <input type="number" id="daysAfter" inputmode="numeric" placeholder="日数を入力" oninput="calcFutureDate()">
       </div>
-      <div class="space-center"></div>
-      <div class="date-group">
-        <label style="color:#d97706;">終了日の〇日前</label>
-        <input type="number" id="daysBefore" placeholder="日数を入力" oninput="calcPastDate()">
+      <div></div>
+      <div class="input-group">
+        <label for="daysBefore" style="color:#d97706;">終了日の〇日前</label>
+        <input type="number" id="daysBefore" inputmode="numeric" placeholder="日数を入力" oninput="calcPastDate()">
       </div>
     </div>
 
-    <div class="options-area">
-      <div class="options-title">▶ 除外オプション（営業しないならそのままでＯＫ）</div>
+    <!-- =====================================================
+         除外オプション（デフォルトのままでよい人が多いのでdetailsで畳んでおく）
+         ===================================================== -->
+    <details class="fold-section">
+      <summary>▶ 除外オプション <span class="fold-hint">（既定：土日・祝日・年末年始/銀行版を除外／タップで変更）</span></summary>
       <div class="checkbox-list">
         <label class="checkbox-item">
-          <input type="checkbox" id="chkWeekend" checked onchange="calculate()">
+          <input type="checkbox" id="chkWeekend" checked onchange="onInputChange()">
           <span>土日は営業しない</span>
         </label>
         <label class="checkbox-item">
-          <input type="checkbox" id="chkHoliday" checked onchange="calculate()">
+          <input type="checkbox" id="chkHoliday" checked onchange="onInputChange()">
           <span>祝日・振替休日は営業しない</span>
         </label>
         <label class="checkbox-item">
@@ -525,92 +289,76 @@ footer { margin-top:30px; text-align:center; font-size:11px; color:#aaa; }
           <span>年末年始（12/29〜1/3）行政機関Ver</span>
         </label>
         <label class="checkbox-item">
-          <input type="checkbox" id="chkMon" onchange="calculate()">
+          <input type="checkbox" id="chkMon" onchange="onInputChange()">
           <span>毎週月曜日は営業しない</span>
         </label>
         <label class="checkbox-item">
-          <input type="checkbox" id="chkTue" onchange="calculate()">
+          <input type="checkbox" id="chkTue" onchange="onInputChange()">
           <span>毎週火曜日は営業しない</span>
         </label>
         <label class="checkbox-item">
-          <input type="checkbox" id="chkWed" onchange="calculate()">
+          <input type="checkbox" id="chkWed" onchange="onInputChange()">
           <span>毎週水曜日は営業しない</span>
         </label>
         <label class="checkbox-item">
-          <input type="checkbox" id="chkThu" onchange="calculate()">
+          <input type="checkbox" id="chkThu" onchange="onInputChange()">
           <span>毎週木曜日は営業しない</span>
         </label>
         <label class="checkbox-item">
-          <input type="checkbox" id="chkFri" onchange="calculate()">
+          <input type="checkbox" id="chkFri" onchange="onInputChange()">
           <span>毎週金曜日は営業しない</span>
         </label>
       </div>
-    </div>
+    </details>
 
     <!-- =====================================================
-         有給休暇・休業期間などの除外日数
-         - 有給休暇：日数を直接入力して営業日から差し引く方式
-         - 休業期間：開始日〜終了日を指定（メイン期間との重複日数を自動計算）
-         ★将来的に休暇区分を追加する場合は、このleave-area内に
-           leave-group（日数入力）か date-grid（期間入力）を追加するだけでOK
+         ②有給休暇・休業期間（任意入力なのでdetailsで畳んでおく）
+         - 有給休暇：日数を直接入力
+         - 休業期間：★複数登録できるリスト形式に変更
+           「＋ 期間を追加」で行を増やし、各行は開始日・終了日・削除ボタンの3点セット
          ===================================================== -->
-    <div class="leave-area">
-      <div class="leave-title">▶ 有給休暇・休業期間を除外する（任意）</div>
+    <details class="fold-section">
+      <summary>▶ 有給休暇・休業期間を除外する <span class="fold-hint">（任意・タップで開く）</span></summary>
 
-      <!-- 有給休暇：日数を直接入力 -->
-      <div class="leave-group" style="margin-bottom:12px;">
+      <div class="input-group" style="margin-bottom:4px;">
         <label for="leaveAnnual">有給休暇（日）</label>
-        <input
-          type="number"
-          id="leaveAnnual"
-          inputmode="numeric"
-          placeholder="例：3"
-          min="0"
-          oninput="calculate()"
-        >
+        <input type="number" id="leaveAnnual" inputmode="numeric" placeholder="例：3" min="0" oninput="onInputChange()">
       </div>
 
-      <!-- 休業期間：開始日〜終了日を指定（重複日数のみ自動カウント） -->
-      <div class="date-grid" style="margin-bottom:8px;">
-        <div class="date-group">
-          <label>休業期間 開始日</label>
-          <input type="date" id="kyugyoStart" oninput="calculate()">
-        </div>
-        <div class="arrow-center">→</div>
-        <div class="date-group">
-          <label>休業期間 終了日</label>
-          <input type="date" id="kyugyoEnd" oninput="calculate()">
-        </div>
+      <div class="kyugyo-header">
+        <span class="section-title-sm">休業期間（複数登録可）</span>
+        <button type="button" class="btn-add-kyugyo" onclick="addKyugyoPeriod()">＋ 期間を追加</button>
       </div>
+      <!-- ★休業期間の行はJS（renderKyugyoList）が動的に生成する。ここは空のスロット -->
+      <div id="kyugyoList"></div>
 
       <p class="leave-note">
         ※ 有給休暇＋休業期間の合計日数を営業日数から差し引きます<br>
         ※ 休業期間はメイン期間（開始日〜終了日）と重複する日数のみ対象<br>
-        ※ 土日・祝日・指定曜日と重複する日は二重カウントしません（除外済みの日はスキップ）
+        ※ 土日・祝日・指定曜日と重複する日は二重カウントしません（除外済みの日はスキップ）<br>
+        ※ 休業期間どうしが重なっていても、その日は1日としてのみカウントします
       </p>
-    </div>
+    </details>
 
     <button class="btn-calc" onclick="calculate()">営業日数を計算する</button>
     <div class="error-msg" id="errorMsg"></div>
   </div>
 
-  <div class="result-panel" id="resultPanel">
+  <!-- =====================================================
+       結果パネル
+       ===================================================== -->
+  <div class="result-panel">
     <div class="result-main">
       <div class="result-label">営業日数（除外日を引いた日数）</div>
       <div>
         <span class="result-number placeholder" id="resultNum">—</span>
         <span class="result-unit" id="resultUnitEl" style="visibility:hidden">日</span>
       </div>
-      <div class="result-reiwa" id="resultReiwa"></div>
+      <div class="result-sub result-sub-dates" id="resultSub"></div>
     </div>
     <div class="breakdown-wrap">
-      <!-- =====================================================
-           サブ結果：6項目を2段×3列で表示
-           1段目：総日数／休日合計／土日
-           2段目：祝日等／月～金の指定休日／追加休暇日（有給休暇＋休業期間）
-           ★項目を増やす場合はbreakdown-itemを追加するだけでOK（3列固定）
-           ===================================================== -->
-      <div class="breakdown" id="breakdownGrid1">
+      <!-- サブ結果：6項目を2段×3列で表示（total/offtotal/weekend → holiday/specified/leave） -->
+      <div class="breakdown">
         <div class="breakdown-item">
           <div class="b-num b-total placeholder" id="bTotal">—</div>
           <div class="b-label">総日数</div>
@@ -624,7 +372,7 @@ footer { margin-top:30px; text-align:center; font-size:11px; color:#aaa; }
           <div class="b-label">土日</div>
         </div>
       </div>
-      <div class="breakdown" id="breakdownGrid2" style="margin-bottom:12px;">
+      <div class="breakdown" style="margin-bottom:12px;">
         <div class="breakdown-item">
           <div class="b-num b-holiday placeholder" id="bHoliday">—</div>
           <div class="b-label">祝日等</div>
@@ -638,125 +386,87 @@ footer { margin-top:30px; text-align:center; font-size:11px; color:#aaa; }
           <div class="b-label">追加休暇日</div>
         </div>
       </div>
+
       <div class="holiday-section" id="holidaySection">
         <div class="holiday-header">▶ 期間内の祝日・年末年始</div>
         <ul class="holiday-list" id="holidayList"></ul>
       </div>
-      <div class="copy-buttons">
-        <button class="btn-copy" id="btnCopyText" onclick="copyText()" disabled>📋 結果をテキストでコピー</button>
-        <button class="btn-copy excel-btn" id="btnCopyCalendar" onclick="copyExcelCalendar()" disabled>📊 Excel用コピー（カレンダー形式）</button>
-        <button class="btn-copy excel-btn" id="btnCopyList" onclick="copyExcelList()" disabled>📋 Excel用コピー（縦リスト形式）</button>
+
+      <!-- 結果アクションボタン：このツール専用の3種類のコピー機能 -->
+      <div class="copy-actions">
+        <button class="btn-action" id="btnCopyText" onclick="copyText()" disabled>📋 結果をテキストでコピー</button>
+        <button class="btn-action" id="btnCopyCalendar" onclick="copyExcelCalendar()" disabled>📊 Excel用コピー（カレンダー形式）</button>
+        <button class="btn-action" id="btnCopyList" onclick="copyExcelList()" disabled>📋 Excel用コピー（縦リスト形式）</button>
       </div>
     </div>
   </div>
 
+  <!-- カレンダー表示：計算後のみ表示、中身はdetailsでデフォルト折りたたみ（1画面に収める工夫） -->
   <div class="card calendar-area" id="calendarArea">
-    <div class="cal-section-title">📆 カレンダー表示</div>
-    <div class="calendar-legend">
-      <div class="legend-item"><div class="legend-dot ld-business"></div>営業日（番号＝カウント順）</div>
-      <div class="legend-item"><div class="legend-dot ld-weekend"></div>土日・指定曜日</div>
-      <div class="legend-item"><div class="legend-dot ld-holiday"></div>祝日等</div>
-      <div class="legend-item"><div class="legend-dot ld-leave"></div>休業期間</div>
-      <div class="legend-item"><div class="legend-dot ld-outside"></div>範囲外</div>
-    </div>
-    <div id="calendarBody"></div>
+    <details>
+      <summary>📆 カレンダー表示（タップして開閉）</summary>
+      <div class="calendar-legend">
+        <div class="legend-item"><div class="legend-dot ld-business"></div>営業日（番号＝カウント順）</div>
+        <div class="legend-item"><div class="legend-dot ld-weekend"></div>土日・指定曜日</div>
+        <div class="legend-item"><div class="legend-dot ld-holiday"></div>祝日等</div>
+        <div class="legend-item"><div class="legend-dot ld-leave"></div>休業期間</div>
+        <div class="legend-item"><div class="legend-dot ld-outside"></div>範囲外</div>
+      </div>
+      <div id="calendarBody"></div>
+    </details>
   </div>
 
-  <!-- =====================================================
-       シェアエリア（常時表示・4ボタン構成）
-       ★ buildShareText() と buildShareUrl() を書き換えれば紹介文・URLを調整できる
-       ===================================================== -->
-  <div class="share-area">
-    <div class="share-title">▶ このツールをシェア</div>
-    <div class="share-btns">
-      <button class="btn-share" id="btnShareUrl" onclick="shareUrl()">🔗 URLをコピー</button>
-      <button class="btn-share x-post" onclick="shareX()">𝕏 ポストする</button>
-      <button class="btn-share line" onclick="shareLine()">💬 LINEで送る</button>
-      <button class="btn-share qr" onclick="showQr()">📷 QRコード</button>
-    </div>
-  </div>
+  <!-- シェアエリア（共通・common.jsが自動注入。触らない） -->
+  <div id="shareAreaSlot"></div>
 
-  <!-- =====================================================
-       リセットボタン（入力値をすべて初期状態に戻す）
-       ===================================================== -->
-  <button class="btn-reset" onclick="resetAll()">🔄 入力値をリセット</button>
+  <!-- リセットボタン（共通・common.jsが自動注入。触らない） -->
+  <div id="resetBtnSlot"></div>
 
-  <!-- =====================================================
-       下部ナビ（上部と同じ「戻るボタン＋おすすめ」を再掲）
-       ・スマホで下までスクロールしたときに戻りやすくするため
-       ===================================================== -->
-  <div class="bottom-nav">
-    <a class="btn-back" href="/index.html">← ツール一覧に戻る</a>
-    <div class="recommend-wrap">
-      <span class="recommend-label">おすすめ：</span>
-      <span id="recommendLinks2">読み込み中…</span>
-    </div>
-  </div>
+  <!-- 下部ナビ（共通・common.jsが自動注入。触らない） -->
+  <div id="bottomNavSlot"></div>
 
-  <!-- 広告エリア（CLS対策：height固定で事前確保） -->
-  <div class="ad-area">
-    <div class="ad-area-label">スポンサー</div>
-    <!-- ここにAdSenseコードを貼る（推奨サイズ：レスポンシブ広告 または 320×100） -->
-  </div>
+  <!-- 広告エリア（共通・common.jsが自動注入。触らない） -->
+  <div id="adAreaSlot"></div>
 
 </div><!-- /.container -->
 
+<!-- QRコードモーダル（共通・common.jsが自動注入。触らない） -->
+<div id="qrModalSlot"></div>
+
+<!-- フッター（共通・common.jsが自動注入。触らない） -->
+<div id="footerSlot"></div>
+
+<!-- ★共通JS（loadRecommends／シェア／コピー／保存復元等）本番パスに書き換える -->
+<script src="/common.js"></script>
+
 <!-- =====================================================
-     QRコードモーダル（.containerの外・bodyの直前に配置）
-     - position:fixed で画面中央に表示するため containerの外が正しい
+     ★ここから下だけがツール固有部分
+     - calculate() / resetAll() / shareX() / shareLine() / buildShareText() /
+       buildShareUrl() は common.js の汎用実装をこのツール専用のロジックで上書きしている
+     - calculateInputs() / calculateResult() / displayResult() はこのツールでは使わない
+       （結果の内訳が6項目＋祝日一覧＋カレンダーと複雑なため、独自のcalculate()に統合済み）
      ===================================================== -->
-<div class="qr-modal-overlay" id="qrModalOverlay" onclick="closeQrOnOverlay(event)">
-  <div class="qr-modal">
-    <div class="qr-modal-title" id="qrModalTitle">📷 QRコードでシェア</div>
-    <div id="qrCanvas"></div>
-    <div class="qr-modal-url" id="qrUrl"></div>
-    <button class="qr-modal-close" onclick="hideQr()">✕ 閉じる</button>
-  </div>
-</div>
-
-<footer>
-  © 2026 営業日計算ツール<br>
-  <a class="footer-back" href="https://x.com/arigaitu" target="_blank" rel="noopener">🐦 作成者X</a>
-  ・
-  <a class="footer-back" href="https://docs.google.com/forms/d/e/1FAIpQLSfUe9UzcRcIRFb4TmDAYKsZ75CcGRjF8Z7Ar_u7a4KgyyNyzQ/viewform?usp=publish-editor" target="_blank" rel="noopener">💡 作ってほしいツール・ご意見はこちら</a>
-</footer>
-
 <script>
-// ============================================================
-// 設定（★ツール複製時はここだけ書き換えればOK）
-// ============================================================
-// tools.json内のid（自分自身をおすすめから除外するため）
+/* =====================================================
+   設定
+   ===================================================== */
 const CURRENT_TOOL_ID = 'eigyobi-count';
 
-// ============================================================
-// おすすめツール読み込み（tools.jsonから）
-// - 上部（recommendLinks）と下部ナビ（recommendLinks2）の両方に反映
-// ============================================================
-async function loadRecommends() {
-  try {
-    const res = await fetch('/tools.json');
-    const tools = await res.json();
+// 通常入力欄（単純な値のみ）はcommon.jsのSTORAGE_FIELDS方式で保存・復元する
+const STORAGE_KEY = 'eigyobi-count_inputs';
+const STORAGE_FIELDS = [
+  'startDate', 'endDate',
+  'chkWeekend', 'chkHoliday', 'chkNenmatsuBank', 'chkNenmatsuGovt',
+  'chkMon', 'chkTue', 'chkWed', 'chkThu', 'chkFri',
+  'leaveAnnual'
+];
 
-    // 自分以外をシャッフルして2件表示
-    const others = tools.filter(t => t.id !== CURRENT_TOOL_ID);
-    const picks = others.sort(() => Math.random() - 0.5).slice(0, 2);
+// 休業期間（可変長の配列）は別キーで独自に保存・復元する（②で追加した部分）
+const KYUGYO_STORAGE_KEY = 'eigyobi-count_kyugyo_periods';
 
-    const html = picks.length > 0
-      ? picks.map(t => `<a class="recommend-link" href="${t.url}">${t.emoji} ${t.name}</a>`).join('')
-      : '';
-
-    document.getElementById('recommendLinks').innerHTML = html;
-    document.getElementById('recommendLinks2').innerHTML = html;
-  } catch (e) {
-    // 読み込み失敗時は両方を空にする（エラー表示しない）
-    document.getElementById('recommendLinks').textContent = '';
-    document.getElementById('recommendLinks2').textContent = '';
-  }
-}
-
-// ============================================================
-// 祝日計算
-// ============================================================
+/* =====================================================
+   祝日計算（変更なし）
+   ===================================================== */
 const FIXED_H = {
   '01-01':'元日','02-11':'建国記念の日','02-23':'天皇誕生日',
   '04-29':'昭和の日','05-03':'憲法記念日','05-04':'みどりの日',
@@ -808,9 +518,9 @@ function isNenmatsuGovt(ymd){
   return (m===12&&d>=29)||(m===1&&d<=3);
 }
 
-// ============================================================
-// 詳細な和暦変換（曜日付き出力にも対応）
-// ============================================================
+/* =====================================================
+   和暦・曜日表記
+   ===================================================== */
 const WEEK_JP = ['日','月','火','水','木','金','土'];
 
 function toReiwa(d, includeYoubi=false){
@@ -841,51 +551,36 @@ function formatSlashingDate(d, includeYoubi=false){
   return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}${youbiStr}`;
 }
 
-// ============================================================
-// ② 〇日後 / 〇日前シミュレーターロジック (カレンダー連動)
-// ============================================================
+/* =====================================================
+   〇日後 / 〇日前シミュレーター
+   ===================================================== */
 function calcFutureDate() {
   const sStr = document.getElementById('startDate').value;
   const days = parseInt(document.getElementById('daysAfter').value, 10);
   const endInput = document.getElementById('endDate');
-
   if (!sStr || isNaN(days)) return;
   const startObj = new Date(sStr);
-
   const futureObj = new Date(startObj);
   futureObj.setDate(futureObj.getDate() + days);
-
-  // カレンダー形式 (YYYY-MM-DD) にフォーマットして終了日欄に代入
   endInput.value = toYMD(futureObj);
-  calculate();
+  onInputChange();
 }
 
 function calcPastDate() {
   const eStr = document.getElementById('endDate').value;
   const days = parseInt(document.getElementById('daysBefore').value, 10);
   const startInput = document.getElementById('startDate');
-
   if (!eStr || isNaN(days)) return;
   const endObj = new Date(eStr);
-
   const pastObj = new Date(endObj);
   pastObj.setDate(pastObj.getDate() - days);
-
-  // カレンダー形式 (YYYY-MM-DD) にフォーマットして開始日欄に代入
   startInput.value = toYMD(pastObj);
-  calculate();
+  onInputChange();
 }
 
-// 状態
-const MONTH_JP= ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-const todayYMD= toYMD(new Date());
-let lastCalc  = null;
-
-// ============================================================
-// 休業期間の判定・カウントは calculate() 内のメインループに統合済み
-// （dayMapへ 'leave-kyugyo' として反映し、カレンダー・Excelコピーにも表示するため）
-// ============================================================
-
+const MONTH_JP = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+const todayYMD = toYMD(new Date());
+let lastCalc = null;
 
 function toggleNenmatsu(type) {
   if (type === 'bank' && document.getElementById('chkNenmatsuBank').checked) {
@@ -893,12 +588,92 @@ function toggleNenmatsu(type) {
   } else if (type === 'govt' && document.getElementById('chkNenmatsuGovt').checked) {
     document.getElementById('chkNenmatsuBank').checked = false;
   }
+  onInputChange();
+}
+
+/* =====================================================
+   ②休業期間：複数登録リスト（状態管理＋描画＋保存復元）
+   - kyugyoPeriodsState: [{id, start, end}, ...]
+   - ★将来「理由メモ」等を追加したい場合は、この配列の要素に
+     フィールドを増やし、renderKyugyoList()のテンプレートに
+     入力欄を1つ足すだけでよい
+   ===================================================== */
+let kyugyoPeriodsState = [];
+let kyugyoIdSeq = 0;
+
+function addKyugyoPeriod(initial = {}) {
+  kyugyoIdSeq++;
+  kyugyoPeriodsState.push({ id: kyugyoIdSeq, start: initial.start || '', end: initial.end || '' });
+  renderKyugyoList();
+  saveKyugyoPeriods();
   calculate();
 }
 
-// ============================================================
-// メイン計算処理
-// ============================================================
+function removeKyugyoPeriod(id) {
+  kyugyoPeriodsState = kyugyoPeriodsState.filter(p => p.id !== id);
+  renderKyugyoList();
+  saveKyugyoPeriods();
+  calculate();
+}
+
+function updateKyugyoPeriod(id, field, value) {
+  const p = kyugyoPeriodsState.find(p => p.id === id);
+  if (p) p[field] = value;
+  saveKyugyoPeriods();
+  calculate();
+}
+
+function renderKyugyoList() {
+  const wrap = document.getElementById('kyugyoList');
+  if (!wrap) return;
+
+  if (kyugyoPeriodsState.length === 0) {
+    wrap.innerHTML = `<p class="kyugyo-empty">登録済みの休業期間はありません</p>`;
+    return;
+  }
+
+  wrap.innerHTML = kyugyoPeriodsState.map(p => `
+    <div class="kyugyo-row" data-id="${p.id}">
+      <input type="date" value="${p.start}" onchange="updateKyugyoPeriod(${p.id},'start',this.value)" aria-label="休業期間 開始日">
+      <span class="kyugyo-arrow">→</span>
+      <input type="date" value="${p.end}" onchange="updateKyugyoPeriod(${p.id},'end',this.value)" aria-label="休業期間 終了日">
+      <button type="button" class="btn-remove-kyugyo" onclick="removeKyugyoPeriod(${p.id})" aria-label="この休業期間を削除">✕</button>
+    </div>
+  `).join('');
+}
+
+function saveKyugyoPeriods() {
+  try {
+    localStorage.setItem(KYUGYO_STORAGE_KEY, JSON.stringify(kyugyoPeriodsState));
+  } catch (e) {
+    // プライベートモード等でlocalStorageが使えない場合は無視
+  }
+}
+
+function restoreKyugyoPeriods() {
+  try {
+    const raw = localStorage.getItem(KYUGYO_STORAGE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (Array.isArray(data) && data.length > 0) {
+        kyugyoPeriodsState = data;
+        kyugyoIdSeq = Math.max(0, ...data.map(p => p.id || 0));
+        renderKyugyoList();
+        return;
+      }
+    }
+  } catch (e) {
+    // パース失敗時は無視して初期状態にフォールバック
+  }
+  // 保存データが無い初回訪問時は、入力を始めやすいよう空の行を1つ用意しておく
+  kyugyoPeriodsState = [];
+  addKyugyoPeriod();
+}
+
+/* =====================================================
+   メイン計算処理
+   - common.js汎用のcalculate()をこのツール専用ロジックで上書きしている
+   ===================================================== */
 function calculate(){
   const sv = document.getElementById('startDate').value;
   const ev = document.getElementById('endDate').value;
@@ -923,13 +698,12 @@ function calculate(){
   const start = new Date(sv);
   const end = new Date(ev);
 
-  if(end < start){ 
-    showError('終了日は開始日以降の日付を入力してください'); 
-    resetDisplay(); 
-    return; 
+  if(end < start){
+    showError('終了日は開始日以降の日付を入力してください');
+    resetDisplay();
+    return;
   }
 
-  // 日数差枠への自動同期（入力中の枠の邪魔をしない制御付き）
   const diffDays = Math.round((end - start) / 86400000);
   if (document.activeElement !== document.getElementById('daysAfter')) {
     document.getElementById('daysAfter').value = diffDays;
@@ -942,21 +716,18 @@ function calculate(){
   for(let y=start.getFullYear(); y<=end.getFullYear(); y++) hMaps[y]=getHolidays(y);
 
   // ============================================================
-  // 休業期間（開始日〜終了日）を事前にパース
-  // - ループ内で「まだ何にも除外されていない日（本来なら業務日）」だけを
-  //   休業期間として除外するために使う（土日・祝日・指定曜日との二重カウントを防止）
+  // ②休業期間：登録済みリストのうち「開始日・終了日が両方入力済みで
+  //   終了日≧開始日」の行だけを有効な期間として扱う
+  //   （複数期間が重なっていてもOK＝ isInKyugyoPeriods()でOR判定するだけ）
   // ============================================================
-  const kyugyoStartVal = document.getElementById('kyugyoStart').value;
-  const kyugyoEndVal   = document.getElementById('kyugyoEnd').value;
-  let kStart=null, kEnd=null;
-  if(kyugyoStartVal && kyugyoEndVal){
-    const ks=new Date(kyugyoStartVal), ke=new Date(kyugyoEndVal);
-    if(!isNaN(ks) && !isNaN(ke) && ke>=ks){ kStart=ks; kEnd=ke; }
+  const activePeriods = kyugyoPeriodsState
+    .map(p => ({ start: p.start ? new Date(p.start) : null, end: p.end ? new Date(p.end) : null }))
+    .filter(p => p.start && p.end && !isNaN(p.start) && !isNaN(p.end) && p.end >= p.start);
+
+  function isInKyugyoPeriods(d){
+    return activePeriods.some(p => d >= p.start && d <= p.end);
   }
 
-  // weekendOnly：実際の土日で除外された日数
-  // specifiedWeekday：月～金のうち指定曜日で除外された日数（土日とは別集計）
-  // kyugyoDays：休業期間で除外された日数（カレンダー・Excelコピーにも反映）
   let total=0, weekendOnly=0, specifiedWeekday=0, holidays=0, kyugyoDays=0, eigyoCount=0;
   const hitHols=[];
   const dayMap=new Map();
@@ -969,10 +740,10 @@ function calculate(){
     const [y]=ymd.split('-').map(Number);
     const hName=hMaps[y]?.get(ymd);
     const isWE=(dow===0||dow===6);
-    
+
     const isNen = (chkNB && isNenmatsuBank(ymd)) || (chkNG && isNenmatsuGovt(ymd));
     const isExtraDow = extraDow.has(dow);
-    const isKyugyo = kStart && cur>=kStart && cur<=kEnd;
+    const isKyugyo = isInKyugyoPeriods(cur);
 
     let cls='business', eigyoNum=null;
 
@@ -992,7 +763,7 @@ function calculate(){
       specifiedWeekday++;
       cls='weekend-sat';
     } else if(isKyugyo){
-      // 休業期間：土日・祝日・指定曜日のどれにも該当しなかった日のみここに来る
+      // 休業期間：土日・祝日・指定曜日のどれにも該当しなかった日のみここに来る（二重カウント防止）
       kyugyoDays++;
       cls='leave-kyugyo';
     } else {
@@ -1003,20 +774,10 @@ function calculate(){
     cur.setDate(cur.getDate()+1);
   }
 
-  // ============================================================
-  // 追加休暇日（有給休暇＋休業期間）の合計日数
-  // - 有給休暇：未入力・負値は0扱い（日付情報を持たない単純な日数入力のため、
-  //   土日・指定曜日との重複チェックはできない仕様）
-  // - 休業期間：上のループで二重カウントせずに算出済み（kyugyoDays）
-  // ★休暇区分を追加する場合はここに1行足すだけでOK
-  // ============================================================
   const leaveAnnual = Math.max(0, parseInt(document.getElementById('leaveAnnual').value) || 0);
   const totalLeave = leaveAnnual + kyugyoDays;
 
-  // 休日合計 = 土日 ＋ 月～金の指定休日 ＋ 祝日等 ＋ 追加休暇日
   const offTotal = weekendOnly + specifiedWeekday + holidays + totalLeave;
-
-  // 実働営業日数 = 総日数 − 休日合計（マイナスにはならない）
   const eigyo = Math.max(0, total - weekendOnly - specifiedWeekday - holidays - totalLeave);
 
   const numEl=document.getElementById('resultNum');
@@ -1024,11 +785,10 @@ function calculate(){
   numEl.classList.remove('placeholder');
   document.getElementById('resultUnitEl').style.visibility='visible';
 
-  // 画面上のメイン結果欄の表記変更
-  const reiwaEl = document.getElementById('resultReiwa');
-  reiwaEl.innerHTML = `${formatSlashingDate(start, true)} 〜 ${formatSlashingDate(end, true)}<br><span style="font-size:11px; color:#666;">（${toReiwa(start, true)} 〜 ${toReiwa(end, true)}）</span>`;
+  const subEl = document.getElementById('resultSub');
+  subEl.innerHTML = `${formatSlashingDate(start, true)} 〜 ${formatSlashingDate(end, true)}
+    <div class="reiwa-line">（${toReiwa(start, true)} 〜 ${toReiwa(end, true)}）</div>`;
 
-  // サブ結果：6項目（2段×3列）を表示
   setBreakdown('bTotal', total);
   setBreakdown('bOffTotal', offTotal);
   setBreakdown('bWeekend', weekendOnly);
@@ -1057,11 +817,13 @@ function calculate(){
   lastCalc={
     start, end, eigyo, total,
     weekendOnly, specifiedWeekday, holidays,
-    leaveAnnual, kyugyoDays, kyugyoStartVal, kyugyoEndVal,
+    leaveAnnual, kyugyoDays, periods: activePeriods,
     totalLeave, offTotal,
     hitHols, dayMap
   };
+
   renderCalendar(new Date(start),new Date(end),dayMap);
+  document.getElementById('calendarArea').classList.add('show');
 }
 
 function setBreakdown(id,val){
@@ -1074,7 +836,7 @@ function resetDisplay(){
   const numEl=document.getElementById('resultNum');
   numEl.textContent='—'; numEl.classList.add('placeholder');
   document.getElementById('resultUnitEl').style.visibility='hidden';
-  document.getElementById('resultReiwa').textContent='';
+  document.getElementById('resultSub').innerHTML='';
   ['bTotal','bOffTotal','bWeekend','bSpecified','bHoliday','bLeave'].forEach(id=>{
     const el=document.getElementById(id); el.textContent='—'; el.classList.add('placeholder');
   });
@@ -1085,31 +847,25 @@ function resetDisplay(){
   document.getElementById('calendarArea').classList.remove('show');
 }
 
-function showError(msg){
-  const el=document.getElementById('errorMsg'); el.textContent=msg; el.classList.add('show');
-}
-
-// ============================================================
-// ① 指定フォーマット形式でのテキストコピー
-// ============================================================
+/* =====================================================
+   コピー系（このツール専用の3種類）
+   - common.jsのcopyToClipboard(text, btnId, label)ヘルパーを再利用
+   ===================================================== */
 function copyText(){
   if(!lastCalc) return;
   const {
     start, end, eigyo, total,
     weekendOnly, specifiedWeekday, holidays,
-    leaveAnnual, kyugyoDays, kyugyoStartVal, kyugyoEndVal,
-    totalLeave, offTotal
+    leaveAnnual, kyugyoDays, periods, totalLeave, offTotal
   } = lastCalc;
 
-  // 追加休暇日（有給休暇＋休業期間）の内訳を追記する
   const leaveBreakdown = (() => {
     if(totalLeave === 0) return '';
     const parts = [];
     if(leaveAnnual > 0) parts.push(`有給休暇 ${leaveAnnual}日`);
-    if(kyugyoDays > 0){
-      const ks = formatSlashingDate(new Date(kyugyoStartVal));
-      const ke = formatSlashingDate(new Date(kyugyoEndVal));
-      parts.push(`休業期間 ${kyugyoDays}日（${ks}～${ke}）`);
+    if(kyugyoDays > 0 && periods.length > 0){
+      const rangeTexts = periods.map(p => `${formatSlashingDate(p.start)}～${formatSlashingDate(p.end)}`);
+      parts.push(`休業期間 ${kyugyoDays}日（${rangeTexts.join('、')}）`);
     }
     return `\n追加休暇日：${totalLeave}日（${parts.join('・')}）`;
   })();
@@ -1120,7 +876,7 @@ function copyText(){
 営業日数：${eigyo}日
 （総日数 ${total}日／休日合計 ${offTotal}日：土日 ${weekendOnly}日・月～金の指定休日 ${specifiedWeekday}日・祝日等 ${holidays}日・追加休暇日 ${totalLeave}日）${leaveBreakdown}`;
 
-  doCopy('btnCopyText', text, '📋 結果をテキストでコピー');
+  copyToClipboard(text, 'btnCopyText', '📋 結果をテキストでコピー');
 }
 
 function copyExcelCalendar(){
@@ -1150,7 +906,7 @@ function copyExcelCalendar(){
     tsv+='\n';
     cur.setMonth(cur.getMonth()+1);
   }
-  doCopy('btnCopyCalendar', tsv, '📊 Excel用コピー（カレンダー形式）');
+  copyToClipboard(tsv, 'btnCopyCalendar', '📊 Excel用コピー（カレンダー形式）');
 }
 
 function copyExcelList(){
@@ -1172,30 +928,14 @@ function copyExcelList(){
     rows.push(`${y}/${m}/${d}\t${DOW_JP[dow]}\t${info?(TYPE_LABEL[info.cls]||info.cls):''}\t${(info&&info.eigyoNum!==null)?String(info.eigyoNum):''}`);
     cur.setDate(cur.getDate()+1);
   }
-  doCopy('btnCopyList', rows.join('\n'), '📋 Excel用コピー（縦リスト形式）');
+  copyToClipboard(rows.join('\n'), 'btnCopyList', '📋 Excel用コピー（縦リスト形式）');
 }
 
-function doCopy(btnId, text, origLabel){
-  navigator.clipboard.writeText(text).then(()=>{
-    const btn=document.getElementById(btnId);
-    btn.textContent = '✅ コピーしました！';
-    setTimeout(()=>{ btn.textContent=origLabel; },2000);
-  }).catch(()=>{
-    const ta=document.createElement('textarea');
-    ta.value=text; document.body.appendChild(ta);
-    ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-    const btn=document.getElementById(btnId);
-    btn.textContent = '✅ コピーしました！';
-    setTimeout(()=>{ btn.textContent=origLabel; },2000);
-  });
-}
-
-// ============================================================
-// カレンダー描画
-// ============================================================
+/* =====================================================
+   カレンダー描画（変更なし）
+   ===================================================== */
 function renderCalendar(start,end,dayMap){
   const body=document.getElementById('calendarBody');
-  const area=document.getElementById('calendarArea');
   body.innerHTML='';
   const startYMD=toYMD(start), endYMD=toYMD(end);
   const cur=new Date(start.getFullYear(),start.getMonth(),1);
@@ -1268,107 +1008,48 @@ function renderCalendar(start,end,dayMap){
     body.appendChild(block);
     cur.setMonth(cur.getMonth()+1);
   }
-  area.classList.add('show');
 }
 
-// ============================================================
-// 【シェア用URL生成】
-// - 入力値の引き継ぎは行わず、現在のURLをそのまま使う
-// ============================================================
+/* =====================================================
+   シェア用テキスト／URL（common.jsの汎用実装を上書き）
+   ===================================================== */
 function buildShareUrl() {
   return location.href.split('?')[0];
 }
-
-// ============================================================
-// 【シェア用テキスト生成】
-// - 𝕏・LINE共通のテキストをここで組み立てる
-// - 計算済みならその結果も添える
-// ============================================================
 function buildShareText() {
   if (lastCalc) {
     return `📅 営業日計算ツール\n指定期間の営業日数は ${lastCalc.eigyo}日 でした！土日・祝日・休業期間も考慮して自動計算できる無料ツールです。`;
   }
-  return `📅 営業日計算ツール\n土日・祝日・休業期間を除いた営業日数を自動計算できる無料ツールです！`;
+  return `📅 営業日計算ツール\n土日・祝日・複数の休業期間を除いた営業日数を自動計算できる無料ツールです！`;
 }
 
-// ============================================================
-// URLコピー
-// ============================================================
-function shareUrl() {
-  const url = buildShareUrl();
-  const btn = document.getElementById('btnShareUrl');
-
-  navigator.clipboard.writeText(url).then(() => {
-    btn.textContent = '✅ コピーしました！';
-    btn.classList.add('copied');
-    setTimeout(() => {
-      btn.textContent = '🔗 URLをコピー';
-      btn.classList.remove('copied');
-    }, 2500);
-  }).catch(() => {
-    prompt('このURLをコピーしてください', url);
-  });
-}
-
-// ============================================================
-// 𝕏（Twitter）シェア
-// ============================================================
+/* =====================================================
+   𝕏／LINEシェア（common.jsの汎用版はcalculateInputs()を前提にしているため、
+   このツールの状態管理（lastCalc）に合わせて上書きしている）
+   ===================================================== */
 function shareX() {
   const text = buildShareText() + '\n' + buildShareUrl();
   window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
 }
-
-// ============================================================
-// LINEシェア
-// ============================================================
 function shareLine() {
   const text = buildShareText() + '\n' + buildShareUrl();
   window.open(`https://line.me/R/msg/text/${encodeURIComponent(text)}`, '_blank');
 }
 
-// ============================================================
-// QRコード表示／非表示
-// ============================================================
-function showQr() {
-  const url = buildShareUrl();
-  document.getElementById('qrModalTitle').textContent = '📷 QRコードでシェア';
-  document.getElementById('qrModalOverlay').classList.add('show');
-  document.getElementById('qrUrl').textContent = url;
-
-  const canvas = document.getElementById('qrCanvas');
-  canvas.innerHTML = ''; // 古いcanvasを削除（2回目以降の再生成対応）
-
-  new QRCode(canvas, {
-    text: url,
-    width: 200,
-    height: 200,
-    colorDark: '#111111',
-    colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.M
-  });
-}
-function hideQr() {
-  document.getElementById('qrModalOverlay').classList.remove('show');
-}
-function closeQrOnOverlay(e) {
-  if (e.target === document.getElementById('qrModalOverlay')) hideQr();
-}
-
-// ============================================================
-// 入力値リセット（すべて初期状態＝当日の日付・デフォルト設定に戻す）
-// ★入力欄を追加した場合はここにも初期化処理を追加すること
-// ============================================================
+/* =====================================================
+   リセット（common.js汎用のresetAll()をこのツール専用ロジックで上書き）
+   - 通常入力：初期状態（当日の日付・既定チェック）に戻す
+   - 休業期間：全行削除して空の状態に戻す（②で追加した部分）
+   ===================================================== */
 function resetAll() {
   const today = new Date();
   const ymd = toYMD(today);
 
-  // 日付・日数シミュレーター欄
   document.getElementById('startDate').value = ymd;
   document.getElementById('endDate').value = ymd;
   document.getElementById('daysAfter').value = '';
   document.getElementById('daysBefore').value = '';
 
-  // 除外オプションをデフォルトに戻す
   document.getElementById('chkWeekend').checked = true;
   document.getElementById('chkHoliday').checked = true;
   document.getElementById('chkNenmatsuBank').checked = true;
@@ -1377,23 +1058,33 @@ function resetAll() {
     document.getElementById(id).checked = false;
   });
 
-  // 有給休暇・休業期間をクリア
   document.getElementById('leaveAnnual').value = '';
-  document.getElementById('kyugyoStart').value = '';
-  document.getElementById('kyugyoEnd').value = '';
+
+  kyugyoPeriodsState = [];
+  addKyugyoPeriod(); // 空行を1つ用意して入力しやすい状態に戻す（この中でsave/calculateも呼ばれる）
+
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
 
   calculate();
 }
 
-// 初期表示の日付設定（起動時の日付＝当日に自動設定）＋おすすめツール読み込み
-window.addEventListener('DOMContentLoaded',()=>{
-  const today = new Date();
-  const ymd = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-  
-  document.getElementById('startDate').value = ymd;
-  document.getElementById('endDate').value = ymd;
+/* =====================================================
+   初期化
+   - common.jsのDOMContentLoadedリスナー（後で登録される）が先に走り、
+     injectCommonUI → loadRecommends → restoreInputs（STORAGE_FIELDS分の復元）
+     → setCopyrightYear の順で実行される
+   - このリスナーはその後に走るので、休業期間の復元→最終的な再計算を
+     ここでまとめて行えば、保存データの有無に関わらず必ず正しい状態になる
+   ===================================================== */
+document.addEventListener('DOMContentLoaded', () => {
+  // 初回訪問でstartDate/endDateが空のままなら当日の日付を入れておく
+  const sEl = document.getElementById('startDate');
+  const eEl = document.getElementById('endDate');
+  if (sEl && !sEl.value) sEl.value = todayYMD;
+  if (eEl && !eEl.value) eEl.value = todayYMD;
+
+  restoreKyugyoPeriods();
   calculate();
-  loadRecommends();
 });
 </script>
 </body>
