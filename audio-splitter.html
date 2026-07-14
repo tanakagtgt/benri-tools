@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>音声カット・切り出しツール（MP3/WAV/M4A対応）</title>
+  <meta name="description" content="ブラウザ上で音声ファイル（MP3, WAV, M4A）をデコードし、必要な部分だけを安全かつ一瞬で切り出せる完全ローカル型の音声カット・分割ツールです。">
+  <link rel="canonical" href="https://arigato-tools.com/audio-splitter">
+  
+  <meta property="og:title" content="音声カット・切り出しツール（MP3/WAV/M4A対応）">
+  <meta property="og:description" content="安全・高速にブラウザ上で音声ファイルをカット！MP3, WAV, M4Aの切り出しに対応した完全無料・登録不要のツール。">
+  <meta property="og:url" content="https://arigato-tools.com/audio-splitter">
+  <meta property="og:image" content="https://arigato-tools.com/images/audio-splitter-ogp.png">
+  <meta property="og:type" content="website">
+
+  <link rel="stylesheet" href="common.css">
+
+  <style>
+    /* ツール固有のスタイル定義 */
+    .file-dropzone {
+      border: 2px dashed var(--color-border-input);
+      background: var(--color-input-bg);
+      border-radius: var(--radius-card);
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-bottom: 20px;
+    }
+    .file-dropzone.dragover {
+      border-color: var(--color-primary);
+      background: var(--color-primary-bg);
+    }
+    .file-dropzone p {
+      margin: 10px 0 0 0;
+      font-size: 14px;
+      color: var(--color-text-sub);
+    }
+    .file-dropzone .icon {
+      font-size: 32px;
+      color: var(--color-primary);
+    }
+    .audio-info {
+      background: #f8fafc;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-card);
+      padding: 15px;
+      margin-bottom: 20px;
+      display: none; /* 初期状態は非表示 */
+    }
+    .audio-info table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .audio-info td {
+      padding: 6px 0;
+    }
+    .audio-info td:first-child {
+      font-weight: bold;
+      width: 120px;
+      color: var(--color-text-sub);
+    }
+    .split-range-box {
+      margin-top: 20px;
+      display: none; /* 初期状態は非表示 */
+    }
+    .range-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+    .range-label {
+      font-size: 12px;
+      font-weight: bold;
+      color: var(--color-text-sub);
+      margin-bottom: 6px;
+      display: block;
+    }
+    .download-btn {
+      width: 100%;
+      background: var(--color-primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-btn);
+      padding: 14px;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.15s;
+    }
+    .download-btn:hover {
+      background: var(--color-primary-hover);
+    }
+    .download-btn:disabled {
+      background: var(--color-border-input);
+      cursor: not-allowed;
+    }
+    .loading-spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="topNavSlot"></div>
+
+  <main class="container">
+    <div class="card">
+      <h1 class="title">音声カット・切り出しツール</h1>
+      <p class="description">お手持ちの音楽・音声ファイルから、欲しい部分だけを秒単位で指定してWAV形式で切り出して保存します。処理はすべてブラウザ内で安全に行われます。</p>
+
+      <div class="file-dropzone" id="dropzone">
+        <div class="icon">🎵</div>
+        <p><strong>ここに音声ファイルをドラッグ＆ドロップ</strong></p>
+        <p style="font-size: 12px;">または、ここをクリックしてファイルを選択</p>
+        <p style="font-size: 11px; color: var(--color-text-muted);">対応形式: MP3, WAV, M4A, m4a</p>
+        <input type="file" id="audioFile" accept="audio/*, .mp3, .wav, .m4a, .MP3, .WAV, .M4A" style="display: none;">
+      </div>
+
+      <div class="audio-info" id="audioInfo">
+        <table>
+          <tr>
+            <td>ファイル名:</td>
+            <td id="infoFileName">-</td>
+          </tr>
+          <tr>
+            <td>総再生時間:</td>
+            <td id="infoDuration">- 秒</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="split-range-box" id="splitControl">
+        <div class="range-inputs">
+          <div>
+            <label class="range-label" for="startTime">開始位置（秒）</label>
+            <input type="number" id="startTime" class="input-field" value="0.00" min="0" step="0.1">
+          </div>
+          <div>
+            <label class="range-label" for="endTime">終了位置（秒）</label>
+            <input type="number" id="endTime" class="input-field" value="10.00" min="0" step="0.1">
+          </div>
+        </div>
+
+        <button id="cutBtn" class="download-btn">
+          <span>✂️ 指定範囲を切り出して保存</span>
+        </button>
+      </div>
+
+      <div id="resultArea" style="margin-top: 20px; text-align: center; font-weight: bold; color: green; display: none;">
+        ✨ 切り出し・保存が完了しました！
+      </div>
+
+    </div>
+
+    <div id="shareBtnSlot"></div>
+    <div id="resetBtnSlot"></div>
+    <div id="bottomNavSlot"></div>
+  </main>
+
+  <div id="footerSlot"></div>
+
+  <script src="audio-splitter.js"></script>
+
+  <script>
+    /* =====================================================
+       ① 共通テンプレート変数・ラベル設定
+       ===================================================== */
+    const CURRENT_TOOL_ID = 'audio-splitter';
+    const STORAGE_KEY = 'audio_splitter_settings';
+    const STORAGE_FIELDS = ['startTime', 'endTime']; // ユーザーの開始・終了秒数設定を記憶
+
+    const INPUT_LABELS = {
+      startTime: '開始位置(秒)',
+      endTime: '終了位置(秒)'
+    };
+
+    const RESULT_LABELS = {
+      main: '切り出し完了時間'
+    };
+
+    let durationLimit = 0; // 読み込んだ音声の限界秒数
+    let activeFileName = 'cut_audio'; // デフォルト保存ファイル名
+
+    // audio-splitter.js の実体化
+    const splitter = new AudioSplitter();
+
+    /* =====================================================
+       ② ドラッグ＆ドロップ及びファイル選択イベント
+       ===================================================== */
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('audioFile');
+
+    // エリアクリックでファイルダイアログ表示
+    dropzone.addEventListener('click', () => fileInput.click());
+
+    // ドラッグ＆ドロップ視覚効果
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('dragover');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFileSelect(files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleFileSelect(e.target.files[0]);
+      }
+    });
+
+    /* =====================================================
+       ③ 音声デコード＆UI更新
+       ===================================================== */
+    async function handleFileSelect(file) {
+      // ローディング表示
+      dropzone.style.opacity = '0.5';
+      dropzone.querySelector('p').textContent = '音声をデコード中...（少々お待ちください）';
+      
+      try {
+        // audio-splitter.js のデコードを走らせる
+        const duration = await splitter.loadFile(file);
+        durationLimit = duration;
+        activeFileName = file.name.substring(0, file.name.lastIndexOf('.')) || 'cut_audio';
+
+        // 情報を画面に反映
+        document.getElementById('infoFileName').textContent = file.name;
+        document.getElementById('infoDuration').textContent = duration.toFixed(2) + ' 秒';
+        
+        // 切り出し初期値をセット（終了位置は初期10秒か、全体の長さの短い方）
+        document.getElementById('startTime').value = "0.00";
+        document.getElementById('endTime').value = Math.min(10, duration).toFixed(2);
+        document.getElementById('endTime').max = duration.toFixed(2);
+        document.getElementById('startTime').max = duration.toFixed(2);
+
+        // 各種非表示にしていたUIを出現させる
+        document.getElementById('audioInfo').style.display = 'block';
+        document.getElementById('splitControl').style.display = 'block';
+        document.getElementById('resultArea').style.display = 'none';
+
+        // ドラッグドロップエリアをリセット
+        dropzone.style.opacity = '1';
+        dropzone.querySelector('p').innerHTML = '<strong>別のファイルをアップロード</strong>';
+
+        // 状態保存
+        saveInputs();
+
+      } catch (err) {
+        alert('音声ファイルのデコードに失敗しました。ファイルが壊れていないか、または対応フォーマットかご確認ください。');
+        console.error(err);
+        dropzone.style.opacity = '1';
+        dropzone.querySelector('p').innerHTML = '<strong>ここに音声ファイルをドラッグ＆ドロップ</strong>';
+      }
+    }
+
+    /* =====================================================
+       ④ 共通テンプレート要件: ロジック定義
+       ===================================================== */
+    function calculateInputs() {
+      const start = parseFloat(document.getElementById('startTime').value) || 0;
+      let end = parseFloat(document.getElementById('endTime').value) || 0;
+
+      // 入力値制限
+      if (start < 0) return null;
+      if (end > durationLimit) end = durationLimit;
+      if (start >= end) {
+        alert('終了位置は、開始位置より後ろ（大きな数値）に設定してください。');
+        return null;
+      }
+
+      return { start, end };
+    }
+
+    function calculateResult(inputs) {
+      if (!inputs) return null;
+      return {
+        start: inputs.start,
+        end: inputs.end,
+        totalCutSeconds: (inputs.end - inputs.start).toFixed(2)
+      };
+    }
+
+    function displayResult(result) {
+      if (!result) return;
+      // 今回はリアルタイム出力がないため、common.js用の保存確認としてのみ動かす
+    }
+
+    /* =====================================================
+       ⑤ 切り出し・ダウンロード処理の実行
+       ===================================================== */
+    document.getElementById('cutBtn').addEventListener('click', () => {
+      const inputs = calculateInputs();
+      const result = calculateResult(inputs);
+      if (!result) return;
+
+      const btn = document.getElementById('cutBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-spinner"></span> <span>切り出し処理中...</span>';
+
+      // ブラウザ処理が一瞬詰まるのを防ぐため、非同期でカット処理を実行
+      setTimeout(() => {
+        try {
+          // audio-splitter.js に秒数レンジを渡して WAV Blobを取得
+          const wavBlob = splitter.split(result.start, result.end);
+
+          // ブラウザのダウンロードリンク生成
+          const url = URL.createObjectURL(wavBlob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${activeFileName}_cut_${result.start}s-${result.end}s.wav`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+
+          // 成功表示
+          const resArea = document.getElementById('resultArea');
+          resArea.textContent = `✨ ${result.totalCutSeconds}秒間の切り出しに成功しました！`;
+          resArea.style.display = 'block';
+
+        } catch (error) {
+          alert('切り出し中にエラーが発生しました: ' + error.message);
+          console.error(error);
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = '<span>✂️ 指定範囲を切り出して保存</span>';
+        }
+      }, 50);
+    });
+
+    /* =====================================================
+       ⑥ シェア用テキスト生成（common.jsから呼ばれる）
+       ===================================================== */
+    function buildShareText(result) {
+      if (!result) return '安全・高速なブラウザ完結型の音声カットツール！';
+      return `「音声カット・切り出しツール」で音声から ${result.totalCutSeconds}秒 の抽出に成功！ #音声カット #Web便利ツール`;
+    }
+
+    function buildShareUrl() {
+      return location.href;
+    }
+
+    /* =====================================================
+       ⑦ リセットボタン拡張（リセット時に表示を隠す）
+       ===================================================== */
+    function onResetExtra() {
+      document.getElementById('audioInfo').style.display = 'none';
+      document.getElementById('splitControl').style.display = 'none';
+      document.getElementById('resultArea').style.display = 'none';
+      dropzone.querySelector('p').innerHTML = '<strong>ここに音声ファイルをドラッグ＆ドロップ</strong>';
+    }
+  </script>
+
+  <script src="common.js"></script>
+</body>
+</html>
