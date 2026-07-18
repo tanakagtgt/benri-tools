@@ -392,6 +392,13 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 }
 .event-row .input-unit { right: 8px; }
 
+/* 金額欄：±符号切替ボタンを内包するラッパー
+   ★スマホの数字キーパッド（inputmode="decimal"）には「−」キーが
+     無い機種が多いため、他のマイナス可能項目と同様にタップで
+     符号反転できるボタンを添えている */
+.event-row .amount-wrap { gap: 4px; }
+.event-row .amount-wrap .btn-sign { height: 44px; } /* イベント行の入力欄(44px)に高さを合わせる */
+
 /* 削除ボタン（×） */
 .btn-event-del {
   width: 36px;
@@ -1311,6 +1318,22 @@ function toggleSign(id) {
 }
 
 /* =====================================================
+   一時金イベント：金額欄の符号切り替え（±ボタン）
+   - フェーズ表のtoggleSign()と同じ考え方
+   - 0や空欄の時は反転してもしょうがないのでそのまま
+   ===================================================== */
+function toggleEventSign(id) {
+  const el = document.getElementById('ev_amount_' + id);
+  if (!el) return;
+  const val = parseFloat(el.value);
+  if (!isNaN(val) && val !== 0) {
+    el.value = -val;
+  }
+  saveInputs(); // イベント欄はonchange運用のためここで明示的に保存
+  el.focus();
+}
+
+/* =====================================================
    合計運用年数の自動更新
    ===================================================== */
 function updateTotalYears() {
@@ -1364,7 +1387,8 @@ function addEventRow(defaultYear = '', defaultAmount = '') {
     </div>
 
     <!-- 金額（万円・マイナス可） -->
-    <div class="input-with-unit">
+    <div class="input-with-unit amount-wrap">
+      <button type="button" class="btn-sign" onclick="toggleEventSign(${id})" aria-label="符号切替">±</button>
       <input
         type="number" id="ev_amount_${id}"
         inputmode="decimal" step="1"
