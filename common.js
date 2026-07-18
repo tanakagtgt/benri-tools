@@ -107,7 +107,9 @@ function injectCommonUI() {
 <footer>
   © <span id="copyrightYear"></span> アリガイツ<br>
   <a class="footer-back" href="https://x.com/arigaitsu" target="_blank" rel="noopener">𝕏(twitter)</a>
-  ・
+   ・
+  <a class="footer-back" href="https://note.com/arigaitsu" target="_blank" rel="noopener">開発ブログ(note)</a>
+   ・
   <a class="footer-back" href="https://docs.google.com/forms/d/e/1FAIpQLSfUe9UzcRcIRFb4TmDAYKsZ75CcGRjF8Z7Ar_u7a4KgyyNyzQ/viewform?usp=publish-editor" target="_blank" rel="noopener">💡 作ってほしいツール・ご意見はこちら</a>
 </footer>`;
 }
