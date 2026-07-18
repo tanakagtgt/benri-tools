@@ -115,8 +115,8 @@
   }
   .matrix-bulk-btn:hover { background: #dbeafe; }
 
-  /* バイト数ミニグリッド（result-panel内、breakdownクラスを流用） */
-  .byte-grid-title {
+  /* 解析グリッド（文章解析機能セクション：analysis-grid相当。breakdownを流用） */
+  .analysis-section-title {
     font-size: 11px;
     font-weight: 700;
     color: var(--color-text-muted);
@@ -168,74 +168,60 @@
   </header>
 
   <!-- =====================================================
-       ①入力カード：原文を入力する場所（一番上＝親指の届きやすい位置）
+       ①「● 文章変換機能」カード
+       ★将来オプション追加はこの中に項目を足すだけでOK
        ===================================================== -->
   <div class="card">
-    <div class="text-io-label">
-      <label for="inputText">入力欄（原文）</label>
-    </div>
-    <textarea id="inputText" class="io-textarea" placeholder="ここに解析・変換したい文章を入力してください..."></textarea>
-    <div class="error-msg" id="errorMsg"></div>
-  </div>
-
-  <!-- =====================================================
-       ②変換設定カード（★将来オプション追加はここに項目を足すだけでOK）
-       ===================================================== -->
-  <div class="card">
-    <div class="section-title">▶ 変換オプション</div>
+    <div class="section-title">▶ 文章変換機能</div>
 
     <div class="setting-row">
       <div class="setting-item">
         <label for="wrapLength" style="display:block;font-size:11px;font-weight:700;color:var(--color-text-sub);margin-bottom:4px;">任意の文字数で改行（0で無効）</label>
         <input type="number" id="wrapLength" class="input-text-short" value="0" min="0" inputmode="numeric">
       </div>
-      <div class="setting-item">
-        <label for="excludeChars" style="display:block;font-size:11px;font-weight:700;color:var(--color-text-sub);margin-bottom:4px;">⚠️ 変換から保護する文字</label>
-        <input type="text" id="excludeChars" class="input-text-short" value="「」、。・">
-        <span class="setting-note">※ここに入力した文字は全角半角変換の対象外になります</span>
-      </div>
     </div>
 
-    <label class="checkbox-item"><input type="checkbox" id="halfCharCount"> 半角は0.5文字としてカウントする（改行位置の計算用）</label>
+    <label class="checkbox-item"><input type="checkbox" id="halfCharCount"> 半角は0.5文字としてカウントする</label>
     <label class="checkbox-item"><input type="checkbox" id="breakPeriod"> 「。」で改行する</label>
     <label class="checkbox-item"><input type="checkbox" id="hiraToKata"> ひらがな → カタカナ 変換</label>
     <label class="checkbox-item"><input type="checkbox" id="kataToHira"> カタカナ → ひらがな 変換</label>
-    <label class="checkbox-item">
-      <input type="checkbox" id="useNfkc"> Unicode NFKC 正規化を行う
-    </label>
-    <span class="setting-note">※チェックを入れると丸数字や組文字などの特殊文字が標準的な形に変換されます</span>
-  </div>
+    <label class="checkbox-item"><input type="checkbox" id="useNfkc"> Unicode NFKC 正規化を行う</label>
+    <span class="setting-note">※チェックを入れると特殊な文字が標準的な形に変換されます。</span>
 
-  <!-- =====================================================
-       ③全角半角マトリクス変換カード（項目ごとに変換方向を個別指定）
-       ===================================================== -->
-  <div class="card">
-    <div class="section-title">▶ 全角・半角マトリクス変換</div>
+    <div class="setting-row" style="margin-top:14px;">
+      <div class="setting-item">
+        <label for="excludeChars" style="display:block;font-size:11px;font-weight:700;color:var(--color-text-sub);margin-bottom:4px;">⚠️ 変換から保護する（除外する）文字・記号</label>
+        <input type="text" id="excludeChars" class="input-text-short" value="「」、。・">
+        <span class="setting-note">※ここに入力した文字は、全半角マトリクス変換の対象外になります。</span>
+      </div>
+    </div>
+
+    <label class="textarea-label" style="display:block;font-size:11px;font-weight:700;color:var(--color-text-sub);margin:14px 0 8px;">文字の種類ごとの変換方法（マトリクス選択）</label>
     <div class="matrix-scroll">
       <table class="matrix-table">
         <thead>
           <tr>
-            <th>変換方法</th><th>数字</th><th>英字</th><th>カナ</th><th>記号</th><th>空白</th><th>一括</th>
+            <th>変換方法</th><th>数字</th><th>英字</th><th>カナ</th><th>記号</th><th>空白</th><th>一括指定</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>全角へ</td>
+            <td>全角へ変換</td>
             <td><input type="radio" name="m_num" value="zen"></td>
             <td><input type="radio" name="m_alpha" value="zen"></td>
             <td><input type="radio" name="m_kana" value="zen"></td>
             <td><input type="radio" name="m_sym" value="zen"></td>
             <td><input type="radio" name="m_space" value="zen"></td>
-            <td><button type="button" class="matrix-bulk-btn" onclick="setBulkRadio('zen')">全角</button></td>
+            <td><button type="button" class="matrix-bulk-btn" onclick="setBulkRadio('zen')">すべて全角</button></td>
           </tr>
           <tr>
-            <td>半角へ</td>
+            <td>半角へ変換</td>
             <td><input type="radio" name="m_num" value="han"></td>
             <td><input type="radio" name="m_alpha" value="han"></td>
             <td><input type="radio" name="m_kana" value="han"></td>
             <td><input type="radio" name="m_sym" value="han"></td>
             <td><input type="radio" name="m_space" value="han"></td>
-            <td><button type="button" class="matrix-bulk-btn" onclick="setBulkRadio('han')">半角</button></td>
+            <td><button type="button" class="matrix-bulk-btn" onclick="setBulkRadio('han')">すべて半角</button></td>
           </tr>
           <tr>
             <td>変換しない</td>
@@ -244,15 +230,16 @@
             <td><input type="radio" name="m_kana" value="none" checked></td>
             <td><input type="radio" name="m_sym" value="none" checked></td>
             <td><input type="radio" name="m_space" value="none" checked></td>
-            <td><button type="button" class="matrix-bulk-btn" onclick="setBulkRadio('none')">なし</button></td>
+            <td><button type="button" class="matrix-bulk-btn" onclick="setBulkRadio('none')">変換しない</button></td>
           </tr>
         </tbody>
       </table>
     </div>
+    <div class="error-msg" id="errorMsg"></div>
   </div>
 
   <!-- =====================================================
-       ④結果パネル：メイン指標（文字数）＋内訳（改行/空白/行数）
+       ②「● 文章解析機能」＋入力欄／変換結果欄
        ===================================================== -->
   <div class="result-panel">
     <div class="result-main">
@@ -264,6 +251,7 @@
       <div class="result-sub" id="resultSub"></div>
     </div>
     <div class="breakdown-wrap">
+      <div class="analysis-section-title">▶ 文章解析機能</div>
       <div class="breakdown">
         <div class="breakdown-item">
           <div class="b-num placeholder" id="bA">—</div>
@@ -279,32 +267,37 @@
         </div>
       </div>
 
-      <!-- バイト数ミニグリッド（breakdownクラスを流用・☆不要なら丸ごと削除可） -->
-      <div class="byte-grid-title">▶ バイト数シミュレーション</div>
+      <!-- バイト数（breakdownクラスを流用・☆不要なら丸ごと削除可） -->
       <div class="breakdown">
         <div class="breakdown-item">
           <div class="b-num placeholder" id="byteUtf8">—</div>
-          <div class="b-label">UTF-8</div>
+          <div class="b-label">UTF-8 バイト数</div>
         </div>
         <div class="breakdown-item">
           <div class="b-num placeholder" id="byteUtf16">—</div>
-          <div class="b-label">UTF-16</div>
+          <div class="b-label">UTF-16 バイト数</div>
         </div>
         <div class="breakdown-item">
           <div class="b-num placeholder" id="byteSjis">—</div>
-          <div class="b-label">Shift-JIS</div>
+          <div class="b-label">Shift-JIS バイト数</div>
         </div>
         <div class="breakdown-item">
           <div class="b-num placeholder" id="byteEucjp">—</div>
-          <div class="b-label">EUC-JP</div>
+          <div class="b-label">EUC-JP バイト数</div>
         </div>
         <div class="breakdown-item">
           <div class="b-num placeholder" id="byteJis">—</div>
-          <div class="b-label">JIS</div>
+          <div class="b-label">JIS (ISO-2022-JP)</div>
         </div>
       </div>
 
-      <!-- 変換結果テキストエリア -->
+      <!-- 入力欄（原文） -->
+      <div class="text-io-label" style="margin-top:6px;">
+        <label for="inputText">入力欄（原文）</label>
+      </div>
+      <textarea id="inputText" class="io-textarea" placeholder="ここに解析・変換したい文章を入力してください..."></textarea>
+
+      <!-- 変換結果欄 -->
       <div class="text-io-label" style="margin-top:14px;">
         <label for="outputText">変換結果欄</label>
         <button type="button" class="btn-copy io-copy-btn" id="btnCopyOutput" onclick="copyOutputText()">📋 コピー</button>
@@ -322,7 +315,7 @@
   </div>
 
   <!-- =====================================================
-       ⑤処理法則の説明（詳細情報は折りたたんで1画面収まりを優先）
+       ③処理法則の説明（詳細情報は折りたたんで1画面収まりを優先）
        ===================================================== -->
   <details class="rule-doc">
     <summary>💡 変換・解析の処理法則を見る</summary>
