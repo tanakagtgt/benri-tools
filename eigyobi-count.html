@@ -65,6 +65,41 @@
 
 .leave-note { font-size:11px; color:#999; margin-top:8px; line-height:1.6; }
 
+/* =====================================================
+   休業期間（複数追加）エリア
+   ===================================================== */
+.kyugyo-row { margin-bottom:10px; }
+.kyugyo-end-row { display:flex; gap:6px; align-items:center; }
+.kyugyo-end-row input { flex:1; }
+.btn-kyugyo-remove {
+  flex-shrink:0;
+  width:36px; height:36px;
+  border-radius:7px;
+  border:1px solid #f5c6a0;
+  background:#fff8f0;
+  color:#c05a00;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+  transition:background 0.15s;
+}
+.btn-kyugyo-remove:hover { background:#ffe8d0; }
+.btn-kyugyo-add {
+  width:100%;
+  margin-top:2px;
+  padding:9px;
+  border-radius:7px;
+  border:1px dashed #93c5fd;
+  background:#f1f5fd;
+  color:#1a56db;
+  font-family:'BIZ UDPGothic', sans-serif;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+  transition:background 0.15s;
+}
+.btn-kyugyo-add:hover { background:#dbeafe; }
+
 /* メイン結果の下に表示する日付（西暦／和暦・曜日付き） */
 .result-reiwa { font-size:12px; color:#444; margin-top:8px; line-height:1.5; text-align:center; }
 
@@ -258,17 +293,9 @@
         <input type="number" id="leaveAnnual" inputmode="numeric" placeholder="例：3" min="0" oninput="onInputChange()">
       </div>
 
-      <div class="date-grid" style="margin-bottom:8px;">
-        <div class="input-group">
-          <label>休業期間 開始日</label>
-          <input type="date" id="kyugyoStart" oninput="onInputChange()">
-        </div>
-        <div class="arrow-center">→</div>
-        <div class="input-group">
-          <label>休業期間 終了日</label>
-          <input type="date" id="kyugyoEnd" oninput="onInputChange()">
-        </div>
-      </div>
+      <!-- 休業期間：複数登録可（＋ボタンで行を追加、✕ボタンで削除） -->
+      <div id="kyugyoList"></div>
+      <button type="button" class="btn-kyugyo-add" onclick="addKyugyoRow()">＋ 休業期間を追加</button>
 
       <p class="leave-note">
         ※ 有給休暇＋休業期間の合計日数を営業日数から差し引きます<br>
@@ -380,13 +407,18 @@
 const CURRENT_TOOL_ID = 'eigyobi-count';
 const STORAGE_KEY = 'eigyobi-count_inputs';
 
+// 休業期間（複数行）は行数が可変なので、通常のSTORAGE_FIELDSとは別に
+// 専用のlocalStorageキーでJSON配列として保存する（saveKyugyoPeriods/restoreKyugyoPeriods参照）
+const KYUGYO_STORAGE_KEY = STORAGE_KEY + '_kyugyoPeriods';
+
 // LocalStorageに保存する入力項目（daysAfter/daysBeforeは
-// calculate()内で開始日・終了日から毎回自動算出されるため対象外）
+// calculate()内で開始日・終了日から毎回自動算出されるため対象外。
+// 休業期間はKYUGYO_STORAGE_KEY側で管理するためここには含めない）
 const STORAGE_FIELDS = [
   'startDate', 'endDate',
   'chkWeekend', 'chkHoliday', 'chkNenmatsuBank', 'chkNenmatsuGovt',
   'chkMon', 'chkTue', 'chkWed', 'chkThu', 'chkFri',
-  'leaveAnnual', 'kyugyoStart', 'kyugyoEnd'
+  'leaveAnnual'
 ];
 
 // テキスト／Excelコピーの独自フォーマットを使うため直接は未使用だが、
@@ -394,7 +426,7 @@ const STORAGE_FIELDS = [
 const INPUT_LABELS = {
   startDate: '開始日', endDate: '終了日',
   chkWeekend: '土日除外', chkHoliday: '祝日除外',
-  leaveAnnual: '有給休暇', kyugyoStart: '休業期間開始', kyugyoEnd: '休業期間終了',
+  leaveAnnual: '有給休暇',
 };
 const RESULT_LABELS = {
   main: '営業日数', subA: '総日数', subB: '休日合計', subC: '祝日等',
@@ -535,6 +567,104 @@ const MONTH_JP = ['1月','2月','3月','4月','5月','6月','7月','8月','9月'
 const todayYMD = toYMD(new Date());
 let lastCalc = null;
 
+/* =====================================================
+   休業期間（複数行）の管理
+   - 各行は固定idを持たず、.kyugyo-row内の.kyugyo-start/.kyugyo-endで
+     値を読み書きする（何行あっても同じロジックで扱えるようにするため）
+   - 保存はKYUGYO_STORAGE_KEYにJSON配列として行う
+   ===================================================== */
+let kyugyoRowUid = 0;
+
+function createKyugyoRowElement(startVal = '', endVal = '') {
+  kyugyoRowUid++;
+  const wrap = document.createElement('div');
+  wrap.className = 'date-grid kyugyo-row';
+  wrap.dataset.uid = kyugyoRowUid;
+  wrap.innerHTML = `
+    <div class="input-group">
+      <label>休業期間 開始日</label>
+      <input type="date" class="kyugyo-start" value="${startVal}" oninput="onKyugyoChange()">
+    </div>
+    <div class="arrow-center">→</div>
+    <div class="input-group">
+      <label>休業期間 終了日</label>
+      <div class="kyugyo-end-row">
+        <input type="date" class="kyugyo-end" value="${endVal}" oninput="onKyugyoChange()">
+        <button type="button" class="btn-kyugyo-remove" onclick="removeKyugyoRow(this)" title="この休業期間を削除">✕</button>
+      </div>
+    </div>
+  `;
+  return wrap;
+}
+
+// ＋ボタン：新しい空の休業期間行を追加
+function addKyugyoRow() {
+  document.getElementById('kyugyoList').appendChild(createKyugyoRowElement());
+  onKyugyoChange();
+}
+
+// ✕ボタン：その行を削除（全部消えないよう、0件になったら空欄を1行だけ復活させる）
+function removeKyugyoRow(btn) {
+  const list = document.getElementById('kyugyoList');
+  btn.closest('.kyugyo-row').remove();
+  if (list.children.length === 0) {
+    list.appendChild(createKyugyoRowElement());
+  }
+  onKyugyoChange();
+}
+
+// 現在入力されている休業期間を配列で取得（開始日・終了日が揃っていて、
+// 終了日≧開始日の行のみ有効な期間として扱う）
+function collectKyugyoPeriods() {
+  const rows = document.querySelectorAll('#kyugyoList .kyugyo-row');
+  const periods = [];
+  rows.forEach(row => {
+    const sVal = row.querySelector('.kyugyo-start').value;
+    const eVal = row.querySelector('.kyugyo-end').value;
+    if (!sVal || !eVal) return;
+    const s = new Date(sVal), e = new Date(eVal);
+    if (isNaN(s) || isNaN(e) || e < s) return;
+    periods.push({ start: s, end: e, startVal: sVal, endVal: eVal });
+  });
+  return periods;
+}
+
+function saveKyugyoPeriods() {
+  try {
+    const rows = document.querySelectorAll('#kyugyoList .kyugyo-row');
+    const data = [];
+    rows.forEach(row => {
+      data.push({
+        start: row.querySelector('.kyugyo-start').value,
+        end: row.querySelector('.kyugyo-end').value
+      });
+    });
+    localStorage.setItem(KYUGYO_STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    // プライベートモード等でlocalStorageが使えない場合は無視
+  }
+}
+
+function restoreKyugyoPeriods() {
+  try {
+    const raw = localStorage.getItem(KYUGYO_STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (!Array.isArray(data) || data.length === 0) return;
+    const list = document.getElementById('kyugyoList');
+    list.innerHTML = '';
+    data.forEach(p => list.appendChild(createKyugyoRowElement(p.start || '', p.end || '')));
+  } catch (e) {
+    // パース失敗時は無視（デフォルトの空欄1行のままになる）
+  }
+}
+
+// 休業期間の入力変更時のハンドラ（保存→再計算）
+function onKyugyoChange() {
+  saveKyugyoPeriods();
+  calculate();
+}
+
 function toggleNenmatsu(type) {
   if (type === 'bank' && document.getElementById('chkNenmatsuBank').checked) {
     document.getElementById('chkNenmatsuGovt').checked = false;
@@ -590,14 +720,8 @@ function calculate(){
   const hMaps={};
   for(let y=start.getFullYear(); y<=end.getFullYear(); y++) hMaps[y]=getHolidays(y);
 
-  // 休業期間（開始日〜終了日）を事前にパース
-  const kyugyoStartVal = document.getElementById('kyugyoStart').value;
-  const kyugyoEndVal   = document.getElementById('kyugyoEnd').value;
-  let kStart=null, kEnd=null;
-  if(kyugyoStartVal && kyugyoEndVal){
-    const ks=new Date(kyugyoStartVal), ke=new Date(kyugyoEndVal);
-    if(!isNaN(ks) && !isNaN(ke) && ke>=ks){ kStart=ks; kEnd=ke; }
-  }
+  // 休業期間（複数行）を事前にパース。1日でもどれかの期間に入っていればOK
+  const kyugyoPeriods = collectKyugyoPeriods();
 
   let total=0, weekendOnly=0, specifiedWeekday=0, holidays=0, kyugyoDays=0, eigyoCount=0;
   const hitHols=[];
@@ -614,7 +738,7 @@ function calculate(){
 
     const isNen = (chkNB && isNenmatsuBank(ymd)) || (chkNG && isNenmatsuGovt(ymd));
     const isExtraDow = extraDow.has(dow);
-    const isKyugyo = kStart && cur>=kStart && cur<=kEnd;
+    const isKyugyo = kyugyoPeriods.some(p => cur>=p.start && cur<=p.end);
 
     let cls='business', eigyoNum=null;
 
@@ -685,7 +809,7 @@ function calculate(){
   lastCalc={
     start, end, eigyo, total,
     weekendOnly, specifiedWeekday, holidays,
-    leaveAnnual, kyugyoDays, kyugyoStartVal, kyugyoEndVal,
+    leaveAnnual, kyugyoDays, kyugyoPeriods,
     totalLeave, offTotal,
     hitHols, dayMap
   };
@@ -726,7 +850,7 @@ function copyText(){
   const {
     start, end, eigyo, total,
     weekendOnly, specifiedWeekday, holidays,
-    leaveAnnual, kyugyoDays, kyugyoStartVal, kyugyoEndVal,
+    leaveAnnual, kyugyoDays, kyugyoPeriods,
     totalLeave, offTotal
   } = lastCalc;
 
@@ -734,10 +858,11 @@ function copyText(){
     if(totalLeave === 0) return '';
     const parts = [];
     if(leaveAnnual > 0) parts.push(`有給休暇 ${leaveAnnual}日`);
-    if(kyugyoDays > 0){
-      const ks = formatSlashingDate(new Date(kyugyoStartVal));
-      const ke = formatSlashingDate(new Date(kyugyoEndVal));
-      parts.push(`休業期間 ${kyugyoDays}日（${ks}～${ke}）`);
+    if(kyugyoDays > 0 && kyugyoPeriods.length > 0){
+      const periodsStr = kyugyoPeriods
+        .map(p => `${formatSlashingDate(p.start)}～${formatSlashingDate(p.end)}`)
+        .join('、');
+      parts.push(`休業期間 ${kyugyoDays}日（${periodsStr}）`);
     }
     return `\n追加休暇日：${totalLeave}日（${parts.join('・')}）`;
   })();
@@ -916,6 +1041,12 @@ function onResetExtra() {
   document.getElementById('chkHoliday').checked = true;
   document.getElementById('chkNenmatsuBank').checked = true;
 
+  // 休業期間リストも空欄1行に戻す
+  const list = document.getElementById('kyugyoList');
+  list.innerHTML = '';
+  list.appendChild(createKyugyoRowElement());
+  try { localStorage.removeItem(KYUGYO_STORAGE_KEY); } catch (e) {}
+
   saveInputs();
   calculate();
 }
@@ -932,6 +1063,13 @@ window.addEventListener('DOMContentLoaded', () => {
   const endEl = document.getElementById('endDate');
   if (!startEl.value) startEl.value = todayYMD;
   if (!endEl.value) endEl.value = todayYMD;
+
+  // 休業期間：保存があれば復元、無ければ空欄1行を用意
+  restoreKyugyoPeriods();
+  if (document.getElementById('kyugyoList').children.length === 0) {
+    document.getElementById('kyugyoList').appendChild(createKyugyoRowElement());
+  }
+
   calculate();
 });
 </script>
