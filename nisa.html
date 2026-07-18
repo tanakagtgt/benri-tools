@@ -895,7 +895,7 @@ footer { margin-top: 16px; text-align: center; font-size: 11px; color: var(--col
           <input
             type="number" id="principal"
             inputmode="decimal" min="0" max="100000" step="1"
-            placeholder="0"
+            placeholder="200"
           >
           <span class="input-unit">万円</span>
         </div>
@@ -906,7 +906,7 @@ footer { margin-top: 16px; text-align: center; font-size: 11px; color: var(--col
           <input
             type="number" id="currentAge"
             inputmode="numeric" min="1" max="99" step="1"
-            placeholder="35"
+            placeholder="36"
           >
           <span class="input-unit">歳</span>
         </div>
@@ -1380,7 +1380,7 @@ function addEventRow(defaultYear = '', defaultAmount = '') {
       <input
         type="number" id="ev_year_${id}"
         inputmode="numeric" min="1" max="100" step="1"
-        value="${defaultYear}" placeholder="年目"
+        value="${defaultYear}" placeholder="5"
         onchange="saveInputs()"
       >
       <span class="input-unit" style="font-size:9px;">年目</span>
@@ -1392,7 +1392,7 @@ function addEventRow(defaultYear = '', defaultAmount = '') {
       <input
         type="number" id="ev_amount_${id}"
         inputmode="decimal" step="1"
-        value="${defaultAmount}" placeholder="例：-300"
+        value="${defaultAmount}" placeholder="-200"
         onchange="saveInputs()"
       >
       <span class="input-unit">万円</span>
