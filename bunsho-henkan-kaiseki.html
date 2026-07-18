@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<link rel="canonical" href="https://arigato-tools.com/bunsho-henkan-kaiseki">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NXJCSR0EX1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-NXJCSR0EX1');
+</script>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>文章解析＆全角半角変換ツール｜文字数カウント</title>
+<meta name="description" content="入力した文章の文字数・行数・バイト数を瞬時に解析。全角⇔半角、ひらがな⇔カタカナの変換や任意文字数での自動改行にも対応した無料の文章解析＆変換ツールです。">
+
+<meta property="og:title" content="文章解析＆全角半角変換ツール｜文字数カウント">
+<meta property="og:description" content="入力した文章の文字数・行数・バイト数を瞬時に解析。全角⇔半角、ひらがな⇔カタカナの変換や任意文字数での自動改行にも対応した無料の文章解析＆変換ツールです。">
+<meta property="og:url" content="https://arigato-tools.com/bunsho-henkan-kaiseki">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="便利ツール集">
+<meta name="twitter:card" content="summary_large_image">
+<!-- ★og:image: 1200×630pxのOGP画像を用意して本番パスに差し替える -->
+<meta property="og:image" content="https://arigato-tools.com/images/ogp/bunsho-henkan-kaiseki.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+
+<!-- QRコード生成ライブラリ（common.jsのshowQrで使用） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<!-- ★共通CSS（色・レイアウト・ボタン等）本番パスに書き換える -->
+<link rel="stylesheet" href="/common.css">
+
+<!-- =====================================================
+     ★このツール固有の追加スタイル
+     - common.cssに存在しないパーツ（テキストエリア／マトリクス表／
+       折りたたみ説明／設定行のflexレイアウト）だけをここに追加する
+     - 色・ボタン・カード等の基本デザインはcommon.cssを継承するため、
+       ここでは配色変数(--color-*)を再利用するだけにとどめる
+     ===================================================== -->
+<style>
+  /* 入力・出力テキストエリア（1画面に収めるため高さは控えめに） */
+  .text-io-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 5px;
+  }
+  .text-io-label label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--color-text-sub);
+    letter-spacing: 0.08em;
+  }
+  textarea.io-textarea {
+    width: 100%;
+    height: 130px; /* ★1画面収まり重視。増減はここだけ調整すればOK */
+    padding: 12px;
+    box-sizing: border-box;
+    border: 1px solid var(--color-border-input);
+    border-radius: var(--radius-input);
+    background: var(--color-input-bg);
+    color: var(--color-text);
+    font-family: 'BIZ UDPGothic', monospace;
+    font-size: 16px; /* iPhoneズーム防止のため16px以上を死守 */
+    resize: vertical;
+  }
+  textarea.io-textarea:focus { outline: none; border-color: var(--color-primary); background: #fff; }
+  textarea.io-textarea[readonly] { background: #f4f6f9; }
+
+  /* 設定カード内の横並び項目（元ツールのflex-row/flex-itemを踏襲） */
+  .setting-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .setting-item { flex: 1; min-width: 140px; }
+  .setting-note {
+    display: block;
+    font-size: 10px;
+    color: var(--color-text-label);
+    margin-top: 3px;
+    line-height: 1.4;
+  }
+
+  /* 全角半角マトリクス変換テーブル（横スクロール対応でスマホ崩れ防止） */
+  .matrix-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .matrix-table {
+    width: 100%;
+    min-width: 480px; /* スマホでは横スクロールさせる前提 */
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .matrix-table th, .matrix-table td {
+    border: 1px solid var(--color-border);
+    padding: 8px 6px;
+    text-align: center;
+  }
+  .matrix-table th { background: var(--color-input-bg); color: var(--color-text-sub); }
+  .matrix-bulk-btn {
+    background: var(--color-primary-bg);
+    border: 1px solid var(--color-primary-border);
+    border-radius: 5px;
+    color: var(--color-primary);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 8px;
+    cursor: pointer;
+  }
+  .matrix-bulk-btn:hover { background: #dbeafe; }
+
+  /* バイト数ミニグリッド（result-panel内、breakdownクラスを流用） */
+  .byte-grid-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    letter-spacing: 0.06em;
+    margin: 4px 0 8px;
+  }
+
+  /* 変換結果コピー用の小型ボタン（common.cssの.btn-copyを流用） */
+  .io-copy-btn { margin-bottom: 0; }
+
+  /* 処理法則の折りたたみ（スマホ1画面収まり重視のためdetailsで格納） */
+  details.rule-doc {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    padding: 12px 16px;
+    margin-bottom: 14px;
+    font-size: 12px;
+    color: var(--color-text-sub);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  details.rule-doc summary {
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    list-style: none;
+  }
+  details.rule-doc summary::-webkit-details-marker { display: none; }
+  details.rule-doc summary::before { content: '▶ '; }
+  details.rule-doc[open] summary::before { content: '▼ '; }
+  details.rule-doc h4 { margin: 10px 0 4px; font-size: 12px; color: var(--color-text); }
+  details.rule-doc ul { padding-left: 18px; margin: 4px 0; }
+  details.rule-doc li { margin-bottom: 4px; line-height: 1.6; }
+</style>
+
+</head>
+<body>
+<div class="container">
+
+  <!-- ナビ：ツール一覧に戻るボタン＋おすすめツール（共通・触らない） -->
+  <div id="topNavSlot"></div>
+
+  <header>
+    <h1>🔧 文章解析＆全角半角変換ツール</h1>
+    <p class="subtitle">
+      ※ 文字数・行数・バイト数などをリアルタイムで解析します<br>
+      ※ 全角⇔半角／ひらがな⇔カタカナの変換や自動改行にも対応
+    </p>
+  </header>
+
+  <!-- =====================================================
+       ①入力カード：原文を入力する場所（一番上＝親指の届きやすい位置）
+       ===================================================== -->
+  <div class="card">
+    <div class="text-io-label">
+      <label for="inputText">入力欄（原文）</label>
+    </div>
+    <textarea id="inputText" class="io-textarea" placeholder="ここに解析・変換したい文章を入力してください..."></textarea>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <!-- =====================================================
+       ②変換設定カード（★将来オプション追加はここに項目を足すだけでOK）
+       ===================================================== -->
+  <div class="card">
+    <div class="section-title">▶ 変換オプション</div>
+
+    <div class="setting-row">
+      <div class="setting-item">
+        <label for="wrapLength" style="display:block;font-size:11px;font-weight:700;color:var(--color-text-sub);margin-bottom:4px;">任意の文字数で改行（0で無効）</label>
+        <input type="number" id="wrapLength" class="input-text-short" value="0" min="0" inputmode="numeric">
+      </div>
+      <div class="setting-item">
+        <label for="excludeChars" style="display:block;font-size:11px;font-weight:700;color:var(--color-text-sub);margin-bottom:4px;">⚠️ 変換から保護する文字</label>
+        <input type="text" id="excludeChars" class="input-text-short" value="「」、。・">
+        <span class="setting-note">※ここに入力した文字は全角半角変換の対象外になります</span>
+      </div>
+    </div>
+
+    <label class="checkbox-item"><input type="checkbox" id="halfCharCount"> 半角は0.5文字としてカウントする（改行位置の計算用）</label>
+    <label class="checkbox-item"><input type="checkbox" id="breakPeriod"> 「。」で改行する</label>
+    <label class="checkbox-item"><input type="checkbox" id="hiraToKata"> ひらがな → カタカナ 変換</label>
+    <label class="checkbox-item"><input type="checkbox" id="kataToHira"> カタカナ → ひらがな 変換</label>
+    <label class="checkbox-item">
+      <input type="checkbox" id="useNfkc"> Unicode NFKC 正規化を行う
+    </label>
+    <span class="setting-note">※チェックを入れると丸数字や組文字などの特殊文字が標準的な形に変換されます</span>
+  </div>
+
+  <!-- =====================================================
+       ③全角半角マトリクス変換カード（項目ごとに変換方向を個別指定）
+       ===================================================== -->
+  <div class="card">
+    <div class="section-title">▶ 全角・半角マトリクス変換</div>
+    <div class="matrix-scroll">
+      <table class="matrix-table">
+        <thead>
+          <tr>
+            <th>変換方法</th><th>数字</th><th>英字</th><th>カナ</th><th>記号</th><th>空白</th><th>一括</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>全角へ</td>
+            <td><input type="radio" name="m_num" value="zen"></td>
+            <td><input type="radio" name="m_alpha" value="zen"></td>
+            <td><input type="radio" name="m_kana" value="zen"></td>
+            <td><input type="radio" name="m_sym" value="zen"></td>
+            <td><input type="radio" name="m_space" value="zen"></td>
+            <td><button type="button" class="matrix-bulk-btn" onclick="setBulkRadio('zen')">全角</button></td>
+          </tr>
+          <tr>
+            <td>半角へ</td>
+            <td><input type="radio" name="m_num" value="han"></td>
+            <td><input type="radio" name="m_alpha" value="han"></td>
+            <td><input type="radio" name="m_kana" value="han"></td>
+            <td><input type="radio" name="m_sym" value="han"></td>
+            <td><input type="radio" name="m_space" value="han"></td>
+            <td><button type="button" class="matrix-bulk-btn" onclick="setBulkRadio('han')">半角</button></td>
+          </tr>
+          <tr>
+            <td>変換しない</td>
+            <td><input type="radio" name="m_num" value="none" checked></td>
+            <td><input type="radio" name="m_alpha" value="none" checked></td>
+            <td><input type="radio" name="m_kana" value="none" checked></td>
+            <td><input type="radio" name="m_sym" value="none" checked></td>
+            <td><input type="radio" name="m_space" value="none" checked></td>
+            <td><button type="button" class="matrix-bulk-btn" onclick="setBulkRadio('none')">なし</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- =====================================================
+       ④結果パネル：メイン指標（文字数）＋内訳（改行/空白/行数）
+       ===================================================== -->
+  <div class="result-panel">
+    <div class="result-main">
+      <div class="result-label">文字数（全体）</div>
+      <div>
+        <span class="result-number placeholder" id="resultNum">—</span>
+        <span class="result-unit">文字</span>
+      </div>
+      <div class="result-sub" id="resultSub"></div>
+    </div>
+    <div class="breakdown-wrap">
+      <div class="breakdown">
+        <div class="breakdown-item">
+          <div class="b-num placeholder" id="bA">—</div>
+          <div class="b-label">改行数</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="b-num placeholder" id="bB">—</div>
+          <div class="b-label">空白スペース数</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="b-num placeholder" id="bC">—</div>
+          <div class="b-label">行数</div>
+        </div>
+      </div>
+
+      <!-- バイト数ミニグリッド（breakdownクラスを流用・☆不要なら丸ごと削除可） -->
+      <div class="byte-grid-title">▶ バイト数シミュレーション</div>
+      <div class="breakdown">
+        <div class="breakdown-item">
+          <div class="b-num placeholder" id="byteUtf8">—</div>
+          <div class="b-label">UTF-8</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="b-num placeholder" id="byteUtf16">—</div>
+          <div class="b-label">UTF-16</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="b-num placeholder" id="byteSjis">—</div>
+          <div class="b-label">Shift-JIS</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="b-num placeholder" id="byteEucjp">—</div>
+          <div class="b-label">EUC-JP</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="b-num placeholder" id="byteJis">—</div>
+          <div class="b-label">JIS</div>
+        </div>
+      </div>
+
+      <!-- 変換結果テキストエリア -->
+      <div class="text-io-label" style="margin-top:14px;">
+        <label for="outputText">変換結果欄</label>
+        <button type="button" class="btn-copy io-copy-btn" id="btnCopyOutput" onclick="copyOutputText()">📋 コピー</button>
+      </div>
+      <textarea id="outputText" class="io-textarea" readonly placeholder="変換結果がここに表示されます..."></textarea>
+
+      <!-- 結果アクションボタン（共通処理はcommon.js側、書き換え不要） -->
+      <div class="copy-actions" style="margin-top:12px;">
+        <button class="btn-action" id="btnCopyText" onclick="copyResultText()" disabled>📄 条件+文字数をコピー</button>
+        <button class="btn-action" id="btnCopyUrlInputs" onclick="copyResultUrlInputs()" disabled>🔗 入力値URLコピー</button>
+        <button class="btn-action" id="btnQrInputs" onclick="showQrInputs()" disabled>📷 QRで送る</button>
+        <button class="btn-action" id="btnCopyExcel" onclick="copyResultExcel()" disabled>📊 Excel用コピー</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================
+       ⑤処理法則の説明（詳細情報は折りたたんで1画面収まりを優先）
+       ===================================================== -->
+  <details class="rule-doc">
+    <summary>💡 変換・解析の処理法則を見る</summary>
+    <h4>1. 文章解析の法則</h4>
+    <ul>
+      <li>文字数：JavaScriptの string.length に基づく（サロゲートペアは2文字扱い）</li>
+      <li>改行数／行数：\n（LF）・\r\n（CRLF）を検知。行数＝改行数+1</li>
+      <li>空白スペース数：半角スペース（U+0020）と全角スペース（U+3000）の合計</li>
+      <li>バイト数：UTF-8/UTF-16は可変長で正確に算出。Shift-JIS/EUC-JP/JISは標準的なマッピングでシミュレート計算</li>
+    </ul>
+    <h4>2. 全角・半角マトリクス変換の法則</h4>
+    <ul>
+      <li>数字・英字：半角⇔全角をコード差分0xFEE0でマッピング変換</li>
+      <li>カナ：半角カタカナ（濁点・半濁点含む）と全角カタカナを合成・分解しながら相互変換</li>
+      <li>記号：保護指定文字は変換ロジックをバイパスして維持</li>
+      <li>空白：半角スペース⇔全角スペースを相互置換</li>
+    </ul>
+    <h4>3. 特殊変換・改行の法則</h4>
+    <ul>
+      <li>ひらがな⇔カタカナ：コード差分0x60を利用して相互変換</li>
+      <li>NFKC正規化：Unicode互換等価性に基づく標準化</li>
+      <li>「。」で改行：句点の直後に改行を挿入（重複改行は防止）</li>
+      <li>任意文字数で改行：半角0.5文字カウントONの場合、半角文字を0.5文字換算して改行位置を決定</li>
+    </ul>
+  </details>
+
+  <!-- シェアエリア（共通・触らない） -->
+  <div id="shareAreaSlot"></div>
+
+  <!-- リセットボタン（共通・触らない） -->
+  <div id="resetBtnSlot"></div>
+
+  <!-- 下部ナビ（共通・触らない） -->
+  <div id="bottomNavSlot"></div>
+
+  <!-- 広告エリア（共通・触らない） -->
+  <div id="adAreaSlot"></div>
+
+</div><!-- /.container -->
+
+<!-- QRコードモーダル（共通・触らない） -->
+<div id="qrModalSlot"></div>
+
+<!-- フッター（共通・触らない） -->
+<div id="footerSlot"></div>
+
+<!-- ★共通JS（loadRecommends／シェア／コピー／保存復元等）本番パスに書き換える -->
+<script src="/common.js"></script>
+
+<!-- =====================================================
+     ★ここから下だけがツール固有部分
+     ===================================================== -->
+<script>
+/* =====================================================
+   設定（★ツールごとに書き換える）
+   ===================================================== */
+const CURRENT_TOOL_ID = 'bunsho-henkan-kaiseki';
+const STORAGE_KEY = 'bunsho-henkan-kaiseki_inputs';
+
+// LocalStorageに保存する項目
+// ※全角半角マトリクスのラジオボタン（m_num等）はid未指定のname属性のため
+//   common.jsの汎用保存機構の対象外。保存したくなった場合はid付与＋
+//   このリストへの追加に加えて、restoreの拡張が別途必要になる点に注意
+const STORAGE_FIELDS = [
+  'inputText', 'wrapLength', 'halfCharCount', 'breakPeriod',
+  'hiraToKata', 'kataToHira', 'useNfkc', 'excludeChars'
+];
+
+// テキスト／Excelコピー時に「入力条件」として表示するラベル
+// ※原文（inputText）は長文になりがちなので条件一覧には含めない
+const INPUT_LABELS = {
+  wrapLength: '任意改行文字数',
+  halfCharCount: '半角0.5文字カウント',
+  breakPeriod: '句点で改行',
+  hiraToKata: 'ひらがな→カタカナ',
+  kataToHira: 'カタカナ→ひらがな',
+  useNfkc: 'NFKC正規化',
+  excludeChars: '変換除外文字',
+};
+
+// 結果表示ラベル（メイン＝文字数、サブ＝改行/空白/行数）
+const RESULT_LABELS = {
+  main: '文字数',
+  subA: '改行数',
+  subB: '空白スペース数',
+  subC: '行数',
+};
+
+/* =====================================================
+   全角半角変換用マッピングテーブル（固定データ）
+   ===================================================== */
+const kanaMap = {
+  'ｶﾞ':'ガ','ｷﾞ':'ギ','ｸﾞ':'グ','ｹﾞ':'ゲ','ｺﾞ':'ゴ','ｻﾞ':'ザ','ｼﾞ':'ジ','ｽﾞ':'ズ','ｾﾞ':'ゼ','ｿﾞ':'ゾ',
+  'ﾀﾞ':'ダ','ﾁﾞ':'ヂ','ﾂﾞ':'ヅ','ﾃﾞ':'デ','ﾄﾞ':'ド','ﾊﾞ':'バ','ﾋﾞ':'ビ','ﾌﾞ':'ブ','ﾍﾞ':'ベ','ﾎﾞ':'ボ',
+  'ﾊﾟ':'パ','ﾋﾟ':'ピ','ﾌﾟ':'プ','ﾍﾟ':'ペ','ﾎﾟ':'ポ','ｳﾞ':'ヴ','ﾜﾞ':'ヷ','ｦﾞ':'ヺ',
+  'ｱ':'ア','ｲ':'イ','ｳ':'ウ','ｴ':'エ','ｵ':'オ','ｶ':'カ','ｷ':'キ','ｸ':'ク','ｹ':'ケ','ｺ':'コ',
+  'ｻ':'サ','ｼ':'シ','ｽ':'ス','ｾ':'セ','ｿ':'ソ','ﾀ':'タ','ﾁ':'チ','ﾂ':'ツ','ﾃ':'テ','ﾄ':'ト',
+  'ﾅ':'ナ','ﾆ':'ニ','ﾇ':'ヌ','ﾈ':'ネ','ﾉ':'ノ','ﾊ':'ハ','ﾋ':'ヒ','ﾌ':'フ','ﾍ':'ヘ','ﾎ':'ホ',
+  'ﾏ':'マ','ﾐ':'ミ','ﾑ':'ム','ﾒ':'メ','ﾓ':'モ','ﾔ':'ヤ','ﾕ':'ユ','ﾖ':'ヨ','ﾗ':'ラ','ﾘ':'リ',
+  'ﾙ':'ル','ﾚ':'レ','ﾛ':'ロ','ﾜ':'ワ','ｦ':'ヲ','ﾝ':'ン','ｧ':'ァ','ｨ':'ィ','ｩ':'ゥ','ｪ':'ェ',
+  'ｫ':'ォ','ｯ':'ッ','ｬ':'ャ','ｭ':'ュ','ｮ':'ョ','ヰ':'ヰ','ヱ':'ヱ',
+  'ｰ':'ー','｡':'。','､':'、','･':'・','｢':'「','｣':'」'
+};
+const revKanaMap = {};
+Object.keys(kanaMap).forEach(k => { revKanaMap[kanaMap[k]] = k; });
+
+const asciiSymbolsHan = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
+const asciiSymbolsZen = "！”＃＄％＆’（）＊＋，－．／：；＜＝＞？＠［＼］＾＿｀｛｜｝～";
+
+/* =====================================================
+   【解析】原文から各種カウントを算出する
+   ===================================================== */
+function analyzeText(text) {
+  const newlineCount = (text.match(/\n/g) || []).length;
+  const spaceCount = (text.match(/[ 　]/g) || []).length; // 半角+全角スペース
+  const lineCount = text.length > 0 ? text.split(/\r\n|\r|\n/).length : 0;
+  return { charCount: text.length, newlineCount, spaceCount, lineCount };
+}
+
+/* =====================================================
+   【バイト数シミュレーション】UTF-8/16, Shift-JIS, EUC-JP, JIS
+   ===================================================== */
+function calculateBytesSim(str) {
+  let utf8 = 0, utf16 = 0, sjis = 0, euc = 0, jis = 0;
+  let jisState = 'ASCII'; // ASCII, KANA, KANJI
+
+  for (let i = 0; i < str.length; i++) {
+    let code = str.charCodeAt(i);
+    let isSurrogate = (code >= 0xD800 && code <= 0xDBFF);
+
+    if (isSurrogate) { utf8 += 4; utf16 += 4; i++; }
+    else {
+      utf16 += 2;
+      if (code <= 0x7F) utf8 += 1;
+      else if (code <= 0x7FF) utf8 += 2;
+      else utf8 += 3;
+    }
+
+    let cp = code;
+    if (isSurrogate && i < str.length) {
+      let next = str.charCodeAt(i);
+      cp = ((code - 0xD800) << 10) + (next - 0xDC00) + 0x10000;
+    }
+
+    if (cp <= 0x7F) {
+      sjis += 1; euc += 1;
+      if (jisState !== 'ASCII') { jis += 3; jisState = 'ASCII'; }
+      jis += 1;
+    } else if (cp >= 0xFF61 && cp <= 0xFF9F) {
+      sjis += 1; euc += 2;
+      if (jisState !== 'KANA') { jis += 3; jisState = 'KANA'; }
+      jis += 1;
+    } else {
+      sjis += 2; euc += 2;
+      if (jisState !== 'KANJI') { jis += 3; jisState = 'KANJI'; }
+      jis += 2;
+    }
+  }
+  if (jisState !== 'ASCII' && str.length > 0) jis += 3;
+
+  return { utf8, utf16, sjis, euc, jis };
+}
+
+/* =====================================================
+   除外文字判定（かぎ括弧・ASCII記号の全半角ペアも考慮）
+   ===================================================== */
+function isExcluded(char, excludeList) {
+  if (excludeList.includes(char)) return true;
+  if (char === '「' && excludeList.includes('｢')) return true;
+  if (char === '」' && excludeList.includes('｣')) return true;
+  if (char === '｢' && excludeList.includes('「')) return true;
+  if (char === '｣' && excludeList.includes('」')) return true;
+
+  let idxHan = asciiSymbolsHan.indexOf(char);
+  if (idxHan !== -1 && excludeList.includes(asciiSymbolsZen[idxHan])) return true;
+  let idxZen = asciiSymbolsZen.indexOf(char);
+  if (idxZen !== -1 && excludeList.includes(asciiSymbolsHan[idxZen])) return true;
+
+  return false;
+}
+
+/* =====================================================
+   【全角半角マトリクス変換】1文字ずつ走査して変換する
+   ===================================================== */
+function convertText(text, opts) {
+  const { mNum, mAlpha, mKana, mSym, mSpace, excludeList } = opts;
+  let result = "";
+  let i = 0;
+
+  while (i < text.length) {
+    let char = text[i];
+    let code = text.charCodeAt(i);
+
+    // 【最優先】除外指定文字
+    if (isExcluded(char, excludeList)) { result += char; i++; continue; }
+
+    // 空白
+    if (char === ' ' || char === '　') {
+      if (mSpace === 'zen') result += '　';
+      else if (mSpace === 'han') result += ' ';
+      else result += char;
+      i++; continue;
+    }
+
+    // 数字
+    if ((code >= 48 && code <= 57) || (code >= 0xFF10 && code <= 0xFF19)) {
+      if (mNum === 'zen' && code <= 57) result += String.fromCharCode(code + 0xFEE0);
+      else if (mNum === 'han' && code >= 0xFF10) result += String.fromCharCode(code - 0xFEE0);
+      else result += char;
+      i++; continue;
+    }
+
+    // 英字
+    if ((code >= 65 && code <= 90) || (code >= 97 && code <= 122) || (code >= 0xFF21 && code <= 0xFF3A) || (code >= 0xFF41 && code <= 0xFF5A)) {
+      if (mAlpha === 'zen' && code <= 122) result += String.fromCharCode(code + 0xFEE0);
+      else if (mAlpha === 'han' && code >= 0xFF21) result += String.fromCharCode(code - 0xFEE0);
+      else result += char;
+      i++; continue;
+    }
+
+    // かぎ括弧の専用処理ルート
+    if (char === '「' || char === '」' || char === '｢' || char === '｣') {
+      if (mSym === 'zen') {
+        if (char === '｢') result += '「';
+        else if (char === '｣') result += '」';
+        else result += char;
+      } else if (mSym === 'han') {
+        if (char === '「') result += '｢';
+        else if (char === '」') result += '｣';
+        else result += char;
+      } else result += char;
+      i++; continue;
+    }
+
+    // カナ
+    let isHanKana = (code >= 0xFF61 && code <= 0xFF9F);
+    let isZenKana = (code >= 0x30A1 && code <= 0x30FE);
+    if (isHanKana || isZenKana) {
+      if (mKana === 'zen' && isHanKana) {
+        if (i + 1 < text.length) {
+          let nextChar = text[i + 1];
+          if (nextChar === 'ﾞ' || nextChar === 'ﾟ') {
+            let pair = char + nextChar;
+            if (kanaMap[pair]) { result += kanaMap[pair]; i += 2; continue; }
+          }
+        }
+        result += kanaMap[char] || char; i++; continue;
+      } else if (mKana === 'han' && isZenKana) {
+        result += revKanaMap[char] || char; i++; continue;
+      }
+    }
+
+    // 記号
+    let idxHanSym = asciiSymbolsHan.indexOf(char);
+    let idxZenSym = asciiSymbolsZen.indexOf(char);
+    let isZenSymbolGeneral = (code >= 0x2000 && code <= 0x206F) || (code >= 0x3000 && code <= 0x303F) ||
+      (code >= 0xFF00 && code <= 0xFFEF && !isHanKana &&
+       !((code >= 0xFF10 && code <= 0xFF19)) && !((code >= 0xFF21 && code <= 0xFF3A)) && !((code >= 0xFF41 && code <= 0xFF5A)));
+
+    if (idxHanSym !== -1 || idxZenSym !== -1 || isZenSymbolGeneral) {
+      if (mSym === 'zen') {
+        if (idxHanSym !== -1) result += asciiSymbolsZen[idxHanSym];
+        else result += char;
+      } else if (mSym === 'han') {
+        if (idxZenSym !== -1) result += asciiSymbolsHan[idxZenSym];
+        else if (code >= 0xFF00 && code <= 0xFFEF) result += String.fromCharCode(code - 0xFEE0);
+        else result += char;
+      } else result += char;
+      i++; continue;
+    }
+
+    result += char;
+    i++;
+  }
+
+  return result;
+}
+
+function hiraToKataConvert(str) {
+  return str.replace(/[\u3041-\u3096]/g, s => String.fromCharCode(s.charCodeAt(0) + 0x60));
+}
+function kataToHiraConvert(str) {
+  return str.replace(/[\u30a1-\u30f6]/g, s => String.fromCharCode(s.charCodeAt(0) - 0x60));
+}
+
+/* =====================================================
+   【任意文字数で改行】半角0.5文字カウントに対応
+   ===================================================== */
+function wrapByLength(text, wrapLen, halfCharCount) {
+  let lines = text.split('\n');
+  let wrappedLines = [];
+
+  lines.forEach(line => {
+    let currentLine = "";
+    let currentLength = 0;
+    let charArray = Array.from(line);
+
+    for (let c of charArray) {
+      let cCode = c.charCodeAt(0);
+      let isHalf = false;
+      if (halfCharCount) {
+        if (cCode <= 0x7F || (cCode >= 0xFF61 && cCode <= 0xFF9F) || c === '｢' || c === '｣') isHalf = true;
+      }
+      let weight = isHalf ? 0.5 : 1.0;
+
+      if (currentLength + weight > wrapLen && currentLine.length > 0) {
+        wrappedLines.push(currentLine);
+        currentLine = "";
+        currentLength = 0;
+      }
+      currentLine += c;
+      currentLength += weight;
+    }
+    if (currentLine.length > 0) wrappedLines.push(currentLine);
+  });
+
+  return wrappedLines.join('\n');
+}
+
+/* =====================================================
+   マトリクス一括指定ボタン（全角/半角/なし）
+   ===================================================== */
+function setBulkRadio(value) {
+  const targets = ['m_num', 'm_alpha', 'm_kana', 'm_sym', 'm_space'];
+  targets.forEach(name => {
+    const radios = document.getElementsByName(name);
+    for (let r of radios) { if (r.value === value) r.checked = true; }
+  });
+  onInputChange(); // common.js: 保存＋再計算
+}
+
+function getRadioMode(name) {
+  const checked = document.querySelector(`input[name="${name}"]:checked`);
+  return checked ? checked.value : 'none';
+}
+
+/* =====================================================
+   【入力取得】
+   ===================================================== */
+function calculateInputs() {
+  return {
+    text: document.getElementById('inputText').value,
+    wrapLen: parseInt(document.getElementById('wrapLength').value, 10) || 0,
+    halfCharCount: document.getElementById('halfCharCount').checked,
+    breakPeriod: document.getElementById('breakPeriod').checked,
+    hiraToKata: document.getElementById('hiraToKata').checked,
+    kataToHira: document.getElementById('kataToHira').checked,
+    useNfkc: document.getElementById('useNfkc').checked,
+    excludeList: document.getElementById('excludeChars').value,
+    mNum: getRadioMode('m_num'),
+    mAlpha: getRadioMode('m_alpha'),
+    mKana: getRadioMode('m_kana'),
+    mSym: getRadioMode('m_sym'),
+    mSpace: getRadioMode('m_space'),
+  };
+}
+
+/* =====================================================
+   【計算】解析＋変換をまとめて実行する
+   - 解析（文字数等）は原文（NFKC正規化前）に対して行う
+   - 変換はNFKC正規化後のテキストに対して行う
+   ===================================================== */
+function calculateResult(inputs) {
+  const analysis = analyzeText(inputs.text);
+  const bytes = calculateBytesSim(inputs.text);
+
+  let workingText = inputs.useNfkc ? inputs.text.normalize('NFKC') : inputs.text;
+
+  let converted = convertText(workingText, {
+    mNum: inputs.mNum, mAlpha: inputs.mAlpha, mKana: inputs.mKana,
+    mSym: inputs.mSym, mSpace: inputs.mSpace, excludeList: inputs.excludeList
+  });
+
+  if (inputs.hiraToKata) converted = hiraToKataConvert(converted);
+  if (inputs.kataToHira) converted = kataToHiraConvert(converted);
+  if (inputs.breakPeriod) converted = converted.replace(/。/g, "。\n").replace(/\n+/g, "\n");
+  if (inputs.wrapLen > 0) converted = wrapByLength(converted, inputs.wrapLen, inputs.halfCharCount);
+
+  return {
+    main: analysis.charCount,
+    subA: analysis.newlineCount,
+    subB: analysis.spaceCount,
+    subC: analysis.lineCount,
+    bytes: bytes,
+    convertedText: converted,
+  };
+}
+
+/* =====================================================
+   【表示】
+   ===================================================== */
+function setNumDisplay(id, value) {
+  const el = document.getElementById(id);
+  el.textContent = value.toLocaleString();
+  el.classList.remove('placeholder');
+}
+
+function displayResult(result) {
+  setNumDisplay('resultNum', result.main);
+  setNumDisplay('bA', result.subA);
+  setNumDisplay('bB', result.subB);
+  setNumDisplay('bC', result.subC);
+
+  setNumDisplay('byteUtf8', result.bytes.utf8);
+  setNumDisplay('byteUtf16', result.bytes.utf16);
+  setNumDisplay('byteSjis', result.bytes.sjis);
+  setNumDisplay('byteEucjp', result.bytes.euc);
+  setNumDisplay('byteJis', result.bytes.jis);
+
+  document.getElementById('outputText').value = result.convertedText;
+
+  ['btnCopyText', 'btnCopyUrlInputs', 'btnQrInputs', 'btnCopyExcel'].forEach(id => {
+    document.getElementById(id).disabled = false;
+  });
+}
+
+/* =====================================================
+   リセットボタン押下時の追加処理（common.jsのresetAll()の後に自動で呼ばれる）
+   ===================================================== */
+function onResetExtra() {
+  document.getElementById('outputText').value = '';
+  ['byteUtf8', 'byteUtf16', 'byteSjis', 'byteEucjp', 'byteJis'].forEach(id => {
+    const el = document.getElementById(id);
+    el.textContent = '—';
+    el.classList.add('placeholder');
+  });
+  document.getElementById('excludeChars').value = '「」、。・';
+  setBulkRadio('none');
+}
+
+/* =====================================================
+   変換結果テキストエリア専用のコピー機能
+   （common.jsのcopyToClipboard()を再利用）
+   ===================================================== */
+function copyOutputText() {
+  const text = document.getElementById('outputText').value;
+  copyToClipboard(text, 'btnCopyOutput', '📋 コピー');
+}
+
+/* =====================================================
+   【シェア用URL／テキスト】
+   ===================================================== */
+function buildShareUrl() {
+  return location.href.split('?')[0];
+}
+function buildShareText(result) {
+  return `文章解析＆全角半角変換ツール\n文字数・行数・バイト数を瞬時に解析！全角⇔半角変換もワンクリックでできます。`;
+}
+
+/* =====================================================
+   イベント登録（入力・設定変更のたびに保存＋再計算）
+   ===================================================== */
+document.getElementById('inputText').addEventListener('input', onInputChange);
+document.getElementById('wrapLength').addEventListener('input', onInputChange);
+document.getElementById('excludeChars').addEventListener('input', onInputChange);
+
+['halfCharCount', 'breakPeriod', 'hiraToKata', 'kataToHira', 'useNfkc'].forEach(id => {
+  document.getElementById(id).addEventListener('change', onInputChange);
+});
+
+document.querySelectorAll('input[type="radio"]').forEach(radio => {
+  radio.addEventListener('change', onInputChange);
+});
+</script>
+</body>
+</html>
