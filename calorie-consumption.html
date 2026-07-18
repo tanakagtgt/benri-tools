@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<link rel="canonical" href="https://arigato-tools.com/calorie-consumption">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NXJCSR0EX1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-NXJCSR0EX1');
+</script>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>消費カロリー計算ツール｜TDEE・基礎代謝を無料計算</title>
+<meta name="description" content="年齢・身長・体重・活動レベルから1日の消費カロリー(TDEE)と基礎代謝(BMR)を無料で計算。体脂肪率を入力すればより高精度なKatch-McArdle式にも対応。">
+
+<meta property="og:title" content="消費カロリー計算ツール｜TDEE・基礎代謝を無料計算">
+<meta property="og:description" content="年齢・身長・体重・活動レベルから1日の消費カロリー(TDEE)と基礎代謝(BMR)を無料で計算。体脂肪率を入力すればより高精度なKatch-McArdle式にも対応。">
+<meta property="og:url" content="https://arigato-tools.com/calorie-consumption">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="便利ツール集">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+
+<!-- QRコード生成ライブラリ（common.jsのshowQrで使用） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<!-- ★共通CSS：本番パスに合わせて調整済み -->
+<link rel="stylesheet" href="/common.css">
+
+</head>
+<body>
+<div class="container">
+
+  <!-- ナビ：ツール一覧に戻るボタン＋おすすめツール（共通・common.jsが自動注入） -->
+  <div id="topNavSlot"></div>
+
+  <!-- ヘッダー -->
+  <header>
+    <h1>🔥 消費カロリー計算ツール（TDEE・基礎代謝）</h1>
+    <p class="subtitle">
+      ※ 年齢・身長・体重は必須項目です<br>
+      ※ 体脂肪率を入力すると高精度なKatch-McArdle式も選べます
+    </p>
+  </header>
+
+  <!-- =====================================================
+       入力カード
+       - スマホ1画面に収まるよう、関連項目は2列グリッドでまとめる
+       - 任意項目（体脂肪率・筋肉量）はセクションを分けて区別
+       ===================================================== -->
+  <div class="card">
+
+    <!-- 性別（1列：選択肢が短いので幅いっぱいでOK） -->
+    <div class="input-group">
+      <label for="sex">性別</label>
+      <select id="sex" onchange="onInputChange()">
+        <option value="m">男性</option>
+        <option value="f">女性</option>
+      </select>
+    </div>
+
+    <!-- 年齢・身長（2列） -->
+    <div class="input-grid">
+      <div class="input-group">
+        <label for="age">年齢</label>
+        <input type="number" id="age" inputmode="decimal" placeholder="例：35" oninput="onInputChange()">
+      </div>
+      <div class="input-group">
+        <label for="h">身長(cm)</label>
+        <input type="number" id="h" inputmode="decimal" placeholder="例：170" oninput="onInputChange()">
+      </div>
+    </div>
+
+    <!-- 体重・活動レベル（2列） -->
+    <div class="input-grid">
+      <div class="input-group">
+        <label for="w">体重(kg)</label>
+        <input type="number" id="w" inputmode="decimal" placeholder="例：65" oninput="onInputChange()">
+      </div>
+      <div class="input-group">
+        <label for="act">活動レベル</label>
+        <select id="act" onchange="onInputChange()">
+          <option value="1.2">ほぼ運動しない</option>
+          <option value="1.375">軽い運動</option>
+          <option value="1.55">普通</option>
+          <option value="1.725">かなり運動</option>
+          <option value="1.9">非常に活動的</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 任意項目：体脂肪率・筋肉量（2列） -->
+    <div class="section-title">▶ 任意項目（入力すると精度アップ）</div>
+    <div class="input-grid">
+      <div class="input-group">
+        <label for="bf">体脂肪率(%)</label>
+        <input type="number" id="bf" inputmode="decimal" placeholder="例：20" oninput="onInputChange()">
+      </div>
+      <div class="input-group">
+        <label for="mm">筋肉量(kg)</label>
+        <!-- ※現在の計算式では未使用。
+             体組成計の「筋肉量」は骨格筋量であり、Cunningham式が必要とする
+             除脂肪体重(LBM＝体重−脂肪量。骨・臓器・水分等を含む)とは別物のため、
+             誤差なく変換する簡易的な方法がない（詳細は下部「計算方法について」参照）。
+             現状はbf(体脂肪率)からLBMを算出する方式を採用し、本欄は
+             将来「除脂肪体重を直接入力できる体組成計」対応等の拡張用に保持している。 -->
+        <input type="number" id="mm" inputmode="decimal" placeholder="例：30" oninput="onInputChange()">
+      </div>
+    </div>
+
+    <!-- 計算方式（1列） -->
+    <div class="input-group">
+      <label for="mode">計算方式</label>
+      <select id="mode" onchange="onInputChange()">
+        <option value="auto">自動（体脂肪率入力時は高精度式）</option>
+        <option value="mifflin">標準式（Mifflin-St Jeor）</option>
+        <option value="jpn">簡易式</option>
+        <option value="katch">除脂肪体重ベース（Katch-McArdle／Cunningham1991式）</option>
+        <option value="cunningham1980">除脂肪体重ベース・筋肉量が多い方向け（Cunningham1980式）</option>
+      </select>
+    </div>
+
+    <button class="btn-calc" onclick="calculate()">計算する</button>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <!-- =====================================================
+       結果パネル
+       main   ：1日の消費カロリー(TDEE)
+       bA     ：基礎代謝(BMR)
+       bB     ：BMI
+       bC     ：標準体重
+       resultSub：減量／増量の目安（補足情報。コピー機能の対象外）
+       ===================================================== -->
+  <div class="result-panel">
+    <div class="result-main">
+      <div class="result-label">1日の消費カロリー（TDEE）</div>
+      <div>
+        <span class="result-number placeholder" id="resultNum">—</span>
+        <span class="result-unit">kcal</span>
+      </div>
+      <div class="result-sub" id="resultSub"></div>
+    </div>
+    <div class="breakdown-wrap">
+      <div class="breakdown">
+        <div class="breakdown-item">
+          <div class="b-num placeholder" id="bA">—</div>
+          <div class="b-label">基礎代謝(BMR)</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="b-num placeholder" id="bB">—</div>
+          <div class="b-label">BMI</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="b-num placeholder" id="bC">—</div>
+          <div class="b-label">標準体重(kg)</div>
+        </div>
+      </div>
+
+      <div class="copy-actions">
+        <button class="btn-action" id="btnCopyText" onclick="copyResultText()" disabled>📄 テキストでコピー</button>
+        <button class="btn-action" id="btnCopyUrlInputs" onclick="copyResultUrlInputs()" disabled>🔗 入力値URLコピー</button>
+        <button class="btn-action" id="btnQrInputs" onclick="showQrInputs()" disabled>📷 QRで送る</button>
+        <button class="btn-action" id="btnCopyExcel" onclick="copyResultExcel()" disabled>📊 Excel用コピー</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================
+       計算根拠の説明（折りたたみ）
+       - スマホ1画面の情報量を崩さないよう <details> で初期は閉じておく
+       - 出典は各式の原著論文／再解析論文ベース
+       ===================================================== -->
+  <details class="card" style="margin-bottom:14px;">
+    <summary style="cursor:pointer;font-weight:700;color:var(--color-primary);font-size:13px;">
+      ▶ 計算方法・計算根拠について（タップで開く）
+    </summary>
+    <div style="font-size:12px;line-height:1.9;color:var(--color-text-sub);margin-top:10px;">
+
+      <p style="margin-bottom:10px;">
+        このツールは基礎代謝(BMR)を4種類の式から算出し、活動レベル係数を掛けて
+        1日の消費カロリー(TDEE)を求めています。どの式も統計的な推定式であり、
+        実測値とは個人差が生じる点にご注意ください。
+      </p>
+
+      <p style="font-weight:700;margin-bottom:4px;">①標準式（Mifflin-St Jeor式）</p>
+      <p style="margin-bottom:8px;">
+        男性：10×体重(kg)＋6.25×身長(cm)−5×年齢＋5<br>
+        女性：10×体重(kg)＋6.25×身長(cm)−5×年齢−161<br>
+        1990年にMifflinらが健康な成人498名のデータから作成した式。
+        複数の予測式を比較した系統的レビューでも、実測値の±10%以内に収まる精度が
+        最も高いとされており、本ツールでも標準式として採用しています。
+        （出典：Mifflin MD, et al. Am J Clin Nutr. 1990;51(2):241-247／
+        Frankenfield D, et al. J Am Diet Assoc. 2005;105(5):775-789）
+      </p>
+
+      <p style="font-weight:700;margin-bottom:4px;">②簡易式</p>
+      <p style="margin-bottom:8px;">
+        男性：13.4×体重＋4.8×身長−5.68×年齢＋88.36<br>
+        女性：9.25×体重＋3.1×身長−4.33×年齢＋447.6<br>
+        簡易的な参考値として掲載しています。
+      </p>
+
+      <p style="font-weight:700;margin-bottom:4px;">③除脂肪体重ベース（Katch-McArdle／Cunningham1991式）</p>
+      <p style="margin-bottom:8px;">
+        BMR＝370＋21.6×除脂肪体重(kg)<br>
+        除脂肪体重(LBM)＝体重×(1−体脂肪率/100)<br>
+        年齢・性別を使わず、体脂肪率から算出したLBMのみで推定する式。
+        Cunninghamが1991年に発表した再解析式で、通称Katch-McArdle式として
+        広く使われています。体脂肪率がわかっている場合、体格差の影響を
+        受けにくく標準式より精度が上がる場合があります。
+        （出典：Cunningham JJ. Am J Clin Nutr. 1991;54(6):963-969）
+      </p>
+
+      <p style="font-weight:700;margin-bottom:4px;">④除脂肪体重ベース・筋肉量が多い方向け（Cunningham1980式）</p>
+      <p style="margin-bottom:8px;">
+        BMR＝500＋22×除脂肪体重(kg)<br>
+        Cunninghamが1980年に発表した最初の式で、③の1991年版より
+        係数がやや大きく、同じLBMでも推定値が高めに出ます。
+        筋肉量が多いアスリート・トレーニー向けの推定として紹介されることが
+        多い式です。③・④のどちらが実態に近いかは体質による個人差が大きいため、
+        両方試して自分の体感（体重推移）に近い方を選ぶのがおすすめです。
+        （出典：Cunningham JJ. Am J Clin Nutr. 1980;33(11):2372-2374）
+      </p>
+
+      <p style="font-weight:700;margin-bottom:4px;">▶ 筋肉量欄について（現状未使用の理由）</p>
+      <p style="margin-bottom:0;">
+        体組成計が表示する「筋肉量」は骨格筋量であり、③④の式が必要とする
+        「除脂肪体重(LBM＝骨・臓器・水分等も含む、脂肪以外すべての重量)」とは
+        範囲が異なります。筋肉量に一定の係数を掛けてLBMに換算する簡易法も
+        存在しますが、体組成計の測定方式によって誤差が大きく、汎用的に
+        使える精度の変換式が確認できなかったため、本ツールでは採用を
+        見送っています（＝わかりません、が正直なところです）。
+        そのため現在は体脂肪率からLBMを算出する方式のみを採用しており、
+        筋肉量欄は将来「除脂肪体重を直接出力できる体組成計」に対応する際の
+        入力欄として保持しています。
+      </p>
+
+    </div>
+  </details>
+
+  <!-- シェアエリア（共通・common.jsが自動注入） -->
+  <div id="shareAreaSlot"></div>
+
+  <!-- リセットボタン（共通・common.jsが自動注入） -->
+  <div id="resetBtnSlot"></div>
+
+  <!-- 下部ナビ（共通・common.jsが自動注入） -->
+  <div id="bottomNavSlot"></div>
+
+  <!-- 広告エリア（共通・common.jsが自動注入） -->
+  <div id="adAreaSlot"></div>
+
+</div><!-- /.container -->
+
+<!-- QRコードモーダル（共通・common.jsが自動注入） -->
+<div id="qrModalSlot"></div>
+
+<!-- フッター（共通・common.jsが自動注入） -->
+<div id="footerSlot"></div>
+
+<!-- ★共通JS：本番パスに合わせて調整済み -->
+<script src="/common.js"></script>
+
+<!-- =====================================================
+     ★ここから下がツール固有部分
+     ===================================================== -->
+<script>
+/* =====================================================
+   設定
+   ===================================================== */
+
+// tools.json内のid（自分自身をおすすめから除外するため）
+const CURRENT_TOOL_ID = 'calorie-consumption';
+
+// localStorage保存キー
+const STORAGE_KEY = 'calorie-consumption_inputs';
+
+// LocalStorageに保存したいinput/selectのid一覧
+const STORAGE_FIELDS = ['sex', 'age', 'h', 'w', 'act', 'bf', 'mm', 'mode'];
+
+/* =====================================================
+   入力項目の表示ラベル（テキスト／Excelコピー用）
+   ===================================================== */
+const INPUT_LABELS = {
+  sex: '性別',
+  age: '年齢',
+  h: '身長(cm)',
+  w: '体重(kg)',
+  act: '活動レベル',
+  bf: '体脂肪率(%)',
+  mm: '筋肉量(kg)',
+  mode: '計算方式',
+};
+
+/* =====================================================
+   結果の表示ラベル（メイン・サブ結果）
+   ※減量／増量の目安はUI表示のみで、コピー機能の対象外
+   ===================================================== */
+const RESULT_LABELS = {
+  main: '1日の消費カロリー(TDEE)',
+  subA: '基礎代謝(BMR)',
+  subB: 'BMI',
+  subC: '標準体重(kg)',
+};
+
+/* =====================================================
+   【入力取得】
+   ===================================================== */
+function calculateInputs() {
+  return {
+    sex: document.getElementById('sex').value,
+    age: parseFloat(document.getElementById('age').value),
+    h: parseFloat(document.getElementById('h').value),
+    w: parseFloat(document.getElementById('w').value),
+    act: parseFloat(document.getElementById('act').value),
+    bf: parseFloat(document.getElementById('bf').value), // 任意：未入力ならNaN
+    mm: parseFloat(document.getElementById('mm').value), // 任意：現時点では計算未使用（将来拡張用）
+    mode: document.getElementById('mode').value,
+  };
+}
+
+/* =====================================================
+   【計算】
+   - 基礎代謝(BMR)は計算方式に応じて4種類の式から算出
+     ・mifflin        ：Mifflin-St Jeor式（標準・年齢/性別ベース）
+     ・jpn            ：簡易式
+     ・katch          ：Cunningham1991式＝Katch-McArdle式（体脂肪率必須）
+     ・cunningham1980 ：Cunningham1980式（体脂肪率必須・筋肉量が多い方はやや高め推定）
+     ・auto           ：体脂肪率入力あり→katch／なし→mifflin
+   - TDEE = BMR × 活動レベル係数
+   - 体脂肪率が必要なkatch／cunningham1980式で未入力の場合は計算不可（null）とする
+   @param {object} inputs - calculateInputs()の戻り値
+   @returns {object|null} 計算結果、入力不正はnull
+   ===================================================== */
+function calculateResult(inputs) {
+  const { sex, age, h, w, act, bf, mode } = inputs;
+
+  // 必須項目チェック
+  if (isNaN(age) || isNaN(h) || isNaN(w) || isNaN(act)) return null;
+
+  // 自動判定：体脂肪率入力があれば高精度式、なければ標準式
+  let useMode = mode;
+  if (useMode === 'auto') {
+    useMode = isNaN(bf) ? 'mifflin' : 'katch';
+  }
+
+  // katch／cunningham1980は体脂肪率が必須（LBM算出に使うため）。未入力なら計算不可
+  const needsLbm = (useMode === 'katch' || useMode === 'cunningham1980');
+  if (needsLbm && isNaN(bf)) return null;
+
+  let bmr;
+  if (useMode === 'mifflin') {
+    bmr = (sex === 'm') ? (10 * w + 6.25 * h - 5 * age + 5)
+                         : (10 * w + 6.25 * h - 5 * age - 161);
+  } else if (useMode === 'katch') {
+    // Cunningham 1991年版（＝Katch-McArdle式）
+    const lbm = w * (1 - bf / 100); // 除脂肪体重
+    bmr = 370 + 21.6 * lbm;
+  } else if (useMode === 'cunningham1980') {
+    // Cunningham 1980年版（筋肉量が多い方向け・やや高め推定）
+    const lbm = w * (1 - bf / 100); // 除脂肪体重
+    bmr = 500 + 22 * lbm;
+  } else {
+    // jpn：簡易式
+    bmr = (sex === 'm') ? (13.4 * w + 4.8 * h - 5.68 * age + 88.36)
+                         : (9.25 * w + 3.1 * h - 4.33 * age + 447.6);
+  }
+
+  const tdee = bmr * act;
+  const bmi = w / ((h / 100) ** 2);
+  const std = (h / 100) ** 2 * 22; // 標準体重（BMI22基準）
+
+  // 補足の目安値（result-subに表示。コピー機能の対象外）
+  const lose300 = tdee - 300;
+  const lose500 = tdee - 500;
+  const gain300 = tdee + 300;
+  const monthLoss = (500 * 30) / 7200; // -500kcal/日を1か月続けた場合の目安減量kg（体脂肪1kg≒7200kcalとして概算）
+
+  return {
+    main: Math.round(tdee),
+    subA: Math.round(bmr),
+    subB: Math.round(bmi * 10) / 10,
+    subC: Math.round(std * 10) / 10,
+    lose300: Math.round(lose300),
+    lose500: Math.round(lose500),
+    gain300: Math.round(gain300),
+    monthLoss: Math.round(monthLoss * 10) / 10,
+  };
+}
+
+/* =====================================================
+   【表示】
+   ===================================================== */
+function displayResult(result) {
+  const numEl = document.getElementById('resultNum');
+  numEl.textContent = result.main.toLocaleString();
+  numEl.classList.remove('placeholder');
+
+  const bAEl = document.getElementById('bA');
+  bAEl.textContent = result.subA.toLocaleString();
+  bAEl.classList.remove('placeholder');
+
+  const bBEl = document.getElementById('bB');
+  bBEl.textContent = result.subB.toLocaleString();
+  bBEl.classList.remove('placeholder');
+
+  const bCEl = document.getElementById('bC');
+  bCEl.textContent = result.subC.toLocaleString();
+  bCEl.classList.remove('placeholder');
+
+  // 減量／増量の目安を補足テキストとして表示
+  const subEl = document.getElementById('resultSub');
+  if (subEl) {
+    subEl.innerHTML =
+      `減量(-300kcal):${result.lose300.toLocaleString()}kcal　`
+      + `減量(-500kcal):${result.lose500.toLocaleString()}kcal　`
+      + `増量(+300kcal):${result.gain300.toLocaleString()}kcal<br>`
+      + `参考：-500kcal/日を1か月継続で約${result.monthLoss}kgの減量目安`;
+  }
+
+  ['btnCopyText', 'btnCopyUrlInputs', 'btnQrInputs', 'btnCopyExcel'].forEach(id => {
+    document.getElementById(id).disabled = false;
+  });
+}
+
+/* =====================================================
+   【シェア用URL生成】
+   - 入力値の引き継ぎは「入力値URLコピー」ボタン側で対応済みのため
+     シェアURLはトップページ（クエリなし）でシンプルに保つ
+   ===================================================== */
+function buildShareUrl() {
+  return location.href.split('?')[0];
+}
+
+/* =====================================================
+   【シェア用テキスト生成】
+   ===================================================== */
+function buildShareText(result) {
+  return `【消費カロリー計算ツール】\n年齢・身長・体重から1日の消費カロリー(TDEE)と基礎代謝を無料計算！`;
+}
+</script>
+</body>
+</html>
