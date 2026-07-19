@@ -1,0 +1,376 @@
+/* ==========================================================================
+   ベーススタイル & カラー定義 (白ベース・青アクセント・広めの余白)
+   ========================================================================== */
+:root {
+  --color-bg: #f8f9fa;
+  --color-surface: #ffffff;
+  --color-text: #212529;
+  --color-text-muted: #6c757d;
+  --color-primary: #007bff;
+  --color-primary-hover: #0056b3;
+  --color-accent: #28a745;
+  --color-accent-hover: #218838;
+  --color-danger: #dc3545;
+  --color-danger-hover: #bd2130;
+  --color-border: #dee2e6;
+  --radius: 8px;
+  --transition: all 0.2s ease-in-out;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.6;
+  padding-bottom: 80px; /* スマホ用ボトムバーの余白 */
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+/* ヘッダー */
+.main-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.main-header h1 {
+  font-size: 2rem;
+  color: var(--color-primary);
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: var(--color-text-muted);
+}
+
+/* セクション共通 */
+section {
+  background-color: var(--color-surface);
+  border-radius: var(--radius);
+  padding: 30px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--color-border);
+}
+
+/* ボタン基本設定 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+}
+
+.btn-large {
+  padding: 16px 32px;
+  font-size: 1.1rem;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  color: #fff;
+}
+.btn-primary:hover { background-color: var(--color-primary-hover); }
+
+.btn-secondary {
+  background-color: #e9ecef;
+  color: var(--color-text);
+}
+.btn-secondary:hover { background-color: #ced4da; }
+
+.btn-accent {
+  background-color: var(--color-primary); /* 青ベースのUIとして統合 */
+  color: #fff;
+}
+.btn-accent:hover { background-color: var(--color-primary-hover); }
+
+.btn-danger {
+  background-color: var(--color-danger);
+  color: #fff;
+}
+.btn-danger:hover { background-color: var(--color-danger-hover); }
+
+/* アップロードエリア */
+.upload-box {
+  border: 2px dashed var(--color-primary);
+  border-radius: var(--radius);
+  padding: 40px 20px;
+  text-align: center;
+  background-color: #f0f7ff;
+  transition: var(--transition);
+}
+
+.upload-box.dragover {
+  background-color: #e1f0ff;
+  transform: scale(1.01);
+}
+
+.upload-icon {
+  width: 48px;
+  height: 48px;
+  fill: var(--color-primary);
+  margin-bottom: 16px;
+}
+
+.upload-box p {
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.upload-box span {
+  display: block;
+  margin: 8px 0;
+  color: var(--color-text-muted);
+}
+
+/* マルチファイルタブ */
+.file-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.file-tab {
+  padding: 8px 16px;
+  background-color: #e9ecef;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: 1px solid var(--color-border);
+}
+
+.file-tab.active {
+  background-color: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+/* メタデータ情報 */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.info-item {
+  font-size: 0.95rem;
+}
+
+/* プレイヤーコントロール */
+.controls-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.controls-row:last-child {
+  margin-bottom: 0;
+}
+
+.sub-controls {
+  align-items: center;
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: var(--radius);
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-control {
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: #fff;
+}
+
+/* 波形表示 */
+#waveform {
+  background: #fdffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 10px 0;
+  position: relative;
+}
+
+.waveform-hints {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-top: 8px;
+}
+
+/* 手動追加ボックス */
+.manual-input-box {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* 分割点テーブル */
+.table-container {
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  margin-bottom: 24px;
+}
+
+.splits-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.splits-table th, .splits-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.splits-table th {
+  background-color: #f8f9fa;
+  position: sticky;
+  top: 0;
+}
+
+.splits-table tbody tr {
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.splits-table tbody tr:hover {
+  background-color: #f0f7ff;
+}
+
+/* エクスポート */
+.export-box {
+  background: #f0f7ff;
+  border: 1px solid #bde0ff;
+  padding: 20px;
+  border-radius: var(--radius);
+}
+
+.export-box h3 {
+  color: var(--color-primary);
+  margin-bottom: 8px;
+}
+
+.export-box p {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-bottom: 16px;
+}
+
+.export-buttons {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* ==========================================================================
+   スマートフォン専用レイアウト (下部固定ナビゲーション)
+   ========================================================================== */
+.mobile-sticky-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 68px;
+  background-color: #ffffff;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+  display: none; /* デフォルト非表示、メディアクエリで有効化 */
+  grid-template-columns: repeat(5, 1fr);
+  z-index: 9999;
+  border-top: 1px solid var(--color-border);
+}
+
+.mob-nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--color-text);
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.mob-nav-btn .icon {
+  font-size: 1.4rem;
+  margin-bottom: 2px;
+}
+
+.mob-nav-btn .label {
+  font-size: 0.7rem;
+  font-weight: bold;
+}
+
+.mob-nav-btn-main {
+  color: var(--color-primary);
+}
+
+.mob-nav-btn-accent {
+  color: #fd7e14; /* 分割アクションを目立たせる */
+}
+
+.mob-nav-btn-save {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  body {
+    padding-bottom: 90px;
+  }
+  
+  .container {
+    padding: 20px 10px;
+  }
+
+  section {
+    padding: 16px;
+  }
+
+  .mobile-sticky-nav {
+    display: grid;
+  }
+  
+  /* デスクトップ用の一部UI要素をスマホではすっきりさせる */
+  .history-controls {
+    display: none;
+  }
+}
