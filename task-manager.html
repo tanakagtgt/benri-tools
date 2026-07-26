@@ -1,0 +1,1737 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>タスク管理ツール｜重要度×緊急度マトリクス対応</title>
+<meta name="description" content="今日・明日・今週の絞り込み、優先度、タグ、ドラッグ＆ドロップ、重要度×緊急度の4象限マトリクスに対応したタスク管理ツール">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+
+<!-- ドラッグ＆ドロップ用ライブラリ（スマホのタッチ操作にも対応） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+
+<style>
+/* =====================================================
+   CSS変数（色・サイズの一元管理）
+   ★色を変えたいときはここだけ触ればOK
+   ===================================================== */
+:root{
+  --color-primary:#1a56db;
+  --color-primary-hover:#1546b8;
+  --color-primary-bg:#e8f0fe;
+  --color-primary-border:#c3d4f8;
+  --color-bg:#f4f6f9;
+  --color-card:#fff;
+  --color-border:#dde3ee;
+  --color-border-input:#c7d0e0;
+  --color-text:#222;
+  --color-text-sub:#555;
+  --color-text-muted:#666;
+  --color-text-label:#999;
+
+  /* 優先度カラー */
+  --pri-high:#d64545;
+  --pri-mid:#d98c1f;
+  --pri-low:#5a8f5a;
+
+  /* 4象限（重要度×緊急度）カラー */
+  --q1-color:#d64545; /* 重要かつ緊急　＝すぐやる */
+  --q1-bg:#fdeceb;
+  --q2-color:#1a7a5e; /* 重要だが緊急でない　＝計画してやる */
+  --q2-bg:#e7f5ef;
+  --q3-color:#d98c1f; /* 緊急だが重要でない　＝人に任せる/サクッとやる */
+  --q3-bg:#fdf3e3;
+  --q4-color:#8a8f98; /* 重要でも緊急でもない　＝後回し/やめる */
+  --q4-bg:#f0f1f3;
+
+  --radius-card:10px;
+  --radius-btn:8px;
+  --radius-input:7px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+
+body{
+  background:var(--color-bg);
+  color:var(--color-text);
+  font-family:'BIZ UDPGothic', sans-serif;
+  min-height:100vh;
+  -webkit-text-size-adjust:100%;
+  /* 下部タブ＋FABの分だけ余白を確保 */
+  padding-bottom:150px;
+}
+
+.container{width:100%;max-width:620px;margin:0 auto;padding:16px 12px 0;}
+
+/* =====================================================
+   ヘッダー
+   ===================================================== */
+header{margin-bottom:12px;}
+h1{
+  font-size:clamp(18px,5vw,22px);
+  font-weight:700;
+  color:var(--color-primary);
+  margin-bottom:2px;
+}
+.subtitle{font-size:11px;color:var(--color-text-muted);}
+
+/* =====================================================
+   現在日時カード（令和／西暦／曜日／時分）
+   ===================================================== */
+.now-card{
+  background:var(--color-card);
+  border:1px solid var(--color-border);
+  border-radius:var(--radius-card);
+  padding:12px 14px;
+  margin-bottom:10px;
+  text-align:center;
+  box-shadow:0 1px 3px rgba(0,0,0,0.05);
+}
+.now-card .now-date{
+  font-size:12.5px;
+  font-weight:700;
+  color:var(--color-text-sub);
+  margin-bottom:2px;
+}
+.now-card .now-time{
+  font-size:26px;
+  font-weight:700;
+  color:var(--color-primary);
+  letter-spacing:0.03em;
+}
+
+/* =====================================================
+   共通：ゾーン見出し（今からやること／タイマー／完了済みで共用）
+   ===================================================== */
+.zone-title{
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:0.05em;
+  margin-bottom:6px;
+}
+.zone-empty-hint{
+  font-size:10.5px;
+  color:var(--color-text-label);
+  text-align:center;
+  padding:8px 4px;
+}
+
+/* =====================================================
+   「今からやること」ドロップゾーン＋タイマー用の空きスペース
+   ===================================================== */
+.now-action-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-bottom:10px;
+}
+.now-action-zone{
+  background:#fff9e6;
+  border:2px dashed #e8c869;
+  border-radius:var(--radius-card);
+  padding:10px;
+  min-height:100px;
+  display:flex;
+  flex-direction:column;
+  cursor:pointer; /* ★空欄タップで新規タスク追加できるようにするための手がかり */
+}
+.now-action-zone .zone-title{color:#a67c00;}
+.now-action-list{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  min-height:36px; /* 空でもドロップできるように高さ確保 */
+}
+.now-action-zone .zone-empty-hint{display:none;}
+.now-action-zone.is-empty .zone-empty-hint{display:block;}
+
+.timer-placeholder-zone{
+  background:var(--color-input-bg);
+  border:2px dashed var(--color-border-input);
+  border-radius:var(--radius-card);
+  padding:10px;
+  min-height:100px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+.timer-placeholder-zone .zone-title{color:var(--color-text-muted);}
+.timer-placeholder-text{
+  font-size:10.5px;
+  color:var(--color-text-label);
+  line-height:1.6;
+}
+
+/* =====================================================
+   完了済みドロップゾーン
+   ===================================================== */
+.completed-zone{
+  background:#f0f7f2;
+  border:2px dashed #9bc9a8;
+  border-radius:var(--radius-card);
+  padding:10px;
+  margin-bottom:14px;
+  min-height:70px;
+  cursor:pointer; /* ★空欄タップで新規タスク追加できるようにするための手がかり */
+}
+.completed-zone .zone-title{color:#2f7a4a;}
+.completed-drop-list{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  min-height:34px; /* 空でもドロップできるように高さ確保 */
+}
+.completed-zone .zone-empty-hint{display:none;}
+.completed-zone.is-empty .zone-empty-hint{display:block;}
+
+/* =====================================================
+   検索バー＋表示切替（リスト／マトリクス）
+   ===================================================== */
+.toolbar{
+  display:flex;
+  gap:8px;
+  margin-bottom:10px;
+}
+.search-input{
+  flex:1;
+  border:1px solid var(--color-border-input);
+  border-radius:var(--radius-input);
+  background:var(--color-card);
+  font-family:inherit;
+  font-size:16px; /* iPhoneズーム防止のため16px以上必須 */
+  padding:10px 12px;
+  min-height:44px;
+}
+.view-toggle{
+  display:flex;
+  border:1px solid var(--color-border-input);
+  border-radius:var(--radius-input);
+  overflow:hidden;
+  flex-shrink:0;
+}
+.view-toggle button{
+  background:var(--color-card);
+  border:none;
+  font-family:inherit;
+  font-size:12px;
+  font-weight:700;
+  color:var(--color-text-sub);
+  padding:0 10px;
+  min-height:44px;
+  cursor:pointer;
+}
+.view-toggle button.active{background:var(--color-primary);color:#fff;}
+
+/* =====================================================
+   フィルタタブ（今日／明日／今週／予定なし／完了済み／すべて）
+   横スクロールで片手でも触れる
+   ===================================================== */
+.filter-tabs{
+  display:flex;
+  gap:6px;
+  overflow-x:auto;
+  padding-bottom:6px;
+  margin-bottom:10px;
+  scrollbar-width:none;
+}
+.filter-tabs::-webkit-scrollbar{display:none;}
+.filter-tab{
+  flex-shrink:0;
+  background:var(--color-card);
+  border:1px solid var(--color-border-input);
+  border-radius:999px;
+  font-family:inherit;
+  font-size:12px;
+  font-weight:700;
+  color:var(--color-text-sub);
+  padding:8px 14px;
+  min-height:36px;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.filter-tab.active{
+  background:var(--color-primary);
+  border-color:var(--color-primary);
+  color:#fff;
+}
+.filter-tab .count{
+  opacity:0.75;
+  margin-left:3px;
+}
+
+/* =====================================================
+   タグ絞り込みチップ（表示中タスクに含まれるタグのみ出す）
+   ===================================================== */
+.tag-filter-wrap{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-bottom:10px;
+}
+.tag-chip{
+  background:var(--color-primary-bg);
+  border:1px solid var(--color-primary-border);
+  border-radius:999px;
+  font-size:11px;
+  font-weight:700;
+  color:var(--color-primary);
+  padding:5px 10px;
+  cursor:pointer;
+}
+.tag-chip.active{background:var(--color-primary);color:#fff;}
+
+/* =====================================================
+   リスト表示：タスクカード
+   ===================================================== */
+#listView .task-list{display:flex;flex-direction:column;gap:8px;}
+
+.task-card{
+  background:var(--color-card);
+  border:1px solid var(--color-border);
+  border-left:4px solid var(--pri-mid);
+  border-radius:var(--radius-card);
+  padding:10px 12px;
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  box-shadow:0 1px 3px rgba(0,0,0,0.05);
+}
+.task-card.pri-high{border-left-color:var(--pri-high);}
+.task-card.pri-mid{border-left-color:var(--pri-mid);}
+.task-card.pri-low{border-left-color:var(--pri-low);}
+.task-card.done{opacity:0.55;}
+.task-card.done .task-title{text-decoration:line-through;}
+
+.task-card.sortable-ghost{opacity:0.3;}
+
+/* ドラッグハンドル：親指操作を邪魔しないよう右端に配置 */
+.drag-handle{
+  flex-shrink:0;
+  color:#c6ccd6;
+  font-size:18px;
+  cursor:grab;
+  padding:4px 2px;
+  min-width:26px;
+  min-height:36px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  touch-action:none;
+}
+
+.task-check{
+  flex-shrink:0;
+  width:22px;
+  height:22px;
+  margin-top:2px;
+  accent-color:var(--color-primary);
+}
+
+.task-main{flex:1;min-width:0;}
+.task-title{font-size:14px;font-weight:700;color:var(--color-text);word-break:break-word;}
+.task-note{
+  font-size:11.5px;
+  color:var(--color-text-muted);
+  margin-top:3px;
+  word-break:break-word;
+  white-space:pre-wrap;
+}
+.task-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:5px;
+}
+.meta-badge{
+  font-size:10px;
+  font-weight:700;
+  border-radius:5px;
+  padding:2px 7px;
+  white-space:nowrap;
+}
+.badge-due{background:var(--color-primary-bg);color:var(--color-primary);}
+.badge-due.overdue{background:#fdeceb;color:var(--pri-high);}
+.badge-tag{background:#f0f1f3;color:var(--color-text-sub);}
+.badge-q{font-weight:700;}
+.badge-q1{background:var(--q1-bg);color:var(--q1-color);}
+.badge-q2{background:var(--q2-bg);color:var(--q2-color);}
+.badge-q3{background:var(--q3-bg);color:var(--q3-color);}
+.badge-q4{background:var(--q4-bg);color:var(--q4-color);}
+
+.task-edit-btn{
+  flex-shrink:0;
+  background:none;
+  border:none;
+  font-size:16px;
+  color:var(--color-text-label);
+  min-width:36px;
+  min-height:36px;
+  cursor:pointer;
+}
+
+.empty-msg{
+  text-align:center;
+  color:var(--color-text-label);
+  font-size:13px;
+  padding:40px 10px;
+}
+
+/* =====================================================
+   マトリクス表示（重要度×緊急度の4象限）
+   スマホは2×2の正方形寄りグリッドで1画面に収める
+   ===================================================== */
+#matrixView{margin-bottom:14px;}
+
+.matrix-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.matrix-quadrant{
+  border-radius:var(--radius-card);
+  padding:8px;
+  min-height:150px;
+  display:flex;
+  flex-direction:column;
+  cursor:pointer; /* ★空欄タップで新規タスク追加できるようにするための手がかり */
+}
+.matrix-quadrant.q1{background:var(--q1-bg);}
+.matrix-quadrant.q2{background:var(--q2-bg);}
+.matrix-quadrant.q3{background:var(--q3-bg);}
+.matrix-quadrant.q4{background:var(--q4-bg);}
+
+.matrix-title{
+  font-size:11px;
+  font-weight:700;
+  margin-bottom:6px;
+  display:flex;
+  justify-content:space-between;
+}
+.matrix-quadrant.q1 .matrix-title{color:var(--q1-color);}
+.matrix-quadrant.q2 .matrix-title{color:var(--q2-color);}
+.matrix-quadrant.q3 .matrix-title{color:var(--q3-color);}
+.matrix-quadrant.q4 .matrix-title{color:var(--q4-color);}
+
+.matrix-list{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  min-height:40px; /* 空でもドロップできるように高さ確保 */
+}
+.matrix-item{
+  background:var(--color-card);
+  border-radius:6px;
+  padding:6px 8px;
+  font-size:11.5px;
+  font-weight:700;
+  color:var(--color-text);
+  box-shadow:0 1px 2px rgba(0,0,0,0.06);
+}
+.matrix-item.done{opacity:0.5;text-decoration:line-through;}
+
+/* =====================================================
+   下部フィルタバー／FAB（タスク追加）
+   片手操作を最優先：画面下部に固定
+   ===================================================== */
+.fab-add{
+  position:fixed;
+  right:18px;
+  bottom:24px;
+  width:56px;
+  height:56px;
+  border-radius:50%;
+  background:var(--color-primary);
+  color:#fff;
+  border:none;
+  font-size:26px;
+  box-shadow:0 4px 12px rgba(26,86,219,0.4);
+  cursor:pointer;
+  z-index:50;
+}
+.fab-add:hover{background:var(--color-primary-hover);}
+
+/* =====================================================
+   データ管理バー（JSONエクスポート／読込）
+   ===================================================== */
+.data-bar{
+  display:flex;
+  flex-wrap:wrap; /* ★ICSボタン追加で3つになるため、狭い画面では2行に折り返す */
+  gap:8px;
+  margin:16px 0 30px;
+}
+.btn-data{
+  flex:1;
+  min-width:100px; /* 3つ並んだ時に潰れすぎないように最低幅を確保 */
+  background:var(--color-card);
+  border:1px solid var(--color-primary-border);
+  border-radius:var(--radius-input);
+  color:var(--color-primary);
+  font-family:inherit;
+  font-size:12px;
+  font-weight:700;
+  padding:10px;
+  min-height:42px;
+  cursor:pointer;
+}
+.btn-data:hover{background:var(--color-primary-bg);}
+
+/* =====================================================
+   ICS一括出力モーダル：絞り込みUI
+   ・ゾーン（今からやること／4象限／完了済み／未分類）のチェックリスト
+   ・タグはトグル式チップ（複数選択可・OR条件）
+   ===================================================== */
+.zone-check-list{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.zone-check-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:13px;
+  color:var(--color-text-sub);
+  min-height:38px;
+  cursor:pointer;
+}
+.zone-check-item input[type="checkbox"]{
+  width:18px;
+  height:18px;
+  accent-color:var(--color-primary);
+  flex-shrink:0;
+}
+.ics-tag-hint{
+  font-size:11px;
+  color:var(--color-text-label);
+  margin-bottom:6px;
+}
+.ics-tag-chip-wrap{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.ics-tag-chip{
+  background:var(--color-card);
+  border:1px solid var(--color-border-input);
+  border-radius:999px;
+  font-family:inherit;
+  font-size:11px;
+  font-weight:700;
+  color:var(--color-text-sub);
+  padding:7px 12px;
+  cursor:pointer;
+}
+.ics-tag-chip.active{
+  background:var(--color-primary-bg);
+  border-color:var(--color-primary);
+  color:var(--color-primary);
+}
+.ics-match-count{
+  background:var(--color-input-bg, #f8fafd);
+  border:1px solid var(--color-border);
+  border-radius:var(--radius-input);
+  font-size:12.5px;
+  font-weight:700;
+  color:var(--color-text-sub);
+  text-align:center;
+  padding:9px;
+  margin:14px 0;
+}
+.ics-match-count .count-num{color:var(--color-primary);font-size:15px;}
+
+/* =====================================================
+   タスク編集モーダル（スマホは全画面に近い形で表示）
+   ===================================================== */
+.modal-overlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.5);
+  z-index:100;
+  align-items:flex-end;
+  justify-content:center;
+}
+.modal-overlay.show{display:flex;}
+.modal-box{
+  background:#fff;
+  width:100%;
+  max-width:620px;
+  max-height:88vh;
+  overflow-y:auto;
+  border-radius:16px 16px 0 0;
+  padding:20px 18px 26px;
+}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:14px;color:var(--color-primary);}
+.field-group{margin-bottom:14px;}
+.field-group label{
+  display:block;
+  font-size:11px;
+  font-weight:700;
+  color:var(--color-text-sub);
+  letter-spacing:0.05em;
+  margin-bottom:5px;
+}
+.field-group input[type="text"],
+.field-group input[type="date"],
+.field-group select,
+.field-group textarea{
+  width:100%;
+  border:1px solid var(--color-border-input);
+  border-radius:var(--radius-input);
+  background:#f8fafd;
+  font-family:inherit;
+  font-size:16px;
+  padding:10px;
+  min-height:44px;
+}
+.field-group textarea{
+  resize:vertical;
+  line-height:1.6;
+}
+
+/* 追加日／締切日の2分割レイアウト */
+.date-two-col{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.pri-select-wrap{display:flex;gap:8px;}
+.pri-btn{
+  flex:1;
+  border:2px solid var(--color-border-input);
+  border-radius:var(--radius-input);
+  background:#f8fafd;
+  font-family:inherit;
+  font-size:13px;
+  font-weight:700;
+  padding:10px 4px;
+  min-height:44px;
+  cursor:pointer;
+  color:var(--color-text-sub);
+}
+.pri-btn.active[data-pri="high"]{border-color:var(--pri-high);background:#fdeceb;color:var(--pri-high);}
+.pri-btn.active[data-pri="mid"]{border-color:var(--pri-mid);background:#fdf3e3;color:var(--pri-mid);}
+.pri-btn.active[data-pri="low"]{border-color:var(--pri-low);background:#eaf3ea;color:var(--pri-low);}
+
+.q-select-wrap{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.q-btn{
+  border:2px solid var(--color-border-input);
+  border-radius:var(--radius-input);
+  background:#f8fafd;
+  font-family:inherit;
+  font-size:11.5px;
+  font-weight:700;
+  padding:9px 4px;
+  min-height:44px;
+  cursor:pointer;
+  color:var(--color-text-sub);
+  line-height:1.3;
+}
+.q-btn.active[data-q="1"]{border-color:var(--q1-color);background:var(--q1-bg);color:var(--q1-color);}
+.q-btn.active[data-q="2"]{border-color:var(--q2-color);background:var(--q2-bg);color:var(--q2-color);}
+.q-btn.active[data-q="3"]{border-color:var(--q3-color);background:var(--q3-bg);color:var(--q3-color);}
+.q-btn.active[data-q="4"]{border-color:var(--q4-color);background:var(--q4-bg);color:var(--q4-color);}
+
+.modal-btns{display:flex;gap:8px;margin-top:18px;}
+.btn-save{
+  flex:1;
+  background:var(--color-primary);
+  color:#fff;
+  border:none;
+  border-radius:var(--radius-btn);
+  font-family:inherit;
+  font-size:15px;
+  font-weight:700;
+  padding:13px;
+  min-height:48px;
+  cursor:pointer;
+}
+.btn-delete{
+  background:#fff8f0;
+  border:1px solid #f5c6a0;
+  color:#c05a00;
+  border-radius:var(--radius-btn);
+  font-family:inherit;
+  font-size:13px;
+  font-weight:700;
+  padding:13px 16px;
+  min-height:48px;
+  cursor:pointer;
+}
+.btn-cancel{
+  background:none;
+  border:none;
+  color:var(--color-text-muted);
+  font-family:inherit;
+  font-size:13px;
+  padding:13px 10px;
+  cursor:pointer;
+}
+
+/* =====================================================
+   Googleカレンダー追加ボタン（モーダル内・締切日の下に配置）
+   ・Googleブランドカラーに寄せた配色（青系）で視認性を確保
+   ・締切日が未入力の時はグレーアウトして押せなくする（JS側でdisabled制御）
+   ===================================================== */
+.btn-calendar{
+  width:100%;
+  background:#e8f0fe;
+  border:1px solid #aecbfa;
+  color:#1a56db;
+  border-radius:var(--radius-btn);
+  font-family:inherit;
+  font-size:13px;
+  font-weight:700;
+  padding:11px;
+  min-height:44px;
+  cursor:pointer;
+  margin-top:4px;
+}
+.btn-calendar:hover{background:#d2e3fc;}
+.btn-calendar:disabled{opacity:0.45;cursor:not-allowed;}
+
+/* タスクカード上のカレンダー追加アイコン（締切日があるタスクのみ表示） */
+.task-cal-btn{
+  flex-shrink:0;
+  background:none;
+  border:none;
+  font-size:15px;
+  color:var(--color-text-label);
+  min-width:32px;
+  min-height:36px;
+  cursor:pointer;
+}
+
+/* JSON読込用のinput[type=file]は非表示にしてボタン経由で発火させる */
+#importFileInput{display:none;}
+
+footer{
+  text-align:center;
+  font-size:10.5px;
+  color:var(--color-text-label);
+  padding:10px 0 20px;
+}
+
+/* =====================================================
+   ツール説明文
+   ===================================================== */
+.tool-desc{
+  background:var(--color-card);
+  border:1px solid var(--color-border);
+  border-radius:var(--radius-card);
+  padding:16px 16px 18px;
+  margin-bottom:24px;
+}
+.tool-desc-title{
+  font-size:13px;
+  font-weight:700;
+  color:var(--color-primary);
+  margin-bottom:8px;
+}
+.tool-desc-text{
+  font-size:12.5px;
+  line-height:1.8;
+  color:var(--color-text-sub);
+  margin-bottom:10px;
+}
+.tool-desc-list{
+  font-size:12.5px;
+  line-height:1.9;
+  color:var(--color-text-sub);
+  padding-left:18px;
+  margin-bottom:10px;
+}
+.tool-desc-list li{margin-bottom:2px;}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>✅ タスク管理ツール</h1>
+    <p class="subtitle">重要度×緊急度の4象限で優先順位を整理できます</p>
+  </header>
+
+  <!-- =====================================================
+       現在日時（令和／曜日／時分）
+       1分ごとに自動更新される
+       ===================================================== -->
+  <div class="now-card" id="nowCard"></div>
+
+  <!-- =====================================================
+       「今からやること」ドロップゾーン＋タイマー等の空きスペース
+       ・左：タスクをドラッグ＆ドロップして今の集中タスクを置く欄
+       ・右：将来のタイマー／ストップウォッチ／ポモドーロ機能用に空けておく
+       ===================================================== -->
+  <div class="now-action-row">
+    <div class="now-action-zone" onclick="handleZoneBlankClick(event, 'nowDoing')">
+      <div class="zone-title">★ 今からやること</div>
+      <div class="now-action-list" id="nowDoingList"></div>
+      <div class="zone-empty-hint" id="nowDoingEmptyHint">タスクをドラッグ、または空欄タップで追加</div>
+    </div>
+    <div class="timer-placeholder-zone">
+      <div class="zone-title">⏱ タイマー</div>
+      <div class="timer-placeholder-text">タイマー／ストップウォッチ<br>／ポモドーロ機能は準備中</div>
+    </div>
+  </div>
+
+  <!-- =====================================================
+       マトリクス（重要度×緊急度）
+       ・常時表示のダッシュボードとして機能する
+       ===================================================== -->
+  <div id="matrixView">
+    <div class="matrix-grid">
+      <div class="matrix-quadrant q2" onclick="handleZoneBlankClick(event, 'quadrant', 2)">
+        <div class="matrix-title"><span>②計画してやる</span><span>重要×非緊急</span></div>
+        <div class="matrix-list" id="matrixList2" data-q="2"></div>
+      </div>
+      <div class="matrix-quadrant q1" onclick="handleZoneBlankClick(event, 'quadrant', 1)">
+        <div class="matrix-title"><span>①今すぐやる</span><span>重要×緊急</span></div>
+        <div class="matrix-list" id="matrixList1" data-q="1"></div>
+      </div>
+      <div class="matrix-quadrant q4" onclick="handleZoneBlankClick(event, 'quadrant', 4)">
+        <div class="matrix-title"><span>④後回し</span><span>非重要×非緊急</span></div>
+        <div class="matrix-list" id="matrixList4" data-q="4"></div>
+      </div>
+      <div class="matrix-quadrant q3" onclick="handleZoneBlankClick(event, 'quadrant', 3)">
+        <div class="matrix-title"><span>③サクッとやる</span><span>非重要×緊急</span></div>
+        <div class="matrix-list" id="matrixList3" data-q="3"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================
+       完了済みドロップゾーン
+       ・タスクをここにドラッグすると完了扱いになる（チェックと同じ効果）
+       ===================================================== -->
+  <div class="completed-zone" onclick="handleZoneBlankClick(event, 'completed')">
+    <div class="zone-title">✅ 完了済み</div>
+    <div class="completed-drop-list" id="completedDropList"></div>
+    <div class="zone-empty-hint" id="completedEmptyHint">タスクをドラッグ、または空欄タップで完了タスクとして追加</div>
+  </div>
+
+  <!-- 検索 -->
+  <div class="toolbar">
+    <input type="text" id="searchInput" class="search-input" placeholder="🔍 件名・タグで検索" oninput="renderAll()">
+  </div>
+
+  <!-- フィルタタブ：今日／明日／今週／予定なし／完了済み／すべて（下の一覧に適用） -->
+  <div class="filter-tabs" id="filterTabs"></div>
+
+  <!-- タグ絞り込み（該当タスクにタグがある場合のみ表示） -->
+  <div class="tag-filter-wrap" id="tagFilterWrap"></div>
+
+  <!-- =====================================================
+       タスク一覧（検索・タグ・タブ絞り込みが反映される詳細リスト）
+       ===================================================== -->
+  <div id="listView">
+    <div class="task-list" id="taskList"></div>
+    <div class="empty-msg" id="emptyMsg" style="display:none;">該当するタスクはありません</div>
+  </div>
+
+  <!-- データ管理：JSONエクスポート／読込 -->
+  <div class="data-bar">
+    <button class="btn-data" onclick="exportJson()">⬇️ JSONで保存</button>
+    <button class="btn-data" onclick="document.getElementById('importFileInput').click()">⬆️ JSON読込</button>
+    <button class="btn-data" onclick="openIcsModal()">🗓️ ICS一括出力</button>
+    <input type="file" id="importFileInput" accept="application/json" onchange="importJson(event)">
+  </div>
+
+  <footer>データはこの端末のブラウザ内にのみ保存されます</footer>
+
+  <!-- =====================================================
+       ツール説明文（★内容はツールに応じて書き換えてOK）
+       ===================================================== -->
+  <section class="tool-desc">
+    <h2 class="tool-desc-title">このツールについて</h2>
+    <p class="tool-desc-text">
+      このタスク管理ツールは、日々のタスクを「締切日」だけでなく「重要度×緊急度」の4象限でも整理できるシンプルなToDoアプリです。
+    </p>
+    <ul class="tool-desc-list">
+      <li>タスクの追加・編集・削除・完了チェックが可能</li>
+      <li>タスク件名のほか、メモ・タスク追加日・締切日・タグを記録できる</li>
+      <li>「今日／明日／今週／予定なし／完了済み」で絞り込み表示</li>
+      <li>ドラッグ＆ドロップで並び替え・象限の移動が可能</li>
+      <li>画面上部に①今すぐやる（重要×緊急）②計画してやる（重要×非緊急）③サクッとやる（非重要×緊急）④後回し（非重要×非緊急）の4象限マトリクスを常時表示し、「今からやること」がひと目でわかる</li>
+      <li>入力したデータはJSON形式でエクスポート・読込が可能（機種変更やバックアップに利用可）</li>
+    </ul>
+    <p class="tool-desc-text">
+      会員登録やサーバー通信は一切不要で、入力したデータはこの端末のブラウザ内だけに保存されます。ブラウザのデータを削除するとタスクも消えるため、大事なデータはJSONエクスポートで定期的にバックアップすることをおすすめします。
+    </p>
+  </section>
+</div>
+
+<!-- タスク追加ボタン（片手操作しやすい右下固定） -->
+<button class="fab-add" onclick="openModal()">＋</button>
+
+<!-- =====================================================
+     タスク追加／編集モーダル
+     ===================================================== -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOnOverlay(event)">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle">タスクを追加</div>
+
+    <div class="field-group">
+      <label for="fieldTitle">タスク件名</label>
+      <input type="text" id="fieldTitle" placeholder="例：報告書を提出する">
+    </div>
+
+    <div class="field-group">
+      <label for="fieldNote">メモ</label>
+      <textarea id="fieldNote" rows="3" placeholder="補足事項があれば入力"></textarea>
+    </div>
+
+    <div class="field-group date-two-col">
+      <div>
+        <label for="fieldAdded">タスク追加日</label>
+        <input type="date" id="fieldAdded">
+      </div>
+      <div>
+        <label for="fieldDue">締切日（任意）</label>
+        <input type="date" id="fieldDue" onchange="syncCalendarBtnState()">
+      </div>
+    </div>
+
+    <!-- Googleカレンダー追加ボタン：締切日が入っている時だけ押せる -->
+    <button type="button" class="btn-calendar" id="btnAddToCalendar" onclick="addToGoogleCalendarFromModal()" disabled>
+      📅 Googleカレンダーに追加（締切日を入力すると押せます）
+    </button>
+
+    <div class="field-group">
+      <label>重要度×緊急度（任意）</label>
+      <div class="q-select-wrap">
+        <button type="button" class="q-btn" data-q="2" onclick="setQuadrant(2)">②計画してやる</button>
+        <button type="button" class="q-btn" data-q="1" onclick="setQuadrant(1)">①今すぐやる</button>
+        <button type="button" class="q-btn" data-q="4" onclick="setQuadrant(4)">④後回し</button>
+        <button type="button" class="q-btn" data-q="3" onclick="setQuadrant(3)">③サクッとやる</button>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label for="fieldTags">タグ（カンマ区切りで複数可）</label>
+      <input type="text" id="fieldTags" placeholder="例：仕事, 現場, 急ぎ">
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn-delete" id="btnDelete" onclick="deleteCurrentTask()" style="display:none;">削除</button>
+      <button class="btn-save" onclick="saveTaskFromModal()">保存</button>
+    </div>
+    <div style="text-align:center;">
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- =====================================================
+     ICS一括出力：絞り込みモーダル
+     ・期間／ゾーン／タグで対象タスクを絞り込んでから.icsファイルを書き出す
+     ・締切日が未設定のタスクはICS化できないため、常に対象外
+     ===================================================== -->
+<div class="modal-overlay" id="icsModalOverlay" onclick="closeIcsModalOnOverlay(event)">
+  <div class="modal-box">
+    <div class="modal-title">🗓️ ICSファイルで一括出力</div>
+
+    <div class="field-group date-two-col">
+      <div>
+        <label for="icsFromDate">期間（開始・任意）</label>
+        <input type="date" id="icsFromDate" onchange="updateIcsMatchCount()">
+      </div>
+      <div>
+        <label for="icsToDate">期間（終了・任意）</label>
+        <input type="date" id="icsToDate" onchange="updateIcsMatchCount()">
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label>対象ゾーン</label>
+      <div class="zone-check-list" id="icsZoneCheckList"></div>
+    </div>
+
+    <div class="field-group">
+      <label>タグ（未選択＝すべてのタグを対象）</label>
+      <div class="ics-tag-hint">タップで複数選択できます（OR条件）</div>
+      <div class="ics-tag-chip-wrap" id="icsTagChipWrap"></div>
+    </div>
+
+    <div class="ics-match-count" id="icsMatchCount">対象タスク：<span class="count-num">0</span> 件</div>
+
+    <div class="modal-btns">
+      <button class="btn-save" onclick="exportIcs()">🗓️ 書き出す</button>
+    </div>
+    <div style="text-align:center;">
+      <button class="btn-cancel" onclick="closeIcsModal()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================
+   ★設定（将来の機能追加はこの上部セクションを起点に拡張する）
+   ===================================================== */
+const STORAGE_KEY = 'task_manager_tasks_v1';
+
+// フィルタタブの定義（★ここに追加すればタブが増える設計）
+const FILTER_TABS = [
+  { id: 'today',     label: '今日' },
+  { id: 'tomorrow',  label: '明日' },
+  { id: 'week',      label: '今週' },
+  { id: 'none',      label: '予定なし' },
+  { id: 'all',       label: 'すべて' },
+  { id: 'done',      label: '完了済み' },
+];
+
+// 優先度の表示順（高→中→低のソートに使用）
+const PRIORITY_ORDER = { high: 0, mid: 1, low: 2 };
+const PRIORITY_LABEL = { high: '優先度：高', mid: '優先度：中', low: '優先度：低' };
+
+/* =====================================================
+   状態管理
+   ===================================================== */
+let tasks = [];              // タスク本体（配列）
+let currentFilter = 'all';   // 現在選択中のフィルタタブ（下部の一覧に適用）
+let activeTagFilter = null;  // タグ絞り込み（1つだけ選択可・トグル式）
+let editingTaskId = null;    // モーダルで編集中のタスクid（nullなら新規追加）
+let selectedQuadrant = null;
+let pendingZonePreset = null; // ★ゾーン空欄タップで新規作成する時の初期状態（{isNowDoing, completed}）。openModalForZoneでのみセットする
+let icsSelectedTags = [];     // ★ICS一括出力モーダルで選択中のタグ（複数可・OR条件）
+
+/* =====================================================
+   初期化
+   ===================================================== */
+document.addEventListener('DOMContentLoaded', () => {
+  loadTasks();
+  renderFilterTabs();
+  renderAll();
+  initSortable();
+  renderNowClock();
+  setInterval(renderNowClock, 30 * 1000); // 30秒ごとに時刻を更新
+});
+
+/* =====================================================
+   【永続化】localStorageへの保存／読込
+   ===================================================== */
+function saveTasks() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  } catch (e) {
+    // 保存失敗（プライベートモード等）は無視して続行
+  }
+}
+
+function loadTasks() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    tasks = raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    tasks = [];
+  }
+}
+
+/* =====================================================
+   【日付ユーティリティ】
+   すべてYYYY-MM-DD文字列を前提に比較する
+   ===================================================== */
+function todayStr() {
+  const d = new Date();
+  return formatDate(d);
+}
+function formatDate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+function addDays(dateStr, days) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return formatDate(d);
+}
+// 令和年を計算（令和1年＝西暦2019年。それ以前の元号は非対応）
+function toReiwaYear(seirekiYear) {
+  return seirekiYear - 2018;
+}
+
+const WEEKDAY_LABEL = ['日', '月', '火', '水', '木', '金', '土'];
+
+/* =====================================================
+   【描画】現在日時カード（令和／西暦／曜日／時分）
+   ===================================================== */
+function renderNowClock() {
+  const el = document.getElementById('nowCard');
+  if (!el) return;
+
+  const now = new Date();
+  const seireki = now.getFullYear();
+  const reiwa = toReiwaYear(seireki);
+  const month = now.getMonth() + 1;
+  const date = now.getDate();
+  const weekday = WEEKDAY_LABEL[now.getDay()];
+  const hour = String(now.getHours()).padStart(2, '0');
+  const minute = String(now.getMinutes()).padStart(2, '0');
+
+  el.innerHTML = `
+    <div class="now-date">令和${reiwa}年（${seireki}年）${month}月${date}日（${weekday}）</div>
+    <div class="now-time">${hour}時${minute}分</div>`;
+}
+
+// 今週＝今日を含む「今日〜今週の日曜」まで（月曜始まり運用に合わせて調整可）
+function isWithinThisWeek(dueStr) {
+  const today = new Date(todayStr() + 'T00:00:00');
+  const due = new Date(dueStr + 'T00:00:00');
+  const dow = today.getDay(); // 0=日
+  const daysUntilSunday = dow === 0 ? 0 : (7 - dow);
+  const weekEnd = new Date(today);
+  weekEnd.setDate(today.getDate() + daysUntilSunday);
+  return due >= today && due <= weekEnd;
+}
+
+/* =====================================================
+   【CRUD】タスクの追加・更新・削除・完了トグル
+   ===================================================== */
+function generateId() {
+  return 'task_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+}
+
+function addTask(taskData) {
+  const newTask = {
+    id: generateId(),
+    title: taskData.title,
+    note: taskData.note || '',
+    addedDate: taskData.addedDate || todayStr(), // タスク追加日（表示・編集用。初期値は今日）
+    due: taskData.due || null,
+    priority: 'mid', // ★優先度はUIから削除済み（象限で代替）。内部的にはmid固定
+    quadrant: taskData.quadrant || null, // 1〜4 or null（未分類）
+    tags: taskData.tags || [],
+    // ★ゾーン空欄タップ経由の新規作成時はtaskData.isNowDoing/completedが入る（openModalForZone参照）
+    completed: taskData.completed || false,
+    isNowDoing: taskData.isNowDoing || false, // 「今からやること」欄に置かれているか
+    icsUid: null, // ★Googleカレンダー／ICS出力で初めて使う時に発行するID（ensureIcsUid参照）
+    order: tasks.length,
+    createdAt: Date.now(),
+  };
+  tasks.push(newTask);
+  saveTasks();
+  return newTask; // ★保存直後にカレンダー登録へ繋げたい呼び出し元のために、作成したタスクを返す
+}
+
+function updateTask(id, taskData) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return null;
+  Object.assign(t, taskData);
+  saveTasks();
+  return t; // ★保存直後にカレンダー登録へ繋げたい呼び出し元のために、更新後のタスクを返す
+}
+
+function deleteTask(id) {
+  tasks = tasks.filter(t => t.id !== id);
+  saveTasks();
+}
+
+function toggleComplete(id) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  t.completed = !t.completed;
+  if (t.completed) t.isNowDoing = false; // 完了したら「今からやること」欄からは外す
+  saveTasks();
+  renderAll();
+}
+
+/* =====================================================
+   【フィルタリング】現在のタブ・検索語・タグ選択を反映
+   ===================================================== */
+function getFilteredTasks() {
+  const kw = document.getElementById('searchInput').value.trim().toLowerCase();
+  const today = todayStr();
+  const tomorrow = addDays(today, 1);
+
+  return tasks
+    .filter(t => {
+      // フィルタタブ
+      if (currentFilter === 'done') return t.completed;
+      if (t.completed && currentFilter !== 'all') return false; // 完了済みは他タブでは基本非表示
+      if (currentFilter === 'today') return t.due === today;
+      if (currentFilter === 'tomorrow') return t.due === tomorrow;
+      if (currentFilter === 'week') return t.due && isWithinThisWeek(t.due);
+      if (currentFilter === 'none') return !t.due;
+      return true; // 'all'
+    })
+    .filter(t => {
+      // 検索（タイトル＋タグ）
+      if (!kw) return true;
+      const inTitle = t.title.toLowerCase().includes(kw);
+      const inTags = t.tags.some(tag => tag.toLowerCase().includes(kw));
+      return inTitle || inTags;
+    })
+    .filter(t => {
+      // タグ絞り込み
+      if (!activeTagFilter) return true;
+      return t.tags.includes(activeTagFilter);
+    })
+    .sort((a, b) => a.order - b.order);
+}
+
+/* =====================================================
+   【描画】フィルタタブ
+   ===================================================== */
+function renderFilterTabs() {
+  const wrap = document.getElementById('filterTabs');
+  wrap.innerHTML = FILTER_TABS.map(tab => {
+    const count = countForTab(tab.id);
+    return `<button class="filter-tab ${currentFilter === tab.id ? 'active' : ''}"
+              onclick="setFilter('${tab.id}')">${tab.label}<span class="count">${count}</span></button>`;
+  }).join('');
+}
+
+function countForTab(tabId) {
+  const today = todayStr();
+  const tomorrow = addDays(today, 1);
+  return tasks.filter(t => {
+    if (tabId === 'done') return t.completed;
+    if (t.completed) return false;
+    if (tabId === 'today') return t.due === today;
+    if (tabId === 'tomorrow') return t.due === tomorrow;
+    if (tabId === 'week') return t.due && isWithinThisWeek(t.due);
+    if (tabId === 'none') return !t.due;
+    return true;
+  }).length;
+}
+
+function setFilter(tabId) {
+  currentFilter = tabId;
+  renderFilterTabs();
+  renderAll();
+}
+
+/* =====================================================
+   【描画】タグ絞り込みチップ
+   - 現在表示中の全タスク（フィルタ前）から出現タグを集計
+   ===================================================== */
+function renderTagFilters() {
+  const wrap = document.getElementById('tagFilterWrap');
+  const allTags = [...new Set(tasks.flatMap(t => t.tags))];
+  if (allTags.length === 0) {
+    wrap.innerHTML = '';
+    return;
+  }
+  wrap.innerHTML = allTags.map(tag =>
+    `<span class="tag-chip ${activeTagFilter === tag ? 'active' : ''}" onclick="toggleTagFilter('${escapeAttr(tag)}')">#${escapeHtml(tag)}</span>`
+  ).join('');
+}
+
+function toggleTagFilter(tag) {
+  activeTagFilter = (activeTagFilter === tag) ? null : tag;
+  renderAll();
+}
+
+/* =====================================================
+   【描画】メイン描画エントリーポイント
+   - ダッシュボード（今からやること／マトリクス／完了済み）と
+     一覧（検索・タブ絞り込み反映）を毎回まとめて更新する
+   ===================================================== */
+function renderAll() {
+  renderTagFilters();
+  renderDashboard();
+  renderListView();
+}
+
+/* =====================================================
+   【描画】リスト表示
+   ===================================================== */
+function renderListView() {
+  const list = getFilteredTasks();
+  const listEl = document.getElementById('taskList');
+  const emptyEl = document.getElementById('emptyMsg');
+
+  if (list.length === 0) {
+    listEl.innerHTML = '';
+    emptyEl.style.display = 'block';
+    return;
+  }
+  emptyEl.style.display = 'none';
+
+  listEl.innerHTML = list.map(t => renderTaskCard(t)).join('');
+}
+
+function renderTaskCard(t) {
+  const today = todayStr();
+  const isOverdue = t.due && t.due < today && !t.completed;
+  const dueLabel = t.due ? formatDueLabel(t.due) : '';
+  const qBadge = t.quadrant ? `<span class="meta-badge badge-q badge-q${t.quadrant}">${quadrantShortLabel(t.quadrant)}</span>` : '';
+  const tagBadges = t.tags.map(tag => `<span class="meta-badge badge-tag">#${escapeHtml(tag)}</span>`).join('');
+
+  return `
+    <div class="task-card pri-${t.priority} ${t.completed ? 'done' : ''}" data-id="${t.id}">
+      <span class="drag-handle">⠿</span>
+      <input type="checkbox" class="task-check" ${t.completed ? 'checked' : ''} onchange="toggleComplete('${t.id}')">
+      <div class="task-main" onclick="openModal('${t.id}')">
+        <div class="task-title">${escapeHtml(t.title)}</div>
+        ${t.note ? `<div class="task-note">📝 ${escapeHtml(t.note)}</div>` : ''}
+        <div class="task-meta">
+          ${dueLabel ? `<span class="meta-badge badge-due ${isOverdue ? 'overdue' : ''}">📅 ${dueLabel}</span>` : ''}
+          ${qBadge}
+          ${tagBadges}
+        </div>
+      </div>
+      ${t.due ? `<button class="task-cal-btn" onclick="event.stopPropagation(); addToGoogleCalendar('${t.id}')" title="Googleカレンダーに追加">📅</button>` : ''}
+      <button class="task-edit-btn" onclick="openModal('${t.id}')">✎</button>
+    </div>`;
+}
+
+function formatDueLabel(dueStr) {
+  const today = todayStr();
+  const tomorrow = addDays(today, 1);
+  if (dueStr === today) return '今日';
+  if (dueStr === tomorrow) return '明日';
+  const [y, m, d] = dueStr.split('-');
+  return `${m}/${d}`;
+}
+
+function quadrantShortLabel(q) {
+  return { 1: '①今すぐ', 2: '②計画', 3: '③サクッと', 4: '④後回し' }[q] || '';
+}
+
+/* =====================================================
+   【描画】ダッシュボード（今からやること／マトリクス／完了済み）
+   - 検索・タグ絞り込みは反映するが、日付フィルタタブ（今日/明日等）は
+     下の一覧専用のため、ここでは無視して「全体像」を出す設計
+   ===================================================== */
+function renderDashboard() {
+  const kw = document.getElementById('searchInput').value.trim().toLowerCase();
+  const base = tasks
+    .filter(t => {
+      if (!kw) return true;
+      return t.title.toLowerCase().includes(kw) || t.tags.some(tag => tag.toLowerCase().includes(kw));
+    })
+    .filter(t => !activeTagFilter || t.tags.includes(activeTagFilter));
+
+  // ★今からやること欄：isNowDoing＝true かつ 未完了のタスク
+  const nowDoingItems = base.filter(t => t.isNowDoing && !t.completed).sort((a, b) => a.order - b.order);
+  renderDropList('nowDoingList', nowDoingItems);
+  toggleEmptyHint('nowDoingList', 'nowDoingEmptyHint', nowDoingItems.length, 'now-action-zone');
+
+  // マトリクス4象限：今からやること欄／完了済みに入っていないタスクのみ
+  for (let q = 1; q <= 4; q++) {
+    const items = base.filter(t => t.quadrant === q && !t.isNowDoing && !t.completed).sort((a, b) => a.order - b.order);
+    renderDropList('matrixList' + q, items);
+  }
+
+  // ✅完了済み欄：completed＝true のタスク
+  const completedItems = base.filter(t => t.completed).sort((a, b) => a.order - b.order);
+  renderDropList('completedDropList', completedItems, true);
+  toggleEmptyHint('completedDropList', 'completedEmptyHint', completedItems.length, null, 'completed-zone');
+}
+
+// ドロップゾーン共通の描画（今からやること／マトリクス各象限／完了済みで共用）
+function renderDropList(listId, items, showDone) {
+  const el = document.getElementById(listId);
+  el.innerHTML = items.map(t =>
+    `<div class="matrix-item ${showDone ? 'done' : ''}" data-id="${t.id}" onclick="openModal('${t.id}')">${escapeHtml(t.title)}</div>`
+  ).join('');
+}
+
+// 空の時だけヒント文言を出す（zoneClassは親要素に is-empty を付けてCSSで制御）
+function toggleEmptyHint(listId, hintId, count, zoneClassOnList, zoneClassOnParent) {
+  const listEl = document.getElementById(listId);
+  const zoneEl = zoneClassOnList ? listEl.closest('.' + zoneClassOnList) : listEl.closest('.' + zoneClassOnParent);
+  if (zoneEl) zoneEl.classList.toggle('is-empty', count === 0);
+}
+
+/* =====================================================
+   【ドラッグ＆ドロップ】SortableJSの初期化
+   - 一覧（リスト表示）：単純な並び替え（orderを更新）
+   - 今からやること／マトリクス4象限／完了済み：同じグループにして
+     ゾーンをまたいだドラッグでタスクの状態（quadrant/isNowDoing/completed）を更新する
+   ===================================================== */
+function initSortable() {
+  new Sortable(document.getElementById('taskList'), {
+    handle: '.drag-handle',
+    animation: 150,
+    onEnd: () => {
+      const ids = [...document.getElementById('taskList').children].map(el => el.dataset.id);
+      ids.forEach((id, index) => {
+        const t = tasks.find(t => t.id === id);
+        if (t) t.order = index;
+      });
+      saveTasks();
+    }
+  });
+
+  // ドラッグで移動できるゾーン一覧（今からやること／マトリクス4象限／完了済み）
+  const dropZoneIds = ['nowDoingList', 'matrixList1', 'matrixList2', 'matrixList3', 'matrixList4', 'completedDropList'];
+  dropZoneIds.forEach(id => {
+    new Sortable(document.getElementById(id), {
+      group: 'taskZones', // 全ゾーン間でドラッグ移動可能にする
+      animation: 150,
+      onEnd: handleZoneDrop,
+    });
+  });
+}
+
+// 各ゾーン間でタスクがドロップされた時に、状態（quadrant/isNowDoing/completed）を更新する
+function handleZoneDrop(evt) {
+  const id = evt.item.dataset.id;
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+
+  const toId = evt.to.id;
+
+  if (toId === 'nowDoingList') {
+    t.isNowDoing = true;
+    t.completed = false;
+  } else if (toId === 'completedDropList') {
+    t.completed = true;
+    t.isNowDoing = false;
+  } else {
+    // マトリクスのいずれかの象限にドロップされた場合
+    t.quadrant = Number(evt.to.dataset.q);
+    t.isNowDoing = false;
+    t.completed = false;
+  }
+
+  saveTasks();
+  renderFilterTabs(); // 完了件数などタブのカウントを更新
+  renderAll();         // 各ゾーンの表示を再構築
+}
+
+/* =====================================================
+   【モーダル】タスク追加／編集
+   ===================================================== */
+function openModal(id) {
+  editingTaskId = id || null;
+  pendingZonePreset = null; // ★毎回リセット。ゾーン空欄タップ時はopenModalForZoneがこの直後にセットし直す
+  const overlay = document.getElementById('modalOverlay');
+  const titleEl = document.getElementById('modalTitle');
+  const deleteBtn = document.getElementById('btnDelete');
+
+  if (editingTaskId) {
+    const t = tasks.find(t => t.id === editingTaskId);
+    titleEl.textContent = 'タスクを編集';
+    document.getElementById('fieldTitle').value = t.title;
+    document.getElementById('fieldNote').value = t.note || '';
+    document.getElementById('fieldAdded').value = t.addedDate || todayStr();
+    document.getElementById('fieldDue').value = t.due || '';
+    document.getElementById('fieldTags').value = t.tags.join(', ');
+    initQuadrant(t.quadrant);
+    deleteBtn.style.display = 'inline-block';
+    syncCalendarBtnState();
+  } else {
+    titleEl.textContent = 'タスクを追加';
+    document.getElementById('fieldTitle').value = '';
+    document.getElementById('fieldNote').value = '';
+    document.getElementById('fieldAdded').value = todayStr(); // 追加日の初期値は今日
+    document.getElementById('fieldDue').value = '';
+    document.getElementById('fieldTags').value = '';
+    initQuadrant(null);
+    deleteBtn.style.display = 'none';
+    syncCalendarBtnState();
+  }
+
+  overlay.classList.add('show');
+  document.getElementById('fieldTitle').focus();
+}
+
+// =====================================================
+// ★ゾーン（今からやること／4象限／完了済み）の空欄タップから新規追加
+// - 通常のopenModal(null)を呼んだ直後にpendingZonePresetをセットし直すことで、
+//   「保存ボタンを押したらタップした欄が初期状態になっている」を実現する
+// =====================================================
+function openModalForZone(zoneType, quadrant) {
+  openModal(null);
+  pendingZonePreset = {
+    isNowDoing: zoneType === 'nowDoing',
+    completed: zoneType === 'completed',
+  };
+  if (zoneType === 'quadrant') {
+    initQuadrant(quadrant); // タップした象限を初期選択状態にする
+  }
+}
+
+// ゾーンの空欄（＝タスク項目以外の部分）がタップされた時だけ新規追加モーダルを開く
+// タスク項目自体のクリックはopenModal(id)側で処理済みなので、ここでは無視する
+function handleZoneBlankClick(e, zoneType, quadrant) {
+  if (e.target.closest('.matrix-item')) return;
+  openModalForZone(zoneType, quadrant);
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+  editingTaskId = null;
+  pendingZonePreset = null;
+}
+
+function closeModalOnOverlay(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+// モーダルを開いた時の初期表示用（トグルせず直接値をセットする）
+function initQuadrant(q) {
+  selectedQuadrant = q || null;
+  document.querySelectorAll('.q-btn').forEach(btn => {
+    btn.classList.toggle('active', Number(btn.dataset.q) === selectedQuadrant);
+  });
+}
+
+function setQuadrant(q) {
+  // ボタンタップ時の切替：同じ象限を再度タップしたら選択解除（未分類に戻す）
+  selectedQuadrant = (selectedQuadrant === q) ? null : q;
+  document.querySelectorAll('.q-btn').forEach(btn => {
+    btn.classList.toggle('active', Number(btn.dataset.q) === selectedQuadrant);
+  });
+}
+
+// モーダルの入力欄から生データを取得するだけの関数（保存判定やトレーラー付与は呼び出し元で行う）
+function collectModalTaskData() {
+  return {
+    title: document.getElementById('fieldTitle').value.trim(),
+    rawNote: document.getElementById('fieldNote').value.trim(),
+    addedDate: document.getElementById('fieldAdded').value || todayStr(),
+    due: document.getElementById('fieldDue').value || null,
+    tags: document.getElementById('fieldTags').value.split(',').map(s => s.trim()).filter(Boolean),
+  };
+}
+
+function saveTaskFromModal() {
+  const { title, rawNote, addedDate, due, tags } = collectModalTaskData();
+  if (!title) {
+    alert('タスク件名を入力してください');
+    return null;
+  }
+
+  const isEditing = !!editingTaskId;
+  // ★既存タスク編集時のみ「更新日」をメモ末尾に付与する（タスク追加日はfieldAddedの値＝元の値のまま）
+  // ★UIDはGoogleカレンダー／ICS出力で一度発行された後は、編集のたびに消えないよう毎回付け直す
+  const existingUid = isEditing ? tasks.find(t => t.id === editingTaskId)?.icsUid : null;
+  const note = buildNoteWithTrailers(rawNote, { addUpdateLine: isEditing, icsUid: existingUid });
+
+  const taskData = { title, note, addedDate, due, quadrant: selectedQuadrant, tags };
+
+  // ★ゾーン空欄タップ経由の新規作成時は、タップした欄の状態を初期値として反映する
+  if (!isEditing && pendingZonePreset) {
+    taskData.isNowDoing = pendingZonePreset.isNowDoing;
+    taskData.completed = pendingZonePreset.completed;
+  }
+
+  const savedTask = isEditing ? updateTask(editingTaskId, taskData) : addTask(taskData);
+
+  closeModal();
+  renderFilterTabs();
+  renderAll();
+  return savedTask; // ★「保存してGoogleカレンダーへ」ボタンから呼ばれた時のために保存後のタスクを返す
+}
+
+function deleteCurrentTask() {
+  if (!editingTaskId) return;
+  if (!confirm('このタスクを削除しますか？')) return;
+  deleteTask(editingTaskId);
+  closeModal();
+  renderFilterTabs();
+  renderAll();
+}
+
+/* =====================================================
+   【メモ末尾トレーラー】更新日／UIDの付け外し共通処理
+   ・「更新: YYYY-MM-DD」「UID: xxxx」の2種類の行をメモ末尾に管理する
+   ・編集のたびに古いトレーラー行を一旦取り除いてから付け直すので、
+     「更新日」行が編集のたびに増殖することはない（常に最新の1行だけになる）
+   ===================================================== */
+const UPDATE_LINE_RE = /^更新: \d{4}-\d{2}-\d{2}$/;
+const UID_LINE_RE = /^UID: /;
+
+// メモ本文から「更新:」「UID:」のトレーラー行を取り除き、ユーザーが書いた本文だけを返す
+function stripTrailerLines(note) {
+  return (note || '')
+    .split('\n')
+    .filter(line => !UPDATE_LINE_RE.test(line.trim()) && !UID_LINE_RE.test(line.trim()))
+    .join('\n')
+    .trim();
+}
+
+// ユーザー入力のメモ本文に、必要なトレーラー行を付け直して返す
+// @param {string} rawNote - フォームから取得した生のメモ（トレーラーが混ざっていてもOK＝内部でstripする）
+// @param {object} options - { addUpdateLine: 更新日行を付けるか, icsUid: 付けるUID（無ければ付けない） }
+function buildNoteWithTrailers(rawNote, options) {
+  const core = stripTrailerLines(rawNote);
+  const lines = core ? [core] : [];
+  if (options.addUpdateLine) lines.push(`更新: ${todayStr()}`);
+  if (options.icsUid) lines.push(`UID: ${options.icsUid}`);
+  return lines.join('\n');
+}
+
+/* =====================================================
+   【ICS UID発行】
+   ・形式：arigaitsu-タスク追加年月日-UUID8桁（例：arigaitsu-20260726-6d3b2e8f）
+   ・Googleカレンダー／ICS出力のどちらで先に使われても同じUIDになるよう、
+     タスクオブジェクト側（t.icsUid）を正として一度だけ発行する
+   ===================================================== */
+function generateShortId() {
+  if (window.crypto && crypto.randomUUID) {
+    return crypto.randomUUID().replace(/-/g, '').slice(0, 8);
+  }
+  // crypto.randomUUID非対応の古い環境向けフォールバック
+  return Math.random().toString(16).slice(2, 10).padEnd(8, '0');
+}
+
+function buildIcsUid(t) {
+  const dateStr = (t.addedDate || todayStr()).replace(/-/g, '');
+  return `arigaitsu-${dateStr}-${generateShortId()}`;
+}
+
+// タスクにUIDが無ければここで発行し、メモ末尾にも反映して保存する（副作用あり）
+// Googleカレンダー追加／ICS出力、どちらの入口からも必ずこれを通す
+function ensureIcsUid(t) {
+  if (!t.icsUid) {
+    t.icsUid = buildIcsUid(t);
+    t.note = buildNoteWithTrailers(t.note, { addUpdateLine: false, icsUid: t.icsUid });
+    saveTasks();
+  }
+  return t.icsUid;
+}
+
+/* =====================================================
+   【Googleカレンダー連携】
+   ・OAuth／APIキー不要の「URLリンク方式」で実装
+     （Googleカレンダーの新規イベント作成画面を、内容を埋めた状態で開くだけ）
+   ・締切日（due）を終日イベントとして登録する想定
+   ・将来ちゃんとしたAPI連携（自動登録・自動更新）に発展させたくなったら、
+     この関数群だけ差し替えれば良いように、URL生成ロジックを1関数に集約している
+   ===================================================== */
+
+// 終日イベントのGoogleカレンダー追加URLを生成する
+// ・Googleカレンダーの終日イベントは「開始日〜終了日（終了日は含まない＝翌日を指定）」という仕様なので
+//   addDays()で+1日した値をdatesパラメータの終了日に使う
+// @param {object} task - { title, due, note } を持つオブジェクト
+// @returns {string|null} 生成したURL。締切日が無ければnullを返す
+function buildGoogleCalendarUrl(task) {
+  if (!task.due) return null;
+
+  const startYmd = task.due.replace(/-/g, '');
+  const endYmd = addDays(task.due, 1).replace(/-/g, ''); // 終了日は翌日を指定するのがGoogleカレンダーの仕様
+
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: task.title || '（無題のタスク）',
+    dates: `${startYmd}/${endYmd}`,
+    details: task.note || '',
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+// モーダル編集中の内容からGoogleカレンダーを開く
+// ・UIDをメモに記載するにはタスクとして永続化されている必要があるため、
+//   「保存ボタン」と同じ処理でまず保存し、そのタスクに対してUIDを発行してから開く
+function addToGoogleCalendarFromModal() {
+  const { title, due } = collectModalTaskData();
+  if (!title) {
+    alert('タスク件名を入力してください');
+    return;
+  }
+  if (!due) {
+    alert('締切日を入力すると、Googleカレンダーに追加できます');
+    return;
+  }
+
+  const savedTask = saveTaskFromModal(); // 保存ボタンと同じ処理で保存（モーダルも閉じる）
+  if (!savedTask) return;
+
+  ensureIcsUid(savedTask);
+  renderAll(); // メモにUID行が反映された場合の一覧表示を更新
+  window.open(buildGoogleCalendarUrl(savedTask), '_blank');
+}
+
+// タスク一覧カード上の📅アイコンから直接開く（保存済みタスク用）
+function addToGoogleCalendar(id) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  if (!t.due) {
+    alert('締切日が未設定のタスクはカレンダーに追加できません');
+    return;
+  }
+
+  ensureIcsUid(t);
+  renderAll(); // メモにUID行が反映された場合の一覧表示を更新
+  window.open(buildGoogleCalendarUrl(t), '_blank');
+}
+
+// モーダル内の「締切日」入力に応じて、カレンダー追加ボタンの活性／非活性を切り替える
+function syncCalendarBtnState() {
+  const due = document.getElementById('fieldDue').value;
+  const btn = document.getElementById('btnAddToCalendar');
+  if (!btn) return;
+  btn.disabled = !due;
+  btn.textContent = due
+    ? '📅 Googleカレンダーに追加'
+    : '📅 Googleカレンダーに追加（締切日を入力すると押せます）';
+}
+
+/* =====================================================
+   【データ管理】JSONエクスポート／インポート
+   ===================================================== */
+function exportJson() {
+  const blob = new Blob([JSON.stringify(tasks, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `tasks_${todayStr()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importJson(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!Array.isArray(imported)) throw new Error('invalid format');
+
+      // 既存データとID重複しないよう、インポート分は新規IDを振り直す
+      const startOrder = tasks.length;
+      const withNewIds = imported.map((t, i) => ({
+        ...t,
+        id: generateId(),
+        order: startOrder + i,
+      }));
+
+      tasks = tasks.concat(withNewIds);
+      saveTasks();
+      renderFilterTabs();
+      renderAll();
+      alert(`${withNewIds.length}件のタスクを読み込みました`);
+    } catch (err) {
+      alert('JSONファイルの読み込みに失敗しました。ファイル形式を確認してください。');
+    } finally {
+      event.target.value = ''; // 同じファイルを連続で選べるようリセット
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* =====================================================
+   【ユーティリティ】XSS対策のエスケープ処理
+   ===================================================== */
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+function escapeAttr(str) {
+  return escapeHtml(str).replace(/'/g, '&#39;');
+}
+</script>
+</body>
+</html>
