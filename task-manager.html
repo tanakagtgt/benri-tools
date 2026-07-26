@@ -10,6 +10,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
 
+<!-- QRコード生成ライブラリ（common.jsのshowQrで使用） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<!-- ★共通CSS（ナビ／おすすめ／広告／シェア／QR／フッター等）本番パスに書き換える -->
+<link rel="stylesheet" href="/common.css">
+
 <!-- ドラッグ＆ドロップ用ライブラリ（スマホのタッチ操作にも対応） -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 
@@ -60,8 +66,9 @@ body{
   font-family:'BIZ UDPGothic', sans-serif;
   min-height:100vh;
   -webkit-text-size-adjust:100%;
-  /* 下部タブ＋FABの分だけ余白を確保 */
-  padding-bottom:150px;
+  /* ★common.cssのbody{display:flex;padding:24px 14px 60px;}を打ち消し、元のレイアウトを維持 */
+  display:block;
+  padding:0 0 150px; /* 下部タブ＋FABの分だけ余白を確保 */
 }
 
 .container{width:100%;max-width:620px;margin:0 auto;padding:16px 12px 0;}
@@ -69,14 +76,14 @@ body{
 /* =====================================================
    ヘッダー
    ===================================================== */
-header{margin-bottom:12px;}
+header{margin-bottom:12px;text-align:left;} /* ★common.cssのheader{text-align:center}を打ち消す */
 h1{
   font-size:clamp(18px,5vw,22px);
   font-weight:700;
   color:var(--color-primary);
   margin-bottom:2px;
 }
-.subtitle{font-size:11px;color:var(--color-text-muted);}
+.subtitle{font-size:11px;color:var(--color-text-muted);line-height:normal;} /* ★common.cssのline-height:1.8を打ち消す */
 
 /* =====================================================
    現在日時カード（令和／西暦／曜日／時分）
@@ -721,6 +728,7 @@ footer{
   font-size:10.5px;
   color:var(--color-text-label);
   padding:10px 0 20px;
+  margin-top:0; /* ★common.cssのfooter{margin-top:16px}を打ち消す */
 }
 
 /* =====================================================
@@ -757,6 +765,9 @@ footer{
 </head>
 <body>
 <div class="container">
+
+  <!-- ナビ：ツール一覧に戻るボタン＋おすすめツール（共通・common.jsが自動注入。触らない） -->
+  <div id="topNavSlot"></div>
 
   <header>
     <h1>✅ タスク管理ツール</h1>
@@ -870,7 +881,23 @@ footer{
       会員登録やサーバー通信は一切不要で、入力したデータはこの端末のブラウザ内だけに保存されます。ブラウザのデータを削除するとタスクも消えるため、大事なデータはJSONエクスポートで定期的にバックアップすることをおすすめします。
     </p>
   </section>
-</div>
+
+  <!-- シェアエリア（共通・common.jsが自動注入。触らない） -->
+  <div id="shareAreaSlot"></div>
+
+  <!-- 下部ナビ（共通・common.jsが自動注入。触らない） -->
+  <div id="bottomNavSlot"></div>
+
+  <!-- 広告エリア（共通・common.jsが自動注入。触らない） -->
+  <div id="adAreaSlot"></div>
+
+</div><!-- /.container -->
+
+<!-- QRコードモーダル（共通・common.jsが自動注入。触らない） -->
+<div id="qrModalSlot"></div>
+
+<!-- フッター（共通・common.jsが自動注入。触らない） -->
+<div id="footerSlot"></div>
 
 <!-- タスク追加ボタン（片手操作しやすい右下固定） -->
 <button class="fab-add" onclick="openModal()">＋</button>
@@ -975,11 +1002,37 @@ footer{
   </div>
 </div>
 
+<!-- ★共通JS（ナビ／おすすめ／シェア／QR／フッター等）本番パスに書き換える -->
+<script src="/common.js"></script>
+
+<!-- =====================================================
+     ★ここから下がツール固有部分
+     ===================================================== -->
 <script>
 /* =====================================================
    ★設定（将来の機能追加はこの上部セクションを起点に拡張する）
    ===================================================== */
+
+// tools.json内のid（おすすめ表示で自分自身を除外するために使用。実際のidに合わせて書き換える）
+const CURRENT_TOOL_ID = 'task-manager';
+
 const STORAGE_KEY = 'task_manager_tasks_v1';
+
+/* =====================================================
+   ★共通シェア機能（common.jsのshareX/shareLine/shareUrlから呼ばれる）
+   - このツールには「計算結果」が無いため、calculateInputs/calculateResultは
+     ダミーを返すだけにして、共有ボタンを動かすためだけに用意している
+   ===================================================== */
+function calculateInputs() { return {}; }
+function calculateResult() { return {}; } // 空オブジェクトでもtruthyなのでshareX/shareLineが正常に動く
+
+function buildShareText() {
+  return '✅ タスク管理ツール\n重要度×緊急度のマトリクスで優先順位を整理できる無料ツールです！';
+}
+
+function buildShareUrl() {
+  return location.href.split('?')[0];
+}
 
 // フィルタタブの定義（★ここに追加すればタブが増える設計）
 const FILTER_TABS = [
