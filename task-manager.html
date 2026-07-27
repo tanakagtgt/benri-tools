@@ -1068,6 +1068,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderFilterTabs();
   renderAll();
   initSortable();
+  initKeyboardShortcuts(); // ★モーダル内Ctrl+S保存（③対応）
   renderNowClock();
   setInterval(renderNowClock, 30 * 1000); // 30秒ごとに時刻を更新
 });
@@ -1099,6 +1100,11 @@ function loadTasks() {
 function todayStr() {
   const d = new Date();
   return formatDate(d);
+}
+// ★「更新:」トレーラー行専用（④対応）：YYYY-MM-DDのハイフンを抜いた表記（例：20260727）
+//   ※<input type="date">に入れる値はYYYY-MM-DD形式が必須のため、todayStr()自体は変更しない
+function todayCompactStr() {
+  return todayStr().replace(/-/g, '');
 }
 function formatDate(d) {
   const y = d.getFullYear();
@@ -1453,9 +1459,24 @@ function handleZoneDrop(evt) {
     t.completed = false;
   }
 
+  // ★同一ゾーン内での上下並び替えを反映する（移動先のDOM順序をorderとして振り直す）
+  //   ゾーンをまたいだ移動の場合は、移動元ゾーンに残った項目の並びも振り直す
+  reorderZone(evt.to);
+  if (evt.from !== evt.to) reorderZone(evt.from);
+
   saveTasks();
   renderFilterTabs(); // 完了件数などタブのカウントを更新
   renderAll();         // 各ゾーンの表示を再構築
+}
+
+// 指定ゾーン（DOM要素）内の子要素の並び順を、tasksのorderフィールドへ反映する
+// ★これをやらないと、ドラッグで並び替えてもrenderAll()時に元の順序へ戻ってしまう
+function reorderZone(zoneEl) {
+  const ids = [...zoneEl.children].map(el => el.dataset.id);
+  ids.forEach((id, index) => {
+    const t = tasks.find(t => t.id === id);
+    if (t) t.order = index;
+  });
 }
 
 /* =====================================================
@@ -1484,7 +1505,7 @@ function openModal(id) {
     document.getElementById('fieldTitle').value = '';
     document.getElementById('fieldNote').value = '';
     document.getElementById('fieldAdded').value = todayStr(); // 追加日の初期値は今日
-    document.getElementById('fieldDue').value = '';
+    document.getElementById('fieldDue').value = todayStr(); // ★締切日（任意）の初期値も今日にする（②対応）
     document.getElementById('fieldTags').value = '';
     initQuadrant(null);
     deleteBtn.style.display = 'none';
@@ -1584,6 +1605,30 @@ function saveTaskFromModal() {
   return savedTask; // ★「保存してGoogleカレンダーへ」ボタンから呼ばれた時のために保存後のタスクを返す
 }
 
+/* =====================================================
+   【キーボードショートカット】Ctrl+S（Macはcmd+Sも）で保存
+   - タスク追加／編集モーダルが開いている時だけ有効
+   - ★「どの欄も選択状態でない」時のみ発火させる仕様
+     （input/textarea/selectにフォーカスがある時は、ブラウザ標準の
+       Ctrl+S（ページ保存）を邪魔しないようにあえて何もしない）
+   ===================================================== */
+function initKeyboardShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    const key = e.key.toLowerCase();
+    if (!(e.ctrlKey || e.metaKey) || key !== 's') return;
+
+    const overlay = document.getElementById('modalOverlay');
+    if (!overlay.classList.contains('show')) return; // モーダル非表示時は何もしない
+
+    const active = document.activeElement;
+    const isFieldFocused = active && ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName);
+    if (isFieldFocused) return; // ★いずれかの入力欄が選択状態の時は対象外
+
+    e.preventDefault(); // ブラウザの「ページを保存」ダイアログを抑止
+    saveTaskFromModal();
+  });
+}
+
 function deleteCurrentTask() {
   if (!editingTaskId) return;
   if (!confirm('このタスクを削除しますか？')) return;
@@ -1595,11 +1640,14 @@ function deleteCurrentTask() {
 
 /* =====================================================
    【メモ末尾トレーラー】更新日／UIDの付け外し共通処理
-   ・「更新: YYYY-MM-DD」「UID: xxxx」の2種類の行をメモ末尾に管理する
+   ・「更新: YYYYMMDD」「UID: xxxx」の2種類の行をメモ末尾に管理する
    ・編集のたびに古いトレーラー行を一旦取り除いてから付け直すので、
      「更新日」行が編集のたびに増殖することはない（常に最新の1行だけになる）
    ===================================================== */
-const UPDATE_LINE_RE = /^更新: \d{4}-\d{2}-\d{2}$/;
+// ★表記変更（④対応）：新規は「更新: 20260727」形式（YYYYMMDD）で付与する
+//   旧データに残っている「更新: 2026-07-27」形式（ハイフン区切り）も
+//   編集時に確実に取り除けるよう、正規表現は両方にマッチさせておく
+const UPDATE_LINE_RE = /^更新: (\d{4}-\d{2}-\d{2}|\d{8})$/;
 const UID_LINE_RE = /^UID: /;
 
 // メモ本文から「更新:」「UID:」のトレーラー行を取り除き、ユーザーが書いた本文だけを返す
@@ -1617,7 +1665,7 @@ function stripTrailerLines(note) {
 function buildNoteWithTrailers(rawNote, options) {
   const core = stripTrailerLines(rawNote);
   const lines = core ? [core] : [];
-  if (options.addUpdateLine) lines.push(`更新: ${todayStr()}`);
+  if (options.addUpdateLine) lines.push(`更新: ${todayCompactStr()}`);
   if (options.icsUid) lines.push(`UID: ${options.icsUid}`);
   return lines.join('\n');
 }
