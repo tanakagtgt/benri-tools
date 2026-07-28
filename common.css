@@ -587,11 +587,24 @@ footer {
   font-size: 11px;
   color: var(--color-text-label);
 }
+
+/* フッター内リンク一覧（ツール一覧／このサイトについて／利用規約 等）
+   ・スマホでも折り返して読める横並びレイアウト
+   ・「｜」区切りはCSSのborder-leftで表現（テキストとして埋め込まない） */
+.footer-links {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0 10px;
+  margin-top: 8px;
+}
 .footer-back {
   display: inline-block;
-  margin-top: 8px;
   color: var(--color-primary);
   font-size: 11px;
   text-decoration: none;
+  padding-left: 10px;
+  border-left: 1px solid var(--color-border);
 }
+.footer-back:first-child { padding-left: 0; border-left: none; }
 .footer-back:hover { text-decoration: underline; }
