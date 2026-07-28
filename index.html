@@ -275,13 +275,22 @@ crossorigin="anonymous"></script>
     font-size: 11px;
     color: var(--color-text-label);
   }
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0 10px;
+    margin-top: 8px;
+  }
   .footer-back {
     display: inline-block;
-    margin-top: 8px;
     color: var(--color-primary);
     font-size: 11px;
     text-decoration: none;
+    padding-left: 10px;
+    border-left: 1px solid var(--color-border);
   }
+  .footer-back:first-child { padding-left: 0; border-left: none; }
   .footer-back:hover { text-decoration: underline; }
 </style>
 </head>
@@ -424,10 +433,14 @@ crossorigin="anonymous"></script>
 
 <!-- フッター -->
 <footer>
-  © 2026 アリガイツ<br>
-  <a class="footer-back" href="https://x.com/arigaitsu" target="_blank" rel="noopener">🐦 作成者X</a>
-  ・
-  <a class="footer-back" href="https://docs.google.com/forms/d/e/1FAIpQLSfUe9UzcRcIRFb4TmDAYKsZ75CcGRjF8Z7Ar_u7a4KgyyNyzQ/viewform?usp=publish-editor" target="_blank" rel="noopener">💡 作ってほしいツール・ご意見はこちら</a>
+  © 2026 アリガイツ
+  <nav class="footer-links">
+    <a class="footer-back" href="/index.html">ツール一覧</a>
+    <a class="footer-back" href="/about.html">このサイトについて</a>
+    <a class="footer-back" href="/privacy-policy.html">プライバシーポリシー</a>
+    <a class="footer-back" href="/terms.html">利用規約</a>
+    <a class="footer-back" href="https://docs.google.com/forms/d/e/1FAIpQLSfUe9UzcRcIRFb4TmDAYKsZ75CcGRjF8Z7Ar_u7a4KgyyNyzQ/viewform?usp=publish-editor" target="_blank" rel="noopener">お問い合わせ</a>
+  </nav>
 </footer>
 
 <!-- QRコードモーダル -->
