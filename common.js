@@ -70,21 +70,23 @@ function injectCommonUI() {
 </div>`;
 
   const adArea = document.getElementById('adAreaSlot');
-  if (adArea) adArea.outerHTML = `
+  if (adArea) {
+    adArea.outerHTML = `
 <div class="ad-area">
   <div class="ad-area-label">スポンサー</div>
-
   <ins class="adsbygoogle"
-       style="display:block"
+       style="display:inline-block;width:320px;height:100px"
        data-ad-client="ca-pub-2195458991382480"
-       data-ad-slot="XXXXXXXXXX"
-       data-ad-format="auto"
-       data-full-width-responsive="true"></ins>
-
-  <script>
-    (adsbygoogle = window.adsbygoogle || []).push({});
-  </script>
+       data-ad-slot="【広告ユニットIDをここに】"></ins>
 </div>`;
+    // 固定サイズ広告のpush処理
+    // ★動的に挿入したinsタグは自動読込されないため、都度pushが必要
+    try {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (e) {
+      // AdSense未読込・広告ブロッカー等で失敗しても他の処理を止めない
+    }
+  }
 
   const shareArea = document.getElementById('shareAreaSlot');
   if (shareArea) shareArea.outerHTML = `
