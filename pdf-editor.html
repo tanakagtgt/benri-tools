@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<link rel="canonical" href="https://arigato-tools.com/pdf-editor">
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NXJCSR0EX1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-NXJCSR0EX1');
+</script>
+<!-- Google AdSense -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2195458991382480" crossorigin="anonymous"></script>
+
+<!--
+  =====================================================
+  【このツールについて（他ツールとの構造の違い）】
+  pdf-editorはPDF結合・分割・回転・透かし等を行う
+  「ワークスペース型」ツールで、電卓系ツール共通の
+  .card / .input-group / .result-panel 構造は使っていない。
+  UIはTailwind CSSベースの独自レイアウトのまま維持し、
+  サイト共通のナビ／シェア／リセット／広告／フッター／
+  QRモーダルだけを common.js / common.css のスロット方式で
+  差し込んでいる（詳細は下記の各コメント参照）。
+  =====================================================
+-->
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>PDF編集ツール｜結合・分割・回転・透かし追加（ブラウザ完結）</title>
+<meta name="description" content="PDFの結合・ページ削除・並び替え・回転・透かし追加・ページ番号付与・画像変換がブラウザだけで完結する無料ツール。データはサーバーに送信されずローカル処理されます。">
+
+<meta property="og:title" content="PDF編集ツール｜結合・分割・回転・透かし追加（ブラウザ完結）">
+<meta property="og:description" content="PDFの結合・ページ削除・並び替え・回転・透かし追加・ページ番号付与・画像変換がブラウザだけで完結する無料ツール。データはサーバーに送信されずローカル処理されます。">
+<meta property="og:url" content="https://arigato-tools.com/pdf-editor">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="便利ツール集">
+<meta name="twitter:card" content="summary_large_image">
+
+<!-- 共通スロット（ナビ/シェア/フッター等）で使うフォント -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+
+<!-- Tailwind CSS（ツール本体のUIはこのままTailwindで構築） -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- FontAwesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- pdf-lib -->
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<!-- pdf.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+</script>
+<!-- QRコード生成ライブラリ（common.jsのshowQrで使用） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<!-- ★共通CSS（ナビ/シェア/フッター等のスロット部分に適用される） -->
+<link rel="stylesheet" href="/common.css">
+
+<style>
+.drag-over { border-color: #3b82f6 !important; background-color: #eff6ff !important; }
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+.page-card { transition: all 0.2s ease; }
+.page-card:hover { transform: translateY(-2px); shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+.page-selected { ring: 2px solid #3b82f6; background-color: #eff6ff; }
+
+/* =====================================================
+   ★common.css 上書き（重要）
+   common.cssは電卓系ツール向けに body/header/h1 に直接
+   スタイルを当てているため、そのままだとこのツールの
+   Tailwindレイアウト（ヘッダー黒帯・全幅ワークスペース等）
+   が崩れる。ここで該当プロパティだけピンポイントに戻す。
+   ※ この<style>はcommon.cssの<link>より後ろに置くことで
+     同じ詳細度のルールに勝つ（読み込み順で上書き）。
+   ===================================================== */
+body {
+  padding: 0;          /* common.cssのbody paddingを解除 */
+  align-items: stretch; /* common.cssのcenter寄せを解除（全幅に戻す） */
+}
+header {
+  text-align: left;   /* common.cssのcenter寄せを解除 */
+  margin-bottom: 0;    /* common.cssの余白を解除 */
+}
+header h1 {
+  color: #fff;         /* common.cssの青文字を解除し、元の白文字に戻す */
+  margin-bottom: 0;
+}
+</style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col font-sans antialiased">
+
+<!-- 共通トップナビ（ツール一覧に戻る＋おすすめ。common.jsが自動注入。触らない） -->
+<div class="px-4 pt-3" id="topNavSlot"></div>
+
+<!-- Header -->
+<header class="bg-slate-900 text-white shadow-md z-10">
+<div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center">
+<div class="flex items-center space-x-3">
+<div class="bg-red-600 text-white p-2 rounded-lg">
+<i class="fa-solid fa-file-pdf text-xl"></i>
+</div>
+<div>
+<h1 class="text-lg font-bold tracking-wide leading-tight">PDF Workbench</h1>
+<p class="text-xs text-slate-400">リアルタイムプレビュー＆一括編集ワークスペース</p>
+</div>
+</div>
+
+<!-- Current File Info / Actions -->
+<div id="header-file-info" class="hidden flex items-center space-x-3 text-sm">
+<span class="bg-slate-800 text-slate-300 px-3 py-1 rounded-full border border-slate-700 text-xs flex items-center gap-2">
+<i class="fa-solid fa-file"></i> <span id="current-filename-disp">document.pdf</span>
+<span class="text-slate-500">|</span>
+<span id="current-pagecount-disp" class="text-slate-400">0 ページ</span>
+</span>
+<button onclick="resetAll()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-md border border-slate-700 transition">
+<i class="fa-solid fa-rotate-left mr-1"></i> 別のファイルを開く
+</button>
+</div>
+</div>
+</header>
+
+<!-- Upload State View -->
+<main id="upload-view" class="flex-grow flex items-center justify-center p-6">
+<div class="max-w-xl w-full bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center space-y-6">
+<div class="inline-flex items-center justify-center w-16 h-16 bg-blue-50 text-blue-600 rounded-full text-2xl mb-2">
+<i class="fa-solid fa-cloud-arrow-up"></i>
+</div>
+<div>
+<h2 class="text-xl font-bold text-slate-800">PDFをアップロードして編集を開始</h2>
+<p class="text-xs text-slate-500 mt-1">1つまたは複数のPDFを選択して統合ワークスペースで編集・プレビューできます</p>
+</div>
+
+<div id="drop-main" class="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-xl p-10 bg-slate-50 hover:bg-blue-50/50 transition cursor-pointer">
+<i class="fa-solid fa-file-pdf text-4xl text-slate-400 mb-3"></i>
+<p class="text-sm font-medium text-slate-700">PDFファイルをドラッグ＆ドロップ</p>
+<p class="text-xs text-slate-400 mt-1">またはクリックしてファイルを選択（複数可）</p>
+<input type="file" id="file-main" accept="application/pdf" multiple class="hidden">
+</div>
+
+<div class="flex items-center justify-center space-x-6 text-xs text-slate-400 border-t border-slate-100 pt-4">
+<span class="flex items-center gap-1.5"><i class="fa-solid fa-shield-halved text-emerald-500"></i> 完全ローカル処理</span>
+<span class="flex items-center gap-1.5"><i class="fa-solid fa-eye text-blue-500"></i> リアルタイムプレビュー</span>
+<span class="flex items-center gap-1.5"><i class="fa-solid fa-bolt text-amber-500"></i> 高速動作</span>
+</div>
+</div>
+</main>
+
+<!-- Editor Workspace View (Hidden by default) -->
+<!-- ★高さはh-[calc(100vh-61px)]のような固定値ではなくflex-grow+min-h-0に変更。
+     共通ナビ（topNavSlot）の高さが変わっても自動で残り領域いっぱいに広がる -->
+<div id="editor-view" class="hidden flex-grow flex flex-col md:flex-row min-h-0 overflow-hidden">
+
+<!-- Left Panel: Controls & Tools -->
+<aside class="w-full md:w-96 bg-white border-r border-slate-200 flex flex-col h-full z-10 shadow-sm">
+
+<!-- Tools Accordion Navigation -->
+<div class="p-3 border-b border-slate-200 bg-slate-50/50 flex space-x-1 overflow-x-auto text-xs font-medium">
+<button onclick="switchToolTab('pages')" id="tab-pages" class="tool-tab flex-1 py-2 px-3 rounded-lg bg-white shadow-sm border border-slate-200 text-blue-600 font-semibold text-center">
+<i class="fa-solid fa-border-all mr-1"></i> ページ編集
+</button>
+<button onclick="switchToolTab('text-stamp')" id="tab-text-stamp" class="tool-tab flex-1 py-2 px-3 rounded-lg text-slate-600 hover:bg-white/60 text-center">
+<i class="fa-solid fa-stamp mr-1"></i> 透かし・印影
+</button>
+<button onclick="switchToolTab('append')" id="tab-append" class="tool-tab flex-1 py-2 px-3 rounded-lg text-slate-600 hover:bg-white/60 text-center">
+<i class="fa-solid fa-plus mr-1"></i> 追加・変換
+</button>
+</div>
+
+<!-- Tools Body Area (Scrollable) -->
+<div class="flex-grow overflow-y-auto p-4 space-y-6">
+
+<!-- TOOL SECTION 1: Page Management -->
+<div id="tool-sec-pages" class="tool-sec space-y-5">
+<div>
+<h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">ページ選択・操作</h3>
+<div class="grid grid-cols-2 gap-2 text-xs">
+<button onclick="rotateSelectedPages(90)" class="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-medium flex items-center justify-center gap-2 transition">
+<i class="fa-solid fa-rotate-right text-blue-500"></i> 選択分を90°回転
+</button>
+<button onclick="deleteSelectedPages()" class="p-2.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg text-rose-700 font-medium flex items-center justify-center gap-2 transition">
+<i class="fa-solid fa-trash text-rose-500"></i> 選択ページを削除
+</button>
+</div>
+</div>
+
+<div class="pt-3 border-t border-slate-100">
+<h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">一括回転</h3>
+<div class="grid grid-cols-3 gap-2 text-xs">
+<button onclick="rotateAllPages(90)" class="p-2 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 font-medium">全90°</button>
+<button onclick="rotateAllPages(180)" class="p-2 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 font-medium">全180°</button>
+<button onclick="rotateAllPages(270)" class="p-2 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 font-medium">全270°</button>
+</div>
+</div>
+
+<div class="pt-3 border-t border-slate-100 space-y-2">
+<h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">選択ヘルパー</h3>
+<div class="flex gap-2 text-xs">
+<button onclick="selectAllPages(true)" class="flex-1 py-1.5 px-2 bg-slate-100 hover:bg-slate-200 rounded text-slate-600">全選択</button>
+<button onclick="selectAllPages(false)" class="flex-1 py-1.5 px-2 bg-slate-100 hover:bg-slate-200 rounded text-slate-600">全解除</button>
+</div>
+</div>
+</div>
+
+<!-- TOOL SECTION 2: Watermark, Text, Stamp & Page Numbers -->
+<div id="tool-sec-text-stamp" class="tool-sec hidden space-y-5">
+
+<!-- Text Watermark -->
+<div class="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
+<h4 class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+<i class="fa-solid fa-font text-purple-600"></i> 透かし（ウォーターマーク）
+</h4>
+<div class="space-y-2 text-xs">
+<div>
+<label class="block text-slate-500 mb-1">文字内容</label>
+<input type="text" id="cfg-wm-text" placeholder="例: CONFIDENTIAL / 社外秘" class="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs">
+</div>
+<div class="grid grid-cols-2 gap-2">
+<div>
+<label class="block text-slate-500 mb-1">サイズ (pt)</label>
+<input type="number" id="cfg-wm-size" value="42" class="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs">
+</div>
+<div>
+<label class="block text-slate-500 mb-1">不透明度 (0.1〜1)</label>
+<input type="number" id="cfg-wm-opacity" value="0.2" step="0.05" min="0.05" max="1" class="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs">
+</div>
+</div>
+</div>
+</div>
+
+<!-- Page Numbers -->
+<div class="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+<h4 class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+<i class="fa-solid fa-list-ol text-purple-600"></i> ページ番号
+</h4>
+<label class="inline-flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+<input type="checkbox" id="cfg-pagenum-enable" class="rounded text-purple-600 focus:ring-purple-500">
+<span>ページ最下部中央に番号付与</span>
+</label>
+</div>
+
+<!-- Stamp / Logo Image -->
+<div class="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
+<h4 class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+<i class="fa-solid fa-stamp text-purple-600"></i> 印影 / 画像追加
+</h4>
+<div class="space-y-2 text-xs">
+<input type="file" id="cfg-stamp-file" accept="image/png, image/jpeg" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-purple-100 file:text-purple-700">
+<div>
+<label class="block text-slate-500 mb-1">配置位置</label>
+<select id="cfg-stamp-pos" class="w-full px-2 py-1.5 border border-slate-300 rounded bg-white text-xs">
+<option value="top-right">右上（承認印）</option>
+<option value="bottom-right">右下</option>
+<option value="top-left">左上</option>
+<option value="bottom-left">左下</option>
+</select>
+</div>
+</div>
+</div>
+
+<button onclick="renderAllPreviews()" class="w-full py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs font-semibold rounded-lg border border-purple-300 transition">
+<i class="fa-solid fa-arrows-rotate mr-1"></i> 装飾プレビューを更新
+</button>
+</div>
+
+<!-- TOOL SECTION 3: Append PDF/Images & Export -->
+<div id="tool-sec-append" class="tool-sec hidden space-y-5">
+<!-- Merge / Append Files -->
+<div class="space-y-2">
+<h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">PDFや画像の追加入力</h3>
+<p class="text-xs text-slate-500">現在のPDFの末尾に新しいファイルを追加統合します。</p>
+<button onclick="document.getElementById('file-append').click()" class="w-full py-2.5 px-3 bg-slate-50 hover:bg-slate-100 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 flex items-center justify-center gap-2">
+<i class="fa-solid fa-plus text-blue-500"></i> PDF・画像を追加読み込み
+</button>
+<input type="file" id="file-append" accept="application/pdf, image/png, image/jpeg, image/webp" multiple class="hidden">
+</div>
+
+<!-- Export PDF / Images -->
+<div class="pt-4 border-t border-slate-200 space-y-2">
+<h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">その他の書き出し</h3>
+<button onclick="exportAsImages()" class="w-full py-2 px-3 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg text-xs font-medium text-rose-700 flex items-center justify-center gap-2">
+<i class="fa-solid fa-images"></i> 全ページを画像(PNG)で書き出し
+</button>
+</div>
+</div>
+
+</div>
+
+<!-- Action Footer: Download PDF -->
+<div class="p-4 border-t border-slate-200 bg-slate-50 space-y-2">
+<button onclick="downloadFinalPDF()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-md transition flex items-center justify-center gap-2 text-sm">
+<i class="fa-solid fa-file-arrow-down"></i> PDFを書き出して保存
+</button>
+</div>
+</aside>
+
+<!-- Right Panel: Interactive Visual Page Grid & Preview -->
+<section class="flex-grow bg-slate-200/70 p-6 overflow-y-auto flex flex-col">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center space-x-2">
+<h2 class="text-sm font-bold text-slate-700">ページプレビュー（ドラッグ＆ドロップで並び替え可能）</h2>
+<span id="badge-page-count" class="bg-slate-300 text-slate-700 text-xs px-2 py-0.5 rounded-full font-semibold">0 ページ</span>
+</div>
+<div class="text-xs text-slate-500">
+クリックして個別選択・操作
+</div>
+</div>
+
+<!-- Page Grid Container -->
+<div id="pages-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+<!-- Dynamically rendered pages with canvases -->
+</div>
+</section>
+</div>
+
+<!-- =====================================================
+     共通フッター群（サイト共通のシェア／リセット／下部ナビ／
+     広告／フッター）。中身はcommon.jsが自動注入するので、
+     このブロック自体（スロットのdiv）は触らない。
+     ワークスペース本体（黒帯ヘッダー〜編集画面）は全幅のまま、
+     ここだけ読みやすい幅に収めて下に並べている。
+     ===================================================== -->
+<div class="px-4 md:px-6 py-6 max-w-5xl mx-auto w-full space-y-4">
+  <!-- シェアエリア -->
+  <div id="shareAreaSlot"></div>
+  <!-- リセットボタン（クリック時、ツール本体のresetAll()が呼ばれてワークスペースを初期化） -->
+  <div id="resetBtnSlot"></div>
+  <!-- 下部ナビ -->
+  <div id="bottomNavSlot"></div>
+  <!-- 広告エリア -->
+  <div id="adAreaSlot"></div>
+</div>
+
+<!-- フッター -->
+<div id="footerSlot"></div>
+
+<!-- QRコードモーダル（common.jsが自動注入。触らない） -->
+<div id="qrModalSlot"></div>
+
+<!-- Toast Notification -->
+<div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl text-sm flex items-center space-x-3 transition opacity-0 pointer-events-none transform translate-y-2 z-50">
+<i id="toast-icon" class="fa-solid fa-circle-info text-blue-400"></i>
+<span id="toast-msg">処理を実行しました</span>
+</div>
+
+<!-- ★共通JS（おすすめ読込／シェア／リセットボタン等）本番パスに書き換える -->
+<script src="/common.js"></script>
+
+<script>
+/* =====================================================
+   common.js 連携用の最低限の定義
+   ※このツールは電卓系ツールと違い、単一の入力欄→計算結果という
+     構造を持たないため、common.jsのcalculate()/saveInputs()等の
+     仕組みは使わない（onInputChange()を呼ぶ要素がそもそも無い）。
+   ※ただし以下だけは共通シェアボタン（𝕏／LINE／URL／QR）から
+     直接呼ばれるため、動くように最低限の値を定義しておく。
+   ===================================================== */
+
+// tools.json内のid（おすすめツール一覧から自分自身を除外するため）
+const CURRENT_TOOL_ID = 'pdf-editor';
+
+// 𝕏・LINEシェアボタンが calculateInputs()/calculateResult() を
+// 前提にしているため、ダミーの非null結果を返すだけの実装にしておく
+function calculateInputs() { return {}; }
+function calculateResult(inputs) { return { main: 1 }; }
+
+// シェア文言・シェアURL（🔗URLコピー／𝕏／LINE／QR共通）
+function buildShareText(result) {
+  return '📄 PDF Workbench｜ブラウザだけで完結するPDF編集ツール（結合・分割・回転・透かし・ページ番号追加）';
+}
+function buildShareUrl() {
+  return location.href.split('?')[0];
+}
+</script>
+
+<script>
+// State Data Structure
+// pages = Array<{ id: string, pdfDoc: PDFDocument, originalPageIndex: number, rotation: number, isSelected: boolean, stampImageBytes?: ArrayBuffer }>
+let pageStateList = [];
+let draggedPageIndex = null;
+
+// Toast helper
+function showToast(msg, type = 'info') {
+const toast = document.getElementById('toast');
+const toastMsg = document.getElementById('toast-msg');
+const toastIcon = document.getElementById('toast-icon');
+
+toastMsg.textContent = msg;
+if (type === 'error') toastIcon.className = 'fa-solid fa-circle-exclamation text-rose-400';
+else if (type === 'success') toastIcon.className = 'fa-solid fa-circle-check text-emerald-400';
+else toastIcon.className = 'fa-solid fa-circle-info text-blue-400';
+
+toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-2');
+setTimeout(() => toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-2'), 3000);
+}
+
+// Tab Switching inside editor sidebar
+function switchToolTab(tabId) {
+document.querySelectorAll('.tool-tab').forEach(el => {
+el.classList.remove('bg-white', 'shadow-sm', 'border', 'border-slate-200', 'text-blue-600', 'font-semibold');
+el.classList.add('text-slate-600');
+});
+document.querySelectorAll('.tool-sec').forEach(el => el.classList.add('hidden'));
+
+document.getElementById('tab-' + tabId).classList.add('bg-white', 'shadow-sm', 'border', 'border-slate-200', 'text-blue-600', 'font-semibold');
+document.getElementById('tool-sec-' + tabId).classList.remove('hidden');
+}
+
+// Reset Workspace
+// ★common.jsにも同名のresetAll()があるが、後から読み込まれるこちらが
+//   グローバルの実体を上書きする（意図的な挙動）。
+//   共通リセットボタン（#resetBtnSlot）はcommon.jsのhandleReset()経由で
+//   resetAll()を呼ぶので、ボタンを押すとこのワークスペース初期化が動く。
+function resetAll() {
+pageStateList = [];
+document.getElementById('editor-view').classList.add('hidden');
+document.getElementById('header-file-info').classList.add('hidden');
+document.getElementById('upload-view').classList.remove('hidden');
+document.getElementById('file-main').value = '';
+}
+
+// Main Drag & Drop / Upload setup
+const dropMain = document.getElementById('drop-main');
+const fileMain = document.getElementById('file-main');
+
+dropMain.addEventListener('click', () => fileMain.click());
+dropMain.addEventListener('dragover', (e) => { e.preventDefault(); dropMain.classList.add('drag-over'); });
+dropMain.addEventListener('dragleave', () => dropMain.classList.remove('drag-over'));
+dropMain.addEventListener('drop', (e) => {
+e.preventDefault();
+dropMain.classList.remove('drag-over');
+if (e.dataTransfer.files.length) loadFiles(Array.from(e.dataTransfer.files));
+});
+fileMain.addEventListener('change', (e) => {
+if (e.target.files.length) loadFiles(Array.from(e.target.files));
+});
+
+// Append File listener
+document.getElementById('file-append').addEventListener('change', (e) => {
+if (e.target.files.length) loadFiles(Array.from(e.target.files), true);
+});
+
+// Load PDF or Image Files into state
+async function loadFiles(files, isAppend = false) {
+showToast('ファイルを読み込み中...', 'info');
+try {
+if (!isAppend) pageStateList = [];
+
+for (const file of files) {
+if (file.type === 'application/pdf') {
+const arrayBuffer = await file.arrayBuffer();
+const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+const count = pdfDoc.getPageCount();
+
+for (let i = 0; i < count; i++) {
+pageStateList.push({
+id: Math.random().toString(36).substring(2, 9),
+pdfDoc: pdfDoc,
+originalPageIndex: i,
+rotation: 0,
+isSelected: false,
+sourceName: file.name
+});
+}
+} else if (file.type.startsWith('image/')) {
+// Convert image to a single-page PDF document on the fly
+const imgBuffer = await file.arrayBuffer();
+const tempPdf = await PDFLib.PDFDocument.create();
+let img;
+if (file.type === 'image/png') img = await tempPdf.embedPng(imgBuffer);
+else img = await tempPdf.embedJpg(imgBuffer);
+
+const page = tempPdf.addPage([img.width, img.height]);
+page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+
+pageStateList.push({
+id: Math.random().toString(36).substring(2, 9),
+pdfDoc: tempPdf,
+originalPageIndex: 0,
+rotation: 0,
+isSelected: false,
+sourceName: file.name
+});
+}
+}
+
+if (pageStateList.length === 0) {
+showToast('有効なファイルが見つかりませんでした', 'error');
+return;
+}
+
+// Switch to Editor View
+document.getElementById('upload-view').classList.add('hidden');
+document.getElementById('editor-view').classList.remove('hidden');
+document.getElementById('header-file-info').classList.remove('hidden');
+
+const firstFileName = files[0].name + (files.length > 1 ? ` 他${files.length-1}件` : '');
+document.getElementById('current-filename-disp').textContent = firstFileName;
+
+await renderAllPreviews();
+showToast('読み込み完了！編集を開始できます', 'success');
+
+} catch (err) {
+console.error(err);
+showToast('ファイルの読み込み中にエラーが発生しました', 'error');
+}
+}
+
+// Render / Re-render Grid Previews
+async function renderAllPreviews() {
+const grid = document.getElementById('pages-grid');
+grid.innerHTML = '';
+document.getElementById('badge-page-count').textContent = `${pageStateList.length} ページ`;
+document.getElementById('current-pagecount-disp').textContent = `${pageStateList.length} ページ`;
+
+// Read current watermark options to apply on live preview
+const wmText = document.getElementById('cfg-wm-text').value.trim();
+const addNum = document.getElementById('cfg-pagenum-enable').checked;
+const stampInput = document.getElementById('cfg-stamp-file');
+let stampImg = null;
+if (stampInput.files.length > 0) {
+const file = stampInput.files[0];
+stampImg = await loadImageElement(URL.createObjectURL(file));
+}
+
+for (let idx = 0; idx < pageStateList.length; idx++) {
+const item = pageStateList[idx];
+
+// Card Container
+const card = document.createElement('div');
+card.className = `page-card relative bg-white border border-slate-200 rounded-xl p-3 flex flex-col items-center space-y-2 shadow-sm cursor-pointer select-none ${item.isSelected ? 'ring-2 ring-blue-500 bg-blue-50/30' : ''}`;
+card.draggable = true;
+card.dataset.index = idx;
+
+// Drag and Drop ordering events
+card.addEventListener('dragstart', (e) => {
+draggedPageIndex = idx;
+card.classList.add('opacity-40');
+});
+card.addEventListener('dragend', () => card.classList.remove('opacity-40'));
+card.addEventListener('dragover', (e) => e.preventDefault());
+card.addEventListener('drop', (e) => {
+e.preventDefault();
+if (draggedPageIndex !== null && draggedPageIndex !== idx) {
+const moved = pageStateList.splice(draggedPageIndex, 1)[0];
+pageStateList.splice(idx, 0, moved);
+renderAllPreviews();
+}
+});
+
+// Click to toggle selection
+card.addEventListener('click', (e) => {
+if (e.target.closest('button')) return; // ignore button clicks
+item.isSelected = !item.isSelected;
+renderAllPreviews();
+});
+
+// Canvas element
+const canvas = document.createElement('canvas');
+canvas.className = 'w-full h-auto rounded border border-slate-200 bg-white object-contain shadow-xs';
+
+// Card Top Bar (Page Num & Drag Handle)
+const topBar = document.createElement('div');
+topBar.className = 'w-full flex items-center justify-between text-xs font-semibold text-slate-500';
+topBar.innerHTML = `
+<span class="flex items-center gap-1">
+<input type="checkbox" ${item.isSelected ? 'checked' : ''} class="rounded text-blue-600 focus:ring-0">
+<span>P. ${idx + 1}</span>
+</span>
+<i class="fa-solid fa-grip-vertical text-slate-300 hover:text-slate-500 cursor-grab"></i>
+`;
+
+// Card Bottom Control Action Bar
+const actions = document.createElement('div');
+actions.className = 'w-full flex items-center justify-between pt-1 text-slate-400 text-xs border-t border-slate-100';
+actions.innerHTML = `
+<button onclick="rotateSinglePage(${idx}, 90)" class="hover:text-blue-600 p-1" title="時計回りに回転"><i class="fa-solid fa-rotate-right"></i></button>
+<button onclick="deleteSinglePage(${idx})" class="hover:text-rose-600 p-1" title="ページ削除"><i class="fa-solid fa-trash"></i></button>
+`;
+
+card.appendChild(topBar);
+card.appendChild(canvas);
+card.appendChild(actions);
+grid.appendChild(card);
+
+// Render Canvas Content via pdf.js asynchronously
+renderPageToCanvas(item, canvas, wmText, addNum, idx + 1, pageStateList.length, stampImg);
+}
+}
+
+// Helper: Render individual page to Canvas with rotation & live watermarks
+async function renderPageToCanvas(item, canvas, wmText, addNum, pageNum, totalPages, stampImg) {
+const pdfBytes = await item.pdfDoc.save();
+const pdf = await pdfjsLib.getDocument({ data: pdfBytes }).promise;
+const page = await pdf.getPage(item.originalPageIndex + 1);
+
+const viewport = page.getViewport({ scale: 0.6, rotation: item.rotation });
+canvas.width = viewport.width;
+canvas.height = viewport.height;
+const ctx = canvas.getContext('2d');
+
+await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+// Overlay Watermarks on Canvas (Live Preview)
+if (wmText) {
+ctx.save();
+ctx.translate(canvas.width / 2, canvas.height / 2);
+ctx.rotate(-Math.PI / 4);
+ctx.font = 'bold 24px sans-serif';
+ctx.fillStyle = 'rgba(220, 38, 38, 0.25)';
+ctx.textAlign = 'center';
+ctx.fillText(wmText, 0, 0);
+ctx.restore();
+}
+
+if (addNum) {
+ctx.save();
+ctx.font = '12px sans-serif';
+ctx.fillStyle = '#64748b';
+ctx.textAlign = 'center';
+ctx.fillText(`- ${pageNum} / ${totalPages} -`, canvas.width / 2, canvas.height - 12);
+ctx.restore();
+}
+
+if (stampImg) {
+ctx.save();
+const pos = document.getElementById('cfg-stamp-pos').value;
+const sw = canvas.width * 0.25;
+const sh = (stampImg.height / stampImg.width) * sw;
+let sx = 10, sy = 10;
+if (pos === 'top-right') { sx = canvas.width - sw - 10; sy = 10; }
+else if (pos === 'bottom-right') { sx = canvas.width - sw - 10; sy = canvas.height - sh - 10; }
+else if (pos === 'bottom-left') { sx = 10; sy = canvas.height - sh - 10; }
+
+ctx.drawImage(stampImg, sx, sy, sw, sh);
+ctx.restore();
+}
+}
+
+function loadImageElement(src) {
+return new Promise((resolve) => {
+const img = new Image();
+img.onload = () => resolve(img);
+img.src = src;
+});
+}
+
+// Page Actions
+function rotateSinglePage(idx, deg) {
+pageStateList[idx].rotation = (pageStateList[idx].rotation + deg) % 360;
+renderAllPreviews();
+}
+
+function deleteSinglePage(idx) {
+pageStateList.splice(idx, 1);
+renderAllPreviews();
+}
+
+function rotateSelectedPages(deg) {
+let count = 0;
+pageStateList.forEach(item => {
+if (item.isSelected) {
+item.rotation = (item.rotation + deg) % 360;
+count++;
+}
+});
+if (count === 0) showToast('ページが選択されていません', 'error');
+else renderAllPreviews();
+}
+
+function deleteSelectedPages() {
+const initialLen = pageStateList.length;
+pageStateList = pageStateList.filter(item => !item.isSelected);
+if (pageStateList.length === initialLen) showToast('削除するページが選択されていません', 'error');
+else renderAllPreviews();
+}
+
+function rotateAllPages(deg) {
+pageStateList.forEach(item => item.rotation = deg);
+renderAllPreviews();
+}
+
+function selectAllPages(selectState) {
+pageStateList.forEach(item => item.isSelected = selectState);
+renderAllPreviews();
+}
+
+// Export Final Consolidated PDF
+async function downloadFinalPDF() {
+if (pageStateList.length === 0) {
+showToast('出力するページがありません', 'error');
+return;
+}
+
+showToast('最終PDFを作成中...', 'info');
+
+try {
+const outPdf = await PDFLib.PDFDocument.create();
+
+// Check options
+const wmText = document.getElementById('cfg-wm-text').value.trim();
+const wmSize = parseFloat(document.getElementById('cfg-wm-size').value) || 36;
+const wmOpacity = parseFloat(document.getElementById('cfg-wm-opacity').value) || 0.2;
+const addNum = document.getElementById('cfg-pagenum-enable').checked;
+
+// Stamp Image Embedding
+const stampInput = document.getElementById('cfg-stamp-file');
+let embeddedStamp = null;
+let stampDims = null;
+if (stampInput.files.length > 0) {
+const file = stampInput.files[0];
+const bytes = await file.arrayBuffer();
+if (file.type === 'image/png') embeddedStamp = await outPdf.embedPng(bytes);
+else embeddedStamp = await outPdf.embedJpg(bytes);
+if (embeddedStamp) stampDims = embeddedStamp.scale(0.3);
+}
+
+const helveticaFont = await outPdf.embedFont(PDFLib.StandardFonts.HelveticaBold);
+
+// Copy and transform each page
+for (let idx = 0; idx < pageStateList.length; idx++) {
+const item = pageStateList[idx];
+const [copiedPage] = await outPdf.copyPages(item.pdfDoc, [item.originalPageIndex]);
+
+if (item.rotation !== 0) {
+const currentRot = copiedPage.getRotation().angle;
+copiedPage.setRotation(PDFLib.degrees((currentRot + item.rotation) % 360));
+}
+
+const page = outPdf.addPage(copiedPage);
+const { width, height } = page.getSize();
+
+// Apply Watermark Text
+if (wmText) {
+const textWidth = helveticaFont.widthOfTextAtSize(wmText, wmSize);
+page.drawText(wmText, {
+x: width / 2 - textWidth / 2,
+y: height / 2,
+size: wmSize,
+font: helveticaFont,
+color: PDFLib.rgb(0.8, 0.2, 0.2),
+opacity: wmOpacity,
+rotate: PDFLib.degrees(45),
+});
+}
+
+// Apply Page Number
+if (addNum) {
+const str = `- ${idx + 1} / ${pageStateList.length} -`;
+const numWidth = helveticaFont.widthOfTextAtSize(str, 10);
+page.drawText(str, {
+x: width / 2 - numWidth / 2,
+y: 20,
+size: 10,
+font: helveticaFont,
+color: PDFLib.rgb(0.4, 0.4, 0.4),
+});
+}
+
+// Apply Stamp Image
+if (embeddedStamp && stampDims) {
+const pos = document.getElementById('cfg-stamp-pos').value;
+let x = 20, y = 20;
+if (pos === 'top-right') { x = width - stampDims.width - 20; y = height - stampDims.height - 20; }
+else if (pos === 'bottom-right') { x = width - stampDims.width - 20; y = 20; }
+else if (pos === 'top-left') { x = 20; y = height - stampDims.height - 20; }
+
+page.drawImage(embeddedStamp, { x, y, width: stampDims.width, height: stampDims.height });
+}
+}
+
+const finalBytes = await outPdf.save();
+downloadBlob(finalBytes, 'workbench_output.pdf', 'application/pdf');
+showToast('ダウンロードが完了しました！', 'success');
+
+} catch (err) {
+console.error(err);
+showToast('PDF作成中にエラーが発生しました: ' + err.message, 'error');
+}
+}
+
+// Export images
+async function exportAsImages() {
+showToast('全ページを画像として出力中...', 'info');
+try {
+for (let idx = 0; idx < pageStateList.length; idx++) {
+const item = pageStateList[idx];
+const pdfBytes = await item.pdfDoc.save();
+const pdf = await pdfjsLib.getDocument({ data: pdfBytes }).promise;
+const page = await pdf.getPage(item.originalPageIndex + 1);
+
+const viewport = page.getViewport({ scale: 1.5, rotation: item.rotation });
+const canvas = document.createElement('canvas');
+canvas.width = viewport.width;
+canvas.height = viewport.height;
+const ctx = canvas.getContext('2d');
+
+await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+const dataUrl = canvas.toDataURL('image/png');
+const link = document.createElement('a');
+link.href = dataUrl;
+link.download = `page_${idx + 1}.png`;
+link.click();
+}
+showToast('画像の書き出し完了', 'success');
+} catch (err) {
+showToast('画像保存に失敗しました: ' + err.message, 'error');
+}
+}
+
+function downloadBlob(bytes, filename, type) {
+const blob = new Blob([bytes], { type: type });
+const link = document.createElement('a');
+link.href = URL.createObjectURL(blob);
+link.download = filename;
+link.click();
+URL.revokeObjectURL(link.href);
+}
+</script>
+</body>
+</html>
