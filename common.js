@@ -73,7 +73,17 @@ function injectCommonUI() {
   if (adArea) adArea.outerHTML = `
 <div class="ad-area">
   <div class="ad-area-label">スポンサー</div>
-  <!-- ここにAdSenseコードを貼る -->
+
+  <ins class="adsbygoogle"
+       style="display:block"
+       data-ad-client="ca-pub-2195458991382480"
+       data-ad-slot="XXXXXXXXXX"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
+
+  <script>
+    (adsbygoogle = window.adsbygoogle || []).push({});
+  </script>
 </div>`;
 
   const shareArea = document.getElementById('shareAreaSlot');
