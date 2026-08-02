@@ -124,6 +124,7 @@ function injectCommonUI() {
     <a class="footer-back" href="/privacy-policy.html">プライバシーポリシー</a>
     <a class="footer-back" href="/terms.html">利用規約</a>
     <a class="footer-back" href="https://docs.google.com/forms/d/e/1FAIpQLSfUe9UzcRcIRFb4TmDAYKsZ75CcGRjF8Z7Ar_u7a4KgyyNyzQ/viewform?usp=publish-editor" target="_blank" rel="noopener">お問い合わせ</a>
+    <a class="footer-back" href="https://x.com/arigaitsu" target="_blank" rel="noopener">𝕏 @arigaitsu</a>
   </nav>
 </footer>`;
 }
