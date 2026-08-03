@@ -1608,9 +1608,8 @@ function saveTaskFromModal() {
 /* =====================================================
    【キーボードショートカット】Ctrl+S（Macはcmd+Sも）で保存
    - タスク追加／編集モーダルが開いている時だけ有効
-   - ★「どの欄も選択状態でない」時のみ発火させる仕様
-     （input/textarea/selectにフォーカスがある時は、ブラウザ標準の
-       Ctrl+S（ページ保存）を邪魔しないようにあえて何もしない）
+   - ★入力欄（input/textarea/select）を選択中でも、していなくても
+     常に発火する仕様（ブラウザ標準の「ページ保存」はpreventDefaultで抑止）
    ===================================================== */
 function initKeyboardShortcuts() {
   document.addEventListener('keydown', (e) => {
@@ -1619,10 +1618,6 @@ function initKeyboardShortcuts() {
 
     const overlay = document.getElementById('modalOverlay');
     if (!overlay.classList.contains('show')) return; // モーダル非表示時は何もしない
-
-    const active = document.activeElement;
-    const isFieldFocused = active && ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName);
-    if (isFieldFocused) return; // ★いずれかの入力欄が選択状態の時は対象外
 
     e.preventDefault(); // ブラウザの「ページを保存」ダイアログを抑止
     saveTaskFromModal();
