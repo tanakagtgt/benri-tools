@@ -1,6 +1,6 @@
 [
   { "id": "age", "name": "年齢計算ツール", "url": "https://arigato-tools.com/age", "emoji": "🎂" },
-  { "id": "eigyobi-count", "name": "営業日計算ツール", "url": "https://arigato-tools.com/eigyobi-count", "emoji": "📅" },
+  { "id": "eigyobi-count", "name": "営業日計算ツール", "url": "https://arigato-tools.com/calc-eigyobi-count", "emoji": "📅" },
   { "id": "debt-repayment-simulator", "name": "借金返済シミュレーションツール", "url": "https://arigato-tools.com/debt-repayment-simulator", "emoji": "💳" },
   { "id": "jyutakuro-n", "name": "住宅ローン算定ツール", "url": "https://arigato-tools.com/jyutakuro-n", "emoji": "🏠" },
   { "id": "chintai-sougaku", "name": "賃貸総額シミュレーター", "url": "https://arigato-tools.com/chintai-sougaku", "emoji": "🏢" },
