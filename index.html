@@ -311,11 +311,17 @@ crossorigin="anonymous"></script>
 <div class="search-count" id="searchCount"></div>
 
 <ul class="tool-list" id="toolList">
-      <li>
+<!-- =====================================================
+     ツール一覧（ビルドスクリプトがtools.jsonから自動生成する場所）
+     ★このコメントの間は generate.py が自動で置き換える。手編集しない。
+     新しいツールを増やしたい時は tools.json に追記して generate.py を実行するだけ。
+     ===================================================== -->
+<!-- TOOLLIST_START -->
+  <li>
     <a href="task-manager.html">タスク管理ツール</a>
     <div class="desc">ブラウザで保存完結。重要度×緊急度の4象限で優先順位を整理できますGoogleカレンダーへ追加可能。</div>
   </li>
-    <li>
+  <li>
     <a href="wareki.html">年齢西暦和暦変換ツール</a>
     <div class="desc">令和・平成・昭和の和暦と西暦、年齢を双方向で即座に変換。</div>
   </li>
@@ -331,7 +337,7 @@ crossorigin="anonymous"></script>
     <a href="calc-eigyobi-count.html">営業日計算ツール</a>
     <div class="desc">土日・祝日を除いた営業日数を自動計算。祝日は2020〜2030年の日本の祝日に対応。振替休日・年末年始（12/29〜1/3）も除外可能。</div>
   </li>
-    <li>
+  <li>
     <a href="debt-repayment-simulator.html">借金返済シミュレーションツール</a>
     <div class="desc">返済額計算・繰上返済シミュレーション。</div>
   </li>
@@ -339,7 +345,7 @@ crossorigin="anonymous"></script>
     <a href="jyutakuro-n.html">住宅ローン算定ツール</a>
     <div class="desc">返済額計算・繰上返済シミュレーション・投資比較・住宅ローン控除を一画面で確認。変動金利リスクも対応。初心者でも安心。</div>
   </li>
-        <li>
+  <li>
     <a href="chintai-sougaku.html">賃貸総額シミュレーター</a>
     <div class="desc">月額費用と居住年数を入力するだけで、一生分の賃貸コストを自動計算</div>
   </li>
@@ -351,11 +357,7 @@ crossorigin="anonymous"></script>
     <a href="pdf_image_converter.html">PDF⇔画像 変換ツール</a>
     <div class="desc">PDFを画像（JPG/PNG）に変換・複数画像をPDF1枚にまとめる。ファイルはブラウザ内で処理、サーバー送信なし。完全無料・登録不要。</div>
   </li>
-    <li>
-    <a href="pdf-editor.html">PDF編集ツール</a>
-    <div class="desc">PDFをリアルタイムプレビュー＆一括編集</div>
-  </li>
-    <li>
+  <li>
     <a href="image-editor.html">画像編集ツール</a>
     <div class="desc">画像のリサイズ・トリミング・回転などをブラウザ上で簡単編集。登録不要・サーバー送信なし。完全無料。</div>
   </li>
@@ -367,7 +369,7 @@ crossorigin="anonymous"></script>
     <a href="nutrition-cospa-tool.html">栄養コスパ比較ツール</a>
     <div class="desc">たんぱく質・カロリーなどをコスパで比較。食費を抑えながら栄養バランスを整えたい人に。</div>
   </li>
-    <li>
+  <li>
     <a href="calorie-consumption.html">消費カロリー計算ツール（TDEE・基礎代謝）</a>
     <div class="desc">体脂肪率を入力すると高精度なKatch-McArdle式も選べます</div>
   </li>
@@ -375,35 +377,31 @@ crossorigin="anonymous"></script>
     <a href="coffee-calculator.html">コーヒー豆とお湯計算ツール</a>
     <div class="desc">豆の量or欲しいコーヒーの量から必要なお湯の量を計算</div>
   </li>
-    <li>
+  <li>
     <a href="jikyu-calculator.html">実質時給計算ツール</a>
     <div class="desc">手取り・拘束時間ベースの実質時給を一括計算</div>
   </li>
-      <li>
+  <li>
     <a href="jidouteate-calculator.html">児童手当計算ツール</a>
     <div class="desc">生年月日を入力するだけで月額・年額・生涯累計を試算</div>
   </li>
-          <li>
+  <li>
     <a href="mitumorisho-seikyuusho.html">見積書・請求書 作成ツール</a>
-    <div class="desc"> スマホで見積書・請求書を作成しコンビニ印刷可能</div>
+    <div class="desc">スマホで見積書・請求書を作成しコンビニ印刷可能</div>
   </li>
-            <li>
+  <li>
     <a href="bunsho-henkan-kaiseki.html">文章解析＆全角半角変換ツール</a>
-    <div class="desc"> 文字数・行数・バイト数をカウント。 全角⇔半角／ひらがな⇔カタカナの変換や自動改行にも対応</div>
+    <div class="desc">文字数・行数・バイト数をカウント。 全角⇔半角／ひらがな⇔カタカナの変換や自動改行にも対応</div>
   </li>
-          <li>
+  <li>
     <a href="qrcode-creator.html">QRコード作成ツール</a>
-    <div class="desc"> 入力したテキスト・URLがそのままQRコードになります</div>
+    <div class="desc">入力したテキスト・URLがそのままQRコードになります</div>
   </li>
-          <li>
-    <a href="audio-splitter.html">テスト版mp3分割ツール</a>
-    <div class="desc"> MP3　WAV　M4A　m4aを分割できます</div>
+  <li>
+    <a href="audio-splitter.html">mp3分割ツール</a>
+    <div class="desc">MP3　WAV　M4A　m4aを分割できます</div>
   </li>
-            <li>
-    <a href="mp3bunkatsu.html"> MP3分割ツール</a>
-    <div class="desc"> MP3　WAV　M4A　m4aを分割できます</div>
-  </li>
-  </ul>
+<!-- TOOLLIST_END -->
 </ul>
 <!-- 検索結果0件のときだけJSで表示するメッセージ -->
 <div class="no-result" id="noResultMsg">😢 該当するツールが見つかりませんでした</div>
