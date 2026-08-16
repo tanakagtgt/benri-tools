@@ -1,5 +1,5 @@
 [
-  { "id": "task-manager", "name": "タスク管理ツール", "url": "https://arigato-tools.com/task-manager", "file": "task-manager.html", "emoji": "📝", "category": "util", "desc": "ブラウザで保存完結。重要度×緊急度の4象限で優先順位を整理できますGoogleカレンダーへ追加可能。" },
+  { "id": "util-task-manager", "name": "タスク管理ツール", "url": "https://arigato-tools.com/util-task-manager", "file": "util-task-manager.html", "emoji": "📝", "category": "util", "desc": "ブラウザで保存完結。重要度×緊急度の4象限で優先順位を整理できますGoogleカレンダーへ追加可能。" },
   { "id": "wareki", "name": "年齢西暦和暦変換ツール", "url": "https://arigato-tools.com/wareki", "file": "wareki.html", "emoji": "🗓️", "category": "conv", "desc": "令和・平成・昭和の和暦と西暦、年齢を双方向で即座に変換。" },
   { "id": "function-calculator", "name": "関数電卓（sin・cos・√対応）", "url": "https://arigato-tools.com/function-calculator", "file": "function-calculator.html", "emoji": "🔧", "category": "calc", "desc": "エクセル出力可能。ボタンでもキーボード（テンキー含む）でも入力OK" },
   { "id": "age", "name": "年齢計算ツール", "url": "https://arigato-tools.com/age", "file": "age.html", "emoji": "🎂", "category": "calc", "desc": "生年月日から現在の年齢を自動計算。西暦・和暦どちらも対応。5人まで同時計算できます。" },
