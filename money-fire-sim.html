@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FIREできるかシミュレーター｜アリガイツ</title>
+<meta name="description" content="NISA・課税口座・生活防衛資金と、税金・国保・年金まで入れて資産の取り崩しをシミュレーション。無料・登録不要・データ送信なし。">
+<link rel="stylesheet" href="/common.css">
+<style>
+  /* このツール専用の追加スタイル（common.cssは触らない） */
+  .family-toggle { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+  .family-btn {
+    padding: 12px 4px; border-radius: var(--radius-input); border: 2px solid var(--color-border-input);
+    background: var(--color-input-bg); font-family: 'BIZ UDPGothic', sans-serif; font-size: 13px; font-weight: 700;
+    color: var(--color-text-sub); cursor: pointer; text-align: center; min-height: 54px; transition: all .15s;
+  }
+  .family-btn small { display: block; font-size: 10px; font-weight: 400; color: var(--color-text-muted); margin-top: 3px; }
+  .family-btn.active { border-color: var(--color-primary); background: var(--color-primary-bg); color: var(--color-primary); }
+
+  .asset-total-box {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--color-primary-bg); border: 1px solid var(--color-primary-border);
+    border-radius: var(--radius-input); padding: 10px 14px; margin-bottom: 14px; font-weight: 700;
+  }
+  .asset-total-box span:first-child { font-size: 12px; color: var(--color-text-sub); }
+  .asset-total-box span:last-child { font-size: 18px; color: var(--color-primary); }
+
+  .hint-text { font-size: 11px; color: var(--color-text-muted); margin-top: 4px; line-height: 1.6; }
+
+  details.card { padding: 0 20px 16px; }
+  details.card summary {
+    cursor: pointer; list-style: none; font-weight: 700; color: var(--color-primary);
+    font-size: 13px; padding: 16px 0; user-select: none;
+  }
+  details.card summary::before { content: "⚙ "; }
+  details.card summary::-webkit-details-marker { display: none; }
+  .sub-field { border-top: 1px dashed var(--color-border); padding-top: 12px; margin-top: 4px; }
+
+  .range-row { display: flex; justify-content: space-between; align-items: center; }
+  .range-val { font-weight: 700; color: var(--color-primary); font-size: 14px; }
+  input[type="range"] { width: 100%; accent-color: var(--color-primary); margin-top: 6px; }
+
+  .ev-row { display: flex; gap: 6px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+  .ev-row input[type="number"] { min-height: 40px; font-size: 14px; width: 64px; flex: 0 0 auto; }
+  .ev-row select { min-height: 40px; font-size: 12px; flex: 1; min-width: 90px; }
+  .ev-del {
+    flex: 0 0 32px; height: 32px; border-radius: 50%; border: 1px solid var(--color-border-input);
+    background: #fff; color: #b91c1c; font-weight: 700; cursor: pointer;
+  }
+  .ev-add {
+    margin-top: 10px; width: 100%; border: 1.5px dashed var(--color-primary-border);
+    background: var(--color-primary-bg); color: var(--color-primary); font-weight: 700; font-size: 13px;
+    padding: 10px; border-radius: var(--radius-input); cursor: pointer; min-height: 40px;
+  }
+
+  #kidsBlock { display: none; }
+  #expchgBlock { display: none; }
+
+  /* 結果まわり */
+  .result-verdict { font-size: 13px; color: var(--color-text-sub); margin-top: 6px; }
+  .result-weak, .result-mc { font-size: 11.5px; color: var(--color-text-muted); margin-top: 6px; line-height: 1.7; padding: 0 10px; }
+  .result-mc { color: var(--color-primary); font-weight: 700; }
+
+  #chartWrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  #chartWrap svg { display: block; }
+  .chart-legend { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; font-size: 10.5px; color: var(--color-text-muted); margin-top: 8px; }
+  .chart-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+
+  .bd-row2 { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 2px; border-bottom: 1px dashed var(--color-border); font-size: 13px; }
+  .bd-row2:last-child { border-bottom: none; }
+  .bd-row2 .bd-sub2 { display: block; font-size: 10.5px; color: var(--color-text-muted); font-weight: 400; }
+  .bd-row2 .bd-val2 { font-weight: 700; white-space: nowrap; }
+
+  .mo-card {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    background: var(--color-input-bg); border: 1px solid var(--color-border); border-radius: var(--radius-input);
+    padding: 12px 14px; margin-top: 8px; font-size: 12.5px;
+  }
+  .mo-card.up { border-color: #34d399; background: #f0fdf4; }
+  .mo-card.down { border-color: #fca5a5; background: #fff1f1; }
+  .mo-card .mo-val { font-weight: 700; text-align: right; white-space: nowrap; }
+
+  .msg-box { font-size: 13px; line-height: 1.9; color: var(--color-text); }
+  .msg-from { font-size: 10px; letter-spacing: .1em; color: var(--color-primary); font-weight: 700; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div id="topNavSlot"></div>
+  <div id="adAreaSlot"></div>
+
+  <header>
+    <h1>FIREできるかシミュレーター</h1>
+    <p class="subtitle">NISA・課税口座・生活防衛資金と、税金・国保・年金まで入れて<br>資産が何歳まで持つかを試算します</p>
+  </header>
+
+  <!-- 家族構成 -->
+  <div class="card">
+    <div class="section-title">だれと歩きますか？</div>
+    <div class="family-toggle" id="familyToggle">
+      <button type="button" class="family-btn active" data-fam="single" onclick="pickFamily('single')">おひとり<small>NISA1,800万</small></button>
+      <button type="button" class="family-btn" data-fam="couple" onclick="pickFamily('couple')">夫婦<small>NISA最大3,600万</small></button>
+      <button type="button" class="family-btn" data-fam="kids" onclick="pickFamily('kids')">夫婦＋子<small>学費・児童手当も計算</small></button>
+    </div>
+  </div>
+
+  <!-- 基本入力 -->
+  <div class="card">
+    <div class="section-title">いまの装備</div>
+
+    <div class="input-group">
+      <label for="in-age">現在の年齢</label>
+      <input type="number" id="in-age" min="18" max="80" value="45" oninput="onInputChange()">
+    </div>
+
+    <div class="input-grid">
+      <div class="input-group">
+        <label for="in-nisa">NISA資産（万円）</label>
+        <input type="number" id="in-nisa" min="0" max="50000" step="100" value="3000" oninput="onInputChange()">
+      </div>
+      <div class="input-group">
+        <label for="in-taxable">課税口座資産（万円）</label>
+        <input type="number" id="in-taxable" min="0" max="50000" step="100" value="2000" oninput="onInputChange()">
+      </div>
+    </div>
+
+    <div class="input-group">
+      <label for="in-cash">生活防衛資金（万円）</label>
+      <input type="number" id="in-cash" min="0" max="50000" step="100" value="300" oninput="onInputChange()">
+      <p class="hint-text">増えない代わりに暴落でも減りません。最後の砦としてキープする想定です</p>
+    </div>
+
+    <div class="asset-total-box">
+      <span>3つあわせて</span>
+      <span id="assetTotal">5,300万円</span>
+    </div>
+
+    <div class="input-group">
+      <label for="in-expense">月の生活費（万円）</label>
+      <input type="number" id="in-expense" min="1" max="100" value="25" oninput="onInputChange()">
+    </div>
+
+    <div class="input-grid">
+      <div class="input-group">
+        <label for="in-side">ゆるく働く収入・月手取り（万円）</label>
+        <input type="number" id="in-side" min="0" max="50" value="5" oninput="onInputChange()">
+      </div>
+      <div class="input-group">
+        <label for="in-side-end">何歳まで続ける</label>
+        <input type="number" id="in-side-end" min="60" max="100" value="70" oninput="onInputChange()">
+      </div>
+    </div>
+    <p class="hint-text">税引き後の目安で入力：額面月8万円くらいまでは税ほぼゼロ、月10万なら−0.5万、月15万なら−1万、月20万なら−2万ほど引いた額をどうぞ</p>
+  </div>
+
+  <!-- 子ども設定 -->
+  <div class="card" id="kidsBlock">
+    <div class="section-title">お子さんの設定</div>
+    <div class="input-group">
+      <label for="in-kids-n">お子さんの人数</label>
+      <select id="in-kids-n" onchange="renderKidAges(); onInputChange()">
+        <option value="1">1人</option><option value="2">2人</option><option value="3">3人</option>
+        <option value="4">4人</option><option value="5">5人</option><option value="6">6人</option>
+      </select>
+    </div>
+    <div id="kidAgesWrap"></div>
+    <div class="input-group">
+      <label for="in-tuition">大学費用・1人あたり年（万円）</label>
+      <input type="number" id="in-tuition" min="0" max="500" value="130" oninput="onInputChange()">
+      <p class="hint-text">国公立 約80万／私立文系 約120万／私立理系 約160万が目安。19〜22歳の4年で計算。児童手当（3歳未満1.5万・18歳まで1万・第3子以降3万／月）は自動加算します</p>
+    </div>
+  </div>
+
+  <!-- こだわり設定 -->
+  <details class="card">
+    <summary>こだわり設定：社会保険・利回り・年金・暴落テスト・大きな出費／臨時収入</summary>
+
+    <div class="sub-field">
+      <div class="section-title">社会保険のかたち</div>
+      <div class="toggle-wrap">
+        <button type="button" class="toggle-btn active" id="insKokuho" onclick="setIns('kokuho')">個人（国保）</button>
+        <button type="button" class="toggle-btn" id="insMicro" onclick="setIns('microcorp')">マイクロ法人</button>
+      </div>
+      <p class="hint-text">マイクロ法人＝社保を最低等級に抑える代わりに、赤字でも法人住民税（均等割・年7万円）がかかる想定</p>
+    </div>
+
+    <div class="sub-field">
+      <label class="range-row" style="display:flex">想定利回り（年）<span class="range-val" id="v-return">5.0%</span></label>
+      <input type="range" id="in-return" min="0" max="10" step="0.1" value="5" oninput="document.getElementById('v-return').textContent=Number(this.value).toFixed(1)+'%'; onInputChange()">
+      <p class="hint-text">目安：株式割合×6〜8%＋債券×2〜3%＋現金×0%</p>
+    </div>
+
+    <div class="sub-field input-group">
+      <label for="in-vol">値動きのブレ（リスク）</label>
+      <select id="in-vol" onchange="onInputChange()">
+        <option value="0">なし（毎年おなじ利回り）</option>
+        <option value="0.10">おだやか（±10%くらい）</option>
+        <option value="0.15">ふつう（±15%くらい）</option>
+        <option value="0.20">大きめ（±20%くらい）</option>
+      </select>
+      <p class="hint-text">「あり」にすると毎年の利回りを運まかせに変えて500回歩き、100歳まで歩き切れた割合を表示します</p>
+    </div>
+
+    <div class="sub-field input-grid">
+      <div class="input-group">
+        <label for="in-pstart">年金の受給開始</label>
+        <select id="in-pstart" onchange="onInputChange()">
+          <option value="60">60歳（−24%）</option><option value="65" selected>65歳（基準）</option>
+          <option value="70">70歳（＋42%）</option><option value="75">75歳（＋84%）</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label for="in-pension">年金見込み・月世帯合計（万円）</label>
+        <input type="number" id="in-pension" min="0" max="50" value="16" oninput="onInputChange()">
+      </div>
+    </div>
+
+    <div class="sub-field">
+      <div class="section-title">取り崩す順番</div>
+      <div class="toggle-wrap">
+        <button type="button" class="toggle-btn active" id="orderTaxable" onclick="setOrder('taxable-first')">課税口座から</button>
+        <button type="button" class="toggle-btn" id="orderNisa" onclick="setOrder('nisa-first')">NISAから</button>
+      </div>
+    </div>
+
+    <div class="sub-field">
+      <label class="range-row" style="display:flex">課税口座の含み益の割合<span class="range-val" id="v-profit">50%</span></label>
+      <input type="range" id="in-profit" min="0" max="80" step="5" value="50" oninput="document.getElementById('v-profit').textContent=this.value+'%'; onInputChange()">
+      <p class="hint-text">証券アプリの評価損益から「利益÷いまの評価額」。わからなければ50%のままでOK</p>
+    </div>
+
+    <div class="sub-field input-group">
+      <label for="in-crash">暴落テスト</label>
+      <select id="in-crash" onchange="onInputChange()">
+        <option value="0-0">なし</option>
+        <option value="0.15-1">開始直後に−15%（約1年で回復）</option>
+        <option value="0.3-3">開始直後に−30%（約3年で回復）</option>
+      </select>
+    </div>
+
+    <div class="sub-field">
+      <div class="section-title">生活費の変わり目（任意）</div>
+      <div class="toggle-wrap">
+        <button type="button" class="toggle-btn active" id="expchgOff" onclick="setExpChg(false)">なし</button>
+        <button type="button" class="toggle-btn" id="expchgOn" onclick="setExpChg(true)">あり</button>
+      </div>
+      <div id="expchgBlock" class="input-grid" style="margin-top:10px">
+        <div class="input-group">
+          <label for="in-expchg-age">この歳から</label>
+          <input type="number" id="in-expchg-age" min="18" max="100" value="70" oninput="onInputChange()">
+        </div>
+        <div class="input-group">
+          <label for="in-expchg-amt">新しい月の生活費（万円）</label>
+          <input type="number" id="in-expchg-amt" min="1" max="100" value="20" oninput="onInputChange()">
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-field">
+      <div class="section-title">大きな出費（最大10件）</div>
+      <div id="eventsWrap"></div>
+      <button type="button" class="ev-add" id="evAddBtn" onclick="addEvent()">＋ 大きな出費を追加</button>
+    </div>
+
+    <div class="sub-field">
+      <div class="section-title">臨時収入（最大5件）</div>
+      <div id="windfallsWrap"></div>
+      <button type="button" class="ev-add" id="wfAddBtn" onclick="addWindfall()">＋ 臨時収入を追加</button>
+      <p class="hint-text">退職金・相続など。税引き後の手取り額で入力してください</p>
+    </div>
+  </details>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <!-- 結果 -->
+  <div class="result-panel">
+    <div class="result-main">
+      <div class="result-label">あなたの資産は</div>
+      <div><span class="result-number placeholder" id="resultNum">—</span><span class="result-unit" id="resultUnit">歳</span></div>
+      <div class="result-verdict" id="resultVerdict">まで一緒に歩いてくれます</div>
+      <div class="result-weak" id="resultWeak"></div>
+      <div class="result-mc" id="resultMc"></div>
+    </div>
+    <div class="breakdown-wrap">
+      <div class="breakdown">
+        <div class="breakdown-item"><div class="b-num placeholder" id="bA">—</div><div class="b-label">税金合計</div></div>
+        <div class="breakdown-item"><div class="b-num placeholder" id="bB">—</div><div class="b-label">社会保険料合計</div></div>
+        <div class="breakdown-item"><div class="b-num placeholder" id="bC">—</div><div class="b-label">学費・出費合計</div></div>
+      </div>
+      <div class="copy-actions">
+        <button class="btn-action" id="btnCopyText" onclick="copyResultText()" disabled>📄 テキストでコピー</button>
+        <button class="btn-action" id="btnCopyExcel" onclick="copyResultExcel()" disabled>📊 Excel用コピー</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- グラフ -->
+  <div class="card">
+    <div class="section-title">資産のみちのり</div>
+    <div id="chartWrap"><div id="chart"></div></div>
+    <div class="chart-legend" id="chartLegend"></div>
+  </div>
+
+  <!-- みちのりで払うお金 -->
+  <div class="card">
+    <div class="section-title">みちのりのお金（累計のめやす）</div>
+    <div id="bdList"></div>
+  </div>
+
+  <!-- もしも -->
+  <div class="card">
+    <div class="section-title">もしも、こうだったら</div>
+    <div id="moshimoList"></div>
+  </div>
+
+  <!-- メッセージ -->
+  <div class="card">
+    <div class="msg-from">ゆる山だら太郎より</div>
+    <div class="msg-box" id="msgBox"></div>
+  </div>
+
+  <div id="shareAreaSlot"></div>
+  <div id="resetBtnSlot"></div>
+  <div id="bottomNavSlot"></div>
+  <div id="qrModalSlot"></div>
+  <div id="footerSlot"></div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="/common.js"></script>
+<script>
+// =====================================================
+// FIREできるかシミュレーター 計算コア（元ロジックを完全移植）
+// 単位：金額は万円、利率は小数
+// =====================================================
+const CONST = {
+  TAX_RATE: 0.20315, PROFIT_RATIO: 0.5, KOKUMIN_NENKIN_PER_PERSON: 21,
+  KOKUHO_SINGLE: 9, KOKUHO_COUPLE: 14, MICROCORP_SOCIAL: 32, CORP_TAX_FLAT: 7,
+  KOKUHO_INCOME_RATE: 0.10, KOKUHO_CAP: 106, INCOME_DEDUCTION: 43,
+  PENSION_DEDUCTION: 110, PENSION_EARLY_RATE: 0.004, PENSION_LATE_RATE: 0.007,
+  KAIGO_PER_PERSON: 6, TUITION_START: 19, TUITION_END: 22,
+  BENEFIT_UNDER3: 18, BENEFIT_3TO18: 12, BENEFIT_3RD_CHILD: 36, END_AGE: 100,
+};
+
+function simulate(p) {
+  let nisa = p.nisa, taxable = p.taxable, cash = p.cash || 0;
+  const initRatio = Math.min(0.9, Math.max(0, p.taxableProfitRatio ?? CONST.PROFIT_RATIO));
+  let taxableCost = taxable * (1 - initRatio);
+  const persons = p.family === 'single' ? 1 : 2;
+  const pensionFactor = p.pensionStartAge >= 65
+    ? 1 + (p.pensionStartAge - 65) * 12 * CONST.PENSION_LATE_RATE
+    : 1 - (65 - p.pensionStartAge) * 12 * CONST.PENSION_EARLY_RATE;
+  const pensionMonthlyEff = p.pensionMonthly * pensionFactor;
+  const children = p.children || [];
+  const tuitionAnnual = p.tuitionAnnual || 0;
+  const lifeEvents = p.lifeEvents || [];
+  const windfalls = p.windfalls || [];
+  const series = [];
+  const sideEnd = p.sideEndAge || 999;
+  let totals80 = null;
+  let totalTax = 0, totalSocial = 0, totalTuition = 0, totalEvents = 0, totalBenefit = 0, totalWindfall = 0;
+  const childrenByBirth = [...children].sort((a, b) => b - a);
+
+  if (p.crash > 0) { nisa *= (1 - p.crash); taxable *= (1 - p.crash); }
+  const recYears = p.crash > 0 ? (p.crashRecoverYears || 0) : 0;
+  const recRate = recYears > 0 ? Math.pow(1 / (1 - p.crash), 1 / recYears) - 1 : 0;
+
+  const mkTotals = () => ({
+    tax: Math.round(totalTax), social: Math.round(totalSocial), tuition: Math.round(totalTuition),
+    events: Math.round(totalEvents), benefit: Math.round(totalBenefit), windfall: Math.round(totalWindfall),
+  });
+
+  for (let age = p.startAge; age <= CONST.END_AGE; age++) {
+    let social = 0;
+    if (p.insurance === 'microcorp' && age < p.pensionStartAge) {
+      social = CONST.MICROCORP_SOCIAL + CONST.CORP_TAX_FLAT;
+    } else {
+      const flat = (p.family === 'single' ? CONST.KOKUHO_SINGLE : CONST.KOKUHO_COUPLE);
+      const sideAnnualForKokuho = age <= sideEnd ? p.sideMonthly * 12 : 0;
+      const pensionTaxable = age >= p.pensionStartAge
+        ? Math.max(0, pensionMonthlyEff * 12 - CONST.PENSION_DEDUCTION) : 0;
+      const incomeBase = Math.max(0, sideAnnualForKokuho + pensionTaxable - CONST.INCOME_DEDUCTION);
+      social = Math.min(CONST.KOKUHO_CAP, flat + incomeBase * CONST.KOKUHO_INCOME_RATE);
+      if (p.insurance === 'kokuho' && age < 60) social += CONST.KOKUMIN_NENKIN_PER_PERSON * persons;
+    }
+    if (age >= 65) social += CONST.KAIGO_PER_PERSON * persons;
+    totalSocial += social;
+
+    let tuitionYear = 0;
+    for (const childNowAge of children) {
+      const childAge = childNowAge + (age - p.startAge);
+      if (childAge >= CONST.TUITION_START && childAge <= CONST.TUITION_END) tuitionYear += tuitionAnnual;
+    }
+    totalTuition += tuitionYear;
+
+    let eventYear = 0;
+    for (const ev of lifeEvents) if (ev.age === age) eventYear += ev.amount;
+    totalEvents += eventYear;
+
+    let windfallYear = 0, windfallCashYear = 0;
+    for (const wf of windfalls) {
+      if (wf.age !== age) continue;
+      windfallYear += wf.amount;
+      if (wf.to === 'cash') windfallCashYear += wf.amount;
+    }
+    totalWindfall += windfallYear;
+    cash += windfallCashYear;
+
+    let benefitYear = 0;
+    childrenByBirth.forEach((childNowAge, birthOrder) => {
+      const childAge = childNowAge + (age - p.startAge);
+      if (childAge < 0 || childAge > 18) return;
+      if (birthOrder >= 2) benefitYear += CONST.BENEFIT_3RD_CHILD;
+      else benefitYear += (childAge <= 2) ? CONST.BENEFIT_UNDER3 : CONST.BENEFIT_3TO18;
+    });
+    totalBenefit += benefitYear;
+
+    const effExpense = (p.expenseChange && age >= p.expenseChange.age) ? p.expenseChange.monthly : p.expenseMonthly;
+    const pension = age >= p.pensionStartAge ? pensionMonthlyEff * 12 : 0;
+    const sideIncome = age <= sideEnd ? p.sideMonthly * 12 : 0;
+    let need = effExpense * 12 + social + tuitionYear + eventYear
+             - sideIncome - pension - benefitYear - (windfallYear - windfallCashYear);
+
+    if (need <= 0) {
+      taxable += -need; taxableCost += -need; need = 0;
+    } else {
+      const drawTaxable = wantNet => {
+        if (taxable <= 0 || wantNet <= 0) return 0;
+        const pr = Math.max(0, 1 - taxableCost / taxable);
+        const taxFactor = pr * CONST.TAX_RATE;
+        const grossNeeded = wantNet / (1 - taxFactor);
+        const gross = Math.min(taxable, grossNeeded);
+        const costPart = gross * (taxableCost / taxable);
+        totalTax += gross * taxFactor;
+        taxable -= gross;
+        taxableCost = Math.max(0, taxableCost - costPart);
+        return gross * (1 - taxFactor);
+      };
+      const drawSimple = (getBal, setBal, wantNet) => {
+        const bal = getBal();
+        if (bal <= 0 || wantNet <= 0) return 0;
+        const used = Math.min(bal, wantNet);
+        setBal(bal - used);
+        return used;
+      };
+      let remainingNeed = need;
+      const steps = p.order === 'nisa-first' ? ['nisa', 'taxable', 'cash'] : ['taxable', 'nisa', 'cash'];
+      for (const s of steps) {
+        if (remainingNeed <= 0.0001) break;
+        if (s === 'taxable') remainingNeed -= drawTaxable(remainingNeed);
+        else if (s === 'nisa') remainingNeed -= drawSimple(() => nisa, v => nisa = v, remainingNeed);
+        else remainingNeed -= drawSimple(() => cash, v => cash = v, remainingNeed);
+      }
+      if (remainingNeed > 0.0001) {
+        series.push({ age, nisa: 0, taxable: 0, cash: 0, total: 0 });
+        return { depletionAge: age, survivesTo100: false, balanceAt100: 0, series,
+                 totals: mkTotals(), totals80: totals80 || mkTotals() };
+      }
+    }
+
+    const yearIdx = age - p.startAge;
+    const growthRate = yearIdx < recYears ? recRate : (p._yearlyRates ? p._yearlyRates[yearIdx] : p.returnRate);
+    nisa *= (1 + growthRate); taxable *= (1 + growthRate);
+
+    series.push({ age, nisa: Math.round(nisa), taxable: Math.round(taxable), cash: Math.round(cash), total: Math.round(nisa + taxable + cash) });
+    if (age === 80) totals80 = mkTotals();
+  }
+
+  return { depletionAge: null, survivesTo100: true, balanceAt100: Math.round(nisa + taxable + cash),
+           series, totals: mkTotals(), totals80: totals80 || mkTotals() };
+}
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function simulateMonteCarlo(p, runs = 500) {
+  const s = p.volatility || 0;
+  const years = 100 - p.startAge + 1;
+  const m = Math.log(1 + p.returnRate) - (s * s) / 2;
+  const rand = mulberry32(20260819);
+  const results = [];
+  let success = 0;
+  for (let i = 0; i < runs; i++) {
+    const rates = [];
+    for (let y = 0; y < years; y++) {
+      const u1 = Math.max(rand(), 1e-12), u2 = rand();
+      const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+      rates.push(Math.exp(m + s * z) - 1);
+    }
+    const r = simulate({ ...p, _yearlyRates: rates });
+    if (r.survivesTo100) success++;
+    results.push({ survives: r.survivesTo100, age: r.survivesTo100 ? 101 : r.depletionAge, balance: r.balanceAt100 });
+  }
+  results.sort((a, b) => (a.age - b.age) || (a.balance - b.balance));
+  const pick = q => results[Math.min(runs - 1, Math.floor(q * runs))];
+  return { runs, successRate: success / runs, p10: pick(0.10), p50: pick(0.50), p90: pick(0.90) };
+}
+
+// =====================================================
+// ツール固有 UI 制御
+// =====================================================
+let family = 'single';
+const PRESET = {
+  single: { nisa: 1800, taxable: 1700, cash: 200, expense: 20, pension: 10 },
+  couple: { nisa: 3000, taxable: 2000, cash: 300, expense: 25, pension: 16 },
+  kids:   { nisa: 3000, taxable: 2500, cash: 400, expense: 30, pension: 16 },
+};
+function pickFamily(f) {
+  family = f;
+  document.querySelectorAll('.family-btn').forEach(b => b.classList.toggle('active', b.dataset.fam === f));
+  const p = PRESET[f];
+  document.getElementById('in-nisa').value = p.nisa;
+  document.getElementById('in-taxable').value = p.taxable;
+  document.getElementById('in-cash').value = p.cash;
+  document.getElementById('in-expense').value = p.expense;
+  document.getElementById('in-pension').value = p.pension;
+  document.getElementById('kidsBlock').style.display = (f === 'kids') ? 'block' : 'none';
+  if (f === 'kids') renderKidAges();
+  updateAssetTotal();
+  onInputChange();
+}
+function fmt(man) {
+  if (man >= 10000) { const oku = man / 10000; return (oku >= 10 ? Math.round(oku) : oku.toFixed(1)) + '億円'; }
+  return Math.round(man).toLocaleString() + '万円';
+}
+function updateAssetTotal() {
+  const sum = (Number(document.getElementById('in-nisa').value) || 0)
+            + (Number(document.getElementById('in-taxable').value) || 0)
+            + (Number(document.getElementById('in-cash').value) || 0);
+  document.getElementById('assetTotal').textContent = fmt(sum);
+}
+['in-nisa', 'in-taxable', 'in-cash'].forEach(id =>
+  document.getElementById(id).addEventListener('input', updateAssetTotal));
+
+const KID_DEFAULT_AGES = [10, 8, 6, 4, 2, 0];
+function renderKidAges() {
+  const n = Number(document.getElementById('in-kids-n').value);
+  const box = document.getElementById('kidAgesWrap');
+  const current = [...box.querySelectorAll('input')].map(i => i.value);
+  let html = '';
+  for (let i = 0; i < n; i++) {
+    const v = current[i] !== undefined ? current[i] : KID_DEFAULT_AGES[i];
+    html += `<div class="input-group"><label>第${i + 1}子の現在の年齢</label>
+      <input type="number" id="kid-age-${i}" min="0" max="22" value="${v}" oninput="onInputChange()"></div>`;
+  }
+  box.innerHTML = html;
+}
+
+function setIns(v) {
+  document.getElementById('insKokuho').classList.toggle('active', v === 'kokuho');
+  document.getElementById('insMicro').classList.toggle('active', v === 'microcorp');
+  document.getElementById('insKokuho').dataset.val = v;
+  onInputChange();
+}
+function setOrder(v) {
+  document.getElementById('orderTaxable').classList.toggle('active', v === 'taxable-first');
+  document.getElementById('orderNisa').classList.toggle('active', v === 'nisa-first');
+  document.getElementById('orderTaxable').dataset.val = v;
+  onInputChange();
+}
+function setExpChg(on) {
+  document.getElementById('expchgOff').classList.toggle('active', !on);
+  document.getElementById('expchgOn').classList.toggle('active', on);
+  document.getElementById('expchgBlock').style.display = on ? 'grid' : 'none';
+  onInputChange();
+}
+
+const EV_NAMES = ['車の買い替え', '住まいの修繕', 'リフォーム', '旅行・お祝い', 'その他'];
+function addEvent() {
+  const box = document.getElementById('eventsWrap');
+  if (box.children.length >= 10) return;
+  const startAge = Number(document.getElementById('in-age').value) || 45;
+  const row = document.createElement('div');
+  row.className = 'ev-row';
+  row.innerHTML = `<input type="number" class="ev-age" min="18" max="100" value="${Math.min(100, startAge + 10)}" oninput="onInputChange()">
+    <span style="font-size:11px">歳に</span>
+    <input type="number" class="ev-amt" min="0" max="10000" value="200" oninput="onInputChange()">
+    <span style="font-size:11px">万円</span>
+    <select class="ev-name" onchange="onInputChange()">${EV_NAMES.map(n => `<option>${n}</option>`).join('')}</select>
+    <button type="button" class="ev-del" onclick="this.parentNode.remove(); toggleAddBtns(); onInputChange()">×</button>`;
+  box.appendChild(row); toggleAddBtns();
+}
+const WF_NAMES = ['退職金', 'iDeCo・企業年金の一時金', '相続', '保険の満期', '不動産などの売却', 'その他'];
+function addWindfall() {
+  const box = document.getElementById('windfallsWrap');
+  if (box.children.length >= 5) return;
+  const startAge = Number(document.getElementById('in-age').value) || 45;
+  const row = document.createElement('div');
+  row.className = 'ev-row';
+  row.innerHTML = `<input type="number" class="ev-age" min="18" max="100" value="${Math.min(100, startAge + 15)}" oninput="onInputChange()">
+    <span style="font-size:11px">歳に</span>
+    <input type="number" class="ev-amt" min="0" max="50000" value="500" oninput="onInputChange()">
+    <span style="font-size:11px">万円</span>
+    <select class="ev-name" onchange="onInputChange()">${WF_NAMES.map(n => `<option>${n}</option>`).join('')}</select>
+    <select class="ev-to" onchange="onInputChange()"><option value="invest">投資に回す</option><option value="cash">現金にしまう</option></select>
+    <button type="button" class="ev-del" onclick="this.parentNode.remove(); toggleAddBtns(); onInputChange()">×</button>`;
+  box.appendChild(row); toggleAddBtns();
+}
+function toggleAddBtns() {
+  document.getElementById('evAddBtn').style.display = document.getElementById('eventsWrap').children.length >= 10 ? 'none' : 'block';
+  document.getElementById('wfAddBtn').style.display = document.getElementById('windfallsWrap').children.length >= 5 ? 'none' : 'block';
+}
+
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, Number(v) || 0));
+
+// =====================================================
+// common.js が要求する必須インターフェース
+// =====================================================
+const CURRENT_TOOL_ID = 'money-fire-sim';
+const STORAGE_KEY = 'fireSimInputs_v1';
+const STORAGE_FIELDS = ['in-age','in-nisa','in-taxable','in-cash','in-expense','in-side','in-side-end',
+  'in-kids-n','in-tuition','in-return','in-vol','in-pstart','in-pension','in-profit','in-crash',
+  'in-expchg-age','in-expchg-amt'];
+const INPUT_LABELS = {
+  'in-age': '現在の年齢', 'in-nisa': 'NISA資産', 'in-taxable': '課税口座資産', 'in-cash': '生活防衛資金',
+  'in-expense': '月の生活費', 'in-side': 'ゆるく働く収入', 'in-pension': '年金見込み',
+};
+const RESULT_LABELS = { main: '資産が持つ年齢', subA: '税金合計', subB: '社会保険料合計', subC: '学費・出費合計' };
+
+function readInsurance() { return document.getElementById('insKokuho').dataset.val || 'kokuho'; }
+function readOrder() { return document.getElementById('orderTaxable').dataset.val || 'taxable-first'; }
+function readExpChgOn() { return document.getElementById('expchgOn').classList.contains('active'); }
+
+function calculateInputs() {
+  const children = [];
+  if (family === 'kids') document.querySelectorAll('#kidAgesWrap input').forEach(i => children.push(clamp(i.value, 0, 22)));
+
+  const lifeEvents = [];
+  document.querySelectorAll('#eventsWrap .ev-row').forEach(row => {
+    lifeEvents.push({ age: clamp(row.querySelector('.ev-age').value, 18, 100),
+      amount: clamp(row.querySelector('.ev-amt').value, 0, 10000), name: row.querySelector('.ev-name').value });
+  });
+  const windfalls = [];
+  document.querySelectorAll('#windfallsWrap .ev-row').forEach(row => {
+    windfalls.push({ age: clamp(row.querySelector('.ev-age').value, 18, 100),
+      amount: clamp(row.querySelector('.ev-amt').value, 0, 50000), name: row.querySelector('.ev-name').value,
+      to: row.querySelector('.ev-to').value });
+  });
+  const crashRaw = document.getElementById('in-crash').value.split('-');
+
+  return {
+    startAge: clamp(document.getElementById('in-age').value, 18, 80),
+    nisa: clamp(document.getElementById('in-nisa').value, 0, 50000),
+    taxable: clamp(document.getElementById('in-taxable').value, 0, 50000),
+    cash: clamp(document.getElementById('in-cash').value, 0, 50000),
+    expenseMonthly: clamp(document.getElementById('in-expense').value, 1, 100),
+    expenseChange: readExpChgOn()
+      ? { age: clamp(document.getElementById('in-expchg-age').value, 18, 100), monthly: clamp(document.getElementById('in-expchg-amt').value, 1, 100) }
+      : null,
+    sideMonthly: clamp(document.getElementById('in-side').value, 0, 50),
+    sideEndAge: clamp(document.getElementById('in-side-end').value, 60, 100),
+    family, children,
+    tuitionAnnual: family === 'kids' ? clamp(document.getElementById('in-tuition').value, 0, 500) : 0,
+    lifeEvents, windfalls,
+    insurance: readInsurance(),
+    returnRate: clamp(document.getElementById('in-return').value, 0, 10) / 100,
+    volatility: Number(document.getElementById('in-vol').value),
+    pensionStartAge: Number(document.getElementById('in-pstart').value),
+    pensionMonthly: clamp(document.getElementById('in-pension').value, 0, 50),
+    order: readOrder(),
+    taxableProfitRatio: clamp(document.getElementById('in-profit').value, 0, 80) / 100,
+    crash: Number(crashRaw[0]), crashRecoverYears: Number(crashRaw[1] || 0),
+  };
+}
+
+function ageLabel(r) { return r.survivesTo100 ? '100歳ごえ' : r.depletionAge + '歳'; }
+
+function calculateResult(p) {
+  const r = simulate(p);
+  return { p, r, main: r.survivesTo100 ? 100 : r.depletionAge,
+           subA: r.totals.tax, subB: r.totals.social, subC: r.totals.tuition + r.totals.events };
+}
+
+function displayResult(result) {
+  const { p, r } = result;
+  const numEl = document.getElementById('resultNum');
+  const unitEl = document.getElementById('resultUnit');
+  numEl.classList.remove('placeholder');
+  if (r.survivesTo100) { numEl.textContent = '100'; unitEl.textContent = '歳ごえ';
+    document.getElementById('resultVerdict').textContent = 'まで一緒に歩いてくれます（実質ゴール！）'; }
+  else { numEl.textContent = r.depletionAge; unitEl.textContent = '歳';
+    document.getElementById('resultVerdict').textContent = 'まで一緒に歩いてくれます'; }
+
+  ['bA','bB','bC'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.classList.remove('placeholder');
+    el.textContent = fmt([result.subA, result.subB, result.subC][i]);
+  });
+
+  const weakRate = Math.max(0, p.returnRate - 0.02);
+  const weak = simulate({ ...p, returnRate: weakRate });
+  document.getElementById('resultWeak').textContent = p.returnRate > 0
+    ? `もし利回りが2%低め（${(weakRate*100).toFixed(1)}%）に振れたら → ${ageLabel(weak)}` : '';
+
+  const mcEl = document.getElementById('resultMc');
+  if (p.volatility > 0) {
+    const mc = simulateMonteCarlo(p);
+    const show = o => o.survives ? ('100歳ごえ' + (o.balance > 0 ? '・残高' + fmt(o.balance) : '')) : (o.age + '歳');
+    mcEl.textContent = `運のブレ込みで${mc.runs}回歩くと、100歳まで歩き切れたのは${Math.round(mc.successRate*100)}%。運わるめ${show(mc.p10)}／まんなか${show(mc.p50)}／運よめ${show(mc.p90)}`;
+    document.getElementById('resultWeak').textContent = '';
+  } else { mcEl.textContent = ''; }
+
+  ['btnCopyText','btnCopyExcel'].forEach(id => document.getElementById(id).disabled = false);
+
+  drawChart(r, p);
+  buildBreakdown(r, p);
+  buildMoshimo(p, r);
+  buildMessage(p, r);
+}
+
+function buildShareText(result) {
+  const label = result.r.survivesTo100 ? '100歳ごえ（実質ゴール）' : result.r.depletionAge + '歳まで';
+  return `私の資産、${label}一緒に歩いてくれるらしい⛰\nFIREできるかシミュレーターで計算`;
+}
+function buildShareUrl() { return location.href.split('?')[0]; }
+
+// ===== グラフ =====
+function drawChart(r, p) {
+  const box = document.getElementById('chart');
+  const H = 230, padL = 54, padR = 14, padT = 24, padB = 30;
+  const ih = H - padT - padB;
+  const endAge = 100;
+  const cw = Math.max(280, box.clientWidth || 320);
+  const visYears = p.startAge >= 75 ? (endAge - p.startAge) : (80 - p.startAge);
+  const pxPerYear = (cw - padL - padR) / Math.max(5, visYears);
+  const W = Math.round(padL + pxPerYear * (endAge - p.startAge) + padR);
+
+  const byAge = {}; r.series.forEach(d => byAge[d.age] = d);
+  const cash0 = p.cash || 0;
+  const startInvest = p.crash > 0 ? (p.nisa + p.taxable) * (1 - p.crash) : (p.nisa + p.taxable);
+  const startTotal = startInvest + cash0;
+  const lastAge = r.survivesTo100 ? endAge : r.depletionAge;
+  const x = a => padL + (a - p.startAge) * pxPerYear;
+
+  let maxV = 100;
+  r.series.forEach(d => { if (d.total > maxV) maxV = d.total; });
+  if (startTotal > maxV) maxV = startTotal;
+  maxV *= 1.1;
+  function niceStep(rough) { const p10 = Math.pow(10, Math.floor(Math.log10(rough))); for (const m of [1,2,2.5,5,10]) if (m*p10 >= rough) return m*p10; return 10*p10; }
+  const step = niceStep(maxV / 3);
+  maxV = step * Math.ceil(maxV / step);
+  const y = v => padT + ih - Math.min(1, v / maxV) * ih;
+  function fmtAxis(man) { if (man >= 10000) { const oku = man/10000; return (Number.isInteger(oku)?oku:oku.toFixed(1))+'億'; } return Math.round(man).toLocaleString()+'万'; }
+
+  let ptsAll = 'M'+x(p.startAge)+','+y(startTotal);
+  let ptsInvest = 'M'+x(p.startAge)+','+y(startInvest);
+  let ptsNisa = 'M'+x(p.startAge)+','+y(p.crash>0?p.nisa*(1-p.crash):p.nisa);
+  for (let a = p.startAge; a <= endAge; a++) { const d = byAge[a]; if (!d) continue;
+    ptsAll += ' L'+x(a)+','+y(d.total); ptsInvest += ' L'+x(a)+','+y(d.total-(d.cash||0)); ptsNisa += ' L'+x(a)+','+y(d.nisa); }
+  const close = ' L'+x(lastAge)+','+y(0)+' L'+x(p.startAge)+','+y(0)+' Z';
+
+  let grid = '', yLabels = '';
+  for (let v = step; v <= maxV; v += step) { const yy = y(v);
+    grid += `<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="#e6eae4" stroke-width="1"/>`;
+    yLabels += `<text x="${padL-6}" y="${yy+4}" text-anchor="end" font-size="10.5" fill="#888">${fmtAxis(v)}</text>`; }
+  let xlab = '';
+  for (let a = p.startAge; a < endAge; a++) { const isTick = a === p.startAge || a % 10 === 0; if (!isTick) continue;
+    xlab += `<text x="${x(a)}" y="${H-8}" text-anchor="middle" font-size="10.5" fill="#888">${a}</text>`; }
+  xlab += `<text x="${x(endAge)}" y="${H-8}" text-anchor="middle" font-size="10.5" fill="#888">100歳</text>`;
+
+  let flag = '';
+  if (r.survivesTo100) {
+    flag = `<circle cx="${x(lastAge)}" cy="${y(r.balanceAt100)}" r="4" fill="#1a56db"/>`;
+  } else {
+    flag = `<text x="${Math.min(x(lastAge), W-30)}" y="${y(0)-6}" font-size="11" fill="#b91c1c" text-anchor="middle">${r.depletionAge}歳</text>`;
+  }
+
+  box.innerHTML = `<svg width="${W}" height="${H}">
+    ${grid}
+    <path d="${ptsAll+close}" fill="#c7d0e0" opacity="0.5"/>
+    <path d="${ptsInvest+close}" fill="#d9a75a" opacity="0.5"/>
+    <path d="${ptsNisa+close}" fill="#1a56db" opacity="0.35"/>
+    <path d="${ptsAll}" fill="none" stroke="#1a56db" stroke-width="2"/>
+    ${flag}${xlab}${yLabels}
+  </svg>`;
+
+  document.getElementById('chartLegend').innerHTML =
+    `<span><i style="background:#1a56db"></i>NISA</span><span><i style="background:#d9a75a"></i>課税口座</span>` +
+    (cash0 > 0 ? `<span><i style="background:#c7d0e0"></i>生活防衛資金</span>` : '');
+}
+
+function bdRow(label, sub, val) {
+  return `<div class="bd-row2"><span>${label}<span class="bd-sub2">${sub}</span></span><span class="bd-val2">${fmt(val)}</span></div>`;
+}
+function buildBreakdown(r, p) {
+  const t = r.totals; const until = r.survivesTo100 ? '100歳まで' : `${r.depletionAge}歳まで`;
+  let rows = '';
+  rows += bdRow(`税金（${until}）`, `含み益${Math.round((p.taxableProfitRatio??0.5)*100)}%を出発点に利益部分へ20.315%`, t.tax);
+  rows += bdRow('社会保険料など', (p.insurance==='microcorp'?'社保＋法人住民税':'国保＋国民年金')+'＋介護保険（65歳〜）', t.social);
+  if (t.tuition > 0) rows += bdRow('大学の学費', `1人あたり年${p.tuitionAnnual}万円×4年`, t.tuition);
+  if (t.events > 0) rows += bdRow('大きな出費', (p.lifeEvents||[]).map(e=>e.name).join('・'), t.events);
+  if (t.benefit > 0) rows += `<div class="bd-row2"><span>児童手当（もらえるお金）<span class="bd-sub2">18歳まで自動加算</span></span><span class="bd-val2" style="color:#059669">＋${fmt(t.benefit)}</span></div>`;
+  if (t.windfall > 0) rows += `<div class="bd-row2"><span>臨時収入（もらえるお金）<span class="bd-sub2">${(p.windfalls||[]).map(w=>w.name).join('・')}</span></span><span class="bd-val2" style="color:#1a56db">＋${fmt(t.windfall)}</span></div>`;
+  document.getElementById('bdList').innerHTML = rows;
+}
+
+function scenScore(res) { return res.survivesTo100 ? 1e9 + res.balanceAt100 : res.depletionAge; }
+function cmp(a, b) { const av = scenScore(a), bv = scenScore(b); return bv > av ? 'up' : bv < av ? 'down' : ''; }
+function buildMoshimo(p, r) {
+  const yearsTo80 = Math.max(1, 80 - p.startAge + 1);
+  const sideEndCapped = Math.min(p.sideEndAge || 80, 80);
+  const yearsSide = Math.max(0, sideEndCapped - p.startAge + 1);
+  const cards = []; const survived = r.survivesTo100;
+  const agePart = scen => survived ? (scen.survivesTo100 ? null : `100歳ごえ → ${scen.depletionAge}歳`) : `${ageLabel(r)} → ${ageLabel(scen)}`;
+
+  const t1 = simulate({ ...p, sideMonthly: p.sideMonthly + 3 });
+  cards.push({ label: 'ゆるく働く収入が＋3万円なら', val: agePart(t1) ?? `働くあいだの収入＋${fmt(36*yearsSide)}`, cls: cmp(r, t1) });
+
+  const shiftExpense = (pp, d) => ({ ...pp, expenseMonthly: Math.max(1, pp.expenseMonthly + d),
+    expenseChange: pp.expenseChange ? { ...pp.expenseChange, monthly: Math.max(1, pp.expenseChange.monthly + d) } : null });
+  const t2 = simulate(shiftExpense(p, -2));
+  cards.push({ label: '生活費を−2万円しぼれたら', val: agePart(t2) ?? `80歳までに${fmt(24*yearsTo80)}節約`, cls: cmp(r, t2) });
+
+  const otherIns = p.insurance === 'kokuho' ? 'microcorp' : 'kokuho';
+  const otherInsName = otherIns === 'microcorp' ? 'マイクロ法人' : '個人（国保）';
+  const t5 = simulate({ ...p, insurance: otherIns });
+  let v5;
+  if (survived && t5.survivesTo100) {
+    const d = r.totals80.social - t5.totals80.social;
+    v5 = d > 0 ? `80歳までに${fmt(d)}節約` : d < 0 ? `80歳までに${fmt(-d)}負担増` : '変わらず';
+  } else { v5 = agePart(t5) ?? `${ageLabel(r)} → ${ageLabel(t5)}`; }
+  cards.push({ label: `社会保険を「${otherInsName}」にしたら`, val: v5, cls: cmp(r, t5) });
+
+  if (p.crash === 0) {
+    const t3 = simulate({ ...p, crash: 0.3, crashRecoverYears: 3 });
+    cards.push({ label: '直後に−30%の暴落が来たら', val: agePart(t3) ?? 'それでも100歳まで歩き切れます', cls: (survived && t3.survivesTo100) ? 'up' : cmp(r, t3) });
+  }
+  if (survived) {
+    const t4 = simulate(shiftExpense(p, 3));
+    cards.push({ label: '月＋3万円ぜいたくしたら', val: t4.survivesTo100 ? `80歳までに＋${fmt(36*yearsTo80)}楽しんでも100歳ごえ` : `${t4.depletionAge}歳まで`, cls: t4.survivesTo100 ? 'up' : 'down' });
+  }
+  document.getElementById('moshimoList').innerHTML = cards.map(c =>
+    `<div class="mo-card ${c.cls}"><span>${c.label}</span><span class="mo-val">${c.val}</span></div>`).join('');
+}
+
+function buildMessage(p, r) {
+  let m = '';
+  const kidsNote = (p.children && p.children.length > 0) ? '学費の坂も込みで、' : '';
+  if (r.survivesTo100 && r.balanceAt100 >= 3000) {
+    m = `${kidsNote}100歳の峠を越えて、まだ${fmt(r.balanceAt100)}も残る計算です。守りは十分。月にあと数万円、家族との時間や体験に使っても道は歩き切れます。足るを知りつつ、ちゃんと使う。それもFIREの続きです。`;
+  } else if (r.survivesTo100) {
+    m = `${kidsNote}100歳までしっかり歩き切れる計算です。無理のない生活費とゆるい働き方のバランスがいい塩梅。あとは相場が荒れた年に慌てないよう、暴落テストも一度試しておきましょう。`;
+  } else if (r.depletionAge >= 85) {
+    m = `${kidsNote}${r.depletionAge}歳。かなりいい線です。年金と組み合わせれば実質的に逃げ切れる可能性も十分。月数万円の調整で景色は変わります。`;
+  } else {
+    const t = simulate({ ...p, sideMonthly: p.sideMonthly + 5 });
+    if (t.survivesTo100 || t.depletionAge >= 85) {
+      m = `${kidsNote}いまの条件だと${r.depletionAge}歳で資産が先に休む計算です。でも月あと5万円ゆるく働くと${ageLabel(t)}まで伸びます。全部やめるか続けるかの二択じゃなく「少しだけ働く」第三の道。それがゆるFIREです。`;
+    } else {
+      m = `${kidsNote}正直にお伝えします。いまの条件だと${r.depletionAge}歳で資産が先に休む計算で、月5万円ゆるく働いても${ageLabel(t)}。数字はきびしめです。打ち手は生活費の見直し、働く量と年数、年金の受け取り方、資産づくりの継続——上の「もしも」を動かしてあなたに効くレバーを探してみてください。`;
+    }
+  }
+  document.getElementById('msgBox').textContent = m;
+}
+
+// 初期化：家族プリセット・イベント行・トグルの初期状態
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('insKokuho').dataset.val = 'kokuho';
+  document.getElementById('orderTaxable').dataset.val = 'taxable-first';
+  updateAssetTotal();
+});
+</script>
+</body>
+</html>
