@@ -29,8 +29,8 @@ from xml.sax.saxutils import escape
 
 BASE_DIR = Path(__file__).resolve().parent
 TOOLS_JSON = BASE_DIR / "tools.json"
-INDEX_TEMPLATE = BASE_DIR / "src" / "templates" / "index.template.html"
-DIST_DIR = BASE_DIR / "dist"
+INDEX_TEMPLATE = BASE_DIR / "index.template.html"
+DIST_DIR = BASE_DIR
 
 DOMAIN = "https://arigato-tools.com"
 
