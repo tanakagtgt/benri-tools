@@ -19,5 +19,5 @@
   { "id": "mitumorisho-seikyuusho", "name": "見積書・請求書 作成ツール", "url": "https://arigato-tools.com/mitumorisho-seikyuusho", "file": "mitumorisho-seikyuusho.html", "emoji": "🧾", "category": "doc", "desc": "スマホで見積書・請求書を作成しコンビニ印刷可能" },
   { "id": "bunsho-henkan-kaiseki", "name": "文章解析＆全角半角変換ツール", "url": "https://arigato-tools.com/bunsho-henkan-kaiseki", "file": "bunsho-henkan-kaiseki.html", "emoji": "🔤", "category": "conv", "desc": "文字数・行数・バイト数をカウント。 全角⇔半角／ひらがな⇔カタカナの変換や自動改行にも対応" },
   { "id": "qrcode-creator", "name": "QRコード作成ツール", "url": "https://arigato-tools.com/qrcode-creator", "file": "qrcode-creator.html", "emoji": "📷", "category": "util", "desc": "入力したテキスト・URLがそのままQRコードになります" },
-  { "id": "audio-splitter", "name": "mp3分割ツール", "url": "https://arigato-tools.com/audio-splitter", "file": "audio-splitter.html", "emoji": "🎵", "category": "conv", "desc": "MP3　WAV　M4A　m4aを分割できます" }
+  { "id": "audio-splitter", "name": "mp3ファイル分割ツール", "url": "https://arigato-tools.com/audio-splitter", "file": "audio-splitter.html", "emoji": "🎵", "category": "conv", "desc": "MP3　WAV　M4A　m4aを分割できます" }
 ]
