@@ -585,8 +585,8 @@ h1{
   display:flex;
   flex-direction:column; /* メモ欄をflex-growで伸ばすための下準備 */
 }
-.modal-title{font-size:15px;font-weight:700;margin-bottom:14px;color:var(--color-primary);}
-.field-group{margin-bottom:14px;}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:14px;color:var(--color-primary);flex-shrink:0;}
+.field-group{margin-bottom:14px;flex-shrink:0;}     /* 基本は伸び縮みしない固定サイズ */
 .field-group label{
   display:block;
   font-size:11px;
@@ -612,17 +612,19 @@ h1{
   resize:vertical;
   line-height:1.6;
 }
-/* メモ欄：モーダルを広げた分だけ縦に伸びるようflex-growで拡張
-   （手動リサイズもresize:verticalで引き続き可能） */
+/* メモ欄：他の項目は固定サイズのまま、余った縦スペースを最優先でメモ欄だけが吸収する
+   ・flex-basisを0にして「中身の大きさ」ではなく純粋にflex-growだけで高さを決める（重なり防止の要）
+   ・min-height:0を親子とも指定し、flexアイテムの最小サイズ計算による意図しない溢れを防ぐ */
 .field-group-memo{
   display:flex;
   flex-direction:column;
-  flex:1;             /* modal-box内の余った縦スペースをメモ欄が吸収 */
-  min-height:0;        /* flexアイテムのoverflow計算を正しくするため必須 */
+  flex:1 1 0;
+  min-height:0;
 }
 .field-group-memo textarea{
-  flex:1;
-  min-height:120px;    /* 3行→広いモーダルに合わせて最低高さを確保 */
+  flex:1 1 0;
+  min-height:80px;    /* 画面が小さい端末でも最低限これだけは確保 */
+  height:0;           /* flex-basis:0と合わせてflex-growのみで高さを決めるための保険 */
 }
 
 /* 追加日／締切日の2分割レイアウト */
@@ -672,9 +674,18 @@ h1{
 .q-btn.active[data-q="3"]{border-color:var(--q3-color);background:var(--q3-bg);color:var(--q3-color);}
 .q-btn.active[data-q="4"]{border-color:var(--q4-color);background:var(--q4-bg);color:var(--q4-color);}
 
-.modal-btns{display:flex;gap:8px;margin-top:18px;}
+/* =====================================================
+   キャンセル／Googleカレンダー追加／保存：1行3分割
+   ・削除ボタンはこの下に別枠で表示（編集時のみ）
+   ===================================================== */
+.modal-actions{
+  display:grid;
+  grid-template-columns:1fr 1.3fr 1fr; /* 中央のカレンダーは文言が長いので少し広め */
+  gap:8px;
+  margin-top:18px;
+  flex-shrink:0;
+}
 .btn-save{
-  flex:1;
   background:var(--color-primary);
   color:#fff;
   border:none;
@@ -682,7 +693,7 @@ h1{
   font-family:inherit;
   font-size:15px;
   font-weight:700;
-  padding:13px;
+  padding:13px 6px;
   min-height:48px;
   cursor:pointer;
 }
@@ -694,38 +705,41 @@ h1{
   font-family:inherit;
   font-size:13px;
   font-weight:700;
-  padding:13px 16px;
-  min-height:48px;
+  padding:11px 16px;
+  min-height:44px;
   cursor:pointer;
 }
 .btn-cancel{
-  background:none;
-  border:none;
-  color:var(--color-text-muted);
+  background:#f4f6f9;
+  border:1px solid var(--color-border-input);
+  color:var(--color-text-sub);
+  border-radius:var(--radius-btn);
   font-family:inherit;
   font-size:13px;
-  padding:13px 10px;
+  font-weight:700;
+  padding:13px 6px;
+  min-height:48px;
   cursor:pointer;
 }
+.btn-cancel:hover{background:#e8ebf0;}
 
 /* =====================================================
-   Googleカレンダー追加ボタン（モーダル内・締切日の下に配置）
+   Googleカレンダー追加ボタン（下部の3分割アクション行・中央に配置）
    ・Googleブランドカラーに寄せた配色（青系）で視認性を確保
    ・締切日が未入力の時はグレーアウトして押せなくする（JS側でdisabled制御）
    ===================================================== */
 .btn-calendar{
-  width:100%;
   background:#e8f0fe;
   border:1px solid #aecbfa;
   color:#1a56db;
   border-radius:var(--radius-btn);
   font-family:inherit;
-  font-size:13px;
+  font-size:12px;
   font-weight:700;
-  padding:11px;
-  min-height:44px;
+  padding:11px 4px;
+  min-height:48px;
   cursor:pointer;
-  margin-top:4px;
+  line-height:1.3;
 }
 .btn-calendar:hover{background:#d2e3fc;}
 .btn-calendar:disabled{opacity:0.45;cursor:not-allowed;}
@@ -1002,11 +1016,6 @@ footer{
       </div>
     </div>
 
-    <!-- Googleカレンダー追加ボタン：締切日が入っている時だけ押せる -->
-    <button type="button" class="btn-calendar" id="btnAddToCalendar" onclick="addToGoogleCalendarFromModal()" disabled>
-      📅 Googleカレンダーに追加（締切日を入力すると押せます）
-    </button>
-
     <div class="field-group">
       <div class="q-select-wrap">
         <button type="button" class="q-btn" data-q="2" onclick="setQuadrant(2)">②計画してやる</button>
@@ -1020,12 +1029,14 @@ footer{
       <input type="text" id="fieldTags" placeholder="タグ（カンマ区切りで複数可）例：仕事, 現場, 急ぎ">
     </div>
 
-    <div class="modal-btns">
-      <button class="btn-delete" id="btnDelete" onclick="deleteCurrentTask()" style="display:none;">削除</button>
+    <!-- キャンセル／Googleカレンダー追加／保存を1行3分割で配置 -->
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button type="button" class="btn-calendar" id="btnAddToCalendar" onclick="addToGoogleCalendarFromModal()" disabled title="締切日を入力すると追加できます">📅 カレンダー追加</button>
       <button class="btn-save" onclick="saveTaskFromModal()">保存</button>
     </div>
     <div style="text-align:center;">
-      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn-delete" id="btnDelete" onclick="deleteCurrentTask()" style="display:none;">削除</button>
     </div>
   </div>
 </div>
@@ -1838,9 +1849,9 @@ function syncCalendarBtnState() {
   const btn = document.getElementById('btnAddToCalendar');
   if (!btn) return;
   btn.disabled = !due;
-  btn.textContent = due
-    ? '📅 Googleカレンダーに追加'
-    : '📅 Googleカレンダーに追加（締切日を入力すると押せます）';
+  // ★3分割レイアウトの狭い幅に収まるよう短い文言に統一（状態はtitle属性のツールチップで補足）
+  btn.textContent = '📅 カレンダー追加';
+  btn.title = due ? '' : '締切日を入力すると追加できます';
 }
 
 /* =====================================================
