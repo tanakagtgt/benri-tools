@@ -1,7 +1,7 @@
 /* =====================================================
    common.js
    全ツール共通のJS処理（おすすめ読込／シェア／コピー／
-   localStorage保存復元／トグル／リセット等）
+   localStorage保存復元／トグル／リセット／テーマ切替等）
 
    ★このファイルはツールごとに書き換えない（共通処理のみ）
    ★ツール固有の設定・ロジックは各ツールのHTML内<script>に書く
@@ -20,6 +20,66 @@
    ===================================================== */
 
 /* =====================================================
+   テーマ管理（ライト/ダークモード）
+   - 保存キー: THEME_STORAGE_KEY（'light' | 'dark'）
+   - 優先順位：①localStorageの保存値 → ②OS設定(prefers-color-scheme) → ③ライト固定
+   - チラつき(FOUC)防止のため、DOMContentLoadedを待たずに
+     スクリプト読込時点で即座に適用する
+   - ★ボタンの見た目同期はinjectCommonUI()実行後に別途行う
+     （この時点ではまだボタン要素がDOMに存在しないため）
+   ===================================================== */
+const THEME_STORAGE_KEY = 'arigato_theme';
+
+function getPreferredTheme() {
+  try {
+    const saved = localStorage.getItem(THEME_STORAGE_KEY);
+    if (saved === 'light' || saved === 'dark') return saved;
+  } catch (e) {
+    // プライベートモード等でlocalStorageが使えない場合は無視
+  }
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    return 'dark';
+  }
+  return 'light';
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  updateThemeButtons(theme);
+}
+
+function updateThemeButtons(theme) {
+  const lightBtn = document.getElementById('themeBtnLight');
+  const darkBtn = document.getElementById('themeBtnDark');
+  if (lightBtn) lightBtn.classList.toggle('active', theme === 'light');
+  if (darkBtn) darkBtn.classList.toggle('active', theme === 'dark');
+}
+
+function setTheme(theme) {
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+  } catch (e) {
+    // 保存できなくても表示切替自体は行う
+  }
+  applyTheme(theme);
+}
+
+// スクリプト読込時点で即時適用（この時点ではボタンは未生成のためupdateThemeButtonsは何もしない）
+applyTheme(getPreferredTheme());
+
+// OS側のテーマ設定が変わった時、ユーザーが手動選択済みでなければ追従する
+if (window.matchMedia) {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    try {
+      if (localStorage.getItem(THEME_STORAGE_KEY)) return; // 手動選択済みなら追従しない
+    } catch (err) {
+      // 何もしない
+    }
+    applyTheme(e.matches ? 'dark' : 'light');
+  });
+}
+
+/* =====================================================
    状態管理（トグルの現在値）
    ===================================================== */
 let currentToggle = 'A';
@@ -29,6 +89,7 @@ let currentToggle = 'A';
    ===================================================== */
 document.addEventListener('DOMContentLoaded', () => {
   injectCommonUI(); // 共通UIブロック（ナビ/広告/シェア/リセット/QR/フッター）を注入
+  updateThemeButtons(getPreferredTheme()); // テーマボタンの見た目を現在のテーマに同期
   loadRecommends();  // おすすめツールを非同期で読み込む
   restoreInputs();   // LocalStorageから入力値を復元
   setCopyrightYear(); // フッターの©年号を自動表示
@@ -40,8 +101,8 @@ document.addEventListener('DOMContentLoaded', () => {
    - ここでHTMLを一括生成して差し込む
    - common.jsをここだけ直せば全ツール一括反映される
    対象スロット：
-     #topNavSlot    → 上部ナビ（ツール一覧に戻る＋おすすめ）
-     #bottomNavSlot → 下部ナビ（同上）
+     #topNavSlot    → 上部ナビ（ツール一覧に戻る＋テーマ切替）
+     #bottomNavSlot → 下部ナビ（ツール一覧に戻る＋おすすめ）
      #adAreaSlot    → 広告エリア
      #shareAreaSlot → シェアエリア
      #resetBtnSlot  → リセットボタン
@@ -53,9 +114,9 @@ function injectCommonUI() {
   if (topNav) topNav.outerHTML = `
 <div class="back-to-index">
   <a class="btn-back" href="/index.html">← ツール一覧に戻る</a>
-  <div class="recommend-wrap">
-    <span class="recommend-label">おすすめ：</span>
-    <span id="recommendLinks">読み込み中…</span>
+  <div class="theme-toggle-wrap" role="group" aria-label="表示テーマ切替">
+    <button type="button" class="theme-btn" id="themeBtnLight" onclick="setTheme('light')">☀️ ライト</button>
+    <button type="button" class="theme-btn" id="themeBtnDark" onclick="setTheme('dark')">🌙 ダーク</button>
   </div>
 </div>`;
 
@@ -124,7 +185,6 @@ function injectCommonUI() {
     <a class="footer-back" href="/privacy-policy.html">プライバシーポリシー</a>
     <a class="footer-back" href="/terms.html">利用規約</a>
     <a class="footer-back" href="https://docs.google.com/forms/d/e/1FAIpQLSfUe9UzcRcIRFb4TmDAYKsZ75CcGRjF8Z7Ar_u7a4KgyyNyzQ/viewform?usp=publish-editor" target="_blank" rel="noopener">お問い合わせ</a>
-    <a class="footer-back" href="https://x.com/arigaitsu" target="_blank" rel="noopener">𝕏 @arigaitsu</a>
   </nav>
 </footer>`;
 }
@@ -153,7 +213,8 @@ function setCopyrightYear() {
 
 /* =====================================================
    おすすめツール読み込み（tools.jsonから）
-   - 上部（recommendLinks）と下部ナビ（recommendLinks2）の両方に反映
+   - 下部ナビ（recommendLinks2）に反映
+   - ★上部ナビはテーマ切替スイッチに変更したためrecommendLinksは廃止
    ===================================================== */
 async function loadRecommends() {
   try {
@@ -167,15 +228,11 @@ async function loadRecommends() {
       ? picks.map(t => `<a class="recommend-link" href="${t.url}">${t.emoji} ${t.name}</a>`).join('')
       : '';
 
-    const el1 = document.getElementById('recommendLinks');
     const el2 = document.getElementById('recommendLinks2');
-    if (el1) el1.innerHTML = html;
     if (el2) el2.innerHTML = html;
 
   } catch (e) {
-    const el1 = document.getElementById('recommendLinks');
     const el2 = document.getElementById('recommendLinks2');
-    if (el1) el1.textContent = '';
     if (el2) el2.textContent = '';
   }
 }

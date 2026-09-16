@@ -1,6 +1,7 @@
 /* =====================================================
    CSS変数（色・サイズの一元管理）
    色変更はここだけ触ればOK
+   ダークモードは html[data-theme="dark"] ブロックで上書きする
    ===================================================== */
 :root {
   --color-primary:     #1a56db;   /* メインカラー（青） */
@@ -19,9 +20,40 @@
   --color-error-bg:    #fff1f1;
   --color-error-border:#fca5a5;
   --color-error-text:  #b91c1c;
+  --color-chip-bg:      #f1f5fd;  /* 戻る/コピー/シェア等ボタンの薄青背景 */
+  --color-chip-hover:   #dbeafe;  /* 同ホバー */
   --radius-card:       10px;
   --radius-btn:        8px;
   --radius-input:      7px;
+  color-scheme: light; /* スクロールバー等ブラウザ標準UIをライト基調に */
+}
+
+/* =====================================================
+   ダークモード用の変数
+   - html要素にdata-theme="dark"が付いた時だけ上書きされる
+   - common.jsのapplyTheme()がここを切り替える
+   - ★新しい色を追加する時は基本ここにも対になる値を足すこと
+   ===================================================== */
+html[data-theme="dark"] {
+  --color-primary:        #5b93ff;
+  --color-primary-hover:  #7ca6ff;
+  --color-primary-bg:     #16233b;
+  --color-primary-border: #2b3f63;
+  --color-bg:             #14161b;
+  --color-card:           #1d2027;
+  --color-input-bg:       #23262e;
+  --color-border:         #2d313b;
+  --color-border-input:   #3a3f4b;
+  --color-text:           #e7e9ee;
+  --color-text-sub:       #b8bcc6;
+  --color-text-muted:     #9199a6;
+  --color-text-label:     #6b7280;
+  --color-error-bg:       #2a1414;
+  --color-error-border:   #7f3131;
+  --color-error-text:     #f28b82;
+  --color-chip-bg:        #202531;
+  --color-chip-hover:     #2a3040;
+  color-scheme: dark;
 }
 
 /* =====================================================
@@ -40,12 +72,14 @@ body {
   align-items: center;
   /* iPhoneのフォントサイズ自動調整を無効化 */
   -webkit-text-size-adjust: 100%;
+  /* テーマ切替時のチラつきを軽減 */
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .container { width: 100%; max-width: 600px; }
 
 /* =====================================================
-   ナビ：戻るボタン＋おすすめツール
+   ナビ：戻るボタン＋テーマ切替（上部）／おすすめツール（下部）
    ===================================================== */
 .back-to-index {
   display: flex;
@@ -59,7 +93,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: #f1f5fd;
+  background: var(--color-chip-bg);
   border: 1px solid var(--color-primary-border);
   border-radius: var(--radius-input);
   color: var(--color-primary);
@@ -72,7 +106,7 @@ body {
   transition: background 0.15s;
   white-space: nowrap;
 }
-.btn-back:hover { background: #dbeafe; }
+.btn-back:hover { background: var(--color-chip-hover); }
 
 .recommend-wrap {
   display: flex;
@@ -94,7 +128,39 @@ body {
   padding: 3px 8px;
   transition: background 0.15s;
 }
-.recommend-link:hover { background: #dbeafe; }
+.recommend-link:hover { background: var(--color-chip-hover); }
+
+/* =====================================================
+   テーマ切替スイッチ（上部ナビ、旧おすすめ表示の場所）
+   - 「☀️ ライト」「🌙 ダーク」の2択ボタン
+   - アクティブ側にvar(--color-primary)系の強調色を付与
+   ===================================================== */
+.theme-toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-left: 2px solid var(--color-border);
+  padding-left: 10px;
+}
+.theme-btn {
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-input);
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  min-height: 30px; /* 小さめだが誤タップしにくい程度は確保 */
+}
+.theme-btn:hover { background: var(--color-primary-bg); }
+.theme-btn.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+}
 
 /* =====================================================
    広告エリア（CLS対策：高さを固定で事前確保）
@@ -118,7 +184,7 @@ body {
 }
 .ad-area-label {
   font-size: 10px;
-  color: #bbb;
+  color: var(--color-text-label);
   letter-spacing: 0.08em;
   margin-bottom: 4px;
 }
@@ -238,7 +304,7 @@ h1 {
   gap: 8px;
   cursor: pointer;
   font-size: 14px; /* 13px→14px */
-  color: #333;
+  color: var(--color-text);
   margin-bottom: 8px;
   min-height: 44px; /* タッチターゲット確保 */
 }
@@ -306,6 +372,10 @@ h1 {
   padding: 20px 16px 16px;
   text-align: center;
 }
+/* ダーク時はグラデーションを暗めのトーンに差し替え */
+html[data-theme="dark"] .result-main {
+  background: linear-gradient(135deg, #16233b 0%, #14261c 100%);
+}
 .result-label {
   font-size: 12px;
   font-weight: 700;
@@ -319,6 +389,8 @@ h1 {
   color: #111;
   line-height: 1;
 }
+/* ダーク時は薄い背景色に合わせて明るい文字色に */
+html[data-theme="dark"] .result-number { color: #f1f3f5; }
 .result-number.placeholder { color: #bbb; }
 .result-unit {
   font-size: 16px;
@@ -355,7 +427,7 @@ h1 {
 .b-num.placeholder { color: #ccc; }
 .b-label {
   font-size: 11px;
-  color: #777;
+  color: var(--color-text-muted);
   margin-top: 2px;
 }
 
@@ -364,7 +436,7 @@ h1 {
    ===================================================== */
 .btn-copy {
   width: 100%;
-  background: #f1f5fd;
+  background: var(--color-chip-bg);
   border: 1px solid var(--color-primary-border);
   border-radius: var(--radius-input);
   color: var(--color-primary);
@@ -377,7 +449,7 @@ h1 {
   margin-bottom: 8px;
   min-height: 44px;
 }
-.btn-copy:hover { background: #dbeafe; }
+.btn-copy:hover { background: var(--color-chip-hover); }
 .btn-copy:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* =====================================================
@@ -390,7 +462,7 @@ h1 {
   gap: 8px;
 }
 .btn-action {
-  background: #f1f5fd;
+  background: var(--color-chip-bg);
   border: 1px solid var(--color-primary-border);
   border-radius: var(--radius-input);
   color: var(--color-primary);
@@ -403,7 +475,7 @@ h1 {
   text-align: center;
   min-height: 44px; /* タッチターゲット確保 */
 }
-.btn-action:hover { background: #dbeafe; }
+.btn-action:hover { background: var(--color-chip-hover); }
 .btn-action:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-action.copied {
   background: #d1fae5;
@@ -489,6 +561,8 @@ h1 {
    QRコードモーダル
    - QRボタン押したらオーバーレイで中央表示
    - タップ外側（オーバーレイ部分）or ✕ボタンで閉じる
+   - ★QRコード自体は白背景でないと読み取り精度が落ちるため、
+     モーダルの背景はダークモードでも意図的に白のまま固定
    ===================================================== */
 .qr-modal-overlay {
   display: none;                   /* 初期は非表示 */
@@ -515,7 +589,7 @@ h1 {
 .qr-modal-title {
   font-size: 13px;
   font-weight: 700;
-  color: var(--color-text-sub);
+  color: #555;
   margin-bottom: 14px;
   letter-spacing: 0.06em;
 }
