@@ -575,7 +575,8 @@ h1{
 }
 .modal-overlay.show{display:flex;}
 .modal-box{
-  background:#fff;
+  background:var(--color-card); /* ★ダークモード対応：固定#fffだと暗背景時に文字と同化するためCSS変数化 */
+  color:var(--color-text);       /* ★念のため明示指定（暗背景でも文字色がちゃんと追従するように） */
   width:100%;
   max-height:95vh;
   min-height:95vh;   /* ★追加：中身が少なくても常に上まで伸ばす */
@@ -600,7 +601,8 @@ h1{
   width:100%;
   border:1px solid var(--color-border-input);
   border-radius:var(--radius-input);
-  background:#f8fafd;
+  background:var(--color-input-bg); /* ★ダークモード対応：固定色だと暗背景時に入力欄が浮いて見えるためCSS変数化 */
+  color:var(--color-text);           /* ★念のため明示指定（input/textareaは色継承されない環境があるため） */
   font-family:inherit;
   font-size:16px;
   padding:10px;
@@ -622,7 +624,7 @@ h1{
   flex:1;
   border:2px solid var(--color-border-input);
   border-radius:var(--radius-input);
-  background:#f8fafd;
+  background:var(--color-input-bg); /* ★ダークモード対応 */
   font-family:inherit;
   font-size:13px;
   font-weight:700;
@@ -643,7 +645,7 @@ h1{
 .q-btn{
   border:2px solid var(--color-border-input);
   border-radius:var(--radius-input);
-  background:#f8fafd;
+  background:var(--color-input-bg); /* ★ダークモード対応 */
   font-family:inherit;
   font-size:11.5px;
   font-weight:700;
