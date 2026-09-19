@@ -11,6 +11,14 @@
    - task-manager.htmlに <div class="timer-placeholder-zone"
      id="timerWidgetZone"></div> が1つ存在すること
    - このJSが起動時に中身を丸ごと生成する（HTML側は空でOK）
+   - common.cssが読み込まれていること（色はcommon.cssのCSS変数を使う
+     ＝ダークモード切替に自動で追従する）
+
+   【デザイン（CSS）について】
+   - このウィジェットのCSSはこのファイル内のTW_CSSに内蔵している
+   - HTML側に .tw- で始まるCSSがあった場合は不要なので削除してOK
+   - スイッチ類（タブ・プリセット・音・開始/一時停止/リセット）は
+     common.cssのトグルボタンと同じ配色（選択中＝青枠＋薄青背景）
 
    【全体構成】
    1. 設定・状態管理
@@ -33,6 +41,22 @@
 
   // ★将来プリセットを増やしたい場合はここに分数を追加するだけでOK
   const TIMER_PRESET_MINUTES = [5, 10, 15, 25, 45];
+
+  // モード名（タブ／ミニ表示の見出し）。名前を変えたい時はここだけ直す
+  const MODE_LABELS = {
+    timer: '①タイマー',
+    stopwatch: '②ストップウォッチ',
+    pomodoro: '③ポモドーロ'
+  };
+
+  // 数字表示の前に付ける項目名（「経過時間＝06:22」の「経過時間」部分）
+  const DISPLAY_LABELS = {
+    timer: '残り時間',
+    stopwatch: '経過時間'
+    // ポモドーロは現在のフェーズ名（作業中／休憩中／長い休憩）を使う → getDisplayLabel()
+  };
+
+  const POMO_PHASE_LABELS = { work: '作業中', break: '休憩中', longBreak: '長い休憩' };
 
   const DEFAULT_SETTINGS = {
     soundOn: true,
@@ -80,6 +104,83 @@
   /* =====================================================
      2. 初期化／描画
      ===================================================== */
+
+  /* ---- ウィジェット専用CSS（JSから1回だけ<head>に注入する） ----
+     ・色はcommon.cssのCSS変数のみ使用＝ダークモードに自動対応
+     ・#timerWidgetZone を頭に付けて、HTML側の .timer-placeholder-zone
+       （中央寄せ）より優先させ、全体を左寄せにしている
+     ・スイッチ類は共通の .tw-sw クラス（common.cssの .toggle-btn と同じ配色）
+       選択中＝ .active（青枠＋薄青背景＋青文字） */
+  const TW_CSS = `
+/* 枠全体：左寄せ */
+#timerWidgetZone{align-items:stretch;justify-content:flex-start;text-align:left;}
+
+/* ミニ表示 */
+#timerWidgetZone .tw-mini{width:100%;cursor:pointer;text-align:left;}
+#timerWidgetZone .tw-mini-title{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin-bottom:2px;font-size:13px;font-weight:700;color:var(--color-text-sub);}
+#timerWidgetZone .tw-mini-hint{margin-top:6px;font-size:11px;color:var(--color-text-muted);}
+
+/* 「動作中」「1 / 4 セット目」バッジ */
+#timerWidgetZone .tw-running-badge,
+#timerWidgetZone .tw-cycle-badge{align-self:flex-start;padding:1px 8px;border:1px solid var(--color-primary);border-radius:999px;background:var(--color-primary-bg);font-size:11px;font-weight:700;color:var(--color-primary);}
+
+/* 展開パネル */
+#timerWidgetZone .tw-panel{width:100%;display:flex;flex-direction:column;gap:8px;text-align:left;}
+#timerWidgetZone .tw-util-row{display:flex;gap:6px;}
+#timerWidgetZone .tw-util-row .tw-sw{flex:1;}
+#timerWidgetZone .tw-tabs{display:flex;flex-direction:column;gap:6px;}
+#timerWidgetZone .tw-presets{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px;}
+#timerWidgetZone .tw-controls{display:flex;flex-direction:column;gap:6px;}
+
+/* スイッチ共通（common.cssの .toggle-btn と同じ配色。ダークモードでも見える） */
+#timerWidgetZone .tw-sw{
+  font-family:inherit;font-size:13px;font-weight:700;line-height:1.3;
+  min-height:44px;padding:8px 12px;
+  color:var(--color-text-sub);background:var(--color-input-bg);
+  border:2px solid var(--color-border-input);border-radius:var(--radius-input);
+  text-align:left;cursor:pointer;transition:all .15s;
+}
+#timerWidgetZone .tw-sw:hover:not(:disabled){background:var(--color-primary-bg);}
+#timerWidgetZone .tw-sw.active{border-color:var(--color-primary);background:var(--color-primary-bg);color:var(--color-primary);}
+#timerWidgetZone .tw-sw:disabled{opacity:.45;cursor:not-allowed;}
+/* 小さめスイッチ（音・閉じる・プリセット分数）は中央揃え */
+#timerWidgetZone .tw-sw-small{min-height:36px;padding:6px 4px;font-size:12px;text-align:center;}
+/* 開始ボタンは常に青系で強調 */
+#timerWidgetZone .tw-btn-start:not(:disabled){border-color:var(--color-primary);background:var(--color-primary-bg);color:var(--color-primary);}
+
+/* 入力欄（分・秒・ポモドーロ設定） */
+#timerWidgetZone .tw-settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;}
+#timerWidgetZone .tw-settings-grid label{display:block;margin-bottom:2px;font-size:11px;font-weight:700;line-height:1.3;color:var(--color-text-muted);}
+#timerWidgetZone .tw-settings-grid input{
+  width:100%;min-height:40px;padding:6px 8px;
+  font-family:inherit;font-size:16px;text-align:left;
+  color:var(--color-text);background:var(--color-input-bg);
+  border:2px solid var(--color-border-input);border-radius:var(--radius-input);
+}
+#timerWidgetZone .tw-settings-grid input:focus{outline:none;border-color:var(--color-primary);}
+#timerWidgetZone .tw-settings-grid input:disabled{opacity:.55;}
+
+/* 数字表示：「経過時間＝06:22」形式 */
+#timerWidgetZone .tw-display-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 2px;}
+#timerWidgetZone .tw-display-label{font-size:13px;font-weight:700;color:var(--color-text-sub);}
+#timerWidgetZone .tw-display{font-size:26px;font-weight:700;line-height:1.3;text-align:left;color:var(--color-text);font-variant-numeric:tabular-nums;}
+
+/* 完了時のフラッシュ演出（1.6秒。JS側のsetTimeoutと合わせている） */
+#timerWidgetZone.tw-flash{animation:twFlash 1.6s ease-out;}
+@keyframes twFlash{
+  0%,40%,80%{background:var(--color-primary-bg);border-color:var(--color-primary);}
+  20%,60%,100%{background:var(--color-input-bg);border-color:var(--color-border-input);}
+}
+`;
+
+  function injectStyles() {
+    if (document.getElementById('twStyle')) return;
+    const style = document.createElement('style');
+    style.id = 'twStyle';
+    style.textContent = TW_CSS;
+    document.head.appendChild(style);
+  }
+
   document.addEventListener('DOMContentLoaded', init);
 
   function init() {
@@ -87,6 +188,7 @@
       || document.querySelector('.timer-placeholder-zone');
     if (!zone) return; // タイマー枠が無いページでは何もしない
     zone.id = 'timerWidgetZone';
+    injectStyles();
     render();
   }
 
@@ -100,35 +202,45 @@
     zone.innerHTML = isExpanded ? buildPanelHtml() : buildMiniHtml();
   }
 
+  // 現在の数字の項目名（タイマー＝残り時間／SW＝経過時間／ポモドーロ＝現在のフェーズ名）
+  function getDisplayLabel() {
+    if (mode === 'pomodoro') return POMO_PHASE_LABELS[pomoPhase];
+    return DISPLAY_LABELS[mode];
+  }
+
+  // 「項目名＝00:00」形式の数字表示（3モード＆ミニ表示で共通）
+  // ★id="twDisplay" は数字部分のspanだけに付ける（updateDisplayOnly()が書き換える）
+  function buildDisplayHtml() {
+    return `
+      <div class="tw-display-row">
+        <span class="tw-display-label">${getDisplayLabel()}＝</span><span class="tw-display" id="twDisplay">${formatTime(getCurrentDisplaySeconds())}</span>
+      </div>`;
+  }
+
   /* ---- ミニ表示（普段はこれだけ。タップで展開） ---- */
   function buildMiniHtml() {
-    const icon = { timer: '⏱', stopwatch: '⏲', pomodoro: '🍅' }[mode];
-    const label = { timer: 'タイマー', stopwatch: 'ストップウォッチ', pomodoro: 'ポモドーロ' }[mode];
-    const remaining = getCurrentDisplaySeconds();
-
     return `
       <div class="tw-mini" onclick="twToggleExpand()">
-        <div class="tw-mini-icon-row">${icon} ${label}${isRunning ? '（動作中）' : ''}</div>
-        <div class="tw-mini-value" id="twDisplay">${formatTime(remaining)}</div>
+        <div class="tw-mini-title">${MODE_LABELS[mode]}${isRunning ? '<span class="tw-running-badge">動作中</span>' : ''}</div>
+        ${buildDisplayHtml()}
         <div class="tw-mini-hint">タップで開く ▼</div>
       </div>`;
   }
 
   /* ---- 展開パネル（タブ切替＋詳細操作） ---- */
   function buildPanelHtml() {
+    // モード切替スイッチ。動作中は選択中以外を無効表示にして「今は切替不可」と分かるようにする
+    const tabBtn = (m) => `
+      <button class="tw-sw tw-tab-btn ${mode === m ? 'active' : ''}" onclick="twSetMode('${m}')"
+        ${isRunning && mode !== m ? 'disabled' : ''}>${MODE_LABELS[m]}</button>`;
+
     return `
       <div class="tw-panel">
-        <div class="tw-panel-header">
-          <div class="tw-tabs">
-            <button class="tw-tab-btn ${mode === 'timer' ? 'active' : ''}" onclick="twSetMode('timer')">⏱ タイマー</button>
-            <button class="tw-tab-btn ${mode === 'stopwatch' ? 'active' : ''}" onclick="twSetMode('stopwatch')">⏲ SW</button>
-            <button class="tw-tab-btn ${mode === 'pomodoro' ? 'active' : ''}" onclick="twSetMode('pomodoro')">🍅 ポモドーロ</button>
-          </div>
-          <div style="display:flex; gap:4px; margin-left:6px;">
-            <button class="tw-icon-btn ${settings.soundOn ? '' : 'muted'}" onclick="twToggleSound()" title="音のON/OFF">${settings.soundOn ? '🔔' : '🔕'}</button>
-            <button class="tw-icon-btn" onclick="twToggleExpand()" title="閉じる">✕</button>
-          </div>
+        <div class="tw-util-row">
+          <button class="tw-sw tw-sw-small ${settings.soundOn ? 'active' : ''}" onclick="twToggleSound()" title="音のON/OFF">${settings.soundOn ? '🔔 音ON' : '🔕 音OFF'}</button>
+          <button class="tw-sw tw-sw-small" onclick="twToggleExpand()" title="パネルを閉じる">▲ 閉じる</button>
         </div>
+        <div class="tw-tabs">${tabBtn('timer')}${tabBtn('stopwatch')}${tabBtn('pomodoro')}</div>
         ${mode === 'timer' ? buildTimerBodyHtml() : ''}
         ${mode === 'stopwatch' ? buildStopwatchBodyHtml() : ''}
         ${mode === 'pomodoro' ? buildPomodoroBodyHtml() : ''}
@@ -140,7 +252,7 @@
      ===================================================== */
   function buildTimerBodyHtml() {
     const presetBtns = TIMER_PRESET_MINUTES.map(min => `
-      <button class="tw-preset-btn ${!isRunning && settings.timerMin === min && settings.timerSec === 0 ? 'active' : ''}"
+      <button class="tw-sw tw-sw-small tw-preset-btn ${!isRunning && settings.timerMin === min && settings.timerSec === 0 ? 'active' : ''}"
         onclick="twSetTimerPreset(${min})" ${isRunning ? 'disabled' : ''}>${min}分</button>
     `).join('');
 
@@ -160,7 +272,7 @@
             oninput="twSetTimerCustom(null, this.value)">
         </div>
       </div>
-      <div class="tw-display" id="twDisplay">${formatTime(getCurrentDisplaySeconds())}</div>
+      ${buildDisplayHtml()}
       ${buildControlsHtml()}`;
   }
 
@@ -195,8 +307,7 @@
      ===================================================== */
   function buildStopwatchBodyHtml() {
     return `
-      <div class="tw-display" id="twDisplay">${formatTime(getCurrentDisplaySeconds())}</div>
-      <div class="tw-sub-label">経過時間</div>
+      ${buildDisplayHtml()}
       ${buildControlsHtml()}`;
   }
 
@@ -204,8 +315,6 @@
      5. ポモドーロ（作業⇔休憩の自動サイクル）
      ===================================================== */
   function buildPomodoroBodyHtml() {
-    const phaseLabel = { work: '🍅 作業中', break: '☕ 休憩中', longBreak: '🛋️ 長い休憩' }[pomoPhase];
-
     return `
       <div class="tw-cycle-badge">${pomoCycleCount} / ${settings.pomoCyclesUntilLong} セット目</div>
       <div class="tw-settings-grid">
@@ -234,8 +343,7 @@
             oninput="twSetPomoSetting('pomoCyclesUntilLong', this.value)">
         </div>
       </div>
-      <div class="tw-sub-label">${phaseLabel}</div>
-      <div class="tw-display" id="twDisplay">${formatTime(getCurrentDisplaySeconds())}</div>
+      ${buildDisplayHtml()}
       ${buildControlsHtml()}`;
   }
 
@@ -284,9 +392,9 @@
   function buildControlsHtml() {
     return `
       <div class="tw-controls">
-        <button class="tw-btn tw-btn-start" onclick="twStart()" ${isRunning ? 'disabled' : ''}>▶ 開始</button>
-        <button class="tw-btn tw-btn-pause" onclick="twPause()" ${isRunning ? '' : 'disabled'}>⏸ 一時停止</button>
-        <button class="tw-btn tw-btn-reset" onclick="twReset()">🔄 リセット</button>
+        <button class="tw-sw tw-btn-start" onclick="twStart()" ${isRunning ? 'disabled' : ''}>▶ 開始</button>
+        <button class="tw-sw tw-btn-pause" onclick="twPause()" ${isRunning ? '' : 'disabled'}>⏸ 一時停止</button>
+        <button class="tw-sw tw-btn-reset" onclick="twReset()">🔄 リセット</button>
       </div>`;
   }
 
