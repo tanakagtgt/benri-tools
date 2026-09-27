@@ -20,4 +20,13 @@
   { "id": "bunsho-henkan-kaiseki", "name": "文章解析＆全角半角変換ツール", "url": "https://arigato-tools.com/bunsho-henkan-kaiseki", "file": "bunsho-henkan-kaiseki.html", "emoji": "🔤", "category": "conv", "desc": "文字数・行数・バイト数をカウント。 全角⇔半角／ひらがな⇔カタカナの変換や自動改行にも対応" },
   { "id": "qrcode-creator", "name": "QRコード作成ツール", "url": "https://arigato-tools.com/qrcode-creator", "file": "qrcode-creator.html", "emoji": "📷", "category": "util", "desc": "入力したテキスト・URLがそのままQRコードになります" },
   { "id": "audio-splitter", "name": "mp3ファイル分割ツール", "url": "https://arigato-tools.com/audio-splitter", "file": "audio-splitter.html", "emoji": "🎵", "category": "conv", "desc": "MP3　WAV　M4A　m4aを分割できます" }
+  {
+  "id": "calc-function-calculator",
+  "name": "関数電卓",
+  "url": "https://arigato-tools.com/calc-function-calculator",
+  "file": "calc-function-calculator.html",
+  "emoji": "🧮",
+  "category": "calc",
+  "desc": "三角関数・対数・べき乗・階乗に対応したフル機能の関数電卓。DEG/RAD切替・メモリ・計算履歴つき。"
+}
 ]
