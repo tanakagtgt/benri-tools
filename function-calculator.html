@@ -462,8 +462,13 @@ const BUTTON_ROWS = [
 
 /* =====================================================
    状態管理
+   ★ currentToggle は common.js 側で既に `let currentToggle = 'A'` として
+     宣言済みのグローバル変数なので、ここで再宣言すると
+     「Identifier 'currentToggle' has already been declared」の
+     SyntaxErrorになり、このスクリプト全体が実行されなくなる
+     （電卓ボタンが1つも描画されない不具合の原因はこれだった）。
+     角度モードの初期値はcommon.js側の定義（'A'）をそのまま使う。
    ===================================================== */
-let currentToggle = 'A'; // 角度モード：A=DEG, B=RAD
 let expression = '';     // 現在の計算式
 let historyList = [];    // 計算履歴：{ expr, result } の配列（新しい順＝先頭が最新）
 const MAX_HISTORY = 50;  // 履歴の保持件数上限（増やしたい場合はここだけ変更）
