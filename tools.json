@@ -1,7 +1,6 @@
 [
   { "id": "util-task-manager", "name": "タスク管理ツール", "url": "https://arigato-tools.com/util-task-manager", "file": "util-task-manager.html", "emoji": "📝", "category": "util", "desc": "ブラウザで保存完結。重要度×緊急度の4象限で優先順位を整理できますGoogleカレンダーへ追加可能。" },
   { "id": "wareki", "name": "年齢西暦和暦変換ツール", "url": "https://arigato-tools.com/wareki", "file": "wareki.html", "emoji": "🗓️", "category": "conv", "desc": "令和・平成・昭和の和暦と西暦、年齢を双方向で即座に変換。" },
-  { "id": "function-calculator", "name": "関数電卓（sin・cos・√対応）", "url": "https://arigato-tools.com/function-calculator", "file": "function-calculator.html", "emoji": "🔧", "category": "calc", "desc": "エクセル出力可能。ボタンでもキーボード（テンキー含む）でも入力OK" },
   { "id": "age", "name": "年齢計算ツール", "url": "https://arigato-tools.com/age", "file": "age.html", "emoji": "🎂", "category": "calc", "desc": "生年月日から現在の年齢を自動計算。西暦・和暦どちらも対応。5人まで同時計算できます。" },
   { "id": "calc-eigyobi-count", "name": "営業日計算ツール", "url": "https://arigato-tools.com/calc-eigyobi-count", "file": "calc-eigyobi-count.html", "emoji": "📅", "category": "calc", "desc": "土日・祝日を除いた営業日数を自動計算。祝日は2020〜2030年の日本の祝日に対応。振替休日・年末年始（12/29〜1/3）も除外可能。" },
   { "id": "debt-repayment-simulator", "name": "借金返済シミュレーションツール", "url": "https://arigato-tools.com/debt-repayment-simulator", "file": "debt-repayment-simulator.html", "emoji": "💳", "category": "fin", "desc": "返済額計算・繰上返済シミュレーション。" },
@@ -21,4 +20,13 @@
   { "id": "qrcode-creator", "name": "QRコード作成ツール", "url": "https://arigato-tools.com/qrcode-creator", "file": "qrcode-creator.html", "emoji": "📷", "category": "util", "desc": "入力したテキスト・URLがそのままQRコードになります" },
   { "id": "audio-splitter", "name": "mp3ファイル分割ツール", "url": "https://arigato-tools.com/audio-splitter", "file": "audio-splitter.html", "emoji": "🎵", "category": "conv", "desc": "MP3　WAV　M4A　m4aを分割できます" }
   {  "id": "calc-function-calculator",  "name": "関数電卓",  "url": "https://arigato-tools.com/calc-function-calculator",  "file": "calc-function-calculator.html",  "emoji": "🧮",  "category": "calc",  "desc": "三角関数・対数・べき乗・階乗に対応したフル機能の関数電卓。DEG/RAD切替・メモリ・計算履歴つき。"}
+{
+  "id": "calc-function-calculator",
+  "name": "関数電卓",
+  "url": "/calc-function-calculator",
+  "file": "calc-function-calculator.html",
+  "emoji": "🧮",
+  "category": "calc",
+  "desc": "三角関数・対数・べき乗・階乗などに対応したフル機能の関数電卓。DEG/RAD切替、メモリ機能、計算履歴つき。スマホの片手操作でも使いやすいレイアウトです。"
+}
 ]
