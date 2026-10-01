@@ -1,28 +1,22 @@
 <!DOCTYPE html>
 <!--
-  ============================================================
-  calc-function-calculator.template.html
-  ============================================================
-  ※このファイルは build.py によって src/desc/calc-function-calculator.desc.html
-    と合成され、dist/calc-function-calculator.html が生成されます。
-    手編集はこのファイル（templates側）に対して行ってください。
-
-  【注意】
-  common.js / common.css の実物ファイルが手元にないため、
-  スロットdiv（topNavSlot等）の配置・呼び出し方は
-  プロジェクトの取り決め通りに組んでいますが、
-  他ツールの既存テンプレートと1つ突き合わせて
-  head内の書式（meta等）だけ揃えてもらえると安心です。
-  ============================================================
+  calc-function-calculator.html（ツール本体＋解説文の1ファイル版）
+  ・構成：head → ツール本体 → 解説文(.tool-desc) → 各Slot → common.js
+  ・解説文は <section class="tool-desc"> 内を直接編集する
 -->
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
+  <!-- AdSense（静的配置） -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2195458991382480" crossorigin="anonymous"></script>
+
   <!-- ▼ tools.json の name / desc と揃えてください -->
   <title>関数電卓（DEG/RAD・メモリ・履歴対応） | アリガイツ</title>
   <meta name="description" content="三角関数・対数・べき乗・階乗などに対応したフル機能の関数電卓。DEG/RAD切替、メモリ機能、計算履歴つき。スマホの片手操作でも使いやすいレイアウトです。">
+
+  <link rel="canonical" href="https://arigato-tools.com/calc-function-calculator">
 
   <!-- 共通CSS -->
   <link rel="stylesheet" href="/common.css">
@@ -33,6 +27,9 @@
          そちらを優先して使ってください。ここでは念のため
          ローカル変数をフォールバックとして定義しています。
   ============================================================ -->
+  <!-- QRコード生成ライブラリ（common.jsのshowQr()が使用）。他ツールと同じ読込元に合わせること -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
   <style>
     /* ---- 電卓専用カラートークン（ライトモード基準） ---- */
     :root {
@@ -48,24 +45,19 @@
       --calc-op-bg:       #4f7cff;   /* 四則演算キー */
       --calc-eq-bg:       #ff9f0a;   /* イコールキー */
     }
-    /* ---- ダークモード（OS設定に自動追従） ----
-       common.css / common.js 側で手動トグルの仕組みがある場合は
-       そちらのクラス（例: [data-theme="dark"]）にも同じ値を
-       充てるようにしておくと統一しやすいです。 */
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --calc-bg:          #1c1c1e;
-        --calc-display-bg:  #2c2c2e;
-        --calc-text:        #f2f2f7;
-        --calc-muted:       #9a9a9e;
-        --calc-border:      #3a3a3c;
-        --calc-key-bg:      #2c2c2e;
-        --calc-key-active:  #3a3a3c;
-        --calc-key-fn-bg:   #2a2f45;
-        --calc-key-mem-bg:  #3a3020;
-        --calc-op-bg:       #4f7cff;
-        --calc-eq-bg:       #ff9f0a;
-      }
+    /* ---- ダークモード：common.jsのテーマ切替（data-theme="dark"）に連動 ---- */
+    html[data-theme="dark"] {
+      --calc-bg:          #1c1c1e;
+      --calc-display-bg:  #2c2c2e;
+      --calc-text:        #f2f2f7;
+      --calc-muted:       #9a9a9e;
+      --calc-border:      #3a3a3c;
+      --calc-key-bg:      #2c2c2e;
+      --calc-key-active:  #3a3a3c;
+      --calc-key-fn-bg:   #2a2f45;
+      --calc-key-mem-bg:  #3a3020;
+      --calc-op-bg:       #4f7cff;
+      --calc-eq-bg:       #ff9f0a;
     }
 
     /* ---- 全体レイアウト：スマホ1カラム・片手操作を優先 ---- */
@@ -177,6 +169,26 @@
     .calc-key--eq  { background: var(--calc-eq-bg); color: #fff; font-size: 1.1rem; }
     .calc-key--wide2 { grid-column: span 2; }
 
+    /* ---- 解説文（AdSense有用性対策の独自コンテンツ） ---- */
+    .tool-desc {
+      margin-top: 16px;
+      padding: 16px;
+      background: var(--color-card, var(--calc-display-bg));
+      border: 1px solid var(--color-border, var(--calc-border));
+      border-radius: 10px;
+      font-size: 0.85rem;
+      line-height: 1.8;
+      color: var(--color-text, var(--calc-text));
+    }
+    .tool-desc h2 {
+      font-size: 0.95rem;
+      margin: 14px 0 6px;
+      color: var(--color-primary, var(--calc-op-bg));
+    }
+    .tool-desc h2:first-child { margin-top: 0; }
+    .tool-desc p { margin-bottom: 8px; }
+    .tool-desc ul { padding-left: 1.2em; margin-bottom: 8px; }
+
     /* PCなど広い画面ではキーを少し大きく（片手操作の縛りが無いため） */
     @media (min-width: 480px) {
       .calc-key { min-height: 52px; font-size: 1.05rem; }
@@ -224,11 +236,41 @@
   <div id="shareAreaSlot"></div>
 
   <!-- ==========================================================
-       解説文（build.pyがsrc/desc/calc-function-calculator.desc.html
-       の中身をここへ差し込みます。中身は空のままでOK）
+       解説文（使い方／利用シーン／仕様／FAQ）※直接編集OK
   ========================================================== -->
-  <!-- DESC_START -->
-  <!-- DESC_END -->
+  <section class="tool-desc">
+    <h2>関数電卓の使い方</h2>
+    <p>
+    画面下部のキーパッドで数字や記号をタップすると、上部に式がそのまま表示されます。
+    「＝」を押すと計算結果が確定し、履歴エリアに保存されます。履歴をタップすると、その式を再編集できます。
+    sin・cos・tanなどの関数キーは「関数名＋開き括弧」の形で入力されるので、数値を入力したあと「）」で閉じてから
+    「＝」を押してください（閉じ括弧を忘れても「＝」を押した時点でエラーとしてお知らせします）。
+    </p>
+
+    <h2>こんな時に便利です</h2>
+    <ul>
+      <li>三角関数を使う建築・工事関連の勾配計算や角度の確認</li>
+      <li>投資の複利計算や、対数・べき乗を使う簡易シミュレーション</li>
+      <li>学校の課題や資格試験の勉強で、関数電卓が手元にない時の代用</li>
+    </ul>
+
+    <h2>仕様について</h2>
+    <p>
+    角度の単位は「DEG（度）」「RAD（ラジアン）」をボタンで切り替えられます。三角関数・逆三角関数はこの設定に従って計算されます。
+    n!（階乗）は0以上の整数のみ対応しています。メモリ機能（MC・MR・M+・M-）は端末やブラウザを閉じるとリセットされ、
+    サーバーには送信されません（すべてブラウザ内で完結する計算です）。
+    </p>
+
+    <h2>よくある質問</h2>
+    <p>
+    <strong>Q. 計算結果がおかしい気がします</strong><br>
+    A. DEG/RADの設定を確認してください。三角関数の結果は角度単位によって大きく変わります。
+    </p>
+    <p>
+    <strong>Q. 入力した式は保存されますか？</strong><br>
+    A. 履歴はブラウザを閉じると消えます。長期保存が必要な数式は別途メモしておくことをおすすめします。
+    </p>
+  </section>
 </main>
 
 <div id="adAreaSlot"></div>
@@ -260,6 +302,34 @@
       renderXxx() 関数群に集約する。
    ================================================================ */
 'use strict';
+
+/* ----------------------------------------------------------------
+   0. common.js 連携（共通UIが前提にしている変数・関数）
+   ----------------------------------------------------------------
+   ・この電卓は「入力欄→結果表示」型ではないため、入力保存系は空にしてある
+   ・シェアボタンはツール紹介用（式の中身は送らない）
+   ---------------------------------------------------------------- */
+const CURRENT_TOOL_ID = 'calc-function-calculator'; // tools.jsonのid（おすすめ除外用）
+const STORAGE_KEY     = 'arigato_calc_function_calculator';
+const STORAGE_FIELDS  = [];                          // 保存対象のinput無し
+const INPUT_LABELS    = {};
+const RESULT_LABELS   = { main: '結果' };
+
+function calculateInputs()  { return {}; }
+function calculateResult()  { return { main: 0 }; }  // シェア系の「結果ありチェック」を通すためのダミー
+function displayResult()    {}
+function buildShareText()   { return '関数電卓（DEG/RAD・メモリ・履歴対応）｜アリガイツ'; }
+function buildShareUrl()    { return location.origin + location.pathname; }
+
+// リセットボタン：式・履歴・メモリを初期状態に戻す
+function onResetExtra() {
+  calcState.expression = '';
+  calcState.history = [];
+  calcState.memory = 0;
+  renderExpression();
+  renderHistory();
+  renderMemoryIndicator();
+}
 
 /* ----------------------------------------------------------------
    1. 状態管理（State）
