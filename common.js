@@ -113,7 +113,7 @@ function injectCommonUI() {
   const topNav = document.getElementById('topNavSlot');
   if (topNav) topNav.outerHTML = `
 <div class="back-to-index">
-  <a class="btn-back" href="/index.html">← ツール一覧に戻る</a>
+  <a class="btn-back" href="/index.html">← 一覧に戻る</a>
   <div class="theme-toggle-wrap" role="group" aria-label="表示テーマ切替">
     <button type="button" class="theme-btn" id="themeBtnLight" onclick="setTheme('light')">☀️ ライト</button>
     <button type="button" class="theme-btn" id="themeBtnDark" onclick="setTheme('dark')">🌙 ダーク</button>
@@ -123,7 +123,7 @@ function injectCommonUI() {
   const bottomNav = document.getElementById('bottomNavSlot');
   if (bottomNav) bottomNav.outerHTML = `
 <div class="bottom-nav">
-  <a class="btn-back" href="/index.html">← ツール一覧に戻る</a>
+  <a class="btn-back" href="/index.html">← 一覧に戻る</a>
   <div class="recommend-wrap">
     <span class="recommend-label">おすすめ：</span>
     <span id="recommendLinks2">読み込み中…</span>
@@ -180,7 +180,7 @@ function injectCommonUI() {
 <footer>
   © <span id="copyrightYear"></span> アリガイツ
   <nav class="footer-links">
-    <a class="footer-back" href="/index.html">ツール一覧</a>
+    <a class="footer-back" href="/index.html">一覧</a>
     <a class="footer-back" href="/about.html">このサイトについて</a>
     <a class="footer-back" href="/privacy-policy.html">プライバシーポリシー</a>
     <a class="footer-back" href="/terms.html">利用規約</a>
