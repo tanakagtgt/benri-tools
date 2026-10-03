@@ -2,6 +2,8 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<!-- AdSense（静的配置：審査・表示の安定のためhead内に固定） -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2195458991382480" crossorigin="anonymous"></script>
 <link rel="canonical" href="https://arigato-tools.com/bunsho-henkan-kaiseki">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXJCSR0EX1"></script>
@@ -70,8 +72,8 @@
     font-size: 16px; /* iPhoneズーム防止のため16px以上を死守 */
     resize: vertical;
   }
-  textarea.io-textarea:focus { outline: none; border-color: var(--color-primary); background: #fff; }
-  textarea.io-textarea[readonly] { background: #f4f6f9; }
+  textarea.io-textarea:focus { outline: none; border-color: var(--color-primary); background: var(--color-card); }
+  textarea.io-textarea[readonly] { background: var(--color-bg); }
 
   /* 設定カード内の横並び項目（元ツールのflex-row/flex-itemを踏襲） */
   .setting-row {
@@ -89,6 +91,23 @@
     line-height: 1.4;
   }
 
+  /* 設定カード内のinput（common.cssの.input-group外なので同等スタイルをここで定義）
+     ★16px以上＝iPhone自動ズーム防止／44px＝タッチターゲット確保 */
+  .input-text-short {
+    width: 100%;
+    border: 1px solid var(--color-border-input);
+    border-radius: var(--radius-input);
+    background: var(--color-input-bg);
+    color: var(--color-text);
+    font-family: 'BIZ UDPGothic', sans-serif;
+    font-size: 16px;
+    padding: 10px;
+    min-height: 44px;
+    outline: none;
+    transition: border-color 0.18s;
+  }
+  .input-text-short:focus { border-color: var(--color-primary); }
+
   /* 全角半角マトリクス変換テーブル（横スクロール対応でスマホ崩れ防止） */
   .matrix-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .matrix-table {
@@ -103,6 +122,13 @@
     text-align: center;
   }
   .matrix-table th { background: var(--color-input-bg); color: var(--color-text-sub); }
+  /* ラジオボタンを大きめ＆ブランド色に（片手タップしやすく） */
+  .matrix-table input[type="radio"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+  }
   .matrix-bulk-btn {
     background: var(--color-primary-bg);
     border: 1px solid var(--color-primary-border);
@@ -113,7 +139,7 @@
     padding: 6px 8px;
     cursor: pointer;
   }
-  .matrix-bulk-btn:hover { background: #dbeafe; }
+  .matrix-bulk-btn:hover { background: var(--color-chip-hover); }
 
   /* 解析グリッド（文章解析機能セクション：analysis-grid相当。breakdownを流用） */
   .analysis-section-title {
@@ -150,6 +176,27 @@
   details.rule-doc h4 { margin: 10px 0 4px; font-size: 12px; color: var(--color-text); }
   details.rule-doc ul { padding-left: 18px; margin: 4px 0; }
   details.rule-doc li { margin-bottom: 4px; line-height: 1.6; }
+
+  /* =====================================================
+     解説文（.tool-desc）
+     - AdSenseの有用性判定対策の独自コンテンツ領域
+     - 将来、全ツール共通化したくなったらこのブロックをcommon.cssへ移動
+     ===================================================== */
+  .tool-desc {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    padding: 16px 18px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--color-text-sub);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .tool-desc h2 { font-size: 15px; color: var(--color-text); margin-bottom: 8px; }
+  .tool-desc h3 { font-size: 13px; color: var(--color-text); margin: 14px 0 4px; }
+  .tool-desc ul { padding-left: 18px; }
+  .tool-desc li { margin-bottom: 2px; }
 </style>
 
 </head>
@@ -341,6 +388,30 @@
       <li>任意文字数で改行：半角0.5文字カウントONの場合、半角文字を0.5文字換算して改行位置を決定</li>
     </ul>
   </details>
+
+  <!-- =====================================================
+       ④ 解説文（AdSense有用性対策：使い方／利用シーン／仕様／FAQ）
+       ★ツール本体の直後・各Slotの前に置く（指示書の構成順）
+       ===================================================== -->
+  <section class="tool-desc">
+    <h2>文章解析＆全角半角変換ツールの使い方</h2>
+    <p>上の入力欄に文章を貼り付けると、文字数・改行数・空白数・行数、さらにUTF-8やShift-JISなど文字コード別のバイト数がリアルタイムで表示されます。変換したいときは、マトリクスで数字・英字・カナ・記号・空白ごとに「全角へ」「半角へ」「変換しない」を選ぶだけ。結果は変換結果欄に反映され、ワンタップでコピーできます。</p>
+
+    <h3>こんな場面で使えます</h3>
+    <ul>
+      <li>SNS投稿・メルマガ件名・SEOのtitleやdescriptionの文字数チェック</li>
+      <li>長文メールを指定文字数で自動改行して読みやすく整える</li>
+      <li>全角数字や半角カナが混在した名簿・住所録をExcel貼り付け前に統一</li>
+      <li>連携システムの入力上限（バイト数）の事前確認</li>
+    </ul>
+
+    <h3>仕様・計算の補足</h3>
+    <p>文字数はJavaScriptの文字列長で数えるため、絵文字など一部の文字は2文字として扱います。UTF-8/UTF-16は実計算、Shift-JIS・EUC-JP・JISは標準的な対応に基づく簡易計算なので、機種依存文字では実際と差が出る場合があります。入力した文章は端末のブラウザ内だけで処理され、外部へ送信されません。</p>
+
+    <h3>よくある質問</h3>
+    <p><strong>Q. 「」や句読点が変換されません。</strong><br>A. 「変換から保護する文字」欄に指定された文字は変換対象外です。変換したい場合はその欄から外してください。</p>
+    <p style="margin-top:8px;"><strong>Q. 半角カナの濁点はどうなりますか？</strong><br>A. 「ｶﾞ」のような濁点付きは合成して「ガ」の1文字に変換します。</p>
+  </section>
 
   <!-- シェアエリア（共通・触らない） -->
   <div id="shareAreaSlot"></div>
