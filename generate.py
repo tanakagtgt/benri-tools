@@ -5,19 +5,24 @@ index.html のツール一覧部分と sitemap.xml を自動生成するスク�
 
 ■ 使い方
     python3 generate.py
+    ※ 通常は手で実行しなくてOK。tools.json か index.template.html を
+      main に push すると、GitHub Actions（generate.yml）が自動で実行する
 
-■ 前提のファイル構成
-    tools.json                          … ツール一覧の正解データ（これだけ手で編集する）
-    src/templates/index.template.html   … トップページ本体（TOOLLIST_START〜ENDの間は自動置換）
-    dist/index.html                     … 生成される完成品（本番にアップロードする）
-    dist/sitemap.xml                    … 生成される完成品（本番にアップロードする）
+■ ファイル構成（すべてリポジトリ直下のフラット構成）
+    tools.json            … ツール一覧の正解データ（これだけ手で編集する）
+    index.template.html   … トップページ本体。TOOLLIST_START〜ENDの間だけ自動置換される
+                            ★トップの見た目を変えたい時はここを編集する
+    index.html            … 自動生成される完成品（★直接編集しない。編集しても次回の生成で上書きされる）
+    sitemap.xml           … 自動生成される完成品（★直接編集しない）
 
 ■ 新しいツールを追加するとき
-    1. tools.json に1件追記する
+    1. 直下に <id>.html を作る
+    2. tools.json に1件追記する
        （id / name / url / file / emoji / category / desc を埋める）
-    2. python3 generate.py を実行する
-    3. dist/index.html と dist/sitemap.xml が両方とも自動で更新される
-       → index.html・sitemap.xmlを手で触る必要はもう無い
+       ・urlは絶対URL（https://arigato-tools.com/<id>）。sitemap.xmlにそのまま出力される
+       ・前の行の末尾のカンマを忘れない（JSON構文エラーになると生成が止まる）
+    3. 同じコミットで main に push する
+       → Actionsが index.html と sitemap.xml を自動更新する
 
 ■ 本番ドメイン
     arigato-tools.com 固定（sitemap.xml・canonicalタグ共通）
