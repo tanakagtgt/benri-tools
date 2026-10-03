@@ -29,4 +29,5 @@
   "category": "calc",
   "desc": "三角関数・対数・べき乗・階乗などに対応したフル機能の関数電卓。DEG/RAD切替、メモリ機能、計算履歴つき。"
 }
+  {"id":"fin-money-fire-sim","name":"FIREできるかシミュレーター","url":"fin-money-fire-sim","file":"fin-money-fire-sim.html","emoji":"🔥","category":"fin","desc":"NISA・課税口座・生活防衛資金から税金・国保・年金まで込みで、資産が何歳まで持つかを試算。暴落テストや「もしも」の比較にも対応"}
 ]
