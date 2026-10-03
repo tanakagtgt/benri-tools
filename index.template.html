@@ -2,8 +2,10 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<!-- Google AdSense（静的配置） -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2195458991382480" crossorigin="anonymous"></script>
 <link rel="canonical" href="https://arigato-tools.com/">
-  <!-- Google tag (gtag.js) -->
+<!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXJCSR0EX1"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -15,306 +17,153 @@
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<meta property="og:image" content="https://arigato-tools.com/ogp-default.png">
+
 <title>便利ツール集｜無料で使える計算・変換ツール</title>
 <meta name="description" content="年齢計算・営業日計算・住宅ローン・NISA・PDF変換・和暦西暦変換など無料ツールをまとめて公開中。登録不要ですぐ使えます。">
 
-<!-- QRコード生成ライブラリ（qrcode.js）CDN読み込み -->
-<!-- サーバー不要・純JSでcanvasにQRを描画する軽量ライブラリ -->
+<meta property="og:title" content="便利ツール集｜無料で使える計算・変換ツール">
+<meta property="og:description" content="年齢計算・営業日計算・住宅ローン・NISA・PDF変換・和暦西暦変換など無料ツールをまとめて公開中。登録不要ですぐ使えます。">
+<meta property="og:url" content="https://arigato-tools.com/">
+<meta property="og:image" content="https://arigato-tools.com/ogp-default.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+
+<!-- QRコード生成ライブラリ（common.jsのシェア用QRで使用） -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-<!-- Google AdSense -->
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2195458991382480"
-crossorigin="anonymous"></script>
+<!-- 共通CSS（色・レイアウト・ボタン・ダークモード等） -->
+<link rel="stylesheet" href="/common.css">
 
+<!-- =====================================================
+     ★トップページ固有の追加スタイル
+     - 検索ボックス／ツール一覧／サイト紹介文だけ
+     - 色は必ずCSS変数(--color-*)を使い、ダークモードでも崩れないようにする
+     ===================================================== -->
 <style>
-  body { font-family: sans-serif; max-width: 720px; margin: 0 auto; padding: 20px; background: #f9f9f9; color: #333; }
-  h1 { font-size: 1.5rem; border-bottom: 2px solid #4a90e2; padding-bottom: 8px; }
-  .tool-list { list-style: none; padding: 0; }
-  .tool-list li { background: #fff; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 12px; padding: 16px; }
-  .tool-list li a { font-size: 1.1rem; font-weight: bold; color: #4a90e2; text-decoration: none; }
-  .tool-list li a:hover { text-decoration: underline; }
-  .desc { font-size: 0.85rem; color: #666; margin-top: 6px; line-height: 1.6; }
+  /* トップは「戻る」ボタン不要なので、テーマ切替だけを右寄せで置く */
+  .top-theme-bar { justify-content: flex-end; }
+  .top-theme-bar .theme-toggle-wrap { border-left: none; padding-left: 0; }
 
-  /* =====================================================
-     検索ボックス（ツール名＋説明文をキーワードで絞り込み）
-     - 片手操作しやすいよう幅いっぱい＆タップ領域を広めに確保
-     - font-size 16px以上（iPhoneの自動ズーム防止）
-     ===================================================== */
-  .search-wrap {
-    position: relative;
-    margin: 14px 0 16px;
-  }
+  /* 検索ボックス（font-size 16px以上＝iPhone自動ズーム防止／幅いっぱいで片手タップしやすく） */
+  .search-wrap { position: relative; margin: 0 0 12px; }
   #toolSearch {
     width: 100%;
-    box-sizing: border-box;
+    min-height: 48px;
+    font-family: 'BIZ UDPGothic', sans-serif;
     font-size: 16px;
-    padding: 12px 40px 12px 14px;
-    border: 1px solid var(--color-border-input, #c7d0e0);
-    border-radius: var(--radius-input, 7px);
-    background: var(--color-input-bg, #f8fafd);
-    color: #333;
+    padding: 12px 48px 12px 14px;
+    border: 1px solid var(--color-border-input);
+    border-radius: var(--radius-input);
+    background: var(--color-input-bg);
+    color: var(--color-text);
+    outline: none;
+    transition: border-color 0.18s;
   }
+  #toolSearch:focus { border-color: var(--color-primary); }
   .search-clear {
     position: absolute;
-    right: 8px;
+    right: 2px;
     top: 50%;
     transform: translateY(-50%);
     border: none;
     background: transparent;
-    color: #999;
+    color: var(--color-text-label);
     font-size: 18px;
-    padding: 6px 8px;
+    min-width: 44px;
+    min-height: 44px;
     cursor: pointer;
     display: none; /* 入力があるときだけJSで表示 */
   }
   .search-count {
-    font-size: 0.8rem;
-    color: #888;
-    margin: -8px 0 12px 2px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin: 0 0 12px 2px;
   }
   .no-result {
     display: none; /* 該当0件のときだけJSで表示 */
     text-align: center;
-    color: #888;
-    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    font-size: 14px;
     padding: 24px 0;
   }
 
-  /* =====================================================
-     以下、20260701layout-template.html のフッター系パーツを移植
-     （CSS変数はテンプレートに合わせて最小限だけ定義）
-     ===================================================== */
-  :root {
-    --color-primary:     #4a90e2;
-    --color-primary-hover: #3a7bc8;
-    --color-primary-bg:  #eaf2fc;
-    --color-primary-border: #c3d9f4;
-    --color-border:      #dde3ee;
-    --color-border-input:#c7d0e0;
-    --color-input-bg:    #f8fafd;
-    --color-text-sub:    #555;
-    --color-text-muted:  #666;
-    --color-text-label:  #aaa;
-    --radius-card:       10px;
-    --radius-btn:        8px;
-    --radius-input:      7px;
-  }
-
-  /* ナビ共通（上部相当は元々ないため、下部ナビのみ利用） */
-  .bottom-nav {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 22px;
-    margin-bottom: 14px;
-    flex-wrap: wrap;
-  }
-  .btn-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    background: #f1f5fd;
-    border: 1px solid var(--color-primary-border);
-    border-radius: var(--radius-input);
-    color: var(--color-primary);
-    font-size: 12px;
-    font-weight: 700;
-    padding: 7px 13px;
-    cursor: pointer;
-    text-decoration: none;
-    transition: background 0.15s;
-    white-space: nowrap;
-  }
-  .btn-back:hover { background: #dbeafe; }
-  .recommend-wrap {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-    border-left: 2px solid var(--color-border);
-    padding-left: 10px;
-  }
-  .recommend-label { font-size: 10px; color: var(--color-text-label); white-space: nowrap; }
-  .recommend-link {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--color-primary);
-    text-decoration: none;
-    white-space: nowrap;
-    background: var(--color-primary-bg);
-    border-radius: 5px;
-    padding: 3px 8px;
-    transition: background 0.15s;
-  }
-  .recommend-link:hover { background: #dbeafe; }
-
-  /* シェアエリア */
-  .share-area {
-    background: #fff;
+  /* ツール一覧（liはgenerate.pyが自動生成するのでクラスを付けずに装飾） */
+  .tool-list { list-style: none; padding: 0; margin-bottom: 14px; }
+  .tool-list li {
+    background: var(--color-card);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-card);
+    margin-bottom: 12px;
     padding: 14px 16px;
-    margin-bottom: 14px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.06);
   }
-  .share-title {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--color-text-muted);
-    letter-spacing: 0.08em;
-    margin-bottom: 10px;
-  }
-  .share-btns {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-  }
-  .btn-share {
-    padding: 10px 4px;
-    border-radius: var(--radius-input);
-    border: 1px solid var(--color-border);
-    background: var(--color-input-bg);
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--color-text-muted);
-    cursor: pointer;
-    text-align: center;
-    transition: all 0.15s;
-    min-height: 44px;
-  }
-  .btn-share:hover {
-    background: var(--color-primary-bg);
-    border-color: var(--color-primary);
-    color: var(--color-primary);
-  }
-  .btn-share.copied {
-    background: #d1fae5;
-    border-color: #059669;
-    color: #065f46;
-  }
-  .btn-share.x-post { background: #000; border-color: #000; color: #fff; }
-  .btn-share.x-post:hover { background: #222; border-color: #222; color: #fff; }
-  .btn-share.line { background: #e8f8ea; border-color: #06c755; color: #06c755; }
-  .btn-share.line:hover { background: #c8f0cc; }
-  .btn-share.qr { background: #f3f0ff; border-color: #7c3aed; color: #7c3aed; }
-  .btn-share.qr:hover { background: #ede9fe; }
-
-  /* QRコードモーダル */
-  .qr-modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-  }
-  .qr-modal-overlay.show { display: flex; }
-  .qr-modal {
-    background: #fff;
-    border-radius: 14px;
-    padding: 24px 20px 18px;
-    text-align: center;
-    max-width: 280px;
-    width: 90%;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
-    position: relative;
-  }
-  .qr-modal-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--color-text-sub);
-    margin-bottom: 14px;
-    letter-spacing: 0.06em;
-  }
-  #qrCanvas { display: flex; justify-content: center; margin-bottom: 12px; }
-  .qr-modal-url {
-    font-size: 10px;
-    color: #aaa;
-    word-break: break-all;
-    margin-bottom: 14px;
-  }
-  .qr-modal-close {
-    background: var(--color-primary-bg);
-    border: 1px solid var(--color-primary-border);
-    border-radius: var(--radius-btn);
-    color: var(--color-primary);
-    font-size: 14px;
-    font-weight: 700;
-    padding: 10px 24px;
-    cursor: pointer;
-    min-height: 44px;
-    transition: background 0.15s;
-  }
-  .qr-modal-close:hover { background: #dbeafe; }
-
-   /* 広告エリア（CLS対策：高さ固定） */
-  .ad-area {
-    width: 100%;
-    background: var(--color-input-bg);
-    border: 1px dashed var(--color-border-input);
-    border-radius: var(--radius-card);
-    margin-bottom: 14px;
-    text-align: center;
-    padding: 8px 0;
-    height: 116px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
-  .ad-area-label {
-    font-size: 10px;
-    color: #bbb;
-    letter-spacing: 0.08em;
-    margin-bottom: 4px;
-  }
-
-  /* フッター */
-  footer {
-    margin-top: 16px;
-    text-align: center;
-    font-size: 11px;
-    color: var(--color-text-label);
-  }
-  .footer-links {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 0 10px;
-    margin-top: 8px;
-  }
-  .footer-back {
+  .tool-list li a {
     display: inline-block;
+    padding: 2px 0;
+    font-size: 16px;
+    font-weight: 700;
     color: var(--color-primary);
-    font-size: 11px;
     text-decoration: none;
-    padding-left: 10px;
-    border-left: 1px solid var(--color-border);
   }
-  .footer-back:first-child { padding-left: 0; border-left: none; }
-  .footer-back:hover { text-decoration: underline; }
+  .tool-list li a:hover { text-decoration: underline; }
+  .desc {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    margin-top: 4px;
+    line-height: 1.7;
+  }
+
+  /* =====================================================
+     サイト紹介文（.tool-desc）
+     - 将来、全ツール共通化したくなったらこのブロックをcommon.cssへ移動
+     ===================================================== */
+  .tool-desc {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    padding: 16px 18px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--color-text-sub);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .tool-desc h2 { font-size: 15px; color: var(--color-text); margin-bottom: 8px; }
+  .tool-desc p + p { margin-top: 8px; }
 </style>
 </head>
 <body>
-<h1>便利ツール集</h1>
-<p>無料・登録不要ですぐ使える計算・変換ツールをまとめています。</p>
+<div class="container">
 
-<!-- =====================================================
-     検索ボックス（★将来ツールが増えても触らなくてOK）
-     - input時にsearchTools()が発火し、tool-listのli要素を
-       ツール名＋説明文でリアルタイム絞り込み
-     - li追加時はこのJSに手を加える必要なし
-     ===================================================== -->
-<div class="search-wrap">
-  <input type="text" id="toolSearch" inputmode="search" placeholder="🔍 ツール名やキーワードで検索（例：住宅ローン）" oninput="searchTools()">
-  <button class="search-clear" id="searchClearBtn" onclick="clearSearch()">✕</button>
-</div>
-<div class="search-count" id="searchCount"></div>
+  <!-- テーマ切替（common.jsのsetTheme／updateThemeButtonsがid経由で操作する） -->
+  <div class="back-to-index top-theme-bar">
+    <div class="theme-toggle-wrap" role="group" aria-label="表示テーマ切替">
+      <button type="button" class="theme-btn" id="themeBtnLight" onclick="setTheme('light')">☀️ ライト</button>
+      <button type="button" class="theme-btn" id="themeBtnDark" onclick="setTheme('dark')">🌙 ダーク</button>
+    </div>
+  </div>
 
-<ul class="tool-list" id="toolList">
+  <header>
+    <h1>便利ツール集</h1>
+    <p class="subtitle">無料・登録不要ですぐ使える計算・変換ツールをまとめています。</p>
+  </header>
+
+  <!-- =====================================================
+       検索ボックス（★将来ツールが増えても触らなくてOK）
+       - input時にsearchTools()が発火し、tool-listのliを
+         ツール名＋説明文でリアルタイム絞り込み
+       ===================================================== -->
+  <div class="search-wrap">
+    <input type="text" id="toolSearch" inputmode="search" placeholder="🔍 ツール名やキーワードで検索（例：住宅ローン）" oninput="searchTools()">
+    <button class="search-clear" id="searchClearBtn" onclick="clearSearch()" aria-label="検索をクリア">✕</button>
+  </div>
+  <div class="search-count" id="searchCount"></div>
+
+  <ul class="tool-list" id="toolList">
 <!-- =====================================================
      ツール一覧（ビルドスクリプトがtools.jsonから自動生成する場所）
      ★このコメントの間は generate.py が自動で置き換える。手編集しない。
@@ -330,6 +179,10 @@ crossorigin="anonymous"></script>
     <div class="desc">令和・平成・昭和の和暦と西暦、年齢を双方向で即座に変換。</div>
   </li>
   <li>
+    <a href="function-calculator.html">関数電卓（sin・cos・√対応）</a>
+    <div class="desc">エクセル出力可能。ボタンでもキーボード（テンキー含む）でも入力OK</div>
+  </li>
+  <li>
     <a href="age.html">年齢計算ツール</a>
     <div class="desc">生年月日から現在の年齢を自動計算。西暦・和暦どちらも対応。5人まで同時計算できます。</div>
   </li>
@@ -343,7 +196,7 @@ crossorigin="anonymous"></script>
   </li>
   <li>
     <a href="jyutakuro-n.html">住宅ローン算定ツール</a>
-    <div class="desc">返済額計算・繰上返済シミュレーション・投資比較・住宅ローン控除を一画面で確認。変動金利リスクも対応。</div>
+    <div class="desc">返済額計算・繰上返済シミュレーション・投資比較・住宅ローン控除を一画面で確認。変動金利リスクも対応。初心者でも安心。</div>
   </li>
   <li>
     <a href="chintai-sougaku.html">賃貸総額シミュレーター</a>
@@ -355,7 +208,7 @@ crossorigin="anonymous"></script>
   </li>
   <li>
     <a href="pdf_image_converter.html">PDF⇔画像 変換ツール</a>
-    <div class="desc">PDFを画像（JPG/PNG）に変換・複数画像をPDF1枚にまとめる。ファイルはブラウザ内で処理、サーバー送信なし。</div>
+    <div class="desc">PDFを画像（JPG/PNG）に変換・複数画像をPDF1枚にまとめる。ファイルはブラウザ内で処理、サーバー送信なし。完全無料・登録不要。</div>
   </li>
   <li>
     <a href="image-editor.html">画像編集ツール</a>
@@ -401,111 +254,73 @@ crossorigin="anonymous"></script>
     <a href="audio-splitter.html">mp3ファイル分割ツール</a>
     <div class="desc">MP3　WAV　M4A　m4aを分割できます</div>
   </li>
-  <li>
-    <a href="calc-function-calculator.html">関数電卓</a>
-    <div class="desc">三角関数・対数・べき乗・階乗などに対応したフル機能の関数電卓。DEG/RAD切替、メモリ機能、計算履歴つき。</div>
-  </li>
-  <li>
-    <a href="fin-money-fire-sim.html">FIREできるかシミュレーター</a>
-    <div class="desc">NISA・課税口座・生活防衛資金から税金・国保・年金まで込みで、資産が何歳まで持つかを試算。暴落テストや「もしも」の比較にも対応</div>
-  </li>
 <!-- TOOLLIST_END -->
-</ul>
-<!-- 検索結果0件のときだけJSで表示するメッセージ -->
-<div class="no-result" id="noResultMsg">😢 該当するツールが見つかりませんでした</div>
+  </ul>
+  <!-- 検索結果0件のときだけJSで表示するメッセージ -->
+  <div class="no-result" id="noResultMsg">😢 該当するツールが見つかりませんでした</div>
+
+  <!-- =====================================================
+       サイト紹介文（AdSense有用性対策：サイトの目的・使い方）
+       ===================================================== -->
+  <section class="tool-desc">
+    <h2>このサイトについて</h2>
+    <p>「便利ツール集」は、日々の計算・書類づくり・ファイル変換など、ちょっと困ったときにすぐ使える無料ツールをまとめたサイトです。年齢や営業日、住宅ローンなどの計算から、PDFや画像の変換、見積書の作成まで、スマホの片手操作でも使いやすいことを意識して作っています。</p>
+    <p>使い方は、上の検索ボックスにキーワードを入れるか、一覧から目的のツールを選ぶだけ。登録やログインは不要で、計算や変換はブラウザ内で完結するツールが中心です。ご要望や不具合は、フッターのお問い合わせからお知らせください。</p>
+  </section>
+
+  <!-- シェアエリア（共通・触らない） -->
+  <div id="shareAreaSlot"></div>
+
+  <!-- 下部ナビ（共通・触らない） -->
+  <div id="bottomNavSlot"></div>
+
+  <!-- ※トップは一覧（ナビ）ページのため広告エリア(adAreaSlot)は置いていない -->
+
+</div><!-- /.container -->
+
+<!-- QRコードモーダル（共通・触らない） -->
+<div id="qrModalSlot"></div>
+
+<!-- フッター（共通・触らない） -->
+<div id="footerSlot"></div>
+
+<!-- 共通JS（テーマ／シェア／QR／おすすめ読込／フッター等） -->
+<script src="/common.js"></script>
 
 <!-- =====================================================
-     ここから 20260701layout-template.html のフッター構成を移植
-     ・シェアエリア／下部ナビ／広告エリア／フッター
+     ★ここから下だけがトップページ固有部分
      ===================================================== -->
-
-<!-- シェアエリア -->
-<div class="share-area">
-  <div class="share-title">▶ このツールをシェア</div>
-  <div class="share-btns">
-    <button class="btn-share" id="btnShareUrl" onclick="shareUrl()">🔗 URLをコピー</button>
-    <button class="btn-share x-post" onclick="shareX()">𝕏 ポストする</button>
-    <button class="btn-share line" onclick="shareLine()">💬 LINEで送る</button>
-    <button class="btn-share qr" onclick="showQr()">📷 QRコード</button>
-  </div>
-</div>
-
-<!-- 下部ナビ：戻るボタン＋おすすめツール -->
-<div class="bottom-nav">
-  <a class="btn-back" href="/index.html">← ツール一覧に戻る</a>
-  <div class="recommend-wrap">
-    <span class="recommend-label">おすすめ：</span>
-    <span id="recommendLinks2">読み込み中…</span>
-  </div>
-</div>
-
-<!-- 広告エリア（CLS対策：height固定で事前確保） -->
-<div class="ad-area">
-  <div class="ad-area-label">スポンサー</div>
-  <!-- ここにAdSenseコードを貼る -->
-</div>
-
-<!-- フッター -->
-<footer>
-  © 2026 アリガイツ
-  <nav class="footer-links">
-    <a class="footer-back" href="/index.html">ツール一覧</a>
-    <a class="footer-back" href="/about.html">このサイトについて</a>
-    <a class="footer-back" href="/privacy-policy.html">プライバシーポリシー</a>
-    <a class="footer-back" href="/terms.html">利用規約</a>
-    <a class="footer-back" href="https://docs.google.com/forms/d/e/1FAIpQLSfUe9UzcRcIRFb4TmDAYKsZ75CcGRjF8Z7Ar_u7a4KgyyNyzQ/viewform?usp=publish-editor" target="_blank" rel="noopener">お問い合わせ</a>
-  </nav>
-</footer>
-
-<!-- QRコードモーダル -->
-<div class="qr-modal-overlay" id="qrModalOverlay" onclick="closeQrOnOverlay(event)">
-  <div class="qr-modal">
-    <div class="qr-modal-title" id="qrModalTitle">📷 QRコードでシェア</div>
-    <div id="qrCanvas"></div>
-    <div class="qr-modal-url" id="qrUrl"></div>
-    <button class="qr-modal-close" onclick="hideQr()">✕ 閉じる</button>
-  </div>
-</div>
-
 <script>
 /* =====================================================
-   設定
+   設定（common.jsが参照するため最低限だけ定義）
    ===================================================== */
-
-// トップページ自身のツールid（自分を除外する必要がないので空でOK）
-const CURRENT_TOOL_ID = '';
+const CURRENT_TOOL_ID = '';          // トップなので除外対象なし
+const STORAGE_KEY = 'index_top';     // 入力保存はしないがcommon.jsの契約として定義
+const STORAGE_FIELDS = [];
+const INPUT_LABELS = {};
+const RESULT_LABELS = {};
 
 /* =====================================================
-   おすすめツール（tools.jsonが無くても動くよう、
-   このページ内のリストからランダムに2件ピックする方式）
+   common.jsの呼び出し契約用スタブ
+   - common.jsのshareX/shareLineは calculateInputs→calculateResult の結果が
+     nullだと何もしない仕様。トップは計算が無いので「常に空の結果」を返し、
+     シェアが必ず動くようにしている
    ===================================================== */
-function loadRecommendsFromList() {
-  try {
-    const items = Array.from(document.querySelectorAll('#toolList li a')).map(a => ({
-      name: a.textContent.trim(),
-      url: a.getAttribute('href')
-    }));
+function calculateInputs() { return {}; }
+function calculateResult() { return {}; }
+function displayResult() {}
 
-    const picks = items.sort(() => Math.random() - 0.5).slice(0, 2);
-
-    const html = picks.length > 0
-      ? picks.map(t => `<a class="recommend-link" href="${t.url}">${t.name}</a>`).join('')
-      : '';
-
-    document.getElementById('recommendLinks2').innerHTML = html;
-  } catch (e) {
-    document.getElementById('recommendLinks2').textContent = '';
-  }
-}
-
+/* =====================================================
+   初期表示：全件数をカウント表示
+   （おすすめツールはcommon.jsのloadRecommends＝tools.jsonから読込）
+   ===================================================== */
 document.addEventListener('DOMContentLoaded', () => {
-  loadRecommendsFromList();
-  updateSearchCount(); // 初期表示時に全件数をカウント表示
+  updateSearchCount();
 });
 
 /* =====================================================
    【検索】ツール名＋説明文をキーワードで絞り込み
-   - #toolList li を毎回全走査してtext-content一致判定
+   - #toolList li を毎回全走査してtextContent一致判定
    - ツールが増えてもロジック変更不要（li追加だけでOK）
    ===================================================== */
 function searchTools() {
@@ -556,88 +371,14 @@ function updateSearchCount(count) {
     : `全${total}件`;
 }
 
-
 /* =====================================================
-   【シェア用URL・テキスト】★このサイト用に設定
+   【シェア用URL・テキスト】★このサイト用に設定（common.jsから呼ばれる）
    ===================================================== */
 function buildShareUrl() {
   return location.href.split('?')[0];
 }
-
 function buildShareText() {
   return '便利ツール集｜無料で使える計算・変換ツール\n年齢計算・住宅ローン・NISA・PDF変換など無料ツールをまとめて公開中！';
-}
-
-/* =====================================================
-   URLコピー
-   ===================================================== */
-function shareUrl() {
-  const url = buildShareUrl();
-  const btn = document.getElementById('btnShareUrl');
-
-  navigator.clipboard.writeText(url).then(() => {
-    btn.textContent = '✅ コピーしました！';
-    btn.classList.add('copied');
-    setTimeout(() => {
-      btn.textContent = '🔗 URLをコピー';
-      btn.classList.remove('copied');
-    }, 2500);
-  }).catch(() => {
-    prompt('このURLをコピーしてください', url);
-  });
-}
-
-/* =====================================================
-   𝕏（Twitter）シェア
-   ===================================================== */
-function shareX() {
-  const text = buildShareText() + '\n' + buildShareUrl();
-  window.open(
-    `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`,
-    '_blank'
-  );
-}
-
-/* =====================================================
-   LINEシェア
-   ===================================================== */
-function shareLine() {
-  const text = buildShareText() + '\n' + buildShareUrl();
-  window.open(
-    `https://line.me/R/msg/text/${encodeURIComponent(text)}`,
-    '_blank'
-  );
-}
-
-/* =====================================================
-   QRコード表示
-   ===================================================== */
-function showQr(customUrl, customTitle) {
-  const url = customUrl || buildShareUrl();
-
-  document.getElementById('qrModalTitle').textContent = customTitle || '📷 QRコードでシェア';
-  document.getElementById('qrModalOverlay').classList.add('show');
-  document.getElementById('qrUrl').textContent = url;
-
-  const canvas = document.getElementById('qrCanvas');
-  canvas.innerHTML = '';
-
-  new QRCode(canvas, {
-    text: url,
-    width: 200,
-    height: 200,
-    colorDark:  '#111111',
-    colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.M
-  });
-}
-
-function hideQr() {
-  document.getElementById('qrModalOverlay').classList.remove('show');
-}
-
-function closeQrOnOverlay(e) {
-  if (e.target === document.getElementById('qrModalOverlay')) hideQr();
 }
 </script>
 </body>
