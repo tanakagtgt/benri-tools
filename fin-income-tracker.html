@@ -1,398 +1,1008 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+<!-- AdSense（静的配置） -->
+<script async src="https://pagead2.googleapis.com/pagead/js/adsbygoogle.js?client=ca-pub-2195458991382480" crossorigin="anonymous"></script>
+
 <meta charset="UTF-8">
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2195458991382480" crossorigin="anonymous"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>収支記録カレンダー｜投資の損益を日別に記録・確認できる無料ツール</title>
+<meta name="description" content="株・FX・CFDなどの投資と回収を日別に記録し、カレンダーで損益を一目で確認できる無料ツール。大タグ・小タグで分類でき、月間損益・回収率も自動集計。データは端末内のみに保存。">
 <link rel="canonical" href="https://arigato-tools.com/fin-income-tracker">
-<!-- ★gtag：既存ツールと同じ計測タグをここに貼る -->
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>収支記録カレンダー｜投資の収支・回収率を月別に管理【無料】</title>
-<meta name="description" content="投資金額と回収金額を日別に記録して、カレンダー・リスト・収支表・チャートで収支と回収率を確認できる無料ツール。データは端末内に保存されます。">
+
+<!-- OGP -->
 <meta property="og:type" content="website">
-<meta property="og:title" content="収支記録カレンダー｜投資の収支・回収率を月別に管理">
-<meta property="og:description" content="日別の投資・回収を記録し、収支・回収率・勝率を自動集計。スマホで片手操作できる無料ツール。">
+<meta property="og:site_name" content="アリガイツ">
+<meta property="og:title" content="収支記録カレンダー｜投資の損益を日別に記録">
+<meta property="og:description" content="投資と回収を日別に記録し、カレンダーで損益を確認。大タグ・小タグで分類もできる無料ツール。">
 <meta property="og:url" content="https://arigato-tools.com/fin-income-tracker">
+<meta name="twitter:card" content="summary">
+
+<!-- gtag（★既存ツールからGA測定IDのスクリプトをそのままコピーして差し替え） -->
+<!-- 【ここにgtagスクリプトを貼る】 -->
+
+<!-- Googleフォント -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+
 <link rel="stylesheet" href="/common.css">
+
 <style>
-/* ===== 収支の色（プラス=青／マイナス=赤）。ダーク用は下で上書き ===== */
-:root { --color-plus:#1a6ee0; --color-minus:#d93a3a; --color-sel:#fff6d6; }
-html[data-theme="dark"] { --color-plus:#4a9bff; --color-minus:#ff6b6b; --color-sel:#2c2a1c; }
-.plus { color: var(--color-plus); } .minus { color: var(--color-minus); }
+/* =====================================================
+   ツール固有CSS
+   ・色は必ずCSS変数。損益色もここで変数化（ダーク対応）
+   ・プラス＝緑／マイナス＝赤。日本式（利益＝赤）にしたい時は
+     --pl-plus と --pl-minus の値を入れ替えるだけでOK
+   ===================================================== */
+:root {
+  --pl-plus:     #0f9d58;
+  --pl-minus:    #d93025;
+  --pl-plus-bg:  #e6f6ec;
+  --pl-minus-bg: #fdecea;
+  --color-sun:   #d93025;  /* カレンダーの日曜 */
+  --color-sat:   #1a56db;  /* カレンダーの土曜 */
+}
+html[data-theme="dark"] {
+  --pl-plus:     #5fd68a;
+  --pl-minus:    #ff8a80;
+  --pl-plus-bg:  #14291c;
+  --pl-minus-bg: #2c1616;
+  --color-sun:   #ff8a80;
+  --color-sat:   #7ca6ff;
+}
 
-/* ===== タブ・月ナビ ===== */
-.tabs { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:12px; }
-.tab-btn { min-height:44px; border:1px solid var(--color-border-input); border-radius:var(--radius-input);
-  background:var(--color-input-bg); color:var(--color-text-sub); font:700 13px 'BIZ UDPGothic',sans-serif; cursor:pointer; }
-.tab-btn.active { background:var(--color-primary-bg); border-color:var(--color-primary); color:var(--color-primary); }
-.month-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
-.month-nav button { min-width:44px; min-height:44px; border:none; background:none; color:var(--color-primary); font-size:20px; cursor:pointer; }
-.month-title { font-size:17px; font-weight:700; }
-.month-total { text-align:center; font-size:26px; font-weight:700; margin-bottom:10px; }
+/* 損益の文字色（共通） */
+.plus  { color: var(--pl-plus); }
+.minus { color: var(--pl-minus); }
+.zero  { color: var(--color-text-muted); }
 
-/* ===== カレンダー ===== */
-.cal { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; text-align:center; }
-.cal-head { font-size:11px; color:var(--color-text-muted); padding:4px 0; }
-.cell { min-height:52px; border:1px solid transparent; border-radius:var(--radius-input); background:none; color:var(--color-text);
-  font:700 13px 'BIZ UDPGothic',sans-serif; cursor:pointer; padding:4px 0; }
-.cell small { display:block; font-size:9px; margin-top:2px; }
-.cell.sel { background:var(--color-sel); border-color:var(--color-primary); }
-.cell.today { text-decoration:underline; }
+/* ---------- 画面切替タブ（将来：リスト／収支表／チャート／設定） ---------- */
+.view-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+  overflow-x: auto;            /* 5タブでも横スクロールで収まる */
+  -webkit-overflow-scrolling: touch;
+}
+.view-tab {
+  flex: 0 0 auto;
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-sub);
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-input);
+  padding: 8px 12px;
+  min-height: 44px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.view-tab.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+}
+.view-tab:disabled { opacity: 0.45; cursor: not-allowed; }
 
-/* ===== リスト・収支表 ===== */
-.rec-row { display:flex; justify-content:space-between; align-items:center; gap:8px; width:100%; text-align:left;
-  background:none; border:none; border-bottom:1px solid var(--color-border); color:var(--color-text);
-  font-family:inherit; padding:10px 2px; min-height:44px; cursor:pointer; }
-.rec-date { font-size:13px; font-weight:700; } .rec-sub { font-size:11px; color:var(--color-text-muted); }
-.rec-bal { font-size:18px; font-weight:700; white-space:nowrap; }
-.search { width:100%; min-height:44px; font-size:16px; padding:8px 10px; margin-bottom:8px; border:1px solid var(--color-border-input);
-  border-radius:var(--radius-input); background:var(--color-input-bg); color:var(--color-text); font-family:inherit; }
-.stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px 18px; font-size:13px; }
-.stat-grid div { display:flex; justify-content:space-between; border-bottom:1px solid var(--color-border); padding:5px 0; }
-.stat-h { font-weight:700; margin:10px 0 2px; font-size:13px; }
-.empty { color:var(--color-text-muted); font-size:13px; text-align:center; padding:18px 0; }
+/* ---------- 月ナビ＋月間サマリー ---------- */
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+.month-btn {
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-primary);
+  background: var(--color-chip-bg);
+  border: 1px solid var(--color-primary-border);
+  border-radius: var(--radius-input);
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
+  cursor: pointer;
+}
+.month-btn:hover { background: var(--color-chip-hover); }
+.month-label { font-size: 17px; font-weight: 700; color: var(--color-text); }
 
-/* ===== チャート ===== */
-.seg { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:10px; }
-.bar2 { height:16px; border-radius:4px; margin:6px 0; min-width:2px; }
-svg text { fill: var(--color-text-muted); font-size:9px; }
+/* 共通の.result-mainより小さく（1画面に収めるため） */
+.result-panel .result-main { padding: 12px 12px 10px; }
+#resultNum { font-size: clamp(30px, 9vw, 44px); }
+#resultNum.plus  { color: var(--pl-plus); }
+#resultNum.minus { color: var(--pl-minus); }
+#resultNum.zero  { color: var(--color-text); }
+.result-panel .breakdown-wrap { padding: 10px; }
+.result-panel .breakdown { margin-bottom: 0; }
+.result-panel .b-num { font-size: 16px; }
 
-/* ===== 追加／編集モーダル（画面下からのシート。背景は半透明黒） ===== */
-.sheet-ov { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:900; align-items:flex-end; justify-content:center; }
-.sheet-ov.show { display:flex; }
-.sheet { width:100%; max-width:600px; background:var(--color-card); border-radius:14px 14px 0 0; padding:18px 16px 24px; max-height:92vh; overflow:auto; }
-.fab { position:sticky; bottom:12px; float:right; width:56px; height:56px; border-radius:50%; border:none; margin-top:8px;
-  background:var(--color-primary); color:#fff; font-size:30px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.3); }
-.btn-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px; }
-.btn-del { background:var(--color-error-bg); border:1px solid var(--color-error-border); color:var(--color-error-text);
-  border-radius:var(--radius-btn); min-height:50px; font:700 14px 'BIZ UDPGothic',sans-serif; cursor:pointer; }
-.hidden { display:none; }
+/* ---------- カレンダー ---------- */
+.cal-card { padding: 8px; }
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+.cal-dow {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  padding: 4px 0;
+}
+.cal-dow.sun { color: var(--color-sun); }
+.cal-dow.sat { color: var(--color-sat); }
 
-/* ===== 解説文 ===== */
-.tool-desc { background:var(--color-card); border:1px solid var(--color-border); border-radius:var(--radius-card);
-  padding:18px; margin-bottom:14px; font-size:13px; line-height:1.9; color:var(--color-text-sub); }
-.tool-desc h2 { font-size:15px; color:var(--color-text); margin:12px 0 4px; } .tool-desc h2:first-child { margin-top:0; }
-.tool-desc .note { font-size:12px; color:var(--color-text-muted); }
+.cal-empty { min-height: 58px; }
+.cal-cell {
+  min-height: 58px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 3px;
+  padding: 5px 1px 3px;
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-family: 'BIZ UDPGothic', sans-serif;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.cal-cell.has-plus  { background: var(--pl-plus-bg); }
+.cal-cell.has-minus { background: var(--pl-minus-bg); }
+.cal-cell.today     { border: 2px solid var(--color-primary); }
+.cal-cell.selected  { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+.cal-day { font-size: 12px; font-weight: 700; line-height: 1; }
+.cal-cell.sun .cal-day { color: var(--color-sun); }
+.cal-cell.sat .cal-day { color: var(--color-sat); }
+.cal-pl  { font-size: 10px; font-weight: 700; line-height: 1.1; white-space: nowrap; }
+
+/* ---------- 選択日パネル ---------- */
+.day-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.day-title { font-size: 14px; font-weight: 700; color: var(--color-text); }
+.day-total { font-size: 15px; font-weight: 700; }
+.day-empty { font-size: 13px; color: var(--color-text-muted); padding: 6px 0 12px; }
+
+.trade-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+  font-family: 'BIZ UDPGothic', sans-serif;
+  color: var(--color-text);
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.trade-main { display: block; min-width: 0; flex: 1; }
+.trade-tags { display: block; margin-bottom: 3px; }
+.chip {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+  border-radius: 5px;
+  padding: 2px 7px;
+  margin: 0 4px 2px 0;
+}
+.trade-amounts { display: block; font-size: 12px; color: var(--color-text-sub); }
+.trade-memo {
+  display: block;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.trade-pl { font-size: 16px; font-weight: 700; white-space: nowrap; }
+
+/* ---------- ボトムシート（取引入力・タグ管理） ---------- */
+.sheet-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 900;
+  align-items: flex-end;
+  justify-content: center;
+}
+.sheet-overlay.show { display: flex; }
+.sheet-overlay.top { z-index: 950; }   /* タグ管理は取引入力の上に重ねる */
+.sheet {
+  width: 100%;
+  max-width: 600px;
+  max-height: 92vh;
+  overflow-y: auto;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 14px 14px 0 0;
+  padding: 16px 16px 24px;
+}
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.sheet-title { font-size: 16px; font-weight: 700; color: var(--color-text); }
+.sheet-close {
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 16px;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  min-width: 44px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.sheet .input-grid .input-group { margin-bottom: 0; }
+.sheet input[type="date"] { -webkit-appearance: none; appearance: none; }
+
+.pl-preview {
+  font-size: 13px;
+  color: var(--color-text-sub);
+  margin: 0 0 12px;
+  text-align: right;
+}
+.pl-preview b { font-size: 16px; }
+.sheet-sub-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+.sheet-sub-actions .btn-reset { margin-bottom: 0; }
+.btn-tag-manage { width: 100%; margin: 12px 0 14px; }
+
+/* ---------- タグ管理 ---------- */
+.tag-hint { font-size: 11px; color: var(--color-text-muted); margin-bottom: 10px; line-height: 1.7; }
+.tag-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.tag-row input,
+.tag-add input {
+  width: 100%;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-input);
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 16px;
+  padding: 10px;
+  min-height: 44px;
+  outline: none;
+}
+.tag-row input:focus,
+.tag-add input:focus { border-color: var(--color-primary); }
+.tag-del {
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-error-text);
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
+  border-radius: var(--radius-input);
+  min-width: 56px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.tag-add { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin: 12px 0; }
+.tag-add .btn-action { padding: 0 14px; }
+.tag-empty { font-size: 13px; color: var(--color-text-muted); padding: 4px 0 8px; }
+
+/* ---------- 解説文 ---------- */
+.tool-desc {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 16px 18px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  line-height: 1.9;
+  color: var(--color-text-sub);
+}
+.tool-desc h2 { font-size: 14px; color: var(--color-text); margin-bottom: 8px; }
+.tool-desc h3 { font-size: 12px; color: var(--color-text); margin: 10px 0 2px; }
 </style>
 </head>
+
 <body>
 <div class="container">
-<div id="topNavSlot"></div>
-<header>
-  <h1>📅 収支記録カレンダー</h1>
-  <p class="subtitle">投資と回収を日別に記録｜収支・回収率・勝率を自動集計</p>
-</header>
 
-<!-- ================= ツール本体 ================= -->
-<div class="card">
-  <div class="tabs" role="tablist">
-    <button class="tab-btn active" data-tab="cal"   onclick="setTab('cal')">カレンダー</button>
-    <button class="tab-btn"        data-tab="list"  onclick="setTab('list')">リスト</button>
-    <button class="tab-btn"        data-tab="stats" onclick="setTab('stats')">収支表</button>
-    <button class="tab-btn"        data-tab="chart" onclick="setTab('chart')">チャート</button>
-  </div>
+  <div id="topNavSlot"></div>
 
-  <!-- 月ナビ（チャート以外で表示） -->
-  <div id="monthBox">
-    <div class="month-nav">
-      <button onclick="moveMonth(-1)" aria-label="前の月">‹</button>
-      <span class="month-title" id="monthTitle"></span>
-      <button onclick="moveMonth(1)" aria-label="次の月">›</button>
+  <header>
+    <h1>収支記録カレンダー</h1>
+    <p class="subtitle">投資の損益を日別に記録して、カレンダーで一目で確認<br>データはこの端末のブラウザ内にだけ保存されます</p>
+  </header>
+
+  <!-- 画面切替タブ（JSのVIEWSから生成） -->
+  <nav class="view-tabs" id="viewTabs" aria-label="表示切替"></nav>
+
+  <!-- ===== 画面：カレンダー ===== -->
+  <section class="view" id="view-calendar">
+
+    <!-- 月ナビ＋月間サマリー -->
+    <div class="result-panel">
+      <div class="month-nav">
+        <button type="button" class="month-btn" onclick="changeMonth(-1)" aria-label="前の月">◀</button>
+        <div class="month-label" id="monthLabel">—</div>
+        <button type="button" class="month-btn" onclick="goToday()">今日</button>
+        <button type="button" class="month-btn" onclick="changeMonth(1)" aria-label="次の月">▶</button>
+      </div>
+      <div class="result-main">
+        <div class="result-label">月間損益</div>
+        <div><span class="result-number placeholder" id="resultNum">—</span><span class="result-unit">円</span></div>
+        <div class="result-sub" id="resultSub">&nbsp;</div>
+      </div>
+      <div class="breakdown-wrap">
+        <div class="breakdown">
+          <div class="breakdown-item"><div class="b-num placeholder" id="bA">—</div><div class="b-label">投資合計</div></div>
+          <div class="breakdown-item"><div class="b-num placeholder" id="bB">—</div><div class="b-label">回収合計</div></div>
+          <div class="breakdown-item"><div class="b-num placeholder" id="bC">—</div><div class="b-label">回収率</div></div>
+        </div>
+      </div>
     </div>
-    <div class="month-total" id="monthTotal">—</div>
-  </div>
 
-  <!-- カレンダー -->
-  <div id="paneCal">
-    <div class="cal" id="calGrid"></div>
-    <div class="section-title" id="dayTitle" style="margin-top:14px"></div>
-    <div id="dayList"></div>
-  </div>
-
-  <!-- リスト -->
-  <div id="paneList" class="hidden">
-    <input class="search" id="searchBox" type="search" placeholder="メモ・タグを検索" oninput="renderList()">
-    <div class="section-title" id="listCount"></div>
-    <div id="listBody"></div>
-  </div>
-
-  <!-- 収支表 -->
-  <div id="paneStats" class="hidden"></div>
-
-  <!-- チャート -->
-  <div id="paneChart" class="hidden">
-    <div class="seg">
-      <button class="tab-btn" data-range="7"  onclick="setRange(7)">過去7日</button>
-      <button class="tab-btn active" data-range="30" onclick="setRange(30)">過去30日</button>
-      <button class="tab-btn" data-range="12" onclick="setRange(12)">過去12か月</button>
+    <!-- カレンダー本体 -->
+    <div class="card cal-card">
+      <div class="cal-grid" id="calDow"></div>
+      <div class="cal-grid" id="calGrid"></div>
     </div>
-    <div class="section-title">収支</div>
-    <div class="month-total" id="chartTotal" style="text-align:left;font-size:22px"></div>
-    <svg id="chartSvg" viewBox="0 0 320 140" width="100%" role="img" aria-label="収支の棒グラフ"></svg>
-    <div id="chartSum"></div>
-  </div>
 
-  <button class="fab" onclick="openSheet()" aria-label="記録を追加">＋</button>
-  <div style="clear:both"></div>
+    <!-- 選択日の取引一覧＋追加ボタン -->
+    <div class="card">
+      <div class="day-head">
+        <div class="day-title" id="dayTitle">—</div>
+        <div class="day-total" id="dayTotal"></div>
+      </div>
+      <div id="dayList"></div>
+      <button type="button" class="btn-calc" onclick="openTradeSheet()">＋ この日の取引を追加</button>
+    </div>
 
-  <!-- バックアップ（端末内保存のため） -->
-  <div class="btn-row" style="margin-top:14px">
-    <button class="btn-action" onclick="exportData()">💾 バックアップをコピー</button>
-    <button class="btn-action" onclick="importData()">📥 バックアップを復元</button>
-  </div>
+  </section>
+  <!-- 将来：<section class="view" id="view-list" hidden> など同じ形式で追加 -->
+
+  <!-- ===== 解説文（AdSense有用性対策） ===== -->
+  <section class="tool-desc">
+    <h2>収支記録カレンダーの使い方</h2>
+    <p>カレンダーの日付をタップして「この日の取引を追加」を押し、投資金額と回収金額を入力します。大タグ（現物・信用・FX・CFDなど）と小タグ（銘柄名など）は「タグを管理」から自由に追加・名前変更・削除できます。各日付の下にはその日の損益が表示され、上のサマリーには月間の損益・投資合計・回収合計・回収率が出ます。</p>
+    <h3>こんな方に</h3>
+    <p>株・FX・CFDなど複数の取引を日々ざっくり記録し、月ごとの成績や勝ち負けの偏りを振り返りたい個人投資家向けです。</p>
+    <h3>計算の考え方</h3>
+    <p>損益は「回収金額−投資金額」で、プラスが利益、マイナスが損失です。回収率は「回収合計÷投資合計×100」。同じ日に複数の取引がある場合は合算して表示します。手数料や税金は自動では含まれないため、反映したい場合は回収金額に含めるかメモに残してください。</p>
+    <h3>データの保存について</h3>
+    <p>記録はこの端末のブラウザ内（localStorage）にのみ保存され、サーバーには送信されません。ブラウザのデータ削除や端末の変更で消えるため、ご注意ください。</p>
+    <h3>ご注意</h3>
+    <p>本ツールは記録と簡易集計のためのもので、将来の運用成果を保証するものではありません。投資判断はご自身の責任で行ってください。税務申告には証券会社の取引報告書などをご確認ください。</p>
+  </section>
+
+  <div id="shareAreaSlot"></div>
+  <!-- resetBtnSlot は置かない：全データ削除は誤タップが怖いので、将来の【設定】画面に作る -->
+  <div id="bottomNavSlot"></div>
+  <div id="adAreaSlot"></div>
+  <div id="qrModalSlot"></div>
+  <div id="footerSlot"></div>
+
 </div>
 
-<!-- 追加／編集シート -->
-<div class="sheet-ov" id="sheetOv" onclick="if(event.target===this)closeSheet()">
-  <div class="sheet">
-    <div class="section-title" id="sheetTitle">記録を追加</div>
-    <div class="input-group"><label for="fDate">日付</label><input type="date" id="fDate"></div>
+<!-- =====================================================
+     取引入力シート（追加／編集）
+     ===================================================== -->
+<div class="sheet-overlay" id="tradeOverlay" onclick="closeOnOverlay(event, 'tradeOverlay')">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="tradeSheetTitle">
+    <div class="sheet-head">
+      <div class="sheet-title" id="tradeSheetTitle">取引を追加</div>
+      <button type="button" class="sheet-close" onclick="closeTradeSheet()" aria-label="閉じる">✕</button>
+    </div>
+
+    <div class="input-group">
+      <label for="fDate">日付</label>
+      <input type="date" id="fDate">
+    </div>
+
     <div class="input-grid">
-      <div class="input-group" style="margin:0"><label for="fInv">投資金額（円）</label><input type="number" id="fInv" inputmode="numeric" min="0" placeholder="0"></div>
-      <div class="input-group" style="margin:0"><label for="fRec">回収金額（円）</label><input type="number" id="fRec" inputmode="numeric" min="0" placeholder="0"></div>
+      <div class="input-group">
+        <label for="fInvest">投資金額（円）</label>
+        <input type="text" inputmode="numeric" id="fInvest" placeholder="0" autocomplete="off" oninput="updatePreview()">
+      </div>
+      <div class="input-group">
+        <label for="fPayout">回収金額（円）</label>
+        <input type="text" inputmode="numeric" id="fPayout" placeholder="0" autocomplete="off" oninput="updatePreview()">
+      </div>
     </div>
-    <div class="input-group"><label for="fTag">タグ（任意）</label><input type="text" id="fTag" maxlength="20" placeholder="例：株式／投信／その他"></div>
-    <div class="input-group"><label for="fMemo">メモ（任意）</label><input type="text" id="fMemo" maxlength="60"></div>
+    <p class="pl-preview" id="plPreview">損益：—</p>
+
+    <div class="input-grid" style="margin-bottom:0">
+      <div class="input-group">
+        <label for="fBig">大タグ</label>
+        <select id="fBig"></select>
+      </div>
+      <div class="input-group">
+        <label for="fSmall">小タグ（銘柄など）</label>
+        <select id="fSmall"></select>
+      </div>
+    </div>
+    <button type="button" class="btn-action btn-tag-manage" onclick="openTagSheet()">🏷 タグを追加・編集・削除</button>
+
+    <div class="input-group">
+      <label for="fMemo">メモ</label>
+      <input type="text" id="fMemo" maxlength="100" placeholder="例：決算跨ぎ、ナンピン など" autocomplete="off">
+    </div>
+
     <div class="error-msg" id="errorMsg"></div>
-    <div class="btn-row">
-      <button class="btn-calc" onclick="saveRec()">保存</button>
-      <button class="btn-action" onclick="closeSheet()">キャンセル</button>
+
+    <button type="button" class="btn-calc" style="margin-top:12px" onclick="saveTrade()">保存</button>
+    <div class="sheet-sub-actions">
+      <button type="button" class="btn-action" onclick="closeTradeSheet()">キャンセル</button>
+      <button type="button" class="btn-reset" id="btnDeleteTrade" onclick="deleteTrade()">🗑 この取引を削除</button>
     </div>
-    <button class="btn-del hidden" id="btnDel" style="width:100%;margin-top:8px" onclick="deleteRec()">この記録を削除</button>
   </div>
 </div>
 
-<!-- ================= 解説文（AdSense有用性対策） ================= -->
-<section class="tool-desc">
-  <h2>使い方</h2>
-  <p>右下の「＋」から日付・投資金額・回収金額を入力して保存すると、カレンダーに日別の収支が表示されます。リストでは日付順の一覧とメモ検索、収支表では合計・平均・中央値・勝率・回収率、チャートでは過去7日／30日／12か月の推移を確認できます。</p>
-  <h2>こんな場面に</h2>
-  <p>株式・投資信託・FXなどの売買ごとの損益管理や、副業の仕入れと売上の記録など、「使った額」と「戻ってきた額」を日別に残したい方向けです。月末の振り返りにも使えます。</p>
-  <h2>計算の考え方</h2>
-  <p>収支＝回収金額−投資金額、回収率＝回収金額÷投資金額×100です。収支がプラスなら「勝ち」、マイナスなら「負け」、ゼロなら「引き分け」として数えます。平均は合計÷件数、中央値は金額を並べた真ん中の値です。投資金額が0円の記録は回収率の計算から除かれます。</p>
-  <h2>よくある質問</h2>
-  <p>Q. データはどこに保存されますか？ A. お使いのブラウザ内のみで、サーバーには送信されません。ブラウザのデータを消去すると失われるため、定期的に「バックアップをコピー」でメモ帳などに控えてください。</p>
-  <p class="note">※本ツールは記録・集計のための簡易ツールです。表示される数値は入力内容に基づく計算結果であり、将来の成果や利益を保証するものではありません。</p>
-</section>
+<!-- =====================================================
+     タグ管理シート（大タグ／小タグ共通）
+     ===================================================== -->
+<div class="sheet-overlay top" id="tagOverlay" onclick="closeOnOverlay(event, 'tagOverlay')">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="tagSheetTitle">
+    <div class="sheet-head">
+      <div class="sheet-title" id="tagSheetTitle">タグ管理</div>
+      <button type="button" class="sheet-close" onclick="closeTagSheet()" aria-label="閉じる">✕</button>
+    </div>
 
-<div id="shareAreaSlot"></div>
-<div id="resetBtnSlot"></div>
-<div id="bottomNavSlot"></div>
-<div id="adAreaSlot"></div>
-<div id="qrModalSlot"></div>
-<div id="footerSlot"></div>
+    <!-- ※toggleA/toggleBはcommon.jsが使うIDなので、別IDにしている -->
+    <div class="toggle-wrap">
+      <button type="button" class="toggle-btn active" id="tagKindBig" onclick="setTagKind('big')">大タグ</button>
+      <button type="button" class="toggle-btn" id="tagKindSmall" onclick="setTagKind('small')">小タグ</button>
+    </div>
+    <p class="tag-hint" id="tagHint"></p>
+
+    <div id="tagList"></div>
+
+    <div class="tag-add">
+      <input type="text" id="tagNewName" maxlength="20" placeholder="新しいタグ名" autocomplete="off" onkeydown="onTagNewKey(event)">
+      <button type="button" class="btn-action" onclick="addTag()">＋ 追加</button>
+    </div>
+    <div class="error-msg" id="tagError"></div>
+
+    <button type="button" class="btn-calc" style="margin-top:12px" onclick="closeTagSheet()">閉じる</button>
+  </div>
 </div>
 
+<!-- QRコード生成ライブラリ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="/common.js"></script>
+
 <script>
 /* =====================================================
-   ツール固有設定（common.jsが前提とする定義）
-   ★STORAGE_KEYはresetAll()が削除する対象。記録データ本体は
-     別キー(DATA_KEY)に置き、「リセット」で勝手に消えないようにしている
+   ツール固有ロジック
+   【データ構造】localStorage（DATA_KEY）に1つのJSONで保存
+   {
+     version: 1,
+     tagsBig:   [{ id, name }],
+     tagsSmall: [{ id, name }],
+     trades:    [{ id, date:'YYYY-MM-DD', invest, payout, bigId, smallId, memo }]
+   }
+   ・タグは名前ではなくidで参照 → 名前を編集しても過去の取引に反映される
+   ・損益は保存せず、表示のたびに calcPl() で計算（式の変更が1箇所で済む）
    ===================================================== */
+
+/* ---------- common.jsが要求する定数 ---------- */
 const CURRENT_TOOL_ID = 'fin-income-tracker';
-const STORAGE_KEY     = 'fin_income_tracker_ui';
-const STORAGE_FIELDS  = [];
+const STORAGE_KEY     = 'fin-income-tracker-ui'; // common.js用（このツールでは実質未使用）
+const STORAGE_FIELDS  = [];                      // 取引は独自保存のため空（resetAllで消えない）
 const INPUT_LABELS    = {};
-const RESULT_LABELS   = { main: '今月の収支' };
-const DATA_KEY        = 'fin_income_tracker_data';
+const RESULT_LABELS   = { main: '月間損益', subA: '投資合計', subB: '回収合計', subC: '回収率' };
 
-/* ---- 状態 ---- */
-let records = loadData();           // [{id,date,inv,rec,tag,memo}]
-const now = new Date();
-let vy = now.getFullYear(), vm = now.getMonth(); // 表示中の年・月(0始まり)
-let sel = ymd(now), tab = 'cal', range = 30, editId = null;
+/* ---------- このツール専用の定数 ---------- */
+const DATA_KEY  = 'fin-income-tracker-data-v2';
+const DOW_NAMES = ['日', '月', '火', '水', '木', '金', '土'];
 
-/* ---- ユーティリティ ---- */
-const pad = n => String(n).padStart(2, '0');
-function ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
-const $ = id => document.getElementById(id);
-const bal = r => r.rec - r.inv;
-const sum = (a, f) => a.reduce((s, x) => s + f(x), 0);
-const yen = n => '¥' + Math.round(Math.abs(n)).toLocaleString();
-const sgn = n => (n > 0 ? '+' : n < 0 ? '−' : '') + yen(n);
-const cls = n => n > 0 ? 'plus' : n < 0 ? 'minus' : '';
-const rate = (rec, inv) => inv > 0 ? (rec / inv * 100).toFixed(2) + '%' : '—';
-const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function median(a) {
-  if (!a.length) return 0;
-  const s = [...a].sort((x, y) => x - y), m = s.length >> 1;
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+// 画面切替の定義。ready:true にして renderers に関数を足せば画面が増やせる
+const VIEWS = [
+  { id: 'calendar', label: '📅 カレンダー', ready: true  },
+  { id: 'list',     label: '📋 リスト',     ready: false },
+  { id: 'table',    label: '📊 収支表',     ready: false },
+  { id: 'chart',    label: '📈 チャート',   ready: false },
+  { id: 'settings', label: '⚙️ 設定',       ready: false },
+];
+
+/* ---------- 状態 ---------- */
+let data         = loadData();
+let viewYear     = new Date().getFullYear();
+let viewMonth    = new Date().getMonth();   // 0〜11
+let selectedDate = todayKey();
+let editingId    = null;                    // 編集中の取引id（新規はnull）
+let tagKind      = 'big';                   // タグ管理で表示中の種別
+let currentView  = 'calendar';
+
+/* =====================================================
+   ユーティリティ
+   ===================================================== */
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function pad2(n) { return String(n).padStart(2, '0'); }
+function ymd(y, m, d) { return `${y}-${pad2(m + 1)}-${pad2(d)}`; }   // mは0始まり
+function todayKey() { const n = new Date(); return ymd(n.getFullYear(), n.getMonth(), n.getDate()); }
+
+// ユーザー入力（タグ名・メモ）をinnerHTMLに入れる前に必ず通す
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
-function loadData() { try { return JSON.parse(localStorage.getItem(DATA_KEY)) || []; } catch (e) { return []; } }
-function saveData() { try { localStorage.setItem(DATA_KEY, JSON.stringify(records)); } catch (e) {} }
-const monthKey = () => vy + '-' + pad(vm + 1);
-const monthRecs = () => records.filter(r => r.date.startsWith(monthKey()));
 
-/* ---- common.js連携（nullを返さない＝シェアが常に動く） ---- */
-function calculateInputs() { return {}; }
-function calculateResult() { return { main: sum(monthRecs(), bal) }; }
-function displayResult() { renderAll(); }
-function buildShareText() { return '📅 収支記録カレンダー｜投資の収支・回収率を日別に記録できる無料ツール'; }
+// ★損益の計算式はここだけ（回収 − 投資。プラス＝利益）
+function calcPl(t) { return t.payout - t.invest; }
+
+function plClass(n) { return n > 0 ? 'plus' : n < 0 ? 'minus' : 'zero'; }
+function fmtSigned(n) {
+  if (n > 0) return '+' + n.toLocaleString('ja-JP');
+  if (n < 0) return '−' + Math.abs(n).toLocaleString('ja-JP');
+  return '0';
+}
+// カレンダーのセル用（幅が狭いので1万円以上は「万」表記）
+function fmtShort(n) {
+  const abs = Math.abs(n);
+  if (abs < 10000) return fmtSigned(n);
+  const man = (abs / 10000).toFixed(1).replace(/\.0$/, '');
+  return (n > 0 ? '+' : '−') + man + '万';
+}
+// 金額入力 → 0以上の整数。不正はNaN、空は0
+function parseAmount(str) {
+  const s = String(str)
+    .replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/[,，\s]/g, '');
+  if (s === '') return 0;
+  if (!/^\d+$/.test(s)) return NaN;
+  return Number(s);
+}
+
+/* =====================================================
+   データ読み書き
+   ===================================================== */
+function loadData() {
+  const def = {
+    version: 1,
+    tagsBig: [
+      { id: 'big-spot', name: '現物' },
+      { id: 'big-margin', name: '信用' },
+      { id: 'big-fx', name: 'FX' },
+      { id: 'big-cfd', name: 'CFD' },
+    ],
+    tagsSmall: [],
+    trades: [],
+  };
+  try {
+    const raw = localStorage.getItem(DATA_KEY);
+    if (!raw) return def;
+    const d = JSON.parse(raw);
+    if (!d || !Array.isArray(d.trades) || !Array.isArray(d.tagsBig) || !Array.isArray(d.tagsSmall)) return def;
+    return d;
+  } catch (e) {
+    return def;
+  }
+}
+function saveData() {
+  try {
+    localStorage.setItem(DATA_KEY, JSON.stringify(data));
+    return true;
+  } catch (e) {
+    return false; // プライベートモード等
+  }
+}
+
+/* =====================================================
+   common.jsから呼ばれる関数
+   ===================================================== */
+function calculateInputs() { return { y: viewYear, m: viewMonth }; }
+
+// 月間集計。取引が0件でもnullにしない（シェア等が止まらないように）
+function calculateResult(inputs) {
+  const dayMap = buildDayMap(inputs.y, inputs.m);
+  let invest = 0, payout = 0, count = 0, winDays = 0, loseDays = 0;
+  Object.keys(dayMap).forEach(k => {
+    const d = dayMap[k];
+    invest += d.invest; payout += d.payout; count += d.count;
+    if (d.pl > 0) winDays++; else if (d.pl < 0) loseDays++;
+  });
+  return {
+    main: payout - invest,
+    subA: invest,
+    subB: payout,
+    subC: invest > 0 ? Math.round((payout / invest) * 1000) / 10 : 0, // 回収率(%)
+    count, winDays, loseDays,
+  };
+}
+
+function displayResult(r) {
+  const num = document.getElementById('resultNum');
+  num.textContent = fmtSigned(r.main);
+  num.className = 'result-number ' + plClass(r.main);
+
+  document.getElementById('resultSub').textContent =
+    r.count > 0 ? `取引${r.count}件 ／ 勝ち${r.winDays}日・負け${r.loseDays}日` : 'この月の記録はまだありません';
+
+  const set = (id, text) => {
+    const el = document.getElementById(id);
+    el.textContent = text;
+    el.classList.remove('placeholder');
+  };
+  set('bA', r.subA.toLocaleString('ja-JP'));
+  set('bB', r.subB.toLocaleString('ja-JP'));
+  set('bC', r.subA > 0 ? r.subC.toFixed(1) + '%' : '—');
+}
+
+// シェアは金額を含めずツール紹介のみ（収支を無自覚に晒さない）
+function buildShareText(result) { return '投資の損益を日別に記録できる「収支記録カレンダー」📅'; }
 function buildShareUrl() { return 'https://arigato-tools.com/fin-income-tracker'; }
-// 共通の「リセット」ボタン：全記録削除は確認してから実行
-function onResetExtra() {
-  if (!records.length) return;
-  if (confirm('保存済みの記録をすべて削除します。よろしいですか？')) { records = []; saveData(); renderAll(); }
+
+/* =====================================================
+   集計
+   ===================================================== */
+// 指定月の日別集計 { 'YYYY-MM-DD': { invest, payout, pl, count } }
+function buildDayMap(y, m) {
+  const prefix = `${y}-${pad2(m + 1)}-`;
+  const map = {};
+  data.trades.forEach(t => {
+    if (!t.date.startsWith(prefix)) return;
+    const d = map[t.date] || (map[t.date] = { invest: 0, payout: 0, pl: 0, count: 0 });
+    d.invest += t.invest; d.payout += t.payout; d.pl += calcPl(t); d.count++;
+  });
+  return map;
 }
 
-/* ---- 画面切替 ---- */
-function setTab(t) {
-  tab = t;
-  document.querySelectorAll('.tabs .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
-  ['cal', 'list', 'stats', 'chart'].forEach(k => $('pane' + k[0].toUpperCase() + k.slice(1)).classList.toggle('hidden', k !== t));
-  $('monthBox').classList.toggle('hidden', t === 'chart');
+/* =====================================================
+   画面切替（将来のリスト／収支表／チャート／設定用の土台）
+   ===================================================== */
+function renderTabs() {
+  document.getElementById('viewTabs').innerHTML = VIEWS.map(v =>
+    `<button type="button" class="view-tab${v.id === currentView ? ' active' : ''}"` +
+    `${v.ready ? '' : ' disabled title="準備中"'} onclick="setView('${v.id}')">${v.label}</button>`
+  ).join('');
+}
+function setView(id) {
+  currentView = id;
+  document.querySelectorAll('.view').forEach(el => { el.hidden = el.id !== 'view-' + id; });
+  renderTabs();
+}
+
+/* =====================================================
+   カレンダー描画
+   ===================================================== */
+function renderAll() {
+  renderCalendar();
+  renderDayPanel();
+  calculate(); // common.js：月間サマリーを再計算して表示
+}
+
+function renderCalendar() {
+  document.getElementById('monthLabel').textContent = `${viewYear}年${viewMonth + 1}月`;
+
+  // 曜日ヘッダー
+  document.getElementById('calDow').innerHTML = DOW_NAMES.map((n, i) =>
+    `<div class="cal-dow${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${n}</div>`).join('');
+
+  const dayMap   = buildDayMap(viewYear, viewMonth);
+  const firstDow = new Date(viewYear, viewMonth, 1).getDay();
+  const lastDay  = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const today    = todayKey();
+
+  let html = '';
+  for (let i = 0; i < firstDow; i++) html += '<div class="cal-empty"></div>';
+
+  for (let d = 1; d <= lastDay; d++) {
+    const key  = ymd(viewYear, viewMonth, d);
+    const info = dayMap[key];
+    const dow  = (firstDow + d - 1) % 7;
+
+    let cls = 'cal-cell';
+    if (dow === 0) cls += ' sun';
+    if (dow === 6) cls += ' sat';
+    if (key === today) cls += ' today';
+    if (key === selectedDate) cls += ' selected';
+    if (info && info.pl > 0) cls += ' has-plus';
+    if (info && info.pl < 0) cls += ' has-minus';
+
+    const pl = info ? `<span class="cal-pl ${plClass(info.pl)}">${fmtShort(info.pl)}</span>` : '';
+    html += `<button type="button" class="${cls}" onclick="selectDate('${key}')" aria-label="${viewMonth + 1}月${d}日">` +
+            `<span class="cal-day">${d}</span>${pl}</button>`;
+  }
+  document.getElementById('calGrid').innerHTML = html;
+}
+
+function selectDate(key) {
+  selectedDate = key;
+  renderCalendar();
+  renderDayPanel();
+}
+
+function changeMonth(delta) {
+  const d = new Date(viewYear, viewMonth + delta, 1);
+  viewYear = d.getFullYear();
+  viewMonth = d.getMonth();
+  // 選択日：今月なら今日、他の月は1日
+  const now = new Date();
+  selectedDate = (viewYear === now.getFullYear() && viewMonth === now.getMonth())
+    ? todayKey() : ymd(viewYear, viewMonth, 1);
   renderAll();
 }
-function setRange(r) {
-  range = r;
-  document.querySelectorAll('[data-range]').forEach(b => b.classList.toggle('active', +b.dataset.range === r));
-  renderChart();
-}
-function moveMonth(d) { const x = new Date(vy, vm + d, 1); vy = x.getFullYear(); vm = x.getMonth(); renderAll(); }
-
-/* ---- 描画 ---- */
-function renderAll() {
-  const total = sum(monthRecs(), bal);
-  $('monthTitle').textContent = vy + '年' + (vm + 1) + '月';
-  $('monthTotal').innerHTML = '<span class="' + cls(total) + '">' + sgn(total) + '</span>';
-  if (tab === 'cal') renderCal();
-  if (tab === 'list') renderList();
-  if (tab === 'stats') renderStats();
-  if (tab === 'chart') renderChart();
+function goToday() {
+  const now = new Date();
+  viewYear = now.getFullYear();
+  viewMonth = now.getMonth();
+  selectedDate = todayKey();
+  renderAll();
 }
 
-function rowHtml(r, showDate) {
-  const meta = '投資 ' + yen(r.inv) + '／回収 ' + yen(r.rec) + '／回収率 ' + rate(r.rec, r.inv) +
-    (r.tag ? '／#' + esc(r.tag) : '') + (r.memo ? '／' + esc(r.memo) : '');
-  return '<button class="rec-row" onclick="openSheet(\'' + r.id + '\')"><span><span class="rec-date">' +
-    (showDate ? r.date.replace(/-/g, '/') : '') + '</span><br><span class="rec-sub">' + meta +
-    '</span></span><span class="rec-bal ' + cls(bal(r)) + '">' + sgn(bal(r)) + '</span></button>';
+/* =====================================================
+   選択日パネル
+   ===================================================== */
+function tagName(kind, id) {
+  if (!id) return '';
+  const t = (kind === 'big' ? data.tagsBig : data.tagsSmall).find(x => x.id === id);
+  return t ? t.name : '';
 }
 
-function renderCal() {
-  const first = new Date(vy, vm, 1).getDay(), days = new Date(vy, vm + 1, 0).getDate();
-  const by = {}; monthRecs().forEach(r => by[r.date] = (by[r.date] || 0) + bal(r));
-  let h = ['日','月','火','水','木','金','土'].map(d => '<div class="cal-head">' + d + '</div>').join('');
-  for (let i = 0; i < first; i++) h += '<div></div>';
-  for (let d = 1; d <= days; d++) {
-    const k = vy + '-' + pad(vm + 1) + '-' + pad(d);
-    h += '<button class="cell' + (k === sel ? ' sel' : '') + (k === ymd(now) ? ' today' : '') + '" onclick="sel=\'' + k + '\';renderCal()">' + d +
-      (k in by ? '<small class="' + cls(by[k]) + '">' + Math.round(by[k]).toLocaleString() + '</small>' : '') + '</button>';
+function renderDayPanel() {
+  const [y, m, d] = selectedDate.split('-').map(Number);
+  const dow = DOW_NAMES[new Date(y, m - 1, d).getDay()];
+  document.getElementById('dayTitle').textContent = `${m}月${d}日（${dow}）`;
+
+  const list = data.trades.filter(t => t.date === selectedDate);
+  const total = list.reduce((s, t) => s + calcPl(t), 0);
+  const totalEl = document.getElementById('dayTotal');
+  totalEl.textContent = list.length ? fmtSigned(total) + '円' : '';
+  totalEl.className = 'day-total ' + plClass(total);
+
+  if (!list.length) {
+    document.getElementById('dayList').innerHTML = '<div class="day-empty">この日の記録はありません</div>';
+    return;
   }
-  $('calGrid').innerHTML = h;
-  const day = records.filter(r => r.date === sel);
-  $('dayTitle').textContent = sel.replace(/-/g, '/') + '　' + sgn(sum(day, bal));
-  $('dayList').innerHTML = day.length ? day.map(r => rowHtml(r, false)).join('') : '<div class="empty">この日の記録はありません。「＋」で追加できます</div>';
+  document.getElementById('dayList').innerHTML = list.map(t => {
+    const pl = calcPl(t);
+    const chips = [tagName('big', t.bigId), tagName('small', t.smallId)]
+      .filter(Boolean).map(n => `<span class="chip">${esc(n)}</span>`).join('');
+    return `<button type="button" class="trade-item" onclick="openTradeSheet('${t.id}')">` +
+      `<span class="trade-main">` +
+        (chips ? `<span class="trade-tags">${chips}</span>` : '') +
+        `<span class="trade-amounts">投資 ${t.invest.toLocaleString('ja-JP')} → 回収 ${t.payout.toLocaleString('ja-JP')}</span>` +
+        (t.memo ? `<span class="trade-memo">${esc(t.memo)}</span>` : '') +
+      `</span>` +
+      `<span class="trade-pl ${plClass(pl)}">${fmtSigned(pl)}</span>` +
+    `</button>`;
+  }).join('');
 }
 
-function renderList() {
-  const q = $('searchBox').value.trim().toLowerCase();
-  const rs = monthRecs().filter(r => !q || (r.memo + ' ' + r.tag).toLowerCase().includes(q))
-    .sort((a, b) => b.date.localeCompare(a.date));
-  $('listCount').textContent = rs.length + '件（日付 降順）';
-  $('listBody').innerHTML = rs.length ? rs.map(r => rowHtml(r, true)).join('') : '<div class="empty">記録がありません</div>';
+/* =====================================================
+   シート共通（開閉・背景スクロール固定）
+   ===================================================== */
+function updateBodyLock() {
+  const open = document.querySelector('.sheet-overlay.show');
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+function closeOnOverlay(e, id) {
+  if (e.target !== document.getElementById(id)) return;
+  if (id === 'tagOverlay') closeTagSheet(); else closeTradeSheet();
+}
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (document.getElementById('tagOverlay').classList.contains('show')) closeTagSheet();
+  else if (document.getElementById('tradeOverlay').classList.contains('show')) closeTradeSheet();
+});
+
+/* =====================================================
+   取引の追加・編集・削除
+   ===================================================== */
+function openTradeSheet(id) {
+  const t = id ? data.trades.find(x => x.id === id) : null;
+  editingId = t ? t.id : null;
+
+  document.getElementById('tradeSheetTitle').textContent = t ? '取引を編集' : '取引を追加';
+  document.getElementById('fDate').value   = t ? t.date : selectedDate;
+  document.getElementById('fInvest').value = t && t.invest ? String(t.invest) : '';
+  document.getElementById('fPayout').value = t && t.payout ? String(t.payout) : '';
+  document.getElementById('fMemo').value   = t ? t.memo : '';
+  fillTagSelects(t ? t.bigId : '', t ? t.smallId : '');
+  document.getElementById('btnDeleteTrade').style.display = t ? 'block' : 'none';
+  document.getElementById('errorMsg').classList.remove('show');
+  updatePreview();
+
+  document.getElementById('tradeOverlay').classList.add('show');
+  updateBodyLock();
+}
+function closeTradeSheet() {
+  document.getElementById('tradeOverlay').classList.remove('show');
+  updateBodyLock();
 }
 
-function renderStats() {
-  const rs = monthRecs();
-  if (!rs.length) { $('paneStats').innerHTML = '<div class="empty">この月の記録がありません</div>'; return; }
-  const inv = rs.map(r => r.inv), rec = rs.map(r => r.rec), bl = rs.map(bal);
-  const I = a => a.reduce((s, x) => s + x, 0);
-  const row = (k, v, c) => '<div><span>' + k + '</span><b class="' + (c || '') + '">' + v + '</b></div>';
-  const block = (a, c) => row('合計', yen(I(a)), c) + row('最大', yen(Math.max(...a)), c) + row('最小', yen(Math.min(...a)), c) +
-    row('平均', yen(I(a) / a.length), c) + row('中央値', yen(median(a)), c);
-  const w = bl.filter(x => x > 0).length, l = bl.filter(x => x < 0).length;
-  $('paneStats').innerHTML =
-    '<div class="stat-h minus">投資</div><div class="stat-grid">' + block(inv, 'minus') + '</div>' +
-    '<div class="stat-h plus">回収</div><div class="stat-grid">' + block(rec, 'plus') + '</div>' +
-    '<div class="stat-h">成績</div><div class="stat-grid">' +
-    row('勝ち', w + '回') + row('負け', l + '回') + row('引き分け', (bl.length - w - l) + '回') + row('イベント数', bl.length + '件') +
-    row('勝率', (w / bl.length * 100).toFixed(2) + '%') + row('回収率', rate(I(rec), I(inv))) +
-    row('収支平均', sgn(I(bl) / bl.length), cls(I(bl))) + row('収支中央値', sgn(median(bl)), cls(median(bl))) + '</div>';
+// 入力中に損益をプレビュー
+function updatePreview() {
+  const inv = parseAmount(document.getElementById('fInvest').value);
+  const pay = parseAmount(document.getElementById('fPayout').value);
+  const el = document.getElementById('plPreview');
+  if (isNaN(inv) || isNaN(pay)) { el.innerHTML = '損益：—'; return; }
+  const pl = pay - inv;
+  el.innerHTML = `損益：<b class="${plClass(pl)}">${fmtSigned(pl)}円</b>`;
 }
 
-function renderChart() {
-  const t = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const labels = [], vals = [], used = [];
-  if (range === 12) {
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(t.getFullYear(), t.getMonth() - i, 1), k = d.getFullYear() + '-' + pad(d.getMonth() + 1);
-      const rs = records.filter(r => r.date.startsWith(k));
-      labels.push((d.getMonth() + 1) + '月'); vals.push(sum(rs, bal)); used.push(...rs);
-    }
-  } else {
-    for (let i = range - 1; i >= 0; i--) {
-      const d = new Date(t.getFullYear(), t.getMonth(), t.getDate() - i), rs = records.filter(r => r.date === ymd(d));
-      labels.push((d.getMonth() + 1) + '/' + d.getDate()); vals.push(sum(rs, bal)); used.push(...rs);
-    }
-  }
-  const total = sum(vals, x => x);
-  $('chartTotal').innerHTML = '<span class="' + cls(total) + '">' + sgn(total) + '</span>';
-  const max = Math.max(0, ...vals), min = Math.min(0, ...vals), span = (max - min) || 1, H = 100, top = 8;
-  const y0 = top + max / span * H, n = vals.length, bw = 320 / n, step = range === 30 ? 7 : 1;
-  let s = '<line x1="0" x2="320" y1="' + y0 + '" y2="' + y0 + '" stroke="var(--color-border-input)"/>';
-  vals.forEach((v, i) => {
-    const h = Math.abs(v) / span * H, y = v >= 0 ? y0 - h : y0;
-    if (v) s += '<rect x="' + (i * bw + bw * .2) + '" y="' + y + '" width="' + bw * .6 + '" height="' + Math.max(h, 1.5) +
-      '" rx="2" style="fill:var(' + (v > 0 ? '--color-plus' : '--color-minus') + ')"/>';
-    if (i % step === 0 || range === 7) s += '<text x="' + (i * bw + bw / 2) + '" y="132" text-anchor="middle">' + labels[i] + '</text>';
-  });
-  $('chartSvg').innerHTML = s;
-  const I = sum(used, r => r.inv), R = sum(used, r => r.rec), m = Math.max(I, R) || 1;
-  $('chartSum').innerHTML = '<div class="stat-grid" style="margin-top:12px">' +
-    '<div><span>合計投資</span><b class="minus">' + yen(I) + '</b></div><div><span>合計回収</span><b class="plus">' + yen(R) + '</b></div></div>' +
-    '<div class="bar2" style="width:' + I / m * 100 + '%;background:var(--color-minus)"></div>' +
-    '<div class="bar2" style="width:' + R / m * 100 + '%;background:var(--color-plus)"></div>';
+function saveTrade() {
+  const date = document.getElementById('fDate').value;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { showError('日付を入力してください'); return; }
+
+  const invest = parseAmount(document.getElementById('fInvest').value);
+  const payout = parseAmount(document.getElementById('fPayout').value);
+  if (isNaN(invest) || isNaN(payout)) { showError('金額は0以上の整数（半角数字）で入力してください'); return; }
+  if (invest === 0 && payout === 0) { showError('投資金額か回収金額のどちらかを入力してください'); return; }
+  if (invest > 1e12 || payout > 1e12) { showError('金額が大きすぎます'); return; }
+
+  const trade = {
+    id: editingId || uid(),
+    date, invest, payout,
+    bigId:   document.getElementById('fBig').value,
+    smallId: document.getElementById('fSmall').value,
+    memo:    document.getElementById('fMemo').value.trim().slice(0, 100),
+  };
+
+  const idx = data.trades.findIndex(x => x.id === trade.id);
+  if (idx >= 0) data.trades[idx] = trade; else data.trades.push(trade);
+
+  if (!saveData()) { showError('保存できませんでした（ブラウザの保存設定をご確認ください）'); return; }
+
+  // 保存した日付の月に移動して選択
+  const [y, m] = date.split('-').map(Number);
+  viewYear = y; viewMonth = m - 1; selectedDate = date;
+  closeTradeSheet();
+  renderAll();
 }
 
-/* ---- 追加／編集 ---- */
-function openSheet(id) {
-  editId = id || null;
-  const r = records.find(x => x.id === id);
-  $('sheetTitle').textContent = r ? '記録を編集' : '記録を追加';
-  $('fDate').value = r ? r.date : sel;
-  $('fInv').value = r ? r.inv : ''; $('fRec').value = r ? r.rec : '';
-  $('fTag').value = r ? r.tag : ''; $('fMemo').value = r ? r.memo : '';
-  $('btnDel').classList.toggle('hidden', !r);
-  $('errorMsg').classList.remove('show');
-  $('sheetOv').classList.add('show');
-}
-function closeSheet() { $('sheetOv').classList.remove('show'); }
-function saveRec() {
-  const date = $('fDate').value, inv = Number($('fInv').value || 0), rec = Number($('fRec').value || 0);
-  if (!date) return showError('日付を入力してください');
-  if (!isFinite(inv) || !isFinite(rec) || inv < 0 || rec < 0) return showError('金額は0以上の数字で入力してください');
-  if (inv === 0 && rec === 0) return showError('投資金額か回収金額のどちらかを入力してください');
-  const data = { date, inv, rec, tag: $('fTag').value.trim(), memo: $('fMemo').value.trim() };
-  if (editId) Object.assign(records.find(x => x.id === editId), data);
-  else records.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), ...data });
-  saveData(); sel = date; vy = +date.slice(0, 4); vm = +date.slice(5, 7) - 1;
-  closeSheet(); renderAll();
-}
-function deleteRec() {
-  if (!confirm('この記録を削除しますか？')) return;
-  records = records.filter(x => x.id !== editId); saveData(); closeSheet(); renderAll();
+function deleteTrade() {
+  if (!editingId) return;
+  if (!confirm('この取引を削除しますか？')) return;
+  data.trades = data.trades.filter(x => x.id !== editingId);
+  saveData();
+  closeTradeSheet();
+  renderAll();
 }
 
-/* ---- バックアップ（JSONをコピー／貼り付けで復元） ---- */
-function exportData() { navigator.clipboard.writeText(JSON.stringify(records)).then(() => alert('バックアップをコピーしました。メモ帳などに貼り付けて保管してください')); }
-function importData() {
-  const t = prompt('コピーしたバックアップを貼り付けてください（現在の記録は置き換わります）');
-  if (!t) return;
-  try {
-    const a = JSON.parse(t);
-    if (!Array.isArray(a) || a.some(r => !r.date || typeof r.inv !== 'number' || typeof r.rec !== 'number')) throw 0;
-    records = a.map(r => ({ id: r.id || Date.now().toString(36) + Math.random().toString(36).slice(2, 5), date: r.date, inv: r.inv, rec: r.rec, tag: r.tag || '', memo: r.memo || '' }));
-    saveData(); renderAll();
-  } catch (e) { alert('バックアップの形式が正しくありません'); }
+/* =====================================================
+   タグ（大／小）の管理
+   ===================================================== */
+// 取引フォームの2つのselectを再生成（引数は選択状態にするid）
+function fillTagSelects(bigId, smallId) {
+  const build = (list, sel) =>
+    '<option value="">（未選択）</option>' +
+    list.map(t => `<option value="${t.id}"${t.id === sel ? ' selected' : ''}>${esc(t.name)}</option>`).join('');
+  document.getElementById('fBig').innerHTML   = build(data.tagsBig, bigId);
+  document.getElementById('fSmall').innerHTML = build(data.tagsSmall, smallId);
 }
 
-// 初回描画（common.jsの初期化はrestoreInputsが空振りするため自前でも描画）
-document.addEventListener('DOMContentLoaded', renderAll);
+function currentTagList() { return tagKind === 'big' ? data.tagsBig : data.tagsSmall; }
+function setTagMsg(msg) {
+  const el = document.getElementById('tagError');
+  el.textContent = msg || '';
+  el.classList.toggle('show', !!msg);
+}
+
+function openTagSheet() {
+  setTagMsg('');
+  renderTagSheet();
+  document.getElementById('tagOverlay').classList.add('show');
+  updateBodyLock();
+}
+function closeTagSheet() {
+  document.getElementById('tagOverlay').classList.remove('show');
+  // 取引フォームの選択肢を最新化（選択中の値は維持。削除済みなら未選択に戻る）
+  fillTagSelects(document.getElementById('fBig').value, document.getElementById('fSmall').value);
+  updateBodyLock();
+}
+function setTagKind(kind) {
+  tagKind = kind;
+  setTagMsg('');
+  renderTagSheet();
+}
+
+function renderTagSheet() {
+  document.getElementById('tagKindBig').classList.toggle('active', tagKind === 'big');
+  document.getElementById('tagKindSmall').classList.toggle('active', tagKind === 'small');
+  document.getElementById('tagHint').textContent = tagKind === 'big'
+    ? '現物・信用・FX・CFDなど、取引の種類に使います。名前を直接書き換えると過去の取引にも反映されます。'
+    : '銘柄名・通貨ペアなどに使います。名前を直接書き換えると過去の取引にも反映されます。';
+  document.getElementById('tagNewName').value = '';
+
+  const list = currentTagList();
+  document.getElementById('tagList').innerHTML = list.length
+    ? list.map(t =>
+        `<div class="tag-row">` +
+          `<input type="text" value="${esc(t.name)}" maxlength="20" aria-label="タグ名" onchange="renameTag('${t.id}', this)">` +
+          `<button type="button" class="tag-del" onclick="deleteTag('${t.id}')">削除</button>` +
+        `</div>`).join('')
+    : '<div class="tag-empty">タグはまだありません。下から追加してください。</div>';
+}
+
+function isDupName(name, exceptId) {
+  return currentTagList().some(t => t.name === name && t.id !== exceptId);
+}
+
+function addTag() {
+  const input = document.getElementById('tagNewName');
+  const name = input.value.trim().slice(0, 20);
+  if (!name) { setTagMsg('タグ名を入力してください'); return; }
+  if (isDupName(name)) { setTagMsg('同じ名前のタグがあります'); return; }
+
+  const tag = { id: uid(), name };
+  currentTagList().push(tag);
+  saveData();
+  setTagMsg('');
+  renderTagSheet();
+  // 追加したタグを取引フォームで選択状態にしておく
+  if (tagKind === 'big') fillTagSelects(tag.id, document.getElementById('fSmall').value);
+  else fillTagSelects(document.getElementById('fBig').value, tag.id);
+}
+
+function renameTag(id, inputEl) {
+  const tag = currentTagList().find(t => t.id === id);
+  if (!tag) return;
+  const name = inputEl.value.trim().slice(0, 20);
+  if (!name) { inputEl.value = tag.name; setTagMsg('タグ名は空にできません'); return; }
+  if (isDupName(name, id)) { inputEl.value = tag.name; setTagMsg('同じ名前のタグがあります'); return; }
+  tag.name = name;
+  saveData();
+  setTagMsg('');
+  renderDayPanel(); // 一覧のタグ表示を更新
+}
+
+function deleteTag(id) {
+  const tag = currentTagList().find(t => t.id === id);
+  if (!tag) return;
+  const field = tagKind === 'big' ? 'bigId' : 'smallId';
+  const used = data.trades.filter(t => t[field] === id).length;
+  const msg = used > 0
+    ? `「${tag.name}」を削除しますか？\n使用中の取引${used}件は「未選択」になります。`
+    : `「${tag.name}」を削除しますか？`;
+  if (!confirm(msg)) return;
+
+  data.trades.forEach(t => { if (t[field] === id) t[field] = ''; });
+  if (tagKind === 'big') data.tagsBig = data.tagsBig.filter(t => t.id !== id);
+  else data.tagsSmall = data.tagsSmall.filter(t => t.id !== id);
+  saveData();
+  setTagMsg('');
+  renderTagSheet();
+  renderDayPanel();
+}
+
+// IME変換確定のEnterでは追加しない
+function onTagNewKey(e) {
+  if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); addTag(); }
+}
+
+/* =====================================================
+   初期化（common.jsのDOMContentLoadedの後に実行される）
+   ===================================================== */
+document.addEventListener('DOMContentLoaded', () => {
+  setView('calendar');
+  renderAll();
+});
 </script>
 </body>
 </html>
