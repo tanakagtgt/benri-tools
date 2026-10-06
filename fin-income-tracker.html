@@ -42,6 +42,12 @@
   --pl-minus-bg: #fdecea;
   --color-sun:   #d93025;  /* カレンダーの日曜 */
   --color-sat:   #1a56db;  /* カレンダーの土曜 */
+  /* リスト画面専用：投資＝赤／回収＝青／損益はプラス青・マイナス赤
+     （カレンダーの--pl-plus(緑)とは別管理。揃えたい時は--list-plusを--pl-plusの値に合わせる） */
+  --color-invest: #d93025;
+  --color-payout: #1a56db;
+  --list-plus:    #1a56db;
+  --list-minus:   #d93025;
 }
 html[data-theme="dark"] {
   --pl-plus:     #5fd68a;
@@ -50,6 +56,10 @@ html[data-theme="dark"] {
   --pl-minus-bg: #2c1616;
   --color-sun:   #ff8a80;
   --color-sat:   #7ca6ff;
+  --color-invest: #ff8a80;
+  --color-payout: #7ca6ff;
+  --list-plus:    #7ca6ff;
+  --list-minus:   #ff8a80;
 }
 
 /* 損益の文字色（共通） */
@@ -313,6 +323,74 @@ html[data-theme="dark"] {
 .tag-add .btn-action { padding: 0 14px; }
 .tag-empty { font-size: 13px; color: var(--color-text-muted); padding: 4px 0 8px; }
 
+/* ---------- 月ナビ（全画面共通バー） ---------- */
+.month-bar .month-nav { border-bottom: none; }
+
+/* ---------- リスト画面 ---------- */
+.l-plus  { color: var(--list-plus); }
+.l-minus { color: var(--list-minus); }
+.l-zero  { color: var(--color-text); }
+
+/* サマリー（月間損益＋取引件数） */
+.l-head { padding: 12px 14px 4px; font-size: 16px; font-weight: 700; color: var(--color-text); }
+.l-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 6px 12px 12px; }
+.l-sum-item {
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-btn);
+  padding: 10px 6px;
+  text-align: center;
+}
+.l-sum-label { font-size: 11px; color: var(--color-text-muted); margin-bottom: 2px; }
+.l-sum-num { font-size: 20px; font-weight: 700; color: var(--color-text); }
+.l-note { font-size: 11px; color: var(--color-text-muted); text-align: center; padding: 0 12px 10px; }
+.l-note:empty { display: none; }
+
+/* 検索・絞り込み・並び替え（縦幅を詰めて1画面に収める） */
+.l-controls { padding: 12px; }
+.l-controls .input-group { margin-bottom: 8px; }
+.l-controls .input-grid { margin-bottom: 8px; gap: 10px; }
+.l-controls .input-grid .input-group { margin-bottom: 0; }
+.l-sort-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
+.l-sort-row .input-group { margin-bottom: 0; }
+.l-sort-row .btn-action { padding: 0 14px; }
+
+/* 取引1件＝1カード */
+.l-item {
+  width: 100%;
+  display: block;
+  text-align: left;
+  font-family: 'BIZ UDPGothic', sans-serif;
+  color: var(--color-text);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.l-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.l-date { font-size: 13px; font-weight: 700; }
+.l-tags { text-align: right; }
+.l-vals { display: grid; grid-template-columns: 1.1fr 1.1fr 0.8fr 1fr; gap: 4px; }
+.l-cell { display: block; min-width: 0; }
+.l-label { display: block; font-size: 10px; color: var(--color-text-muted); margin-bottom: 1px; }
+.l-val { display: block; font-size: clamp(11px, 3.5vw, 14px); font-weight: 700; white-space: nowrap; }
+.l-invest { color: var(--color-invest); }
+.l-payout { color: var(--color-payout); }
+.l-rate   { color: var(--color-text); }
+.l-memo {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.l-empty { text-align: center; font-size: 13px; color: var(--color-text-muted); padding: 24px 0; }
+
 /* ---------- 解説文 ---------- */
 .tool-desc {
   background: var(--color-card);
@@ -342,17 +420,21 @@ html[data-theme="dark"] {
   <!-- 画面切替タブ（JSのVIEWSから生成） -->
   <nav class="view-tabs" id="viewTabs" aria-label="表示切替"></nav>
 
+  <!-- ===== 月ナビ（全画面共通：カレンダー／リスト等で同じ月を見る） ===== -->
+  <div class="result-panel month-bar">
+    <div class="month-nav">
+      <button type="button" class="month-btn" onclick="changeMonth(-1)" aria-label="前の月">◀</button>
+      <div class="month-label" id="monthLabel">—</div>
+      <button type="button" class="month-btn" onclick="goToday()">今日</button>
+      <button type="button" class="month-btn" onclick="changeMonth(1)" aria-label="次の月">▶</button>
+    </div>
+  </div>
+
   <!-- ===== 画面：カレンダー ===== -->
   <section class="view" id="view-calendar">
 
-    <!-- 月ナビ＋月間サマリー -->
+    <!-- 月間サマリー -->
     <div class="result-panel">
-      <div class="month-nav">
-        <button type="button" class="month-btn" onclick="changeMonth(-1)" aria-label="前の月">◀</button>
-        <div class="month-label" id="monthLabel">—</div>
-        <button type="button" class="month-btn" onclick="goToday()">今日</button>
-        <button type="button" class="month-btn" onclick="changeMonth(1)" aria-label="次の月">▶</button>
-      </div>
       <div class="result-main">
         <div class="result-label">月間損益</div>
         <div><span class="result-number placeholder" id="resultNum">—</span><span class="result-unit">円</span></div>
@@ -384,12 +466,58 @@ html[data-theme="dark"] {
     </div>
 
   </section>
-  <!-- 将来：<section class="view" id="view-list" hidden> など同じ形式で追加 -->
+  <!-- ===== 画面：リスト ===== -->
+  <section class="view" id="view-list" hidden>
+
+    <!-- サマリー（絞り込み後の結果に連動） -->
+    <div class="result-panel">
+      <div class="l-head" id="lTitle">—</div>
+      <div class="l-summary">
+        <div class="l-sum-item"><div class="l-sum-label" id="lSumLabel">月間損益</div><div class="l-sum-num" id="lSumPl">—</div></div>
+        <div class="l-sum-item"><div class="l-sum-label">取引件数</div><div class="l-sum-num" id="lSumCount">—</div></div>
+      </div>
+      <div class="l-note" id="lNote"></div>
+    </div>
+
+    <!-- メモ検索・タグ絞り込み・並び替え -->
+    <div class="card l-controls">
+      <div class="input-group">
+        <label for="lSearch">メモ検索</label>
+        <input type="text" id="lSearch" placeholder="メモのキーワード" autocomplete="off" oninput="renderListRows()">
+      </div>
+      <div class="input-grid">
+        <div class="input-group">
+          <label for="lBig">大タグ</label>
+          <select id="lBig" onchange="renderListRows()"></select>
+        </div>
+        <div class="input-group">
+          <label for="lSmall">小タグ</label>
+          <select id="lSmall" onchange="renderListRows()"></select>
+        </div>
+      </div>
+      <div class="l-sort-row">
+        <div class="input-group">
+          <label for="lSort">並び替え</label>
+          <select id="lSort" onchange="renderListRows()">
+            <option value="date">日付</option>
+            <option value="invest">投資金額</option>
+            <option value="payout">回収金額</option>
+          </select>
+        </div>
+        <button type="button" class="btn-action" id="lDirBtn" onclick="toggleListDir()">降順 ▼</button>
+      </div>
+    </div>
+
+    <!-- 取引カード（JSで生成） -->
+    <div id="listRows"></div>
+
+  </section>
+  <!-- 将来：収支表・チャート・設定も <section class="view" id="view-◯◯" hidden> で同じ形式で追加 -->
 
   <!-- ===== 解説文（AdSense有用性対策） ===== -->
   <section class="tool-desc">
     <h2>収支記録カレンダーの使い方</h2>
-    <p>カレンダーの日付をタップして「この日の取引を追加」を押し、投資金額と回収金額を入力します。大タグ（現物・信用・FX・CFDなど）と小タグ（銘柄名など）は「タグを管理」から自由に追加・名前変更・削除できます。各日付の下にはその日の損益が表示され、上のサマリーには月間の損益・投資合計・回収合計・回収率が出ます。</p>
+    <p>カレンダーの日付をタップして「この日の取引を追加」を押し、投資金額と回収金額を入力します。大タグ（現物・信用・FX・CFDなど）と小タグ（銘柄名など）は「タグを管理」から自由に追加・名前変更・削除できます。各日付の下にはその日の損益が表示され、上のサマリーには月間の損益・投資合計・回収合計・回収率が出ます。「リスト」タブでは、その月の取引をタグ絞り込み・メモ検索・並び替えしながら一覧で確認できます。</p>
     <h3>こんな方に</h3>
     <p>株・FX・CFDなど複数の取引を日々ざっくり記録し、月ごとの成績や勝ち負けの偏りを振り返りたい個人投資家向けです。</p>
     <h3>計算の考え方</h3>
@@ -524,7 +652,7 @@ const DOW_NAMES = ['日', '月', '火', '水', '木', '金', '土'];
 // 画面切替の定義。ready:true にして renderers に関数を足せば画面が増やせる
 const VIEWS = [
   { id: 'calendar', label: '📅 カレンダー', ready: true  },
-  { id: 'list',     label: '📋 リスト',     ready: false },
+  { id: 'list',     label: '📋 リスト',     ready: true  },
   { id: 'table',    label: '📊 収支表',     ready: false },
   { id: 'chart',    label: '📈 チャート',   ready: false },
   { id: 'settings', label: '⚙️ 設定',       ready: false },
@@ -693,6 +821,8 @@ function setView(id) {
 function renderAll() {
   renderCalendar();
   renderDayPanel();
+  renderListFilters();
+  renderListRows();
   calculate(); // common.js：月間サマリーを再計算して表示
 }
 
@@ -790,6 +920,107 @@ function renderDayPanel() {
         (t.memo ? `<span class="trade-memo">${esc(t.memo)}</span>` : '') +
       `</span>` +
       `<span class="trade-pl ${plClass(pl)}">${fmtSigned(pl)}</span>` +
+    `</button>`;
+  }).join('');
+}
+
+/* =====================================================
+   リスト画面
+   ・表示対象は「いま表示中の月」の取引（カレンダーと同じ月）
+   ・絞り込み条件（検索・タグ・並び替え）の状態は画面上のinput/selectがそのまま持つ
+   ・サマリー（損益・件数）は絞り込み後の結果に連動する
+   ===================================================== */
+let listDir = 'desc'; // 並び順：'desc'（降順）／'asc'（昇順）
+
+// タグ変更時に、一覧系の表示をまとめて更新
+function refreshTagViews() {
+  renderDayPanel();
+  renderListFilters();
+  renderListRows();
+}
+
+// 大タグ・小タグの絞り込みselectを再生成（選択中の値は維持。消えたタグなら「すべて」に戻す）
+function renderListFilters() {
+  const make = (el, list) => {
+    const cur = el.value;
+    const ok = cur === '' || cur === '__none__' || list.some(t => t.id === cur);
+    const sel = ok ? cur : '';
+    el.innerHTML =
+      `<option value=""${sel === '' ? ' selected' : ''}>すべて</option>` +
+      `<option value="__none__"${sel === '__none__' ? ' selected' : ''}>（未選択）</option>` +
+      list.map(t => `<option value="${t.id}"${t.id === sel ? ' selected' : ''}>${esc(t.name)}</option>`).join('');
+  };
+  make(document.getElementById('lBig'), data.tagsBig);
+  make(document.getElementById('lSmall'), data.tagsSmall);
+}
+
+function toggleListDir() {
+  listDir = listDir === 'desc' ? 'asc' : 'desc';
+  document.getElementById('lDirBtn').textContent = listDir === 'desc' ? '降順 ▼' : '昇順 ▲';
+  renderListRows();
+}
+
+// リスト画面の損益色（プラス青／マイナス赤）
+function listClass(n) { return n > 0 ? 'l-plus' : n < 0 ? 'l-minus' : 'l-zero'; }
+
+function renderListRows() {
+  document.getElementById('lTitle').textContent = `${viewYear}年${viewMonth + 1}月分`;
+
+  // ① その月の取引
+  const prefix = `${viewYear}-${pad2(viewMonth + 1)}-`;
+  const monthTrades = data.trades.filter(t => t.date.startsWith(prefix));
+
+  // ② 絞り込み（大タグ・小タグ・メモ）
+  const big   = document.getElementById('lBig').value;
+  const small = document.getElementById('lSmall').value;
+  const q     = document.getElementById('lSearch').value.trim().toLowerCase();
+  const tagMatch = (sel, id) => sel === '' || (sel === '__none__' ? !id : id === sel);
+  const list = monthTrades.filter(t =>
+    tagMatch(big, t.bigId) && tagMatch(small, t.smallId) &&
+    (!q || (t.memo || '').toLowerCase().includes(q))
+  );
+  const filtered = big !== '' || small !== '' || q !== '';
+
+  // ③ 並び替え（同値のときは登録順で安定させる）
+  const key   = document.getElementById('lSort').value; // date / invest / payout
+  const dir   = listDir === 'desc' ? -1 : 1;
+  const order = new Map(data.trades.map((t, i) => [t.id, i]));
+  list.sort((a, b) => {
+    let c = key === 'date' ? a.date.localeCompare(b.date) : a[key] - b[key];
+    if (c === 0) c = order.get(a.id) - order.get(b.id);
+    return c * dir;
+  });
+
+  // ④ サマリー
+  const total = list.reduce((s, t) => s + calcPl(t), 0);
+  document.getElementById('lSumLabel').textContent = filtered ? '絞り込み後の損益' : '月間損益';
+  const plEl = document.getElementById('lSumPl');
+  plEl.textContent = fmtSigned(total) + '円';
+  plEl.className = 'l-sum-num ' + listClass(total);
+  document.getElementById('lSumCount').textContent = list.length.toLocaleString('ja-JP') + '件';
+  document.getElementById('lNote').textContent = filtered ? `絞り込み中（この月の全${monthTrades.length}件中）` : '';
+
+  // ⑤ 取引カード
+  const rows = document.getElementById('listRows');
+  if (!list.length) {
+    rows.innerHTML = `<div class="l-empty">${monthTrades.length ? '条件に一致する取引がありません' : 'この月の記録はまだありません'}</div>`;
+    return;
+  }
+  rows.innerHTML = list.map(t => {
+    const pl = calcPl(t);
+    const [y, m, d] = t.date.split('-').map(Number);
+    const rate = t.invest > 0 ? (t.payout / t.invest * 100).toFixed(1) + '%' : '—';
+    const chips = [tagName('big', t.bigId), tagName('small', t.smallId)]
+      .filter(Boolean).map(n => `<span class="chip">${esc(n)}</span>`).join('');
+    return `<button type="button" class="l-item" onclick="openTradeSheet('${t.id}')">` +
+      `<span class="l-top"><span class="l-date">${y}年${m}月${d}日</span><span class="l-tags">${chips}</span></span>` +
+      `<span class="l-vals">` +
+        `<span class="l-cell"><span class="l-label">投資金額</span><span class="l-val l-invest">${t.invest.toLocaleString('ja-JP')}</span></span>` +
+        `<span class="l-cell"><span class="l-label">回収金額</span><span class="l-val l-payout">${t.payout.toLocaleString('ja-JP')}</span></span>` +
+        `<span class="l-cell"><span class="l-label">回収率</span><span class="l-val l-rate">${rate}</span></span>` +
+        `<span class="l-cell"><span class="l-label">損益</span><span class="l-val ${listClass(pl)}">${fmtSigned(pl)}</span></span>` +
+      `</span>` +
+      (t.memo ? `<span class="l-memo">${esc(t.memo)}</span>` : '') +
     `</button>`;
   }).join('');
 }
@@ -969,7 +1200,7 @@ function renameTag(id, inputEl) {
   tag.name = name;
   saveData();
   setTagMsg('');
-  renderDayPanel(); // 一覧のタグ表示を更新
+  refreshTagViews(); // 一覧（日別・リスト）のタグ表示を更新
 }
 
 function deleteTag(id) {
@@ -988,7 +1219,7 @@ function deleteTag(id) {
   saveData();
   setTagMsg('');
   renderTagSheet();
-  renderDayPanel();
+  refreshTagViews();
 }
 
 // IME変換確定のEnterでは追加しない
