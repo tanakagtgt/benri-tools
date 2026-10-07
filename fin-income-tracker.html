@@ -426,6 +426,26 @@ html[data-theme="dark"] {
 .t-tile-label { font-size: 11px; color: var(--color-text-muted); margin-bottom: 2px; }
 .t-tile-num { font-size: 18px; font-weight: 700; color: var(--color-text); }
 
+/* ---------- データ管理バー（JSON保存／読込）util-task-managerと同じ形式 ---------- */
+.data-bar { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 6px; }
+.btn-data {
+  flex: 1;
+  min-width: 100px;
+  background: var(--color-card);
+  border: 1px solid var(--color-primary-border);
+  border-radius: var(--radius-input);
+  color: var(--color-primary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.btn-data:hover { background: var(--color-primary-bg); }
+#importFileInput { display: none; }
+.data-note { font-size: 11px; color: var(--color-text-muted); line-height: 1.7; margin-bottom: 14px; }
+
 /* ---------- 解説文 ---------- */
 .tool-desc {
   background: var(--color-card);
@@ -579,6 +599,14 @@ html[data-theme="dark"] {
   </section>
   <!-- 将来：チャート・設定も <section class="view" id="view-◯◯" hidden> で同じ形式で追加 -->
 
+  <!-- ===== データ管理：JSONバックアップ／読込（全画面共通。将来は【設定】画面へ移動予定） ===== -->
+  <div class="data-bar">
+    <button type="button" class="btn-data" onclick="exportJson()">⬇️ JSONで保存</button>
+    <button type="button" class="btn-data" onclick="document.getElementById('importFileInput').click()">⬆️ JSON読込</button>
+    <input type="file" id="importFileInput" accept="application/json,.json" onchange="importJson(event)">
+  </div>
+  <p class="data-note">読み込みは今のデータに追加されます（同じ取引は重複せずスキップ）。機種変更前や定期的なバックアップにどうぞ。</p>
+
   <!-- ===== 解説文（AdSense有用性対策） ===== -->
   <section class="tool-desc">
     <h2>収支記録カレンダーの使い方</h2>
@@ -588,7 +616,7 @@ html[data-theme="dark"] {
     <h3>計算の考え方</h3>
     <p>損益は「回収金額−投資金額」で、プラスが利益、マイナスが損失です。回収率は「回収合計÷投資合計×100」。同じ日に複数の取引がある場合は合算して表示します。収支表の勝率は「勝ち取引数÷全取引数」、平均・中央値は取引1件あたりで、小数点以下は四捨五入です。手数料や税金は自動では含まれないため、反映したい場合は回収金額に含めるかメモに残してください。</p>
     <h3>データの保存について</h3>
-    <p>記録はこの端末のブラウザ内（localStorage）にのみ保存され、サーバーには送信されません。ブラウザのデータ削除や端末の変更で消えるため、ご注意ください。</p>
+    <p>記録はこの端末のブラウザ内（localStorage）にのみ保存され、サーバーには送信されません。ブラウザのデータ削除や端末の変更で消えるため、「JSONで保存」で定期的にバックアップしてください。「JSON読込」で復元・移行できます。</p>
     <h3>ご注意</h3>
     <p>本ツールは記録と簡易集計のためのもので、将来の運用成果を保証するものではありません。投資判断はご自身の責任で行ってください。税務申告には証券会社の取引報告書などをご確認ください。</p>
   </section>
@@ -1182,6 +1210,132 @@ function renderTable() {
     tile('回収率', payRate) +
     tile('収支中央値', pl ? fmtSigned(pl.med) + '円' : '—', pl ? listClass(pl.med) : '');
 }
+
+/* ===== BACKUP_START =====
+   データのバックアップ（JSON保存／読込）
+   ・保存：タグと取引を1つのJSONファイルに書き出す
+   ・読込：今のデータに「統合」する（置き換えはしない）
+       - 同じidの取引は重複とみなしてスキップ
+         （同じ端末の古いバックアップを読んでも二重計上されない。金額系なのでここは慎重に）
+       - タグは「id一致 → 同名タグ → 新規追加」の順で対応づける
+   ・idはHTML属性に埋め込むため、英数字・_・- のみ許可。それ以外は新しいidを振り直す（XSS対策）
+   ・保存に失敗したら元のデータに戻す
+   ===================================================== */
+const SAFE_ID = /^[A-Za-z0-9_-]{1,40}$/;
+
+function isValidDateKey(s) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return false;
+  const y = +m[1], mo = +m[2], d = +m[3];
+  const dt = new Date(y, mo - 1, d);
+  return dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === d;
+}
+
+function exportJson() {
+  const payload = {
+    app: CURRENT_TOOL_ID,
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    tagsBig: data.tagsBig,
+    tagsSmall: data.tagsSmall,
+    trades: data.trades,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${CURRENT_TOOL_ID}_${todayKey()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// 読み込んだJSONを今のデータに統合。成功すると件数の集計を返す
+function mergeImported(d) {
+  if (!d || typeof d !== 'object' || !Array.isArray(d.trades)) throw new Error('invalid format');
+
+  const next = JSON.parse(JSON.stringify(data)); // 失敗時に元へ戻せるよう、コピー上で統合する
+  const res = { tagsAdded: 0, added: 0, dup: 0, bad: 0 };
+
+  // タグ：読み込んだid → 統合後のid の対応表を作る
+  const mapTags = (impList, curList) => {
+    const map = Object.create(null); // '__proto__' 等のキーでも安全なように
+    (Array.isArray(impList) ? impList : []).forEach(t => {
+      if (!t || typeof t.name !== 'string' || typeof t.id !== 'string') return;
+      const name = t.name.trim().slice(0, 20);
+      if (!name) return;
+      const same = curList.find(x => x.id === t.id) || curList.find(x => x.name === name);
+      if (same) { map[t.id] = same.id; return; }
+      const id = SAFE_ID.test(t.id) ? t.id : uid();
+      curList.push({ id, name });
+      map[t.id] = id;
+      res.tagsAdded++;
+    });
+    return map;
+  };
+  const bigMap   = mapTags(d.tagsBig, next.tagsBig);
+  const smallMap = mapTags(d.tagsSmall, next.tagsSmall);
+
+  // 取引：検証 → 重複スキップ → 追加
+  const ids = new Set(next.trades.map(t => t.id));
+  d.trades.forEach(t => {
+    const ok = t && typeof t.date === 'string' && isValidDateKey(t.date) &&
+      Number.isInteger(t.invest) && Number.isInteger(t.payout) &&
+      t.invest >= 0 && t.payout >= 0 && t.invest <= 1e12 && t.payout <= 1e12;
+    if (!ok) { res.bad++; return; }
+
+    const id = (typeof t.id === 'string' && SAFE_ID.test(t.id)) ? t.id : uid();
+    if (ids.has(id)) { res.dup++; return; }
+    ids.add(id);
+
+    next.trades.push({
+      id,
+      date: t.date,
+      invest: t.invest,
+      payout: t.payout,
+      bigId:   (typeof t.bigId === 'string' && bigMap[t.bigId]) || '',
+      smallId: (typeof t.smallId === 'string' && smallMap[t.smallId]) || '',
+      memo: typeof t.memo === 'string' ? t.memo.slice(0, 100) : '',
+    });
+    res.added++;
+  });
+
+  const prev = data;
+  data = next;
+  if (!saveData()) { data = prev; throw new Error('save failed'); }
+  return res;
+}
+
+function importJson(event) {
+  const input = event.target;
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) {
+    alert('ファイルが大きすぎます（10MBまで）');
+    input.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const res = mergeImported(JSON.parse(e.target.result));
+      renderAll();
+      const lines = [`取引${res.added}件を読み込みました`];
+      if (res.tagsAdded) lines.push(`タグ${res.tagsAdded}件を追加しました`);
+      if (res.dup) lines.push(`重複${res.dup}件はスキップしました`);
+      if (res.bad) lines.push(`形式が不正な${res.bad}件は読み込めませんでした`);
+      alert(lines.join('\n'));
+    } catch (err) {
+      alert('JSONファイルの読み込みに失敗しました。このツールで保存したファイルか確認してください。');
+    } finally {
+      input.value = ''; // 同じファイルを連続で選べるようリセット
+    }
+  };
+  reader.readAsText(file);
+}
+/* ===== BACKUP_END ===== */
 
 /* =====================================================
    シート共通（開閉・背景スクロール固定）
