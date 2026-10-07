@@ -391,6 +391,41 @@ html[data-theme="dark"] {
 }
 .l-empty { text-align: center; font-size: 13px; color: var(--color-text-muted); padding: 24px 0; }
 
+/* ---------- 収支表画面 ---------- */
+.t-title { font-size: 16px; font-weight: 700; color: var(--color-text); margin-bottom: 8px; }
+.t-card { padding: 12px; }
+
+/* 左右2分割（左＝投資／右＝回収） */
+.t-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.t-col { min-width: 0; }
+.t-col + .t-col { border-left: 1px solid var(--color-border); padding-left: 12px; }
+.t-col-head { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.t-col-head.t-invest { color: var(--color-invest); }
+.t-col-head.t-payout { color: var(--color-payout); }
+.t-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.t-row:last-child { border-bottom: none; }
+.t-label { font-size: 11px; color: var(--color-text-muted); white-space: nowrap; }
+.t-val { font-size: clamp(11px, 3.4vw, 14px); font-weight: 700; color: var(--color-text); white-space: nowrap; }
+
+/* 下段：2列×4行のタイル */
+.t-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.t-tile {
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-btn);
+  padding: 9px 6px;
+  text-align: center;
+}
+.t-tile-label { font-size: 11px; color: var(--color-text-muted); margin-bottom: 2px; }
+.t-tile-num { font-size: 18px; font-weight: 700; color: var(--color-text); }
+
 /* ---------- 解説文 ---------- */
 .tool-desc {
   background: var(--color-card);
@@ -512,16 +547,46 @@ html[data-theme="dark"] {
     <div id="listRows"></div>
 
   </section>
-  <!-- 将来：収支表・チャート・設定も <section class="view" id="view-◯◯" hidden> で同じ形式で追加 -->
+  <!-- ===== 画面：収支表 ===== -->
+  <section class="view" id="view-table" hidden>
+
+    <!-- タイトル＋タグ絞り込み -->
+    <div class="card l-controls">
+      <div class="t-title" id="tTitle">—</div>
+      <div class="input-grid">
+        <div class="input-group">
+          <label for="sBig">大タグ</label>
+          <select id="sBig" onchange="renderTable()"></select>
+        </div>
+        <div class="input-group">
+          <label for="sSmall">小タグ</label>
+          <select id="sSmall" onchange="renderTable()"></select>
+        </div>
+      </div>
+      <div class="l-note" id="tNote"></div>
+    </div>
+
+    <!-- 左右2分割：投資／回収の 合計・最大・最小・平均・中央値 -->
+    <div class="card t-card">
+      <div class="t-cols" id="tCols"></div>
+    </div>
+
+    <!-- 勝ち負け・勝率・回収率など -->
+    <div class="card t-card">
+      <div class="t-tiles" id="tTiles"></div>
+    </div>
+
+  </section>
+  <!-- 将来：チャート・設定も <section class="view" id="view-◯◯" hidden> で同じ形式で追加 -->
 
   <!-- ===== 解説文（AdSense有用性対策） ===== -->
   <section class="tool-desc">
     <h2>収支記録カレンダーの使い方</h2>
-    <p>カレンダーの日付をタップして「この日の取引を追加」を押し、投資金額と回収金額を入力します。大タグ（現物・信用・FX・CFDなど）と小タグ（銘柄名など）は「タグを管理」から自由に追加・名前変更・削除できます。各日付の下にはその日の損益が表示され、上のサマリーには月間の損益・投資合計・回収合計・回収率が出ます。「リスト」タブでは、その月の取引をタグ絞り込み・メモ検索・並び替えしながら一覧で確認できます。</p>
+    <p>カレンダーの日付をタップして「この日の取引を追加」を押し、投資金額と回収金額を入力します。大タグ（現物・信用・FX・CFDなど）と小タグ（銘柄名など）は「タグを管理」から自由に追加・名前変更・削除できます。各日付の下にはその日の損益が表示され、上のサマリーには月間の損益・投資合計・回収合計・回収率が出ます。「リスト」タブは一覧・検索・並び替え、「収支表」タブは合計・平均・勝率などの集計をタグ別に確認できます。</p>
     <h3>こんな方に</h3>
     <p>株・FX・CFDなど複数の取引を日々ざっくり記録し、月ごとの成績や勝ち負けの偏りを振り返りたい個人投資家向けです。</p>
     <h3>計算の考え方</h3>
-    <p>損益は「回収金額−投資金額」で、プラスが利益、マイナスが損失です。回収率は「回収合計÷投資合計×100」。同じ日に複数の取引がある場合は合算して表示します。手数料や税金は自動では含まれないため、反映したい場合は回収金額に含めるかメモに残してください。</p>
+    <p>損益は「回収金額−投資金額」で、プラスが利益、マイナスが損失です。回収率は「回収合計÷投資合計×100」。同じ日に複数の取引がある場合は合算して表示します。収支表の勝率は「勝ち取引数÷全取引数」、平均・中央値は取引1件あたりで、小数点以下は四捨五入です。手数料や税金は自動では含まれないため、反映したい場合は回収金額に含めるかメモに残してください。</p>
     <h3>データの保存について</h3>
     <p>記録はこの端末のブラウザ内（localStorage）にのみ保存され、サーバーには送信されません。ブラウザのデータ削除や端末の変更で消えるため、ご注意ください。</p>
     <h3>ご注意</h3>
@@ -653,7 +718,7 @@ const DOW_NAMES = ['日', '月', '火', '水', '木', '金', '土'];
 const VIEWS = [
   { id: 'calendar', label: '📅 カレンダー', ready: true  },
   { id: 'list',     label: '📋 リスト',     ready: true  },
-  { id: 'table',    label: '📊 収支表',     ready: false },
+  { id: 'table',    label: '📊 収支表',     ready: true  },
   { id: 'chart',    label: '📈 チャート',   ready: false },
   { id: 'settings', label: '⚙️ 設定',       ready: false },
 ];
@@ -823,6 +888,8 @@ function renderAll() {
   renderDayPanel();
   renderListFilters();
   renderListRows();
+  renderTableFilters();
+  renderTable();
   calculate(); // common.js：月間サマリーを再計算して表示
 }
 
@@ -937,21 +1004,26 @@ function refreshTagViews() {
   renderDayPanel();
   renderListFilters();
   renderListRows();
+  renderTableFilters();
+  renderTable();
 }
 
 // 大タグ・小タグの絞り込みselectを再生成（選択中の値は維持。消えたタグなら「すべて」に戻す）
 function renderListFilters() {
-  const make = (el, list) => {
-    const cur = el.value;
-    const ok = cur === '' || cur === '__none__' || list.some(t => t.id === cur);
-    const sel = ok ? cur : '';
-    el.innerHTML =
-      `<option value=""${sel === '' ? ' selected' : ''}>すべて</option>` +
-      `<option value="__none__"${sel === '__none__' ? ' selected' : ''}>（未選択）</option>` +
-      list.map(t => `<option value="${t.id}"${t.id === sel ? ' selected' : ''}>${esc(t.name)}</option>`).join('');
-  };
-  make(document.getElementById('lBig'), data.tagsBig);
-  make(document.getElementById('lSmall'), data.tagsSmall);
+  fillFilterSelect(document.getElementById('lBig'), data.tagsBig);
+  fillFilterSelect(document.getElementById('lSmall'), data.tagsSmall);
+}
+
+// 絞り込み用selectを再生成（リスト・収支表で共用）
+// 選択中の値は維持。消えたタグが選ばれていた場合は「すべて」に戻す
+function fillFilterSelect(el, list) {
+  const cur = el.value;
+  const ok = cur === '' || cur === '__none__' || list.some(t => t.id === cur);
+  const sel = ok ? cur : '';
+  el.innerHTML =
+    `<option value=""${sel === '' ? ' selected' : ''}>すべて</option>` +
+    `<option value="__none__"${sel === '__none__' ? ' selected' : ''}>（未選択）</option>` +
+    list.map(t => `<option value="${t.id}"${t.id === sel ? ' selected' : ''}>${esc(t.name)}</option>`).join('');
 }
 
 function toggleListDir() {
@@ -1023,6 +1095,92 @@ function renderListRows() {
       (t.memo ? `<span class="l-memo">${esc(t.memo)}</span>` : '') +
     `</button>`;
   }).join('');
+}
+
+/* =====================================================
+   収支表画面
+   ・対象：いま表示中の月の取引（カレンダー・リストと同じ月）を大タグ・小タグで絞り込み
+   ・集計の単位は「取引1件」。勝ち＝損益>0／負け＝損益<0／引き分け＝損益0
+   ・勝率＝勝ち回数÷取引数（引き分けも分母に含む）
+   ・平均・中央値の小数点以下は四捨五入
+   ===================================================== */
+function renderTableFilters() {
+  fillFilterSelect(document.getElementById('sBig'), data.tagsBig);
+  fillFilterSelect(document.getElementById('sSmall'), data.tagsSmall);
+}
+
+function matchTag(sel, id) { return sel === '' || (sel === '__none__' ? !id : id === sel); }
+
+function median(arr) {
+  const s = arr.slice().sort((a, b) => a - b);
+  const mid = Math.floor(s.length / 2);
+  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+}
+
+// 合計・最大・最小・平均・中央値。0件ならnull
+function calcStats(vals) {
+  if (!vals.length) return null;
+  const sum = vals.reduce((a, b) => a + b, 0);
+  return {
+    sum,
+    max: vals.reduce((a, b) => Math.max(a, b)),
+    min: vals.reduce((a, b) => Math.min(a, b)),
+    avg: Math.round(sum / vals.length),
+    med: Math.round(median(vals)),
+  };
+}
+
+function renderTable() {
+  document.getElementById('tTitle').textContent = `${viewYear}年${viewMonth + 1}月分の収支表`;
+
+  // ① その月の取引 → ② タグで絞り込み
+  const prefix = `${viewYear}-${pad2(viewMonth + 1)}-`;
+  const monthTrades = data.trades.filter(t => t.date.startsWith(prefix));
+  const big   = document.getElementById('sBig').value;
+  const small = document.getElementById('sSmall').value;
+  const list  = monthTrades.filter(t => matchTag(big, t.bigId) && matchTag(small, t.smallId));
+  const filtered = big !== '' || small !== '';
+
+  document.getElementById('tNote').textContent = filtered
+    ? `絞り込み中（この月の全${monthTrades.length}件中）`
+    : (monthTrades.length ? '' : 'この月の記録はまだありません');
+
+  // ③ 集計
+  const inv = calcStats(list.map(t => t.invest));
+  const pay = calcStats(list.map(t => t.payout));
+  const pls = list.map(calcPl);
+  const pl  = calcStats(pls);
+  const n      = list.length;
+  const wins   = pls.filter(v => v > 0).length;
+  const losses = pls.filter(v => v < 0).length;
+  const draws  = n - wins - losses;
+
+  // ④ 左右2分割（投資／回収）
+  const col = (cls, title, s) => {
+    const items = [['合計', 'sum'], ['最大', 'max'], ['最小', 'min'], ['平均', 'avg'], ['中央値', 'med']];
+    return `<div class="t-col"><div class="t-col-head ${cls}">${title}</div>` +
+      items.map(([label, k]) =>
+        `<div class="t-row"><span class="t-label">${label}</span>` +
+        `<span class="t-val">${s ? s[k].toLocaleString('ja-JP') : '—'}</span></div>`).join('') +
+      `</div>`;
+  };
+  document.getElementById('tCols').innerHTML =
+    col('t-invest', '投資（円）', inv) + col('t-payout', '回収（円）', pay);
+
+  // ⑤ 下段タイル（並びは 勝ち|負け／引き分け|取引数／勝率|収支平均／回収率|収支中央値）
+  const tile = (label, text, cls) =>
+    `<div class="t-tile"><div class="t-tile-label">${label}</div><div class="t-tile-num ${cls || ''}">${text}</div></div>`;
+  const winRate = n ? (wins / n * 100).toFixed(1) + '%' : '—';
+  const payRate = inv && inv.sum > 0 ? (pay.sum / inv.sum * 100).toFixed(1) + '%' : '—';
+  document.getElementById('tTiles').innerHTML =
+    tile('勝ち回数', wins + '回', 'l-plus') +
+    tile('負け回数', losses + '回', 'l-minus') +
+    tile('引き分け回数', draws + '回') +
+    tile('取引数', n + '件') +
+    tile('勝率', winRate) +
+    tile('収支平均', pl ? fmtSigned(pl.avg) + '円' : '—', pl ? listClass(pl.avg) : '') +
+    tile('回収率', payRate) +
+    tile('収支中央値', pl ? fmtSigned(pl.med) + '円' : '—', pl ? listClass(pl.med) : '');
 }
 
 /* =====================================================
