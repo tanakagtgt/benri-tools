@@ -446,6 +446,25 @@ html[data-theme="dark"] {
 #importFileInput { display: none; }
 .data-note { font-size: 11px; color: var(--color-text-muted); line-height: 1.7; margin-bottom: 14px; }
 
+/* ---------- チャート画面（インラインSVGの棒グラフ） ---------- */
+.c-toggle { margin-bottom: 8px; }
+.c-toggle .toggle-btn { font-size: 13px; padding: 8px 4px; }
+.c-summary { font-size: 12px; color: var(--color-text-sub); line-height: 1.7; margin-bottom: 8px; }
+.c-box { width: 100%; -webkit-tap-highlight-color: transparent; }
+.c-box svg { display: block; width: 100%; height: auto; }
+.c-axis  { fill: var(--color-text-muted); font-size: 9px; }
+.c-grid  { stroke: var(--color-border); stroke-width: 1; }
+.c-zero  { stroke: var(--color-border-input); stroke-width: 1.2; }
+.c-ref   { stroke: var(--color-text-muted); stroke-width: 1; stroke-dasharray: 4 3; }
+.c-hit   { fill: transparent; pointer-events: all; cursor: pointer; }   /* 1本ごとのタップ領域 */
+.c-hit.sel { fill: var(--color-primary-bg); }
+.c-bar   { pointer-events: none; }
+.c-pos   { fill: var(--list-plus); }     /* プラス（回収率なら100%以上）＝青 */
+.c-neg   { fill: var(--list-minus); }    /* マイナス（回収率なら100%未満）＝赤 */
+.c-neu   { fill: var(--color-primary); } /* 取引数 */
+.c-empty { fill: var(--color-text-muted); font-size: 12px; text-anchor: middle; }
+.c-detail { font-size: 12px; color: var(--color-text-sub); line-height: 1.7; margin-top: 8px; min-height: 3.4em; }
+
 /* ---------- 解説文 ---------- */
 .tool-desc {
   background: var(--color-card);
@@ -597,7 +616,42 @@ html[data-theme="dark"] {
     </div>
 
   </section>
-  <!-- 将来：チャート・設定も <section class="view" id="view-◯◯" hidden> で同じ形式で追加 -->
+  <!-- ===== 画面：チャート ===== -->
+  <section class="view" id="view-chart" hidden>
+
+    <!-- 指標・期間の切替＋タグ絞り込み -->
+    <div class="card l-controls">
+      <div class="toggle-wrap c-toggle" id="cMetric">
+        <button type="button" class="toggle-btn" data-v="pl" onclick="setChartMetric('pl')">損益</button>
+        <button type="button" class="toggle-btn" data-v="count" onclick="setChartMetric('count')">取引数</button>
+        <button type="button" class="toggle-btn" data-v="rate" onclick="setChartMetric('rate')">回収率</button>
+      </div>
+      <div class="toggle-wrap c-toggle" id="cPeriod">
+        <button type="button" class="toggle-btn" data-v="d7" onclick="setChartPeriod('d7')">7日間</button>
+        <button type="button" class="toggle-btn" data-v="d30" onclick="setChartPeriod('d30')">30日間</button>
+        <button type="button" class="toggle-btn" data-v="m12" onclick="setChartPeriod('m12')">12ヶ月間</button>
+      </div>
+      <div class="input-grid">
+        <div class="input-group">
+          <label for="cBig">大タグ</label>
+          <select id="cBig" onchange="onChartFilterChange()"></select>
+        </div>
+        <div class="input-group">
+          <label for="cSmall">小タグ</label>
+          <select id="cSmall" onchange="onChartFilterChange()"></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- グラフ本体（期間合計・棒タップの詳細つき） -->
+    <div class="card t-card">
+      <div class="c-summary" id="cSummary"></div>
+      <div class="c-box" id="cBox"></div>
+      <div class="c-detail" id="cDetail"></div>
+    </div>
+
+  </section>
+  <!-- 将来：設定も <section class="view" id="view-◯◯" hidden> で同じ形式で追加 -->
 
   <!-- ===== データ管理：JSONバックアップ／読込（全画面共通。将来は【設定】画面へ移動予定） ===== -->
   <div class="data-bar">
@@ -610,7 +664,7 @@ html[data-theme="dark"] {
   <!-- ===== 解説文（AdSense有用性対策） ===== -->
   <section class="tool-desc">
     <h2>収支記録カレンダーの使い方</h2>
-    <p>カレンダーの日付をタップして「この日の取引を追加」を押し、投資金額と回収金額を入力します。大タグ（現物・信用・FX・CFDなど）と小タグ（銘柄名など）は「タグを管理」から自由に追加・名前変更・削除できます。各日付の下にはその日の損益が表示され、上のサマリーには月間の損益・投資合計・回収合計・回収率が出ます。「リスト」タブは一覧・検索・並び替え、「収支表」タブは合計・平均・勝率などの集計をタグ別に確認できます。</p>
+    <p>カレンダーの日付をタップして「この日の取引を追加」を押し、投資金額と回収金額を入力します。大タグ（現物・信用・FX・CFDなど）と小タグ（銘柄名など）は「タグを管理」から自由に追加・名前変更・削除できます。各日付の下にはその日の損益が表示され、上のサマリーには月間の損益・投資合計・回収合計・回収率が出ます。「リスト」タブは一覧・検索・並び替え、「収支表」タブは合計・平均・勝率などの集計、「チャート」タブは損益・取引数・回収率の推移を棒グラフで、いずれもタグ別に確認できます。</p>
     <h3>こんな方に</h3>
     <p>株・FX・CFDなど複数の取引を日々ざっくり記録し、月ごとの成績や勝ち負けの偏りを振り返りたい個人投資家向けです。</p>
     <h3>計算の考え方</h3>
@@ -747,7 +801,7 @@ const VIEWS = [
   { id: 'calendar', label: '📅 カレンダー', ready: true  },
   { id: 'list',     label: '📋 リスト',     ready: true  },
   { id: 'table',    label: '📊 収支表',     ready: true  },
-  { id: 'chart',    label: '📈 チャート',   ready: false },
+  { id: 'chart',    label: '📈 チャート',   ready: true  },
   { id: 'settings', label: '⚙️ 設定',       ready: false },
 ];
 
@@ -902,8 +956,13 @@ function renderTabs() {
     `${v.ready ? '' : ' disabled title="準備中"'} onclick="setView('${v.id}')">${v.label}</button>`
   ).join('');
 }
+// 月ナビ（月単位の画面用）を隠す画面。チャートは「今日から過去N日／12ヶ月」基準なので月ナビは不要
+const VIEWS_WITHOUT_MONTH_BAR = ['chart', 'settings'];
+
 function setView(id) {
   currentView = id;
+  document.querySelector('.month-bar').hidden = VIEWS_WITHOUT_MONTH_BAR.includes(id);
+  if (id === 'chart') renderChart(); // 非表示中は幅が取れないので、表示した時に描き直す
   document.querySelectorAll('.view').forEach(el => { el.hidden = el.id !== 'view-' + id; });
   renderTabs();
 }
@@ -918,6 +977,8 @@ function renderAll() {
   renderListRows();
   renderTableFilters();
   renderTable();
+  renderChartFilters();
+  renderChart();
   calculate(); // common.js：月間サマリーを再計算して表示
 }
 
@@ -1034,6 +1095,8 @@ function refreshTagViews() {
   renderListRows();
   renderTableFilters();
   renderTable();
+  renderChartFilters();
+  renderChart();
 }
 
 // 大タグ・小タグの絞り込みselectを再生成（選択中の値は維持。消えたタグなら「すべて」に戻す）
@@ -1210,6 +1273,198 @@ function renderTable() {
     tile('回収率', payRate) +
     tile('収支中央値', pl ? fmtSigned(pl.med) + '円' : '—', pl ? listClass(pl.med) : '');
 }
+
+/* ===== CHART_START =====
+   チャート画面
+   ・棒グラフはライブラリを使わず、インラインSVGで描画（ダーク対応・追加読込なし）
+   ・期間は「今日」基準：7日間／30日間＝日別、12ヶ月間＝月別（今月を含む直近12か月）
+   ・指標：損益（Σ回収−Σ投資）／取引数／回収率（Σ回収÷Σ投資。投資0の区間は棒なし）
+   ・大タグ・小タグで絞り込み。棒をタップすると、その区間の詳細を下に表示
+   ===================================================== */
+let chartMetric = 'pl';    // 'pl' | 'count' | 'rate'
+let chartPeriod = 'd30';   // 'd7' | 'd30' | 'm12'
+let chartSel    = null;    // タップで選択中の棒（区間index）
+
+const CHART_METRICS = { pl: '損益', count: '取引数', rate: '回収率' };
+const CHART_PERIODS = { d7: '過去7日間', d30: '過去30日間', m12: '過去12ヶ月間' };
+
+function renderChartFilters() {
+  fillFilterSelect(document.getElementById('cBig'), data.tagsBig);
+  fillFilterSelect(document.getElementById('cSmall'), data.tagsSmall);
+}
+function setChartMetric(v) { chartMetric = v; renderChart(); }
+function setChartPeriod(v) { chartPeriod = v; chartSel = null; renderChart(); }
+function onChartFilterChange() { chartSel = null; renderChart(); }
+function selectChartBar(i) { chartSel = (chartSel === i) ? null : i; renderChart(); } // 同じ棒を再タップで解除
+
+function syncChartButtons() {
+  document.querySelectorAll('#cMetric .toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.v === chartMetric));
+  document.querySelectorAll('#cPeriod .toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.v === chartPeriod));
+}
+
+// 横軸の区間（左＝古い、右＝今日／今月）
+function buildChartBuckets() {
+  const now = new Date();
+  const out = [];
+  if (chartPeriod === 'm12') {
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      out.push({
+        key:   `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`,
+        label: `${d.getMonth() + 1}月`,
+        full:  `${d.getFullYear()}年${d.getMonth() + 1}月`,
+      });
+    }
+  } else {
+    const days = chartPeriod === 'd7' ? 7 : 30;
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      out.push({
+        key:   ymd(d.getFullYear(), d.getMonth(), d.getDate()),
+        label: `${d.getMonth() + 1}/${d.getDate()}`,
+        full:  `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日（${DOW_NAMES[d.getDay()]}）`,
+      });
+    }
+  }
+  return out;
+}
+
+// 区間ごとに集計（タグ絞り込みを反映）
+function chartData() {
+  const big   = document.getElementById('cBig').value;
+  const small = document.getElementById('cSmall').value;
+  const monthly = chartPeriod === 'm12';
+  const buckets = buildChartBuckets();
+  const idx = new Map(buckets.map((b, i) => [b.key, i]));
+  buckets.forEach(b => { b.invest = 0; b.payout = 0; b.count = 0; });
+
+  data.trades.forEach(t => {
+    if (!matchTag(big, t.bigId) || !matchTag(small, t.smallId)) return;
+    const i = idx.get(monthly ? t.date.slice(0, 7) : t.date);
+    if (i === undefined) return; // 期間外（古い・未来日）は対象外
+    const b = buckets[i];
+    b.invest += t.invest; b.payout += t.payout; b.count++;
+  });
+  buckets.forEach(b => {
+    b.pl = b.payout - b.invest;
+    b.rate = b.invest > 0 ? b.payout / b.invest * 100 : null; // 投資0は回収率なし
+  });
+  return buckets;
+}
+
+function chartValue(b) { return chartMetric === 'pl' ? b.pl : chartMetric === 'count' ? b.count : b.rate; }
+
+// 縦軸のキリのいい目盛り（0を必ず含める）
+function niceScale(lo, hi, ticks, integer) {
+  if (hi <= lo) hi = lo + 1;
+  const rough = (hi - lo) / ticks;
+  const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+  const norm = rough / mag;
+  let step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag;
+  if (integer) step = Math.max(1, Math.ceil(step));
+  return { min: Math.floor(lo / step) * step, max: Math.ceil(hi / step) * step, step };
+}
+
+function fmtAxis(v) {
+  if (chartMetric === 'rate') return Math.round(v) + '%';
+  if (chartMetric === 'count') return String(Math.round(v));
+  const abs = Math.abs(v);
+  const sign = v < 0 ? '−' : '';
+  if (abs >= 10000) return sign + (abs / 10000).toFixed(1).replace(/\.0$/, '') + '万';
+  return sign + abs.toLocaleString('ja-JP');
+}
+
+function fmtRate(r) { return r === null ? '—' : r.toFixed(1) + '%'; }
+
+function renderChart() {
+  syncChartButtons();
+  const buckets = chartData();
+  const n = buckets.length;
+  const hasData = buckets.some(b => b.count > 0);
+  if (chartSel !== null && chartSel >= n) chartSel = null;
+
+  // ---- 描画サイズ（コンテナ幅に合わせる。非表示中は幅0なので仮の幅） ----
+  const box = document.getElementById('cBox');
+  const W = Math.max(280, Math.min(600, box.clientWidth || 340));
+  const H = 220;
+  const L = 46, R = 8, T = 10, B = 24;
+  const pw = W - L - R, ph = H - T - B;
+
+  // ---- 縦軸 ----
+  const nums = buckets.map(chartValue).filter(v => v !== null);
+  let lo = Math.min(0, ...nums);
+  let hi = Math.max(0, ...nums);
+  if (chartMetric === 'rate') hi = Math.max(hi, 100); // 100%の基準線が入るように
+  const sc = niceScale(lo, hi, 4, chartMetric !== 'rate');
+  const y = v => T + (sc.max - v) / (sc.max - sc.min) * ph;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${CHART_METRICS[chartMetric]}の棒グラフ（${CHART_PERIODS[chartPeriod]}）">`;
+
+  // 目盛り線＋左ラベル
+  const steps = Math.round((sc.max - sc.min) / sc.step);
+  for (let i = 0; i <= steps; i++) {
+    const v = sc.min + i * sc.step;
+    const yy = y(v);
+    svg += `<line class="${v === 0 ? 'c-zero' : 'c-grid'}" x1="${L}" x2="${W - R}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}"/>`;
+    svg += `<text class="c-axis" x="${L - 5}" y="${(yy + 3).toFixed(1)}" text-anchor="end">${fmtAxis(v)}</text>`;
+  }
+
+  // 棒（＋タップ領域・横軸ラベル）
+  const cw = pw / n;
+  const bw = Math.max(3, Math.min(28, cw * 0.62));
+  const y0 = y(0);
+  buckets.forEach((b, i) => {
+    const cx = L + cw * i + cw / 2;
+    svg += `<rect class="c-hit${i === chartSel ? ' sel' : ''}" x="${(L + cw * i).toFixed(1)}" y="${T}" width="${cw.toFixed(1)}" height="${ph}" onclick="selectChartBar(${i})"/>`;
+
+    const v = chartValue(b);
+    if (v !== null && v !== 0) {
+      const yv = y(v);
+      const top = v > 0 ? yv : y0;
+      const h = Math.max(1, Math.abs(yv - y0));
+      const cls = chartMetric === 'count' ? 'c-neu'
+                : (chartMetric === 'rate' ? (v >= 100 ? 'c-pos' : 'c-neg') : (v > 0 ? 'c-pos' : 'c-neg'));
+      svg += `<rect class="c-bar ${cls}" x="${(cx - bw / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="1.5"/>`;
+    }
+
+    // 横軸ラベル：12個以下は全部、30日間は5本おき（右端＝今日を必ず表示）
+    if (n <= 12 || (n - 1 - i) % 5 === 0) {
+      svg += `<text class="c-axis" x="${cx.toFixed(1)}" y="${H - 8}" text-anchor="middle">${b.label}</text>`;
+    }
+  });
+
+  // 回収率の100%基準線
+  if (chartMetric === 'rate') {
+    const y100 = y(100).toFixed(1);
+    svg += `<line class="c-ref" x1="${L}" x2="${W - R}" y1="${y100}" y2="${y100}"/>`;
+  }
+  if (!hasData) svg += `<text class="c-empty" x="${W / 2}" y="${T + ph / 2}">この期間の記録はありません</text>`;
+  svg += '</svg>';
+  box.innerHTML = svg;
+
+  // ---- 期間合計 ----
+  const tInv = buckets.reduce((s, b) => s + b.invest, 0);
+  const tPay = buckets.reduce((s, b) => s + b.payout, 0);
+  const tCnt = buckets.reduce((s, b) => s + b.count, 0);
+  document.getElementById('cSummary').innerHTML =
+    `${CHART_PERIODS[chartPeriod]}の合計：損益 <b class="${listClass(tPay - tInv)}">${fmtSigned(tPay - tInv)}円</b>` +
+    ` ／ ${tCnt}件 ／ 回収率 ${fmtRate(tInv > 0 ? tPay / tInv * 100 : null)}`;
+
+  // ---- 棒タップの詳細 ----
+  const det = document.getElementById('cDetail');
+  if (chartSel === null) {
+    det.textContent = '棒をタップすると、その日（月）の詳細が表示されます';
+  } else {
+    const b = buckets[chartSel];
+    det.innerHTML = `<b>${b.full}</b><br>` +
+      `損益 <b class="${listClass(b.pl)}">${fmtSigned(b.pl)}円</b> ／ ${b.count}件 ／ 回収率 ${fmtRate(b.rate)}` +
+      `<br>投資 ${b.invest.toLocaleString('ja-JP')} → 回収 ${b.payout.toLocaleString('ja-JP')}`;
+  }
+}
+
+// 画面幅が変わったら（回転など）描き直す
+window.addEventListener('resize', () => { if (currentView === 'chart') renderChart(); });
+/* ===== CHART_END ===== */
 
 /* ===== BACKUP_START =====
    データのバックアップ（JSON保存／読込）
