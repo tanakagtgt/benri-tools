@@ -44,8 +44,20 @@
   --color-sat:   #1a56db;  /* カレンダーの土曜 */
   /* リスト画面専用：投資＝赤／回収＝青／損益はプラス青・マイナス赤
      （カレンダーの--pl-plus(緑)とは別管理。揃えたい時は--list-plusを--pl-plusの値に合わせる） */
-  --color-invest: #d93025;
-  --color-payout: #1a56db;
+  /* 表示変更で選べる標準10色（ライト用）。番号は JS の COLOR_PALETTE の並びと対応 */
+  --sw-1:  #d93025;  /* 赤 */
+  --sw-2:  #1a56db;  /* 青 */
+  --sw-3:  #0f9d58;  /* 緑 */
+  --sw-4:  #e8710a;  /* オレンジ */
+  --sw-5:  #c79100;  /* 黄 */
+  --sw-6:  #7c3aed;  /* 紫 */
+  --sw-7:  #d6336c;  /* ピンク */
+  --sw-8:  #0891b2;  /* 水色 */
+  --sw-9:  #8d5524;  /* 茶 */
+  --sw-10: #5f6368;  /* グレー */
+  /* 投資・回収の色（初期値＝赤・青）。ユーザーが変えると JS が #userColorStyle で上書きする */
+  --color-invest: var(--sw-1);
+  --color-payout: var(--sw-2);
   --list-plus:    #1a56db;
   --list-minus:   #d93025;
 }
@@ -56,8 +68,17 @@ html[data-theme="dark"] {
   --pl-minus-bg: #2c1616;
   --color-sun:   #ff8a80;
   --color-sat:   #7ca6ff;
-  --color-invest: #ff8a80;
-  --color-payout: #7ca6ff;
+  /* 標準10色（ダーク用）。--color-invest / --color-payout は :root 側の var(--sw-N) がそのまま効く */
+  --sw-1:  #ff8a80;
+  --sw-2:  #7ca6ff;
+  --sw-3:  #5fd68a;
+  --sw-4:  #ffa94d;
+  --sw-5:  #ffd54f;
+  --sw-6:  #b794f6;
+  --sw-7:  #ff8fb3;
+  --sw-8:  #4dd0e1;
+  --sw-9:  #d2a679;
+  --sw-10: #b0b5bd;
   --list-plus:    #7ca6ff;
   --list-minus:   #ff8a80;
 }
@@ -465,6 +486,32 @@ html[data-theme="dark"] {
 .c-empty { fill: var(--color-text-muted); font-size: 12px; text-anchor: middle; }
 .c-detail { font-size: 12px; color: var(--color-text-sub); line-height: 1.7; margin-top: 8px; min-height: 3.4em; }
 
+/* ---------- 設定画面 ---------- */
+.set-note { font-size: 12px; color: var(--color-text-sub); line-height: 1.7; margin-bottom: 10px; }
+.set-wide { width: 100%; }
+.set-sub { font-size: 12px; font-weight: 700; color: var(--color-text-sub); margin: 12px 0 6px; }
+.set-sub:first-of-type { margin-top: 0; }
+.set-sub b { color: var(--color-text); }
+.set-kind { font-size: 11px; color: var(--color-text-muted); margin: 10px 0 4px; }
+.set-kind:first-of-type { margin-top: 0; }
+.set-card .data-bar { margin: 0 0 4px; }
+
+/* 色の選択（10色のスウォッチ。色は --sw-N なのでダークモードでも自動で切り替わる） */
+.sw-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 4px; }
+.sw {
+  min-height: 44px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background: var(--c);
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+}
+.sw.on { border-color: var(--color-text); box-shadow: inset 0 0 0 2px var(--color-card); }
+.sw.on::after { content: '✓'; color: #fff; text-shadow: 0 0 3px rgba(0, 0, 0, 0.6); } /* 色の上に載せるチェックだけ白固定 */
+.set-preview { font-size: 13px; color: var(--color-text-sub); margin: 10px 0 14px; }
+.set-preview b { font-size: 15px; }
+
 /* ---------- 解説文 ---------- */
 .tool-desc {
   background: var(--color-card);
@@ -651,26 +698,76 @@ html[data-theme="dark"] {
     </div>
 
   </section>
-  <!-- 将来：設定も <section class="view" id="view-◯◯" hidden> で同じ形式で追加 -->
+  <!-- ===== 画面：設定 ===== -->
+  <section class="view" id="view-settings" hidden>
 
-  <!-- ===== データ管理：JSONバックアップ／読込（全画面共通。将来は【設定】画面へ移動予定） ===== -->
-  <div class="data-bar">
-    <button type="button" class="btn-data" onclick="exportJson()">⬇️ JSONで保存</button>
-    <button type="button" class="btn-data" onclick="document.getElementById('importFileInput').click()">⬆️ JSON読込</button>
-    <input type="file" id="importFileInput" accept="application/json,.json" onchange="importJson(event)">
-  </div>
-  <p class="data-note">読み込みは今のデータに追加されます（同じ取引は重複せずスキップ）。機種変更前や定期的なバックアップにどうぞ。</p>
+    <!-- タグ管理（取引追加画面の「タグを追加・編集・削除」と同じシートを開く） -->
+    <div class="card set-card">
+      <div class="section-title">🏷 タグ管理</div>
+      <p class="set-note">大タグ（現物・信用・FXなど）と小タグ（銘柄名など）を追加・名前変更・削除できます。取引追加画面の「タグを追加・編集・削除」と同じ画面です。</p>
+      <button type="button" class="btn-action set-wide" onclick="openTagSheet()">🏷 タグを追加・編集・削除</button>
+    </div>
+
+    <!-- データ管理（バックアップ） -->
+    <div class="card set-card">
+      <div class="section-title">💾 データ管理（バックアップ）</div>
+
+      <div class="set-kind">JSON：タグも含めた完全バックアップ（このツール用）</div>
+      <div class="data-bar">
+        <button type="button" class="btn-data" onclick="exportJson()">⬇️ JSONで書き出し</button>
+        <button type="button" class="btn-data" onclick="document.getElementById('importFileInput').click()">⬆️ JSON読み込み</button>
+      </div>
+
+      <div class="set-kind">CSV：Excelで開ける表形式（外部データの取り込みにも）</div>
+      <div class="data-bar">
+        <button type="button" class="btn-data" onclick="exportCsv()">⬇️ CSVで書き出し</button>
+        <button type="button" class="btn-data" onclick="document.getElementById('importCsvInput').click()">⬆️ CSV読み込み</button>
+      </div>
+
+      <input type="file" id="importFileInput" accept="application/json,.json" onchange="importJson(event)">
+      <input type="file" id="importCsvInput" accept=".csv,text/csv" onchange="importCsv(event)">
+
+      <p class="data-note">読み込みは今のデータに追加されます（同じ取引は重複せずスキップ）。CSVの列は「日付・投資金額・回収金額・損益・大タグ・小タグ・メモ」で、損益は読み込み時に無視（投資と回収から再計算）します。色や開始曜日などの表示設定はバックアップに含まれません。</p>
+    </div>
+
+    <!-- 表示変更 -->
+    <div class="card set-card">
+      <div class="section-title">🎨 表示変更</div>
+
+      <div class="set-sub">投資金額の色：<b id="setInvestName">—</b></div>
+      <div class="sw-grid" id="swInvest"></div>
+
+      <div class="set-sub">回収金額の色：<b id="setPayoutName">—</b></div>
+      <div class="sw-grid" id="swPayout"></div>
+
+      <div class="set-preview">プレビュー：投資 <b class="l-invest">1,000</b> → 回収 <b class="l-payout">1,200</b>（リスト・収支表に反映）</div>
+
+      <div class="input-group" style="margin-bottom:0">
+        <label for="setWeekStart">カレンダーの開始曜日</label>
+        <select id="setWeekStart" onchange="setWeekStart(this.value)">
+          <option value="0">日曜日</option>
+          <option value="1">月曜日</option>
+          <option value="2">火曜日</option>
+          <option value="3">水曜日</option>
+          <option value="4">木曜日</option>
+          <option value="5">金曜日</option>
+          <option value="6">土曜日</option>
+        </select>
+      </div>
+    </div>
+
+  </section>
 
   <!-- ===== 解説文（AdSense有用性対策） ===== -->
   <section class="tool-desc">
     <h2>収支記録カレンダーの使い方</h2>
-    <p>カレンダーの日付をタップして「この日の取引を追加」を押し、投資金額と回収金額を入力します。大タグ（現物・信用・FX・CFDなど）と小タグ（銘柄名など）は「タグを管理」から自由に追加・名前変更・削除できます。各日付の下にはその日の損益が表示され、上のサマリーには月間の損益・投資合計・回収合計・回収率が出ます。「リスト」タブは一覧・検索・並び替え、「収支表」タブは合計・平均・勝率などの集計、「チャート」タブは損益・取引数・回収率の推移を棒グラフで、いずれもタグ別に確認できます。</p>
+    <p>カレンダーの日付をタップして「この日の取引を追加」を押し、投資金額と回収金額を入力します。大タグ（現物・信用・FX・CFDなど）と小タグ（銘柄名など）は「タグを管理」から自由に追加・名前変更・削除できます。各日付の下にはその日の損益が表示され、上のサマリーには月間の損益・投資合計・回収合計・回収率が出ます。「リスト」タブは一覧・検索・並び替え、「収支表」タブは合計・平均・勝率などの集計、「チャート」タブは損益・取引数・回収率の推移を棒グラフで、いずれもタグ別に確認できます。「設定」タブではタグ管理、バックアップ、色やカレンダー開始曜日の変更ができます。</p>
     <h3>こんな方に</h3>
     <p>株・FX・CFDなど複数の取引を日々ざっくり記録し、月ごとの成績や勝ち負けの偏りを振り返りたい個人投資家向けです。</p>
     <h3>計算の考え方</h3>
     <p>損益は「回収金額−投資金額」で、プラスが利益、マイナスが損失です。回収率は「回収合計÷投資合計×100」。同じ日に複数の取引がある場合は合算して表示します。収支表の勝率は「勝ち取引数÷全取引数」、平均・中央値は取引1件あたりで、小数点以下は四捨五入です。手数料や税金は自動では含まれないため、反映したい場合は回収金額に含めるかメモに残してください。</p>
     <h3>データの保存について</h3>
-    <p>記録はこの端末のブラウザ内（localStorage）にのみ保存され、サーバーには送信されません。ブラウザのデータ削除や端末の変更で消えるため、「JSONで保存」で定期的にバックアップしてください。「JSON読込」で復元・移行できます。</p>
+    <p>記録はこの端末のブラウザ内（localStorage）にのみ保存され、サーバーには送信されません。ブラウザのデータ削除や端末の変更で消えるため、設定タブからJSONで定期的にバックアップしてください。JSONまたはCSVで読み込めば復元・移行でき、CSVはExcelでも開けます。</p>
     <h3>ご注意</h3>
     <p>本ツールは記録と簡易集計のためのもので、将来の運用成果を保証するものではありません。投資判断はご自身の責任で行ってください。税務申告には証券会社の取引報告書などをご確認ください。</p>
   </section>
@@ -802,11 +899,29 @@ const VIEWS = [
   { id: 'list',     label: '📋 リスト',     ready: true  },
   { id: 'table',    label: '📊 収支表',     ready: true  },
   { id: 'chart',    label: '📈 チャート',   ready: true  },
-  { id: 'settings', label: '⚙️ 設定',       ready: false },
+  { id: 'settings', label: '⚙️ 設定',       ready: true  },
+];
+
+/* ---------- 表示設定（色・開始曜日）の定数 ---------- */
+const SETTINGS_KEY = 'fin-income-tracker-settings-v2';
+// 並びは CSS の --sw-1〜--sw-10 と対応（id は保存用、nameは表示用）
+const COLOR_PALETTE = [
+  { id: 'red',    name: '赤' },
+  { id: 'blue',   name: '青' },
+  { id: 'green',  name: '緑' },
+  { id: 'orange', name: 'オレンジ' },
+  { id: 'yellow', name: '黄' },
+  { id: 'purple', name: '紫' },
+  { id: 'pink',   name: 'ピンク' },
+  { id: 'cyan',   name: '水色' },
+  { id: 'brown',  name: '茶' },
+  { id: 'gray',   name: 'グレー' },
 ];
 
 /* ---------- 状態 ---------- */
 let data         = loadData();
+let settings     = loadSettings();   // { investColor, payoutColor, weekStart }
+applyColors();                        // 画面が描かれる前に色を反映（初期表示のちらつき防止）
 let viewYear     = new Date().getFullYear();
 let viewMonth    = new Date().getMonth();   // 0〜11
 let selectedDate = todayKey();
@@ -817,7 +932,9 @@ let currentView  = 'calendar';
 /* =====================================================
    ユーティリティ
    ===================================================== */
-function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+// 同じミリ秒に大量発行（CSV一括読込など）しても被らないよう、連番を混ぜる
+let uidSeq = 0;
+function uid() { return Date.now().toString(36) + (uidSeq++).toString(36) + Math.random().toString(36).slice(2, 6); }
 function pad2(n) { return String(n).padStart(2, '0'); }
 function ymd(y, m, d) { return `${y}-${pad2(m + 1)}-${pad2(d)}`; }   // mは0始まり
 function todayKey() { const n = new Date(); return ymd(n.getFullYear(), n.getMonth(), n.getDate()); }
@@ -986,8 +1103,11 @@ function renderCalendar() {
   document.getElementById('monthLabel').textContent = `${viewYear}年${viewMonth + 1}月`;
 
   // 曜日ヘッダー
-  document.getElementById('calDow').innerHTML = DOW_NAMES.map((n, i) =>
-    `<div class="cal-dow${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${n}</div>`).join('');
+  // 設定の開始曜日から1週間分を並べる（色は曜日そのもので判定：日曜＝赤系・土曜＝青系）
+  document.getElementById('calDow').innerHTML = Array.from({ length: 7 }, (_, k) => {
+    const w = (settings.weekStart + k) % 7;
+    return `<div class="cal-dow${w === 0 ? ' sun' : w === 6 ? ' sat' : ''}">${DOW_NAMES[w]}</div>`;
+  }).join('');
 
   const dayMap   = buildDayMap(viewYear, viewMonth);
   const firstDow = new Date(viewYear, viewMonth, 1).getDay();
@@ -995,7 +1115,9 @@ function renderCalendar() {
   const today    = todayKey();
 
   let html = '';
-  for (let i = 0; i < firstDow; i++) html += '<div class="cal-empty"></div>';
+  // 月初の前に入れる空白セル数 ＝ 1日の曜日が、開始曜日から数えて何番目か
+  const offset = (firstDow - settings.weekStart + 7) % 7;
+  for (let i = 0; i < offset; i++) html += '<div class="cal-empty"></div>';
 
   for (let d = 1; d <= lastDay; d++) {
     const key  = ymd(viewYear, viewMonth, d);
@@ -1466,6 +1588,243 @@ function renderChart() {
 window.addEventListener('resize', () => { if (currentView === 'chart') renderChart(); });
 /* ===== CHART_END ===== */
 
+/* ===== SETTINGS_START =====
+   設定画面：表示変更（色・開始曜日）
+   ・保存先：localStorage（SETTINGS_KEY）。取引データとは別管理
+   ・色：標準10色から選ぶ。実体は CSS の --sw-N（ライト/ダーク別の値）で、
+     選択を <style id="userColorStyle"> の --color-invest / --color-payout に流し込む
+     → ダークモードに切り替えても自動で見やすい色になる
+   ・開始曜日：0（日）〜6（土）。カレンダーの並びだけが変わる（データには影響なし）
+   ===================================================== */
+function loadSettings() {
+  const def = { investColor: 'red', payoutColor: 'blue', weekStart: 0 };
+  try {
+    const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
+    if (!s || typeof s !== 'object') return def;
+    const okColor = id => COLOR_PALETTE.some(c => c.id === id);
+    return {
+      investColor: okColor(s.investColor) ? s.investColor : def.investColor,
+      payoutColor: okColor(s.payoutColor) ? s.payoutColor : def.payoutColor,
+      weekStart: Number.isInteger(s.weekStart) && s.weekStart >= 0 && s.weekStart <= 6 ? s.weekStart : def.weekStart,
+    };
+  } catch (e) {
+    return def;
+  }
+}
+function saveSettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* 保存できなくても表示は変える */ }
+}
+
+// 選んだ色を CSS変数に反映（var(--sw-N) を参照するので、テーマ切替にも自動追従）
+function applyColors() {
+  let el = document.getElementById('userColorStyle');
+  if (!el) {
+    el = document.createElement('style');
+    el.id = 'userColorStyle';
+    document.head.appendChild(el); // 後ろに置くことで、上のCSSの初期値より優先される
+  }
+  const sw = id => `var(--sw-${COLOR_PALETTE.findIndex(c => c.id === id) + 1})`;
+  el.textContent = `:root { --color-invest: ${sw(settings.investColor)}; --color-payout: ${sw(settings.payoutColor)}; }`;
+}
+
+function renderSettings() {
+  const grid = key => COLOR_PALETTE.map((c, i) =>
+    `<button type="button" class="sw${settings[key] === c.id ? ' on' : ''}" style="--c:var(--sw-${i + 1})"` +
+    ` aria-label="${c.name}" aria-pressed="${settings[key] === c.id}" title="${c.name}"` +
+    ` onclick="setColor('${key}','${c.id}')"></button>`).join('');
+  const name = id => COLOR_PALETTE.find(c => c.id === id).name;
+
+  document.getElementById('swInvest').innerHTML  = grid('investColor');
+  document.getElementById('swPayout').innerHTML  = grid('payoutColor');
+  document.getElementById('setInvestName').textContent = name(settings.investColor);
+  document.getElementById('setPayoutName').textContent = name(settings.payoutColor);
+  document.getElementById('setWeekStart').value = String(settings.weekStart);
+}
+
+function setColor(key, id) {
+  settings[key] = id;
+  saveSettings();
+  applyColors();
+  renderSettings();
+}
+function setWeekStart(v) {
+  settings.weekStart = Number(v);
+  saveSettings();
+  renderCalendar();
+}
+/* ===== SETTINGS_END ===== */
+
+/* ===== CSV_START =====
+   CSVの書き出し／読み込み
+   ・列：日付, 投資金額, 回収金額, 損益, 大タグ, 小タグ, メモ（損益は参考列。読み込み時は無視）
+   ・書き出しはUTF-8（BOM付き）。ExcelでそのままダブルクリックしてもOK
+   ・読み込みはUTF-8を優先し、読めなければShift_JIS（Excelで保存し直したCSV）として解釈
+   ・日付は 2026-10-07 / 2026/10/7 のどちらも可（Excelが書き換える形式に対応）
+   ・タグは名前で対応づけ（同名があればそれを使い、なければ新規追加）
+   ・重複判定：IDが無いので「日付・金額・タグ名・メモ」が全部同じ取引を同一とみなし、件数で比較
+       例）既存に同内容が1件、CSVに同内容が2件 → 1件スキップ・1件追加（正当な同内容2件を潰さない）
+   ===================================================== */
+const CSV_HEADER = ['日付', '投資金額', '回収金額', '損益', '大タグ', '小タグ', 'メモ'];
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// 統合結果を確定。保存に失敗したら元のデータに戻して例外を投げる
+function commitData(next) {
+  const prev = data;
+  data = next;
+  if (!saveData()) { data = prev; throw new Error('save failed'); }
+}
+
+function csvCell(v) {
+  const s = String(v);
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+function exportCsv() {
+  const sorted = data.trades.slice().sort((a, b) => a.date.localeCompare(b.date)); // 日付の古い順
+  const rows = [CSV_HEADER].concat(sorted.map(t =>
+    [t.date, t.invest, t.payout, calcPl(t), tagName('big', t.bigId), tagName('small', t.smallId), t.memo || '']));
+  const text = '\uFEFF' + rows.map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
+  downloadBlob(new Blob([text], { type: 'text/csv;charset=utf-8' }), `${CURRENT_TOOL_ID}_${todayKey()}.csv`);
+}
+
+// ダブルクォート・カンマ・セル内改行に対応した簡易CSVパーサ
+function parseCsv(text) {
+  const rows = [];
+  let row = [], cur = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { cur += '"'; i++; } else inQ = false;
+      } else cur += c;
+    } else if (c === '"') {
+      inQ = true;
+    } else if (c === ',') {
+      row.push(cur); cur = '';
+    } else if (c === '\n' || c === '\r') {
+      if (c === '\r' && text[i + 1] === '\n') i++;
+      row.push(cur); cur = '';
+      rows.push(row); row = [];
+    } else {
+      cur += c;
+    }
+  }
+  if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+  return rows;
+}
+
+function decodeCsvBuffer(buf) {
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(buf); // BOMは自動で除去される
+  } catch (e) {
+    return new TextDecoder('shift_jis').decode(buf);
+  }
+}
+
+// 2026-10-07 / 2026/10/7 / 2026/10/7 0:00 → 'YYYY-MM-DD'。不正ならnull
+function normalizeDateKey(s) {
+  const m = /^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})(?:\s.*)?$/.exec(String(s).trim());
+  if (!m) return null;
+  const key = `${m[1]}-${pad2(+m[2])}-${pad2(+m[3])}`;
+  return isValidDateKey(key) ? key : null;
+}
+
+function mergeCsv(rows) {
+  if (!rows.length) throw new Error('empty');
+  const head = rows[0].map(h => String(h).replace(/^\uFEFF/, '').trim());
+  const col = name => head.indexOf(name);
+  const cDate = col('日付'), cInv = col('投資金額'), cPay = col('回収金額');
+  const cBig = col('大タグ'), cSmall = col('小タグ'), cMemo = col('メモ');
+  if (cDate < 0 || cInv < 0 || cPay < 0) throw new Error('header'); // 必須列がない
+
+  const next = JSON.parse(JSON.stringify(data));
+  const res = { tagsAdded: 0, added: 0, dup: 0, bad: 0 };
+
+  // 既存取引の「内容キー → 件数」
+  const keyOf = (date, inv, pay, bn, sn, memo) => [date, inv, pay, bn, sn, memo].join('\u0001');
+  const stock = new Map();
+  data.trades.forEach(t => {
+    const k = keyOf(t.date, t.invest, t.payout, tagName('big', t.bigId), tagName('small', t.smallId), t.memo || '');
+    stock.set(k, (stock.get(k) || 0) + 1);
+  });
+
+  const ensureTag = (list, name) => {
+    if (!name) return '';
+    let t = list.find(x => x.name === name);
+    if (!t) { t = { id: uid(), name }; list.push(t); res.tagsAdded++; }
+    return t.id;
+  };
+  const cell = (r, c) => (c >= 0 && r[c] !== undefined) ? String(r[c]).trim() : '';
+
+  rows.slice(1).forEach(r => {
+    if (r.every(c => String(c).trim() === '')) return; // 空行は無視
+
+    const date = normalizeDateKey(cell(r, cDate));
+    const inv = parseAmount(cell(r, cInv));
+    const pay = parseAmount(cell(r, cPay));
+    if (!date || isNaN(inv) || isNaN(pay) || inv > 1e12 || pay > 1e12 || (inv === 0 && pay === 0)) { res.bad++; return; }
+
+    const bn = cell(r, cBig).slice(0, 20);
+    const sn = cell(r, cSmall).slice(0, 20);
+    const memo = cell(r, cMemo).slice(0, 100);
+
+    const k = keyOf(date, inv, pay, bn, sn, memo);
+    const left = stock.get(k) || 0;
+    if (left > 0) { stock.set(k, left - 1); res.dup++; return; }
+
+    next.trades.push({
+      id: uid(), date, invest: inv, payout: pay,
+      bigId: ensureTag(next.tagsBig, bn),
+      smallId: ensureTag(next.tagsSmall, sn),
+      memo,
+    });
+    res.added++;
+  });
+
+  commitData(next);
+  return res;
+}
+
+function importCsv(event) {
+  const input = event.target;
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) {
+    alert('ファイルが大きすぎます（10MBまで）');
+    input.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const res = mergeCsv(parseCsv(decodeCsvBuffer(e.target.result)));
+      renderAll();
+      const lines = [`取引${res.added}件を読み込みました`];
+      if (res.tagsAdded) lines.push(`タグ${res.tagsAdded}件を追加しました`);
+      if (res.dup) lines.push(`重複${res.dup}件はスキップしました`);
+      if (res.bad) lines.push(`日付や金額が不正な${res.bad}行は読み込めませんでした`);
+      alert(lines.join('\n'));
+    } catch (err) {
+      alert('CSVの読み込みに失敗しました。1行目に「日付・投資金額・回収金額」を含むヘッダー行があるか確認してください。');
+    } finally {
+      input.value = '';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+/* ===== CSV_END ===== */
+
 /* ===== BACKUP_START =====
    データのバックアップ（JSON保存／読込）
    ・保存：タグと取引を1つのJSONファイルに書き出す
@@ -1495,15 +1854,8 @@ function exportJson() {
     tagsSmall: data.tagsSmall,
     trades: data.trades,
   };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${CURRENT_TOOL_ID}_${todayKey()}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  downloadBlob(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }),
+               `${CURRENT_TOOL_ID}_${todayKey()}.json`);
 }
 
 // 読み込んだJSONを今のデータに統合。成功すると件数の集計を返す
@@ -1556,9 +1908,7 @@ function mergeImported(d) {
     res.added++;
   });
 
-  const prev = data;
-  data = next;
-  if (!saveData()) { data = prev; throw new Error('save failed'); }
+  commitData(next);
   return res;
 }
 
@@ -1712,6 +2062,7 @@ function closeTagSheet() {
   document.getElementById('tagOverlay').classList.remove('show');
   // 取引フォームの選択肢を最新化（選択中の値は維持。削除済みなら未選択に戻る）
   fillTagSelects(document.getElementById('fBig').value, document.getElementById('fSmall').value);
+  refreshTagViews(); // 設定タブから開いた場合や、追加直後のタグも各画面の絞り込みに反映
   updateBodyLock();
 }
 function setTagKind(kind) {
@@ -1800,6 +2151,7 @@ function onTagNewKey(e) {
 document.addEventListener('DOMContentLoaded', () => {
   setView('calendar');
   renderAll();
+  renderSettings();
 });
 </script>
 </body>
