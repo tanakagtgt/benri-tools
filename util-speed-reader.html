@@ -45,6 +45,9 @@
 .hist-item:last-child{border-bottom:none;}
 .hist-title{font-size:14px;font-weight:700;color:var(--color-text);word-break:break-all;}
 .hist-empty{font-size:12px;color:var(--color-text-muted);}
+.split-preview{margin-top:10px;max-height:240px;overflow-y:auto;border:1px solid var(--color-border);border-radius:var(--radius-input);background:var(--color-input-bg);padding:10px;}
+.split-head{font-size:12px;color:var(--color-text-sub);margin-bottom:8px;line-height:1.7;}
+.split-chip{display:inline-block;background:var(--color-primary-bg);color:var(--color-primary);border:1px solid var(--color-primary-border);border-radius:6px;padding:0 8px;margin:0 4px 6px 0;font-size:14px;line-height:1.9;}
 /* 解説文 */
 .tool-desc{background:var(--color-card);border:1px solid var(--color-border);border-radius:var(--radius-card);padding:18px 20px;margin-bottom:14px;font-size:13px;line-height:1.9;color:var(--color-text-sub);}
 .tool-desc h2{font-size:15px;color:var(--color-text);margin-bottom:8px;}
@@ -71,6 +74,8 @@
     <label for="textInput">読みたい文章</label>
     <textarea id="textInput" class="txt-area" placeholder="ここに文章を貼り付けてください" oninput="onTextChange()"></textarea>
     <div class="text-info" id="textInfo"></div>
+    <button type="button" class="btn-action btn-wide" id="btnPreview" onclick="togglePreview()">🔍 区切りを確認</button>
+    <div class="split-preview" id="splitPreview" style="display:none"></div>
   </div>
 </div>
 
@@ -248,6 +253,7 @@ async function loadBudoux() {
   endsKey = null;
   syncLabels();
   fitFont();
+  refreshPreview();
 }
 
 // 'b'=文節（最大文字数で分割・まとめ可） / 'r'=BudouXの判定のみ / 'f'=文字数固定
@@ -297,6 +303,41 @@ function pieceBefore(p) {
   let lo = 0, hi = e.length;
   while (lo < hi) { const m = (lo + hi) >> 1; if (e[m] >= p) hi = m; else lo = m + 1; }
   return chars.slice(lo > 0 ? e[lo - 1] : 0, p);
+}
+
+/* =====================================================
+   区切りプレビュー（今の設定で実際にどう区切られるか確認）
+   - 再生と同じnextEnd()で分割するので、表示される区切り＝再生時の区切り
+   ===================================================== */
+const PREVIEW_MAX = 300;   // 表示する最大個数（長文でも重くならないように）
+
+function getPieces() {
+  const cs = getChars(), out = [];
+  let prev = 0;
+  while (prev < cs.length) { const e = nextEnd(prev); out.push(cs.slice(prev, e).join('')); prev = e; }
+  return out;
+}
+function togglePreview() {
+  const box = $('splitPreview');
+  const show = box.style.display === 'none';
+  box.style.display = show ? '' : 'none';
+  $('btnPreview').textContent = show ? '🔍 区切り確認を閉じる' : '🔍 区切りを確認';
+  if (show) renderPreview();
+}
+function refreshPreview() { if ($('splitPreview').style.display !== 'none') renderPreview(); }
+function renderPreview() {
+  const box = $('splitPreview');
+  const pieces = getPieces();
+  if (!pieces.length) { box.innerHTML = '<div class="split-head">文章を入力してください</div>'; return; }
+  const mode = $('modeSelect').value;
+  const modeName = mode === 'f' ? `文字数で固定（${getChunk()}文字）`
+    : !budouxParser ? `固定文字数で代用中（BudouX ${budouxState === 'loading' ? '読み込み中' : '読み込み失敗'}）`
+    : mode === 'r' ? '文節（BudouXそのまま）'
+    : `文節（最大${getChunk()}文字${$('mergeCheck').checked ? '・まとめ表示ON' : ''}）`;
+  const longest = Math.max(...pieces.map(x => Array.from(x).length));
+  const chips = pieces.slice(0, PREVIEW_MAX).map(x => `<span class="split-chip">${escapeHtml(x)}</span>`).join('');
+  const more = pieces.length > PREVIEW_MAX ? `<div class="split-head">…以降 ${pieces.length - PREVIEW_MAX}個は省略</div>` : '';
+  box.innerHTML = `<div class="split-head">方式：${modeName}<br>${pieces.length}個に分割／最長${longest}文字</div>${chips}${more}`;
 }
 
 /* =====================================================
@@ -379,12 +420,13 @@ function updatePlayBtn() {
 /* =====================================================
    入力イベント
    ===================================================== */
-function onSettingChange() { syncLabels(); applyDisplayStyle(); onInputChange(); }
+function onSettingChange() { syncLabels(); applyDisplayStyle(); onInputChange(); refreshPreview(); }
 function onTextChange() {
   // 読書途中で文章が変わったらセッションを破棄
   if (playing || pos > 0 || finished) resetSession();
   onInputChange();
   fitFont();   // BudouXそのまま時は最長文節で文字サイズが変わるため
+  refreshPreview();
 }
 
 /* =====================================================
