@@ -1,0 +1,2120 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<!-- AdSense（静的配置） -->
+<script async src="https://pagead2.googleapis.com/pagead/js/adsbygoogle.js?client=ca-pub-2195458991382480" crossorigin="anonymous"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>家計簿｜収入と支出をカレンダーで記録・集計できる無料ツール</title>
+<meta name="description" content="収入と支出をカレンダーに記録し、リスト・収支表・グラフでタグ別に家計を振り返れる無料の家計簿ツール。食費・家賃などの大タグと、家族ごとなどの小タグで分類できます。データは端末内のみに保存。">
+<link rel="canonical" href="https://arigato-tools.com/fin-household-budget">
+
+<!-- OGP -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="アリガイツ">
+<meta property="og:title" content="家計簿｜収入と支出をカレンダーで記録">
+<meta property="og:description" content="収入と支出をカレンダーに記録し、タグ別に家計を振り返れる無料の家計簿ツール。">
+<meta property="og:url" content="https://arigato-tools.com/fin-household-budget">
+<meta name="twitter:card" content="summary">
+
+<!-- gtag（★既存ツールからGA測定IDのスクリプトをそのままコピーして差し替え） -->
+<!-- 【ここにgtagスクリプトを貼る】 -->
+
+<!-- Googleフォント -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="/common.css">
+
+<style>
+/* =====================================================
+   ツール固有CSS
+   ・色は必ずCSS変数（ダーク対応）。固定色の直書きは「色の上に載せる白」だけ
+   ・収入／支出の色は設定画面で変更可能（--color-income / --color-expense を JS が上書き）
+   ・収支（黒字／赤字）の色は固定：黒字＝青、赤字＝赤
+   ===================================================== */
+:root {
+  --bal-plus:  #1a56db;   /* 収支がプラス（黒字） */
+  --bal-minus: #d93025;   /* 収支がマイナス（赤字） */
+  --color-sun: #d93025;   /* カレンダーの日曜 */
+  --color-sat: #1a56db;   /* カレンダーの土曜 */
+
+  /* 設定で選べる標準10色（ライト用）。番号は JS の COLOR_PALETTE の並びと対応 */
+  --sw-1:  #d93025;  /* 赤 */
+  --sw-2:  #1a56db;  /* 青 */
+  --sw-3:  #0f9d58;  /* 緑 */
+  --sw-4:  #e8710a;  /* オレンジ */
+  --sw-5:  #c79100;  /* 黄 */
+  --sw-6:  #7c3aed;  /* 紫 */
+  --sw-7:  #d6336c;  /* ピンク */
+  --sw-8:  #0891b2;  /* 水色 */
+  --sw-9:  #8d5524;  /* 茶 */
+  --sw-10: #5f6368;  /* グレー */
+
+  /* 支出・収入の色（初期値＝支出は赤、収入は青）。変更すると #userColorStyle で上書きされる */
+  --color-expense: var(--sw-1);
+  --color-income:  var(--sw-2);
+}
+html[data-theme="dark"] {
+  --bal-plus:  #7ca6ff;
+  --bal-minus: #ff8a80;
+  --color-sun: #ff8a80;
+  --color-sat: #7ca6ff;
+  --sw-1:  #ff8a80;
+  --sw-2:  #7ca6ff;
+  --sw-3:  #5fd68a;
+  --sw-4:  #ffa94d;
+  --sw-5:  #ffd54f;
+  --sw-6:  #b794f6;
+  --sw-7:  #ff8fb3;
+  --sw-8:  #4dd0e1;
+  --sw-9:  #d2a679;
+  --sw-10: #b0b5bd;
+}
+
+/* 色クラス（支出／収入／収支） */
+.c-exp { color: var(--color-expense); }
+.c-inc { color: var(--color-income); }
+.bal-plus  { color: var(--bal-plus); }
+.bal-minus { color: var(--bal-minus); }
+.bal-zero  { color: var(--color-text); }
+
+/* ---------- 画面切替タブ ---------- */
+.view-tabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.view-tab {
+  flex: 0 0 auto;
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-sub);
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-input);
+  padding: 8px 12px;
+  min-height: 44px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.view-tab.active { border-color: var(--color-primary); background: var(--color-primary-bg); color: var(--color-primary); }
+
+/* ---------- 月ナビ（カレンダー／リスト／収支表で共通） ---------- */
+.month-bar .month-nav { border-bottom: none; }
+.month-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; }
+.month-btn {
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-primary);
+  background: var(--color-chip-bg);
+  border: 1px solid var(--color-primary-border);
+  border-radius: var(--radius-input);
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
+  cursor: pointer;
+}
+.month-btn:hover { background: var(--color-chip-hover); }
+.month-label { font-size: 17px; font-weight: 700; color: var(--color-text); }
+
+/* ---------- 月間サマリー（共通の.result-panelを小さめに） ---------- */
+.result-panel .result-main { padding: 12px 12px 10px; }
+#resultNum { font-size: clamp(30px, 9vw, 44px); }
+#resultNum.bal-plus  { color: var(--bal-plus); }
+#resultNum.bal-minus { color: var(--bal-minus); }
+#resultNum.bal-zero  { color: var(--color-text); }
+.result-panel .breakdown-wrap { padding: 10px; }
+.result-panel .breakdown { margin-bottom: 0; }
+.result-panel .b-num { font-size: 16px; }
+
+/* ---------- カレンダー ---------- */
+.cal-card { padding: 8px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cal-dow { text-align: center; font-size: 11px; font-weight: 700; color: var(--color-text-muted); padding: 4px 0; }
+.cal-dow.sun { color: var(--color-sun); }
+.cal-dow.sat { color: var(--color-sat); }
+.cal-empty { min-height: 66px; }
+.cal-cell {
+  min-height: 66px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 2px;
+  padding: 5px 1px 3px;
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-family: 'BIZ UDPGothic', sans-serif;
+  color: var(--color-text);
+  cursor: pointer;
+}
+.cal-cell.today    { border: 2px solid var(--color-primary); }
+.cal-cell.selected { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+.cal-day { font-size: 12px; font-weight: 700; line-height: 1; margin-bottom: 1px; }
+.cal-cell.sun .cal-day { color: var(--color-sun); }
+.cal-cell.sat .cal-day { color: var(--color-sat); }
+.cal-amt { font-size: 9.5px; font-weight: 700; line-height: 1.15; white-space: nowrap; }
+
+/* ---------- 選択日パネル ---------- */
+.day-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+.day-title { font-size: 14px; font-weight: 700; color: var(--color-text); }
+.day-total { font-size: 15px; font-weight: 700; }
+.day-empty { font-size: 13px; color: var(--color-text-muted); padding: 6px 0 12px; }
+.trade-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+  font-family: 'BIZ UDPGothic', sans-serif;
+  color: var(--color-text);
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.trade-main { display: block; min-width: 0; flex: 1; }
+.trade-tags { display: block; }
+.chip {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+  border-radius: 5px;
+  padding: 2px 7px;
+  margin: 0 4px 2px 0;
+}
+.chip.chip-type { color: var(--color-text-sub); background: var(--color-card); border: 1px solid var(--color-border); }
+.trade-memo { display: block; font-size: 11px; color: var(--color-text-muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trade-pl { font-size: 16px; font-weight: 700; white-space: nowrap; }
+
+/* ---------- ボトムシート（記録入力・タグ管理） ---------- */
+.sheet-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 900;
+  align-items: flex-end;
+  justify-content: center;
+}
+.sheet-overlay.show { display: flex; }
+.sheet-overlay.top { z-index: 950; }   /* タグ管理は記録入力の上に重ねる */
+.sheet {
+  width: 100%;
+  max-width: 600px;
+  max-height: 92vh;
+  overflow-y: auto;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 14px 14px 0 0;
+  padding: 16px 16px 24px;
+}
+.sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.sheet-title { font-size: 16px; font-weight: 700; color: var(--color-text); }
+.sheet-close {
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 16px;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  min-width: 44px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.sheet .input-grid .input-group { margin-bottom: 0; }
+.sheet input[type="date"] { -webkit-appearance: none; appearance: none; }
+.sheet-sub-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.sheet-sub-actions .btn-reset { margin-bottom: 0; }
+.btn-tag-manage { width: 100%; margin: 12px 0 14px; }
+
+/* ---------- タグ管理 ---------- */
+.tag-hint { font-size: 11px; color: var(--color-text-muted); margin-bottom: 10px; line-height: 1.7; }
+.tag-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 8px; }
+.tag-row input,
+.tag-add input {
+  width: 100%;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-input);
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 16px;
+  padding: 10px;
+  min-height: 44px;
+  outline: none;
+}
+.tag-row input:focus,
+.tag-add input:focus { border-color: var(--color-primary); }
+.tag-del {
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-error-text);
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
+  border-radius: var(--radius-input);
+  min-width: 56px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.tag-add { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin: 12px 0; }
+.tag-add .btn-action { padding: 0 14px; }
+.tag-empty { font-size: 13px; color: var(--color-text-muted); padding: 4px 0 8px; }
+.tag-kinds .toggle-btn { font-size: 13px; padding: 8px 2px; }
+
+/* ---------- リスト・収支表・グラフ共通：絞り込みカード ---------- */
+.l-controls { padding: 12px; }
+.l-controls .input-group { margin-bottom: 8px; }
+.l-controls .input-grid { margin-bottom: 8px; gap: 8px; }
+.l-controls .input-grid .input-group { margin-bottom: 0; }
+.input-grid.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+.l-controls select { padding: 10px 6px; }
+.l-note { font-size: 11px; color: var(--color-text-muted); text-align: center; padding: 0 12px 10px; }
+.l-note:empty { display: none; }
+.l-controls .l-note { padding: 0; }
+
+/* ---------- リスト画面 ---------- */
+.l-head { padding: 12px 14px 4px; font-size: 16px; font-weight: 700; color: var(--color-text); }
+.l-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 6px 12px 12px; }
+.l-sum-item { background: var(--color-input-bg); border: 1px solid var(--color-border); border-radius: var(--radius-btn); padding: 9px 4px; text-align: center; }
+.l-sum-label { font-size: 11px; color: var(--color-text-muted); margin-bottom: 2px; }
+.l-sum-num { font-size: clamp(13px, 4vw, 17px); font-weight: 700; color: var(--color-text); white-space: nowrap; }
+.l-sort-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
+.l-sort-row .input-group { margin-bottom: 0; }
+.l-sort-row .btn-action { padding: 0 14px; }
+.l-item {
+  width: 100%;
+  display: block;
+  text-align: left;
+  font-family: 'BIZ UDPGothic', sans-serif;
+  color: var(--color-text);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.l-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.l-date { font-size: 13px; font-weight: 700; }
+.l-tags { text-align: right; }
+.l-main { display: flex; align-items: center; gap: 8px; }
+.l-type { flex: 0 0 auto; font-size: 11px; font-weight: 700; border: 1px solid currentColor; border-radius: 5px; padding: 1px 6px; }
+.l-memo { flex: 1; min-width: 0; font-size: 11px; color: var(--color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.l-amt { flex: 0 0 auto; margin-left: auto; font-size: clamp(14px, 4.2vw, 18px); font-weight: 700; white-space: nowrap; }
+.l-empty { text-align: center; font-size: 13px; color: var(--color-text-muted); padding: 24px 0; }
+
+/* ---------- 収支表画面 ---------- */
+.t-title { font-size: 16px; font-weight: 700; color: var(--color-text); margin-bottom: 8px; }
+.t-card { padding: 12px; }
+.t-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.t-col { min-width: 0; }
+.t-col + .t-col { border-left: 1px solid var(--color-border); padding-left: 12px; }
+.t-col-head { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.t-row { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; padding: 7px 0; border-bottom: 1px solid var(--color-border); }
+.t-row:last-child { border-bottom: none; }
+.t-label { font-size: 11px; color: var(--color-text-muted); white-space: nowrap; }
+.t-val { font-size: clamp(11px, 3.4vw, 14px); font-weight: 700; color: var(--color-text); white-space: nowrap; }
+.t-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.t-tile { background: var(--color-input-bg); border: 1px solid var(--color-border); border-radius: var(--radius-btn); padding: 9px 6px; text-align: center; }
+.t-tile-label { font-size: 11px; color: var(--color-text-muted); margin-bottom: 2px; }
+.t-tile-num { font-size: 18px; font-weight: 700; color: var(--color-text); }
+.sub-toggle { margin-bottom: 8px; }
+.sub-toggle .toggle-btn { font-size: 13px; padding: 8px 4px; }
+
+/* 内訳（タグ別） */
+.bk-row { margin-bottom: 10px; }
+.bk-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 3px; }
+.bk-name { font-size: 13px; font-weight: 700; color: var(--color-text); }
+.bk-val { font-size: 13px; font-weight: 700; color: var(--color-text); white-space: nowrap; }
+.bk-pct { font-size: 11px; color: var(--color-text-muted); margin-left: 6px; font-weight: 400; }
+.bk-bar { height: 8px; background: var(--color-input-bg); border: 1px solid var(--color-border); border-radius: 4px; overflow: hidden; }
+.bk-fill { display: block; height: 100%; }
+.bk-fill.exp { background: var(--color-expense); }
+.bk-fill.inc { background: var(--color-income); }
+.bk-empty { font-size: 13px; color: var(--color-text-muted); padding: 8px 0; text-align: center; }
+
+/* ---------- グラフ画面（インラインSVGの棒グラフ） ---------- */
+.g-toggle { margin-bottom: 8px; }
+.g-toggle .toggle-btn { font-size: 13px; padding: 8px 4px; }
+.g-summary { font-size: 12px; color: var(--color-text-sub); line-height: 1.7; margin-bottom: 8px; }
+.g-box { width: 100%; -webkit-tap-highlight-color: transparent; }
+.g-box svg { display: block; width: 100%; height: auto; }
+.g-axis  { fill: var(--color-text-muted); font-size: 9px; }
+.g-grid  { stroke: var(--color-border); stroke-width: 1; }
+.g-zero  { stroke: var(--color-border-input); stroke-width: 1.2; }
+.g-hit   { fill: transparent; pointer-events: all; cursor: pointer; }
+.g-hit.sel { fill: var(--color-primary-bg); }
+.g-bar   { pointer-events: none; }
+.g-exp   { fill: var(--color-expense); }
+.g-inc   { fill: var(--color-income); }
+.g-pos   { fill: var(--bal-plus); }
+.g-neg   { fill: var(--bal-minus); }
+.g-empty { fill: var(--color-text-muted); font-size: 12px; text-anchor: middle; }
+.g-detail { font-size: 12px; color: var(--color-text-sub); line-height: 1.7; margin-top: 8px; min-height: 3.4em; }
+
+/* ---------- 設定画面 ---------- */
+.data-bar { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 4px; }
+.btn-data {
+  flex: 1;
+  min-width: 100px;
+  background: var(--color-card);
+  border: 1px solid var(--color-primary-border);
+  border-radius: var(--radius-input);
+  color: var(--color-primary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.btn-data:hover { background: var(--color-primary-bg); }
+#importFileInput, #importCsvInput { display: none; }
+.data-note { font-size: 11px; color: var(--color-text-muted); line-height: 1.7; margin-top: 8px; }
+.set-note { font-size: 12px; color: var(--color-text-sub); line-height: 1.7; margin-bottom: 10px; }
+.set-wide { width: 100%; }
+.set-sub { font-size: 12px; font-weight: 700; color: var(--color-text-sub); margin: 12px 0 6px; }
+.set-sub b { color: var(--color-text); }
+.set-kind { font-size: 11px; color: var(--color-text-muted); margin: 10px 0 4px; }
+.sw-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 4px; }
+.sw {
+  min-height: 44px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background: var(--c);
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+}
+.sw.on { border-color: var(--color-text); box-shadow: inset 0 0 0 2px var(--color-card); }
+.sw.on::after { content: '✓'; color: #fff; text-shadow: 0 0 3px rgba(0, 0, 0, 0.6); } /* 色の上に載せるチェックだけ白固定 */
+.set-preview { font-size: 13px; color: var(--color-text-sub); margin: 10px 0 14px; }
+.set-preview b { font-size: 15px; }
+
+/* ---------- 解説文 ---------- */
+.tool-desc {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 16px 18px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  line-height: 1.9;
+  color: var(--color-text-sub);
+}
+.tool-desc h2 { font-size: 14px; color: var(--color-text); margin-bottom: 8px; }
+.tool-desc h3 { font-size: 12px; color: var(--color-text); margin: 10px 0 2px; }
+</style>
+</head>
+
+<body>
+<div class="container">
+
+  <div id="topNavSlot"></div>
+
+  <header>
+    <h1>家計簿</h1>
+    <p class="subtitle">収入と支出をカレンダーに記録して、タグ別に家計を振り返る<br>データはこの端末のブラウザ内にだけ保存されます</p>
+  </header>
+
+  <!-- 画面切替タブ（JSのVIEWSから生成） -->
+  <nav class="view-tabs" id="viewTabs" aria-label="表示切替"></nav>
+
+  <!-- ===== 月ナビ（カレンダー／リスト／収支表で共通。グラフ・設定では隠す） ===== -->
+  <div class="result-panel month-bar">
+    <div class="month-nav">
+      <button type="button" class="month-btn" onclick="changeMonth(-1)" aria-label="前の月">◀</button>
+      <div class="month-label" id="monthLabel">—</div>
+      <button type="button" class="month-btn" onclick="goToday()">今日</button>
+      <button type="button" class="month-btn" onclick="changeMonth(1)" aria-label="次の月">▶</button>
+    </div>
+  </div>
+
+  <!-- ===== 画面：カレンダー ===== -->
+  <section class="view" id="view-calendar">
+
+    <!-- 月間サマリー（idはcommon.jsのreset()が参照するので変えない） -->
+    <div class="result-panel">
+      <div class="result-main">
+        <div class="result-label">月間収支</div>
+        <div><span class="result-number placeholder" id="resultNum">—</span><span class="result-unit">円</span></div>
+        <div class="result-sub" id="resultSub">&nbsp;</div>
+      </div>
+      <div class="breakdown-wrap">
+        <div class="breakdown">
+          <div class="breakdown-item"><div class="b-num c-inc placeholder" id="bA">—</div><div class="b-label">収入合計</div></div>
+          <div class="breakdown-item"><div class="b-num c-exp placeholder" id="bB">—</div><div class="b-label">支出合計</div></div>
+          <div class="breakdown-item"><div class="b-num placeholder" id="bC">—</div><div class="b-label">貯蓄率</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- カレンダー本体 -->
+    <div class="card cal-card">
+      <div class="cal-grid" id="calDow"></div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+
+    <!-- 選択日の記録一覧＋追加ボタン -->
+    <div class="card">
+      <div class="day-head">
+        <div class="day-title" id="dayTitle">—</div>
+        <div class="day-total" id="dayTotal"></div>
+      </div>
+      <div id="dayList"></div>
+      <button type="button" class="btn-calc" onclick="openEntrySheet()">＋ この日の記録を追加</button>
+    </div>
+
+  </section>
+
+  <!-- ===== 画面：リスト ===== -->
+  <section class="view" id="view-list" hidden>
+
+    <!-- サマリー（絞り込み後の結果に連動） -->
+    <div class="result-panel">
+      <div class="l-head" id="lTitle">—</div>
+      <div class="l-summary">
+        <div class="l-sum-item"><div class="l-sum-label">収入</div><div class="l-sum-num c-inc" id="lSumInc">—</div></div>
+        <div class="l-sum-item"><div class="l-sum-label">支出</div><div class="l-sum-num c-exp" id="lSumExp">—</div></div>
+        <div class="l-sum-item"><div class="l-sum-label">収支</div><div class="l-sum-num" id="lSumBal">—</div></div>
+      </div>
+      <div class="l-note" id="lNote"></div>
+    </div>
+
+    <!-- メモ検索・絞り込み・並び替え -->
+    <div class="card l-controls">
+      <div class="input-group">
+        <label for="lSearch">メモ検索</label>
+        <input type="text" id="lSearch" placeholder="メモのキーワード" autocomplete="off" oninput="renderListRows()">
+      </div>
+      <div class="input-grid cols3">
+        <div class="input-group">
+          <label for="lType">種別</label>
+          <select id="lType" onchange="onListTypeChange()">
+            <option value="">すべて</option>
+            <option value="expense">支出</option>
+            <option value="income">収入</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="lBig">大タグ</label>
+          <select id="lBig" onchange="renderListRows()"></select>
+        </div>
+        <div class="input-group">
+          <label for="lSmall">小タグ</label>
+          <select id="lSmall" onchange="renderListRows()"></select>
+        </div>
+      </div>
+      <div class="l-sort-row">
+        <div class="input-group">
+          <label for="lSort">並び替え</label>
+          <select id="lSort" onchange="renderListRows()">
+            <option value="date">日付</option>
+            <option value="amount">金額</option>
+          </select>
+        </div>
+        <button type="button" class="btn-action" id="lDirBtn" onclick="toggleListDir()">降順 ▼</button>
+      </div>
+    </div>
+
+    <div id="listRows"></div>
+
+  </section>
+
+  <!-- ===== 画面：収支表 ===== -->
+  <section class="view" id="view-table" hidden>
+
+    <!-- タイトル＋タグ絞り込み -->
+    <div class="card l-controls">
+      <div class="t-title" id="tTitle">—</div>
+      <div class="input-grid">
+        <div class="input-group">
+          <label for="sBig">大タグ</label>
+          <select id="sBig" onchange="renderTable()"></select>
+        </div>
+        <div class="input-group">
+          <label for="sSmall">小タグ</label>
+          <select id="sSmall" onchange="renderTable()"></select>
+        </div>
+      </div>
+      <div class="l-note" id="tNote"></div>
+    </div>
+
+    <!-- 左右2分割：支出／収入の 合計・件数・最大・平均・中央値（いずれも1件あたり） -->
+    <div class="card t-card">
+      <div class="t-cols" id="tCols"></div>
+    </div>
+
+    <!-- 収支・貯蓄率など -->
+    <div class="card t-card">
+      <div class="t-tiles" id="tTiles"></div>
+    </div>
+
+    <!-- タグ別の内訳 -->
+    <div class="card t-card">
+      <div class="section-title">タグ別の内訳</div>
+      <div class="toggle-wrap sub-toggle" id="bkKind">
+        <button type="button" class="toggle-btn" data-v="expense" onclick="setBkKind('expense')">支出</button>
+        <button type="button" class="toggle-btn" data-v="income" onclick="setBkKind('income')">収入</button>
+      </div>
+      <div class="toggle-wrap sub-toggle" id="bkBy">
+        <button type="button" class="toggle-btn" data-v="big" onclick="setBkBy('big')">大タグ別</button>
+        <button type="button" class="toggle-btn" data-v="small" onclick="setBkBy('small')">小タグ別</button>
+      </div>
+      <div id="tBreak"></div>
+    </div>
+
+  </section>
+
+  <!-- ===== 画面：グラフ ===== -->
+  <section class="view" id="view-graph" hidden>
+
+    <!-- 指標・期間の切替＋タグ絞り込み -->
+    <div class="card l-controls">
+      <div class="toggle-wrap g-toggle" id="gMetric">
+        <button type="button" class="toggle-btn" data-v="exp" onclick="setGraphMetric('exp')">支出</button>
+        <button type="button" class="toggle-btn" data-v="inc" onclick="setGraphMetric('inc')">収入</button>
+        <button type="button" class="toggle-btn" data-v="bal" onclick="setGraphMetric('bal')">収支</button>
+      </div>
+      <div class="toggle-wrap g-toggle" id="gPeriod">
+        <button type="button" class="toggle-btn" data-v="d7" onclick="setGraphPeriod('d7')">7日間</button>
+        <button type="button" class="toggle-btn" data-v="d30" onclick="setGraphPeriod('d30')">30日間</button>
+        <button type="button" class="toggle-btn" data-v="m12" onclick="setGraphPeriod('m12')">12ヶ月間</button>
+      </div>
+      <div class="input-grid">
+        <div class="input-group">
+          <label for="gBig">大タグ</label>
+          <select id="gBig" onchange="onGraphFilterChange()"></select>
+        </div>
+        <div class="input-group">
+          <label for="gSmall">小タグ</label>
+          <select id="gSmall" onchange="onGraphFilterChange()"></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- グラフ本体（期間合計・棒タップの詳細つき） -->
+    <div class="card t-card">
+      <div class="g-summary" id="gSummary"></div>
+      <div class="g-box" id="gBox"></div>
+      <div class="g-detail" id="gDetail"></div>
+    </div>
+
+  </section>
+
+  <!-- ===== 画面：設定 ===== -->
+  <section class="view" id="view-settings" hidden>
+
+    <!-- タグ管理（記録追加画面の「タグを追加・編集・削除」と同じシートを開く） -->
+    <div class="card">
+      <div class="section-title">🏷 タグ管理</div>
+      <p class="set-note">支出の大タグ（食費・家賃など）、収入の大タグ（給料など）、小タグ（父・母・会社など）を追加・名前変更・削除できます。記録追加画面の「タグを追加・編集・削除」と同じ画面です。</p>
+      <button type="button" class="btn-action set-wide" onclick="openTagSheet()">🏷 タグを追加・編集・削除</button>
+    </div>
+
+    <!-- データ管理（バックアップ） -->
+    <div class="card">
+      <div class="section-title">💾 データ管理（バックアップ）</div>
+
+      <div class="set-kind">JSON：タグも含めた完全バックアップ（このツール用）</div>
+      <div class="data-bar">
+        <button type="button" class="btn-data" onclick="exportJson()">⬇️ JSONで書き出し</button>
+        <button type="button" class="btn-data" onclick="document.getElementById('importFileInput').click()">⬆️ JSON読み込み</button>
+      </div>
+
+      <div class="set-kind">CSV：Excelで開ける表形式（外部データの取り込みにも）</div>
+      <div class="data-bar">
+        <button type="button" class="btn-data" onclick="exportCsv()">⬇️ CSVで書き出し</button>
+        <button type="button" class="btn-data" onclick="document.getElementById('importCsvInput').click()">⬆️ CSV読み込み</button>
+      </div>
+
+      <input type="file" id="importFileInput" accept="application/json,.json" onchange="importJson(event)">
+      <input type="file" id="importCsvInput" accept=".csv,text/csv" onchange="importCsv(event)">
+
+      <p class="data-note">読み込みは今のデータに追加されます（同じ記録は重複せずスキップ）。CSVの列は「日付・種別（支出／収入）・金額・大タグ・小タグ・メモ」です。色や開始曜日などの表示設定はバックアップに含まれません。</p>
+    </div>
+
+    <!-- 表示変更 -->
+    <div class="card">
+      <div class="section-title">🎨 表示変更</div>
+
+      <div class="set-sub">支出の色：<b id="setExpenseName">—</b></div>
+      <div class="sw-grid" id="swExpense"></div>
+
+      <div class="set-sub">収入の色：<b id="setIncomeName">—</b></div>
+      <div class="sw-grid" id="swIncome"></div>
+
+      <div class="set-preview">プレビュー：支出 <b class="c-exp">−1,000</b> ／ 収入 <b class="c-inc">+1,200</b></div>
+
+      <div class="input-group" style="margin-bottom:0">
+        <label for="setWeekStart">カレンダーの開始曜日</label>
+        <select id="setWeekStart" onchange="setWeekStart(this.value)">
+          <option value="0">日曜日</option>
+          <option value="1">月曜日</option>
+          <option value="2">火曜日</option>
+          <option value="3">水曜日</option>
+          <option value="4">木曜日</option>
+          <option value="5">金曜日</option>
+          <option value="6">土曜日</option>
+        </select>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ===== 解説文（AdSense有用性対策） ===== -->
+  <section class="tool-desc">
+    <h2>家計簿の使い方</h2>
+    <p>カレンダーの日付をタップして「この日の記録を追加」を押し、支出か収入を切り替えて、金額・大タグ（食費・家賃・給料など）・小タグ（父・母・会社など）・メモを入力します。各日付の下にはその日の収入と支出が表示され、上のサマリーには月間の収支・収入・支出・貯蓄率が出ます。「リスト」は一覧・検索・並び替え、「収支表」は平均やタグ別の内訳、「グラフ」は推移を棒グラフで確認できます。</p>
+    <h3>こんな方に</h3>
+    <p>毎月の収入と支出をスマホでさっと記録し、使いすぎた項目や家族ごとの支出を振り返りたい個人・ご家庭向けです。</p>
+    <h3>計算の考え方</h3>
+    <p>収支は「収入合計−支出合計」で、プラスが黒字です。貯蓄率は「収支÷収入合計×100」。タグは自由に追加・編集・削除でき、同じ日に複数の記録があれば合算して表示します。</p>
+    <h3>データの保存について</h3>
+    <p>記録はこの端末のブラウザ内（localStorage）にのみ保存され、サーバーには送信されません。ブラウザのデータ削除や端末の変更で消えるため、設定タブからJSONで定期的にバックアップしてください。JSONまたはCSVで読み込めば復元・移行でき、CSVはExcelでも開けます。</p>
+    <h3>ご注意</h3>
+    <p>本ツールは記録と簡易集計のためのもので、家計の診断や将来の収支・資産を保証するものではありません。</p>
+  </section>
+
+  <div id="shareAreaSlot"></div>
+  <!-- resetBtnSlot は置かない：全データ削除は誤タップが怖いので、このツールでは用意しない -->
+  <div id="bottomNavSlot"></div>
+  <div id="adAreaSlot"></div>
+  <div id="qrModalSlot"></div>
+  <div id="footerSlot"></div>
+
+</div>
+
+<!-- =====================================================
+     記録入力シート（追加／編集）
+     ===================================================== -->
+<div class="sheet-overlay" id="entryOverlay" onclick="closeOnOverlay(event, 'entryOverlay')">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="entrySheetTitle">
+    <div class="sheet-head">
+      <div class="sheet-title" id="entrySheetTitle">記録を追加</div>
+      <button type="button" class="sheet-close" onclick="closeEntrySheet()" aria-label="閉じる">✕</button>
+    </div>
+
+    <!-- 支出／収入 切替（※toggleA/toggleBはcommon.jsが使うIDなので別IDにしている） -->
+    <div class="toggle-wrap" role="group" aria-label="支出か収入か">
+      <button type="button" class="toggle-btn active" id="typeExp" onclick="setSheetType('expense')">支出</button>
+      <button type="button" class="toggle-btn" id="typeInc" onclick="setSheetType('income')">収入</button>
+    </div>
+
+    <div class="input-grid">
+      <div class="input-group">
+        <label for="fDate">日付</label>
+        <input type="date" id="fDate">
+      </div>
+      <div class="input-group">
+        <label for="fAmount">金額（円）</label>
+        <input type="text" inputmode="numeric" id="fAmount" placeholder="0" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="input-grid" style="margin-bottom:0">
+      <div class="input-group">
+        <label for="fBig">大タグ</label>
+        <select id="fBig"></select>
+      </div>
+      <div class="input-group">
+        <label for="fSmall">小タグ</label>
+        <select id="fSmall"></select>
+      </div>
+    </div>
+    <button type="button" class="btn-action btn-tag-manage" onclick="openTagSheet(sheetType === 'income' ? 'bigIncome' : 'bigExpense')">🏷 タグを追加・編集・削除</button>
+
+    <div class="input-group">
+      <label for="fMemo">メモ</label>
+      <input type="text" id="fMemo" maxlength="100" placeholder="例：スーパー、ボーナス など" autocomplete="off">
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <button type="button" class="btn-calc" style="margin-top:12px" onclick="saveEntry()">保存</button>
+    <div class="sheet-sub-actions">
+      <button type="button" class="btn-action" onclick="closeEntrySheet()">キャンセル</button>
+      <button type="button" class="btn-reset" id="btnDeleteEntry" onclick="deleteEntry()">🗑 この記録を削除</button>
+    </div>
+  </div>
+</div>
+
+<!-- =====================================================
+     タグ管理シート（支出の大タグ／収入の大タグ／小タグ 共通）
+     ===================================================== -->
+<div class="sheet-overlay top" id="tagOverlay" onclick="closeOnOverlay(event, 'tagOverlay')">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="tagSheetTitle">
+    <div class="sheet-head">
+      <div class="sheet-title" id="tagSheetTitle">タグ管理</div>
+      <button type="button" class="sheet-close" onclick="closeTagSheet()" aria-label="閉じる">✕</button>
+    </div>
+
+    <div class="toggle-wrap tag-kinds">
+      <button type="button" class="toggle-btn active" id="tagKindBigExpense" onclick="setTagKind('bigExpense')">支出の大タグ</button>
+      <button type="button" class="toggle-btn" id="tagKindBigIncome" onclick="setTagKind('bigIncome')">収入の大タグ</button>
+      <button type="button" class="toggle-btn" id="tagKindSmall" onclick="setTagKind('small')">小タグ</button>
+    </div>
+    <p class="tag-hint" id="tagHint"></p>
+
+    <div id="tagList"></div>
+
+    <div class="tag-add">
+      <input type="text" id="tagNewName" maxlength="20" placeholder="新しいタグ名" autocomplete="off" onkeydown="onTagNewKey(event)">
+      <button type="button" class="btn-action" onclick="addTag()">＋ 追加</button>
+    </div>
+    <div class="error-msg" id="tagError"></div>
+
+    <button type="button" class="btn-calc" style="margin-top:12px" onclick="closeTagSheet()">閉じる</button>
+  </div>
+</div>
+
+<!-- QRコード生成ライブラリ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="/common.js"></script>
+
+<script>
+/* =====================================================
+   ツール固有ロジック
+   【データ構造】localStorage（DATA_KEY）に1つのJSONで保存
+   {
+     version: 1,
+     tagsBigExpense: [{ id, name }],   // 支出の大タグ（食費・家賃…）
+     tagsBigIncome:  [{ id, name }],   // 収入の大タグ（給料…）
+     tagsSmall:      [{ id, name }],   // 小タグ（父・母・会社…）支出・収入で共通
+     entries: [{ id, date:'YYYY-MM-DD', type:'expense'|'income', amount, bigId, smallId, memo }]
+   }
+   ・金額は常に正の整数。収支の符号は type で決める（収入＋／支出−）
+   ・タグは名前ではなくidで参照 → 名前を編集しても過去の記録に反映される
+   ・収支は保存せず、表示のたびに signed() で計算する
+   ===================================================== */
+
+/* ---------- common.jsが要求する定数 ---------- */
+const CURRENT_TOOL_ID = 'fin-household-budget';
+const STORAGE_KEY     = 'fin-household-budget-ui'; // common.js用（このツールでは実質未使用）
+const STORAGE_FIELDS  = [];                        // 記録は独自保存のため空
+const INPUT_LABELS    = {};
+const RESULT_LABELS   = { main: '月間収支', subA: '収入合計', subB: '支出合計', subC: '貯蓄率' };
+
+/* ---------- このツール専用の定数 ---------- */
+const DATA_KEY     = 'fin-household-budget-data-v1';
+const SETTINGS_KEY = 'fin-household-budget-settings-v1';
+const DOW_NAMES    = ['日', '月', '火', '水', '木', '金', '土'];
+const TYPE_LABEL   = { expense: '支出', income: '収入' };
+
+// 画面切替の定義。renderers を増やすだけで画面を追加できる
+const VIEWS = [
+  { id: 'calendar', label: '📅 カレンダー' },
+  { id: 'list',     label: '📋 リスト' },
+  { id: 'table',    label: '📊 収支表' },
+  { id: 'graph',    label: '📈 グラフ' },
+  { id: 'settings', label: '⚙️ 設定' },
+];
+// 月ナビ（月単位の画面用）を隠す画面。グラフは「今日から過去N日／12ヶ月」基準なので不要
+const VIEWS_WITHOUT_MONTH_BAR = ['graph', 'settings'];
+
+// 設定で選べる色。並びは CSS の --sw-1〜--sw-10 と対応
+const COLOR_PALETTE = [
+  { id: 'red',    name: '赤' },
+  { id: 'blue',   name: '青' },
+  { id: 'green',  name: '緑' },
+  { id: 'orange', name: 'オレンジ' },
+  { id: 'yellow', name: '黄' },
+  { id: 'purple', name: '紫' },
+  { id: 'pink',   name: 'ピンク' },
+  { id: 'cyan',   name: '水色' },
+  { id: 'brown',  name: '茶' },
+  { id: 'gray',   name: 'グレー' },
+];
+
+/* ---------- 状態 ---------- */
+let data         = loadData();
+let settings     = loadSettings();   // { expenseColor, incomeColor, weekStart }
+applyColors();                        // 画面が描かれる前に色を反映（ちらつき防止）
+let viewYear     = new Date().getFullYear();
+let viewMonth    = new Date().getMonth();   // 0〜11
+let selectedDate = todayKey();
+let editingId    = null;                    // 編集中の記録id（新規はnull）
+let sheetType    = 'expense';               // 入力シートの種別
+let lastType     = 'expense';               // 前回保存した種別（次回の初期値に使う）
+let tagKind      = 'bigExpense';            // タグ管理で表示中の種別：'bigExpense' | 'bigIncome' | 'small'
+let currentView  = 'calendar';
+let listDir      = 'desc';                  // リストの並び順
+let bkKind       = 'expense';               // 内訳：支出／収入
+let bkBy         = 'big';                   // 内訳：大タグ別／小タグ別
+let graphMetric  = 'exp';                   // グラフ指標：'exp' | 'inc' | 'bal'
+let graphPeriod  = 'd30';                   // グラフ期間：'d7' | 'd30' | 'm12'
+let graphSel     = null;                    // グラフでタップ中の棒
+
+/* =====================================================
+   ユーティリティ
+   ===================================================== */
+// 同じミリ秒に大量発行（CSV一括読込など）しても被らないよう、連番を混ぜる
+let uidSeq = 0;
+function uid() { return Date.now().toString(36) + (uidSeq++).toString(36) + Math.random().toString(36).slice(2, 6); }
+function pad2(n) { return String(n).padStart(2, '0'); }
+function ymd(y, m, d) { return `${y}-${pad2(m + 1)}-${pad2(d)}`; }   // mは0始まり
+function todayKey() { const n = new Date(); return ymd(n.getFullYear(), n.getMonth(), n.getDate()); }
+
+// ユーザー入力（タグ名・メモ）をinnerHTMLに入れる前に必ず通す
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// ★収支の符号はここだけ（収入＋／支出−）
+function signed(e) { return e.type === 'income' ? e.amount : -e.amount; }
+
+function balClass(n) { return n > 0 ? 'bal-plus' : n < 0 ? 'bal-minus' : 'bal-zero'; }
+function fmtNum(n) { return n.toLocaleString('ja-JP'); }
+function fmtSigned(n) {
+  if (n > 0) return '+' + fmtNum(n);
+  if (n < 0) return '−' + fmtNum(Math.abs(n));
+  return '0';
+}
+// カレンダーのセル用（幅が狭いので1万円以上は「万」表記）。0以上の数を想定
+function fmtShort(n) {
+  if (n < 10000) return fmtNum(n);
+  return (n / 10000).toFixed(1).replace(/\.0$/, '') + '万';
+}
+// 金額入力 → 0以上の整数。不正はNaN、空は0
+function parseAmount(str) {
+  const s = String(str)
+    .replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/[,，\s]/g, '');
+  if (s === '') return 0;
+  if (!/^\d+$/.test(s)) return NaN;
+  return Number(s);
+}
+
+/* =====================================================
+   データ読み書き
+   ===================================================== */
+function defaultData() {
+  const mk = (prefix, names) => names.map((name, i) => ({ id: prefix + (i + 1), name }));
+  return {
+    version: 1,
+    tagsBigExpense: mk('ex', ['食費', '日用品', '衣服', '美容', '交際費', '家賃', '光熱費', '通信費', '交通費', '教育費', '医療費']),
+    tagsBigIncome:  mk('in', ['給料', 'おこづかい']),
+    tagsSmall:      mk('sm', ['父', '母', '子供', '会社', '学校']),
+    entries: [],
+  };
+}
+function loadData() {
+  try {
+    const raw = localStorage.getItem(DATA_KEY);
+    if (!raw) return defaultData();
+    const d = JSON.parse(raw);
+    if (!d || !Array.isArray(d.entries) || !Array.isArray(d.tagsBigExpense) ||
+        !Array.isArray(d.tagsBigIncome) || !Array.isArray(d.tagsSmall)) return defaultData();
+    return d;
+  } catch (e) {
+    return defaultData();
+  }
+}
+function saveData() {
+  try {
+    localStorage.setItem(DATA_KEY, JSON.stringify(data));
+    return true;
+  } catch (e) {
+    return false; // プライベートモード等
+  }
+}
+
+/* ---------- タグの引き当て ---------- */
+function bigList(type) { return type === 'income' ? data.tagsBigIncome : data.tagsBigExpense; }
+function bigName(type, id) {
+  if (!id) return '';
+  const t = bigList(type).find(x => x.id === id);
+  return t ? t.name : '';
+}
+function smallName(id) {
+  if (!id) return '';
+  const t = data.tagsSmall.find(x => x.id === id);
+  return t ? t.name : '';
+}
+
+/* =====================================================
+   集計
+   ===================================================== */
+function entriesOfMonth(y, m) {
+  const prefix = `${y}-${pad2(m + 1)}-`;
+  return data.entries.filter(e => e.date.startsWith(prefix));
+}
+// 合計（収入・支出・収支・件数）
+function sumEntries(list) {
+  let inc = 0, exp = 0;
+  list.forEach(e => { if (e.type === 'income') inc += e.amount; else exp += e.amount; });
+  return { inc, exp, bal: inc - exp, count: list.length };
+}
+// 指定月の日別集計 { 'YYYY-MM-DD': { inc, exp, count } }
+function buildDayMap(y, m) {
+  const map = {};
+  entriesOfMonth(y, m).forEach(e => {
+    const d = map[e.date] || (map[e.date] = { inc: 0, exp: 0, count: 0 });
+    if (e.type === 'income') d.inc += e.amount; else d.exp += e.amount;
+    d.count++;
+  });
+  return map;
+}
+function median(arr) {
+  const s = arr.slice().sort((a, b) => a - b);
+  const mid = Math.floor(s.length / 2);
+  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+}
+// 件数・合計・最大・平均・中央値。0件ならnull（平均・中央値は四捨五入）
+function calcStats(vals) {
+  if (!vals.length) return null;
+  const sum = vals.reduce((a, b) => a + b, 0);
+  return {
+    n: vals.length,
+    sum,
+    max: vals.reduce((a, b) => Math.max(a, b)),
+    avg: Math.round(sum / vals.length),
+    med: Math.round(median(vals)),
+  };
+}
+function matchTag(sel, id) { return sel === '' || (sel === '__none__' ? !id : id === sel); }
+
+/* =====================================================
+   common.jsから呼ばれる関数
+   ===================================================== */
+function calculateInputs() { return { y: viewYear, m: viewMonth }; }
+
+// 月間集計。記録が0件でもnullにしない（シェア等が止まらないように）
+function calculateResult(inputs) {
+  const s = sumEntries(entriesOfMonth(inputs.y, inputs.m));
+  return {
+    main: s.bal,
+    subA: s.inc,
+    subB: s.exp,
+    subC: s.inc > 0 ? Math.round(s.bal / s.inc * 1000) / 10 : 0, // 貯蓄率(%)
+    count: s.count,
+  };
+}
+
+function displayResult(r) {
+  const num = document.getElementById('resultNum');
+  num.textContent = fmtSigned(r.main);
+  num.className = 'result-number ' + balClass(r.main);
+
+  document.getElementById('resultSub').textContent =
+    r.count > 0 ? `記録${r.count}件` : 'この月の記録はまだありません';
+
+  const set = (id, text) => {
+    const el = document.getElementById(id);
+    el.textContent = text;
+    el.classList.remove('placeholder');
+  };
+  set('bA', fmtNum(r.subA));
+  set('bB', fmtNum(r.subB));
+  set('bC', r.subA > 0 ? r.subC.toFixed(1) + '%' : '—');
+}
+
+// シェアは金額を含めずツール紹介のみ（家計を無自覚に晒さない）
+function buildShareText(result) { return '収入と支出をカレンダーで記録できる無料の家計簿ツール📒'; }
+function buildShareUrl() { return 'https://arigato-tools.com/fin-household-budget'; }
+
+/* =====================================================
+   画面切替
+   ===================================================== */
+function renderTabs() {
+  document.getElementById('viewTabs').innerHTML = VIEWS.map(v =>
+    `<button type="button" class="view-tab${v.id === currentView ? ' active' : ''}" onclick="setView('${v.id}')">${v.label}</button>`
+  ).join('');
+}
+function setView(id) {
+  currentView = id;
+  document.querySelector('.month-bar').hidden = VIEWS_WITHOUT_MONTH_BAR.includes(id);
+  document.querySelectorAll('.view').forEach(el => { el.hidden = el.id !== 'view-' + id; });
+  renderTabs();
+  if (id === 'graph') renderGraph(); // 非表示中は幅が取れないので、表示した時に描き直す
+}
+
+function renderAll() {
+  renderCalendar();
+  renderDayPanel();
+  renderAllFilters();
+  renderListRows();
+  renderTable();
+  renderGraph();
+  calculate(); // common.js：月間サマリーを再計算して表示
+}
+
+/* =====================================================
+   カレンダー
+   ===================================================== */
+function renderCalendar() {
+  document.getElementById('monthLabel').textContent = `${viewYear}年${viewMonth + 1}月`;
+
+  // 設定の開始曜日から1週間分を並べる（色は曜日そのもので判定：日曜＝赤系・土曜＝青系）
+  document.getElementById('calDow').innerHTML = Array.from({ length: 7 }, (_, k) => {
+    const w = (settings.weekStart + k) % 7;
+    return `<div class="cal-dow${w === 0 ? ' sun' : w === 6 ? ' sat' : ''}">${DOW_NAMES[w]}</div>`;
+  }).join('');
+
+  const dayMap   = buildDayMap(viewYear, viewMonth);
+  const firstDow = new Date(viewYear, viewMonth, 1).getDay();
+  const lastDay  = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const today    = todayKey();
+
+  let html = '';
+  // 月初の前に入れる空白セル数 ＝ 1日の曜日が、開始曜日から数えて何番目か
+  const offset = (firstDow - settings.weekStart + 7) % 7;
+  for (let i = 0; i < offset; i++) html += '<div class="cal-empty"></div>';
+
+  for (let d = 1; d <= lastDay; d++) {
+    const key  = ymd(viewYear, viewMonth, d);
+    const info = dayMap[key];
+    const dow  = (firstDow + d - 1) % 7;
+
+    let cls = 'cal-cell';
+    if (dow === 0) cls += ' sun';
+    if (dow === 6) cls += ' sat';
+    if (key === today) cls += ' today';
+    if (key === selectedDate) cls += ' selected';
+
+    // 収入（＋）と支出（−）を別々の行で表示。ある方だけ出す
+    let amts = '';
+    if (info && info.inc > 0) amts += `<span class="cal-amt c-inc">+${fmtShort(info.inc)}</span>`;
+    if (info && info.exp > 0) amts += `<span class="cal-amt c-exp">−${fmtShort(info.exp)}</span>`;
+
+    html += `<button type="button" class="${cls}" onclick="selectDate('${key}')" aria-label="${viewMonth + 1}月${d}日">` +
+            `<span class="cal-day">${d}</span>${amts}</button>`;
+  }
+  document.getElementById('calGrid').innerHTML = html;
+}
+
+function selectDate(key) {
+  selectedDate = key;
+  renderCalendar();
+  renderDayPanel();
+}
+
+function changeMonth(delta) {
+  const d = new Date(viewYear, viewMonth + delta, 1);
+  viewYear = d.getFullYear();
+  viewMonth = d.getMonth();
+  // 選択日：今月なら今日、他の月は1日
+  const now = new Date();
+  selectedDate = (viewYear === now.getFullYear() && viewMonth === now.getMonth())
+    ? todayKey() : ymd(viewYear, viewMonth, 1);
+  renderAll();
+}
+function goToday() {
+  const now = new Date();
+  viewYear = now.getFullYear();
+  viewMonth = now.getMonth();
+  selectedDate = todayKey();
+  renderAll();
+}
+
+/* ---------- 選択日パネル ---------- */
+function chipsHtml(e, withType) {
+  const names = [bigName(e.type, e.bigId), smallName(e.smallId)].filter(Boolean);
+  return (withType ? `<span class="chip chip-type">${TYPE_LABEL[e.type]}</span>` : '') +
+    names.map(n => `<span class="chip">${esc(n)}</span>`).join('');
+}
+
+function renderDayPanel() {
+  const [y, m, d] = selectedDate.split('-').map(Number);
+  const dow = DOW_NAMES[new Date(y, m - 1, d).getDay()];
+  document.getElementById('dayTitle').textContent = `${m}月${d}日（${dow}）`;
+
+  const list = data.entries.filter(e => e.date === selectedDate);
+  const bal = sumEntries(list).bal;
+  const totalEl = document.getElementById('dayTotal');
+  totalEl.textContent = list.length ? '収支 ' + fmtSigned(bal) + '円' : '';
+  totalEl.className = 'day-total ' + balClass(bal);
+
+  if (!list.length) {
+    document.getElementById('dayList').innerHTML = '<div class="day-empty">この日の記録はありません</div>';
+    return;
+  }
+  document.getElementById('dayList').innerHTML = list.map(e =>
+    `<button type="button" class="trade-item" onclick="openEntrySheet('${e.id}')">` +
+      `<span class="trade-main">` +
+        `<span class="trade-tags">${chipsHtml(e, true)}</span>` +
+        (e.memo ? `<span class="trade-memo">${esc(e.memo)}</span>` : '') +
+      `</span>` +
+      `<span class="trade-pl ${e.type === 'income' ? 'c-inc' : 'c-exp'}">${fmtSigned(signed(e))}</span>` +
+    `</button>`
+  ).join('');
+}
+
+/* =====================================================
+   タグ絞り込みselect（リスト・収支表・グラフで共用）
+   値：''＝すべて／'__none__'＝（未選択）／タグid
+   ===================================================== */
+// 大タグselectを再生成。mode：'all'（支出・収入をグループ表示）／'expense'／'income'
+// 選択中の値は維持。選択肢から消えていたら「すべて」に戻す
+function fillBigFilter(el, mode) {
+  const cur = el.value;
+  const groups = mode === 'all'
+    ? [['支出', data.tagsBigExpense], ['収入', data.tagsBigIncome]]
+    : [['', mode === 'income' ? data.tagsBigIncome : data.tagsBigExpense]];
+  const ok = cur === '' || cur === '__none__' || groups.some(([, l]) => l.some(t => t.id === cur));
+  const sel = ok ? cur : '';
+  const opt = (v, label) => `<option value="${v}"${v === sel ? ' selected' : ''}>${esc(label)}</option>`;
+  let html = opt('', 'すべて') + opt('__none__', '（未選択）');
+  groups.forEach(([label, list]) => {
+    const opts = list.map(t => opt(t.id, t.name)).join('');
+    html += label ? `<optgroup label="${label}">${opts}</optgroup>` : opts;
+  });
+  el.innerHTML = html;
+}
+function fillSmallFilter(el) {
+  const cur = el.value;
+  const ok = cur === '' || cur === '__none__' || data.tagsSmall.some(t => t.id === cur);
+  const sel = ok ? cur : '';
+  const opt = (v, label) => `<option value="${v}"${v === sel ? ' selected' : ''}>${esc(label)}</option>`;
+  el.innerHTML = opt('', 'すべて') + opt('__none__', '（未選択）') + data.tagsSmall.map(t => opt(t.id, t.name)).join('');
+}
+
+function renderListFilters() {
+  const type = document.getElementById('lType').value; // '' | 'expense' | 'income'
+  fillBigFilter(document.getElementById('lBig'), type || 'all');
+  fillSmallFilter(document.getElementById('lSmall'));
+}
+function renderTableFilters() {
+  fillBigFilter(document.getElementById('sBig'), 'all');
+  fillSmallFilter(document.getElementById('sSmall'));
+}
+function graphBigMode() { return graphMetric === 'exp' ? 'expense' : graphMetric === 'inc' ? 'income' : 'all'; }
+function renderGraphFilters() {
+  fillBigFilter(document.getElementById('gBig'), graphBigMode());
+  fillSmallFilter(document.getElementById('gSmall'));
+}
+function renderAllFilters() {
+  renderListFilters();
+  renderTableFilters();
+  renderGraphFilters();
+}
+
+// タグが変わった時に、一覧系の表示をまとめて更新
+function refreshTagViews() {
+  renderDayPanel();
+  renderAllFilters();
+  renderListRows();
+  renderTable();
+  renderGraph();
+}
+
+/* =====================================================
+   リスト画面
+   ・対象：いま表示中の月の記録。種別・大タグ・小タグ・メモで絞り込み、日付／金額で並び替え
+   ・サマリー（収入・支出・収支）は絞り込み後の結果に連動する
+   ===================================================== */
+function onListTypeChange() {
+  renderListFilters(); // 種別に合わせて大タグの選択肢を入れ替える
+  renderListRows();
+}
+function toggleListDir() {
+  listDir = listDir === 'desc' ? 'asc' : 'desc';
+  document.getElementById('lDirBtn').textContent = listDir === 'desc' ? '降順 ▼' : '昇順 ▲';
+  renderListRows();
+}
+
+function renderListRows() {
+  document.getElementById('lTitle').textContent = `${viewYear}年${viewMonth + 1}月分`;
+
+  // ① その月の記録 → ② 絞り込み
+  const monthEntries = entriesOfMonth(viewYear, viewMonth);
+  const type  = document.getElementById('lType').value;
+  const big   = document.getElementById('lBig').value;
+  const small = document.getElementById('lSmall').value;
+  const q     = document.getElementById('lSearch').value.trim().toLowerCase();
+  const list = monthEntries.filter(e =>
+    (!type || e.type === type) && matchTag(big, e.bigId) && matchTag(small, e.smallId) &&
+    (!q || (e.memo || '').toLowerCase().includes(q))
+  );
+  const filtered = type !== '' || big !== '' || small !== '' || q !== '';
+
+  // ③ 並び替え（同値のときは登録順で安定させる）
+  const key   = document.getElementById('lSort').value; // date / amount
+  const dir   = listDir === 'desc' ? -1 : 1;
+  const order = new Map(data.entries.map((e, i) => [e.id, i]));
+  list.sort((a, b) => {
+    let c = key === 'date' ? a.date.localeCompare(b.date) : a.amount - b.amount;
+    if (c === 0) c = order.get(a.id) - order.get(b.id);
+    return c * dir;
+  });
+
+  // ④ サマリー
+  const s = sumEntries(list);
+  document.getElementById('lSumInc').textContent = fmtNum(s.inc);
+  document.getElementById('lSumExp').textContent = fmtNum(s.exp);
+  const balEl = document.getElementById('lSumBal');
+  balEl.textContent = fmtSigned(s.bal);
+  balEl.className = 'l-sum-num ' + balClass(s.bal);
+  document.getElementById('lNote').textContent = filtered
+    ? `絞り込み中（この月の全${monthEntries.length}件中 ${list.length}件）`
+    : `記録${list.length}件`;
+
+  // ⑤ カード
+  const rows = document.getElementById('listRows');
+  if (!list.length) {
+    rows.innerHTML = `<div class="l-empty">${monthEntries.length ? '条件に一致する記録がありません' : 'この月の記録はまだありません'}</div>`;
+    return;
+  }
+  rows.innerHTML = list.map(e => {
+    const [y, m, d] = e.date.split('-').map(Number);
+    const cls = e.type === 'income' ? 'c-inc' : 'c-exp';
+    return `<button type="button" class="l-item" onclick="openEntrySheet('${e.id}')">` +
+      `<span class="l-top"><span class="l-date">${y}年${m}月${d}日</span><span class="l-tags">${chipsHtml(e, false)}</span></span>` +
+      `<span class="l-main">` +
+        `<span class="l-type ${cls}">${TYPE_LABEL[e.type]}</span>` +
+        `<span class="l-memo">${esc(e.memo || '')}</span>` +
+        `<span class="l-amt ${cls}">${fmtSigned(signed(e))}</span>` +
+      `</span>` +
+    `</button>`;
+  }).join('');
+}
+
+/* =====================================================
+   収支表画面
+   ・対象：いま表示中の月の記録を、大タグ・小タグで絞り込んで集計
+   ・左右2分割は「記録1件あたり」の統計（平均・中央値は四捨五入）
+   ・貯蓄率＝収支÷収入合計。支出の1日平均＝支出合計÷日数
+       （日数：当月は今日まで／過去月は月の日数／未来月は計算なし）
+   ・内訳：支出／収入 × 大タグ別／小タグ別 の合計と割合
+   ===================================================== */
+function setBkKind(v) { bkKind = v; renderTable(); }
+function setBkBy(v)   { bkBy = v;   renderTable(); }
+
+// 支出の1日平均に使う日数
+function elapsedDays() {
+  const now = new Date();
+  const cur = now.getFullYear() * 12 + now.getMonth();
+  const view = viewYear * 12 + viewMonth;
+  if (view === cur) return now.getDate();
+  if (view < cur) return new Date(viewYear, viewMonth + 1, 0).getDate();
+  return 0;
+}
+
+function renderTable() {
+  document.getElementById('tTitle').textContent = `${viewYear}年${viewMonth + 1}月分の収支表`;
+
+  // ① その月の記録 → ② タグで絞り込み
+  const month = entriesOfMonth(viewYear, viewMonth);
+  const big   = document.getElementById('sBig').value;
+  const small = document.getElementById('sSmall').value;
+  const list  = month.filter(e => matchTag(big, e.bigId) && matchTag(small, e.smallId));
+  const filtered = big !== '' || small !== '';
+  document.getElementById('tNote').textContent = filtered
+    ? `絞り込み中（この月の全${month.length}件中）`
+    : (month.length ? '' : 'この月の記録はまだありません');
+
+  // ③ 左右2分割（支出｜収入）
+  const es = calcStats(list.filter(e => e.type === 'expense').map(e => e.amount));
+  const is = calcStats(list.filter(e => e.type === 'income').map(e => e.amount));
+  const col = (cls, title, s) => {
+    const items = [['合計', s && fmtNum(s.sum)], ['件数', s && s.n + '件'], ['最大', s && fmtNum(s.max)],
+                   ['平均', s && fmtNum(s.avg)], ['中央値', s && fmtNum(s.med)]];
+    return `<div class="t-col"><div class="t-col-head ${cls}">${title}</div>` +
+      items.map(([label, v]) =>
+        `<div class="t-row"><span class="t-label">${label}</span><span class="t-val">${v || '—'}</span></div>`).join('') +
+      `</div>`;
+  };
+  document.getElementById('tCols').innerHTML = col('c-exp', '支出（円）', es) + col('c-inc', '収入（円）', is);
+
+  // ④ 下段タイル
+  const sum  = sumEntries(list);
+  const days = elapsedDays();
+  const tile = (label, text, cls) =>
+    `<div class="t-tile"><div class="t-tile-label">${label}</div><div class="t-tile-num ${cls || ''}">${text}</div></div>`;
+  document.getElementById('tTiles').innerHTML =
+    tile('収支', fmtSigned(sum.bal) + '円', balClass(sum.bal)) +
+    tile('貯蓄率', sum.inc > 0 ? (sum.bal / sum.inc * 100).toFixed(1) + '%' : '—') +
+    tile('記録件数', sum.count + '件') +
+    tile('支出の1日平均', days > 0 ? fmtNum(Math.round(sum.exp / days)) + '円' : '—');
+
+  // ⑤ 内訳
+  document.querySelectorAll('#bkKind .toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.v === bkKind));
+  document.querySelectorAll('#bkBy .toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.v === bkBy));
+  renderBreakdown(list);
+}
+
+function renderBreakdown(list) {
+  const items = list.filter(e => e.type === bkKind);
+  const el = document.getElementById('tBreak');
+  if (!items.length) {
+    el.innerHTML = `<div class="bk-empty">${TYPE_LABEL[bkKind]}の記録はありません</div>`;
+    return;
+  }
+  // タグidごとに合計（タグなしは '' にまとめる）
+  const groups = new Map();
+  items.forEach(e => {
+    const id = (bkBy === 'big' ? e.bigId : e.smallId) || '';
+    groups.set(id, (groups.get(id) || 0) + e.amount);
+  });
+  const total = items.reduce((s, e) => s + e.amount, 0);
+  const nameOf = id => {
+    if (!id) return '（未分類）';
+    return (bkBy === 'big' ? bigName(bkKind, id) : smallName(id)) || '（未分類）';
+  };
+  const rows = Array.from(groups.entries()).sort((a, b) => b[1] - a[1]);
+  const cls = bkKind === 'income' ? 'inc' : 'exp';
+  el.innerHTML = rows.map(([id, amt]) => {
+    const pct = amt / total * 100;
+    return `<div class="bk-row">` +
+      `<div class="bk-head"><span class="bk-name">${esc(nameOf(id))}</span>` +
+      `<span class="bk-val">${fmtNum(amt)}円<span class="bk-pct">${pct.toFixed(1)}%</span></span></div>` +
+      `<div class="bk-bar"><span class="bk-fill ${cls}" style="width:${pct.toFixed(1)}%"></span></div>` +
+    `</div>`;
+  }).join('');
+}
+
+/* =====================================================
+   グラフ画面
+   ・棒グラフはライブラリを使わず、インラインSVGで描画（ダーク対応・追加読込なし）
+   ・期間は「今日」基準：7日間／30日間＝日別、12ヶ月間＝月別（今月を含む直近12か月）
+   ・指標：支出（支出のみ）／収入（収入のみ）／収支（収入−支出）
+   ・大タグ・小タグで絞り込み。棒をタップすると、その区間の詳細を下に表示
+   ===================================================== */
+const GRAPH_METRICS = { exp: '支出', inc: '収入', bal: '収支' };
+const GRAPH_PERIODS = { d7: '過去7日間', d30: '過去30日間', m12: '過去12ヶ月間' };
+
+function setGraphMetric(v) { graphMetric = v; renderGraphFilters(); renderGraph(); } // 指標で大タグの選択肢が変わる
+function setGraphPeriod(v) { graphPeriod = v; graphSel = null; renderGraph(); }
+function onGraphFilterChange() { graphSel = null; renderGraph(); }
+function selectGraphBar(i) { graphSel = (graphSel === i) ? null : i; renderGraph(); } // 同じ棒を再タップで解除
+
+function syncGraphButtons() {
+  document.querySelectorAll('#gMetric .toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.v === graphMetric));
+  document.querySelectorAll('#gPeriod .toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.v === graphPeriod));
+}
+
+// 横軸の区間（左＝古い、右＝今日／今月）
+function buildGraphBuckets() {
+  const now = new Date();
+  const out = [];
+  if (graphPeriod === 'm12') {
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      out.push({
+        key:   `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`,
+        label: `${d.getMonth() + 1}月`,
+        full:  `${d.getFullYear()}年${d.getMonth() + 1}月`,
+      });
+    }
+  } else {
+    const days = graphPeriod === 'd7' ? 7 : 30;
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      out.push({
+        key:   ymd(d.getFullYear(), d.getMonth(), d.getDate()),
+        label: `${d.getMonth() + 1}/${d.getDate()}`,
+        full:  `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日（${DOW_NAMES[d.getDay()]}）`,
+      });
+    }
+  }
+  return out;
+}
+
+// 区間ごとに集計（タグ絞り込みを反映）
+function graphData() {
+  const big   = document.getElementById('gBig').value;
+  const small = document.getElementById('gSmall').value;
+  const monthly = graphPeriod === 'm12';
+  const buckets = buildGraphBuckets();
+  const idx = new Map(buckets.map((b, i) => [b.key, i]));
+  buckets.forEach(b => { b.inc = 0; b.exp = 0; b.count = 0; });
+
+  data.entries.forEach(e => {
+    if (!matchTag(big, e.bigId) || !matchTag(small, e.smallId)) return;
+    const i = idx.get(monthly ? e.date.slice(0, 7) : e.date);
+    if (i === undefined) return; // 期間外（古い・未来日）は対象外
+    const b = buckets[i];
+    if (e.type === 'income') b.inc += e.amount; else b.exp += e.amount;
+    b.count++;
+  });
+  buckets.forEach(b => { b.bal = b.inc - b.exp; });
+  return buckets;
+}
+function graphValue(b) { return graphMetric === 'exp' ? b.exp : graphMetric === 'inc' ? b.inc : b.bal; }
+
+// 縦軸のキリのいい目盛り（0を必ず含める・整数刻み）
+function niceScale(lo, hi, ticks) {
+  if (hi <= lo) hi = lo + 1;
+  const rough = (hi - lo) / ticks;
+  const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+  const norm = rough / mag;
+  let step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag;
+  step = Math.max(1, Math.ceil(step));
+  return { min: Math.floor(lo / step) * step, max: Math.ceil(hi / step) * step, step };
+}
+function fmtAxis(v) {
+  const abs = Math.abs(v);
+  const sign = v < 0 ? '−' : '';
+  if (abs >= 10000) return sign + (abs / 10000).toFixed(1).replace(/\.0$/, '') + '万';
+  return sign + fmtNum(abs);
+}
+
+function renderGraph() {
+  syncGraphButtons();
+  const buckets = graphData();
+  const n = buckets.length;
+  const hasData = buckets.some(b => b.count > 0);
+  if (graphSel !== null && graphSel >= n) graphSel = null;
+
+  // ---- 描画サイズ（コンテナ幅に合わせる。非表示中は幅0なので仮の幅） ----
+  const box = document.getElementById('gBox');
+  const W = Math.max(280, Math.min(600, box.clientWidth || 340));
+  const H = 220;
+  const L = 46, R = 8, T = 10, B = 24;
+  const pw = W - L - R, ph = H - T - B;
+
+  // ---- 縦軸 ----
+  const nums = buckets.map(graphValue);
+  const sc = niceScale(Math.min(0, ...nums), Math.max(0, ...nums), 4);
+  const y = v => T + (sc.max - v) / (sc.max - sc.min) * ph;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${GRAPH_METRICS[graphMetric]}の棒グラフ（${GRAPH_PERIODS[graphPeriod]}）">`;
+
+  // 目盛り線＋左ラベル
+  const steps = Math.round((sc.max - sc.min) / sc.step);
+  for (let i = 0; i <= steps; i++) {
+    const v = sc.min + i * sc.step;
+    const yy = y(v);
+    svg += `<line class="${v === 0 ? 'g-zero' : 'g-grid'}" x1="${L}" x2="${W - R}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}"/>`;
+    svg += `<text class="g-axis" x="${L - 5}" y="${(yy + 3).toFixed(1)}" text-anchor="end">${fmtAxis(v)}</text>`;
+  }
+
+  // 棒（＋タップ領域・横軸ラベル）
+  const cw = pw / n;
+  const bw = Math.max(3, Math.min(28, cw * 0.62));
+  const y0 = y(0);
+  buckets.forEach((b, i) => {
+    const cx = L + cw * i + cw / 2;
+    svg += `<rect class="g-hit${i === graphSel ? ' sel' : ''}" x="${(L + cw * i).toFixed(1)}" y="${T}" width="${cw.toFixed(1)}" height="${ph}" onclick="selectGraphBar(${i})"/>`;
+
+    const v = graphValue(b);
+    if (v !== 0) {
+      const yv = y(v);
+      const top = v > 0 ? yv : y0;
+      const h = Math.max(1, Math.abs(yv - y0));
+      const cls = graphMetric === 'exp' ? 'g-exp' : graphMetric === 'inc' ? 'g-inc' : (v > 0 ? 'g-pos' : 'g-neg');
+      svg += `<rect class="g-bar ${cls}" x="${(cx - bw / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="1.5"/>`;
+    }
+
+    // 横軸ラベル：12個以下は全部、30日間は5本おき（右端＝今日を必ず表示）
+    if (n <= 12 || (n - 1 - i) % 5 === 0) {
+      svg += `<text class="g-axis" x="${cx.toFixed(1)}" y="${H - 8}" text-anchor="middle">${b.label}</text>`;
+    }
+  });
+  if (!hasData) svg += `<text class="g-empty" x="${W / 2}" y="${T + ph / 2}">この期間の記録はありません</text>`;
+  svg += '</svg>';
+  box.innerHTML = svg;
+
+  // ---- 期間合計 ----
+  const tInc = buckets.reduce((s, b) => s + b.inc, 0);
+  const tExp = buckets.reduce((s, b) => s + b.exp, 0);
+  document.getElementById('gSummary').innerHTML =
+    `${GRAPH_PERIODS[graphPeriod]}の合計：収入 <b class="c-inc">${fmtNum(tInc)}円</b>` +
+    ` ／ 支出 <b class="c-exp">${fmtNum(tExp)}円</b>` +
+    ` ／ 収支 <b class="${balClass(tInc - tExp)}">${fmtSigned(tInc - tExp)}円</b>`;
+
+  // ---- 棒タップの詳細 ----
+  const det = document.getElementById('gDetail');
+  if (graphSel === null) {
+    det.textContent = '棒をタップすると、その日（月）の詳細が表示されます';
+  } else {
+    const b = buckets[graphSel];
+    det.innerHTML = `<b>${b.full}</b>（${b.count}件）<br>` +
+      `収入 <b class="c-inc">${fmtNum(b.inc)}円</b> ／ 支出 <b class="c-exp">${fmtNum(b.exp)}円</b>` +
+      `<br>収支 <b class="${balClass(b.bal)}">${fmtSigned(b.bal)}円</b>`;
+  }
+}
+
+// 画面幅が変わったら（回転など）描き直す
+window.addEventListener('resize', () => { if (currentView === 'graph') renderGraph(); });
+
+/* =====================================================
+   設定画面：表示変更（色・開始曜日）
+   ・保存先：localStorage（SETTINGS_KEY）。記録データとは別管理
+   ・色：標準10色から選ぶ。実体は CSS の --sw-N（ライト/ダーク別の値）で、
+     選択を <style id="userColorStyle"> の --color-expense / --color-income に流し込む
+     → ダークモードに切り替えても自動で見やすい色になる
+   ・開始曜日：0（日）〜6（土）。カレンダーの並びだけが変わる（データには影響なし）
+   ===================================================== */
+function loadSettings() {
+  const def = { expenseColor: 'red', incomeColor: 'blue', weekStart: 0 };
+  try {
+    const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
+    if (!s || typeof s !== 'object') return def;
+    const okColor = id => COLOR_PALETTE.some(c => c.id === id);
+    return {
+      expenseColor: okColor(s.expenseColor) ? s.expenseColor : def.expenseColor,
+      incomeColor:  okColor(s.incomeColor)  ? s.incomeColor  : def.incomeColor,
+      weekStart: Number.isInteger(s.weekStart) && s.weekStart >= 0 && s.weekStart <= 6 ? s.weekStart : def.weekStart,
+    };
+  } catch (e) {
+    return def;
+  }
+}
+function saveSettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* 保存できなくても表示は変える */ }
+}
+
+// 選んだ色を CSS変数に反映（var(--sw-N) を参照するので、テーマ切替にも自動追従）
+function applyColors() {
+  let el = document.getElementById('userColorStyle');
+  if (!el) {
+    el = document.createElement('style');
+    el.id = 'userColorStyle';
+    document.head.appendChild(el); // 後ろに置くことで、上のCSSの初期値より優先される
+  }
+  const sw = id => `var(--sw-${COLOR_PALETTE.findIndex(c => c.id === id) + 1})`;
+  el.textContent = `:root { --color-expense: ${sw(settings.expenseColor)}; --color-income: ${sw(settings.incomeColor)}; }`;
+}
+
+function renderSettings() {
+  const grid = key => COLOR_PALETTE.map((c, i) =>
+    `<button type="button" class="sw${settings[key] === c.id ? ' on' : ''}" style="--c:var(--sw-${i + 1})"` +
+    ` aria-label="${c.name}" aria-pressed="${settings[key] === c.id}" title="${c.name}"` +
+    ` onclick="setColor('${key}','${c.id}')"></button>`).join('');
+  const name = id => COLOR_PALETTE.find(c => c.id === id).name;
+
+  document.getElementById('swExpense').innerHTML = grid('expenseColor');
+  document.getElementById('swIncome').innerHTML  = grid('incomeColor');
+  document.getElementById('setExpenseName').textContent = name(settings.expenseColor);
+  document.getElementById('setIncomeName').textContent  = name(settings.incomeColor);
+  document.getElementById('setWeekStart').value = String(settings.weekStart);
+}
+function setColor(key, id) {
+  settings[key] = id;
+  saveSettings();
+  applyColors();
+  renderSettings();
+}
+function setWeekStart(v) {
+  settings.weekStart = Number(v);
+  saveSettings();
+  renderCalendar();
+}
+
+/* =====================================================
+   シート共通（開閉・背景スクロール固定）
+   ===================================================== */
+function updateBodyLock() {
+  const open = document.querySelector('.sheet-overlay.show');
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+function closeOnOverlay(e, id) {
+  if (e.target !== document.getElementById(id)) return;
+  if (id === 'tagOverlay') closeTagSheet(); else closeEntrySheet();
+}
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (document.getElementById('tagOverlay').classList.contains('show')) closeTagSheet();
+  else if (document.getElementById('entryOverlay').classList.contains('show')) closeEntrySheet();
+});
+
+/* =====================================================
+   記録の追加・編集・削除
+   ===================================================== */
+function openEntrySheet(id) {
+  const e = id ? data.entries.find(x => x.id === id) : null;
+  editingId = e ? e.id : null;
+
+  document.getElementById('entrySheetTitle').textContent = e ? '記録を編集' : '記録を追加';
+  document.getElementById('fDate').value   = e ? e.date : selectedDate;
+  document.getElementById('fAmount').value = e ? String(e.amount) : '';
+  document.getElementById('fMemo').value   = e ? (e.memo || '') : '';
+  sheetType = e ? e.type : lastType;            // 新規は前回の種別から始める
+  syncTypeButtons();
+  fillEntrySelects(e ? e.bigId : '', e ? e.smallId : '');
+  document.getElementById('btnDeleteEntry').style.display = e ? 'block' : 'none';
+  document.getElementById('errorMsg').classList.remove('show');
+
+  document.getElementById('entryOverlay').classList.add('show');
+  updateBodyLock();
+}
+function closeEntrySheet() {
+  document.getElementById('entryOverlay').classList.remove('show');
+  updateBodyLock();
+}
+
+function syncTypeButtons() {
+  document.getElementById('typeExp').classList.toggle('active', sheetType === 'expense');
+  document.getElementById('typeInc').classList.toggle('active', sheetType === 'income');
+}
+// 支出⇄収入の切替。大タグの選択肢を入れ替える（別種別のタグは持ち越せないので未選択に戻る）
+function setSheetType(type) {
+  sheetType = type;
+  syncTypeButtons();
+  fillEntrySelects('', document.getElementById('fSmall').value);
+}
+
+// 記録フォームの大タグ・小タグselectを再生成（引数は選択状態にするid）
+function fillEntrySelects(bigId, smallId) {
+  const build = (list, sel) =>
+    '<option value="">（未選択）</option>' +
+    list.map(t => `<option value="${t.id}"${t.id === sel ? ' selected' : ''}>${esc(t.name)}</option>`).join('');
+  document.getElementById('fBig').innerHTML   = build(bigList(sheetType), bigId);
+  document.getElementById('fSmall').innerHTML = build(data.tagsSmall, smallId);
+}
+
+function saveEntry() {
+  const date = document.getElementById('fDate').value;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { showError('日付を入力してください'); return; }
+
+  const amount = parseAmount(document.getElementById('fAmount').value);
+  if (isNaN(amount)) { showError('金額は0以上の整数（半角数字）で入力してください'); return; }
+  if (amount <= 0) { showError('金額を入力してください'); return; }
+  if (amount > 1e12) { showError('金額が大きすぎます'); return; }
+
+  const entry = {
+    id: editingId || uid(),
+    date,
+    type: sheetType,
+    amount,
+    bigId:   document.getElementById('fBig').value,
+    smallId: document.getElementById('fSmall').value,
+    memo:    document.getElementById('fMemo').value.trim().slice(0, 100),
+  };
+
+  const idx = data.entries.findIndex(x => x.id === entry.id);
+  if (idx >= 0) data.entries[idx] = entry; else data.entries.push(entry);
+
+  if (!saveData()) { showError('保存できませんでした（ブラウザの保存設定をご確認ください）'); return; }
+
+  // 保存した日付の月に移動して選択
+  const [y, m] = date.split('-').map(Number);
+  viewYear = y; viewMonth = m - 1; selectedDate = date;
+  lastType = sheetType;
+  closeEntrySheet();
+  renderAll();
+}
+
+function deleteEntry() {
+  if (!editingId) return;
+  if (!confirm('この記録を削除しますか？')) return;
+  data.entries = data.entries.filter(x => x.id !== editingId);
+  saveData();
+  closeEntrySheet();
+  renderAll();
+}
+
+/* =====================================================
+   タグの管理（支出の大タグ／収入の大タグ／小タグ）
+   ===================================================== */
+const TAG_KIND_INFO = {
+  bigExpense: { btn: 'tagKindBigExpense', hint: '食費・家賃など、支出の分類に使います。名前を直接書き換えると過去の記録にも反映されます。' },
+  bigIncome:  { btn: 'tagKindBigIncome',  hint: '給料・おこづかいなど、収入の分類に使います。名前を直接書き換えると過去の記録にも反映されます。' },
+  small:      { btn: 'tagKindSmall',      hint: '父・母・会社など、支出・収入の両方で使えるタグです。名前を直接書き換えると過去の記録にも反映されます。' },
+};
+function currentTagList() {
+  return tagKind === 'bigExpense' ? data.tagsBigExpense : tagKind === 'bigIncome' ? data.tagsBigIncome : data.tagsSmall;
+}
+function setTagMsg(msg) {
+  const el = document.getElementById('tagError');
+  el.textContent = msg || '';
+  el.classList.toggle('show', !!msg);
+}
+
+// kind を渡すとその種別を開く（記録入力から開く時は、今の種別の大タグ）
+function openTagSheet(kind) {
+  if (kind) tagKind = kind;
+  setTagMsg('');
+  renderTagSheet();
+  document.getElementById('tagOverlay').classList.add('show');
+  updateBodyLock();
+}
+function closeTagSheet() {
+  document.getElementById('tagOverlay').classList.remove('show');
+  // 記録フォームの選択肢を最新化（選択中の値は維持。削除済みなら未選択に戻る）
+  fillEntrySelects(document.getElementById('fBig').value, document.getElementById('fSmall').value);
+  refreshTagViews(); // 設定タブから開いた場合や追加直後のタグも、各画面の絞り込みに反映
+  updateBodyLock();
+}
+function setTagKind(kind) {
+  tagKind = kind;
+  setTagMsg('');
+  renderTagSheet();
+}
+
+function renderTagSheet() {
+  Object.keys(TAG_KIND_INFO).forEach(k =>
+    document.getElementById(TAG_KIND_INFO[k].btn).classList.toggle('active', k === tagKind));
+  document.getElementById('tagHint').textContent = TAG_KIND_INFO[tagKind].hint;
+  document.getElementById('tagNewName').value = '';
+
+  const list = currentTagList();
+  document.getElementById('tagList').innerHTML = list.length
+    ? list.map(t =>
+        `<div class="tag-row">` +
+          `<input type="text" value="${esc(t.name)}" maxlength="20" aria-label="タグ名" onchange="renameTag('${t.id}', this)">` +
+          `<button type="button" class="tag-del" onclick="deleteTag('${t.id}')">削除</button>` +
+        `</div>`).join('')
+    : '<div class="tag-empty">タグはまだありません。下から追加してください。</div>';
+}
+
+function isDupName(name, exceptId) {
+  return currentTagList().some(t => t.name === name && t.id !== exceptId);
+}
+
+function addTag() {
+  const input = document.getElementById('tagNewName');
+  const name = input.value.trim().slice(0, 20);
+  if (!name) { setTagMsg('タグ名を入力してください'); return; }
+  if (isDupName(name)) { setTagMsg('同じ名前のタグがあります'); return; }
+
+  const tag = { id: uid(), name };
+  currentTagList().push(tag);
+  saveData();
+  setTagMsg('');
+  renderTagSheet();
+  // 追加したタグを記録フォームで選択状態にしておく（種別が合う時だけ）
+  const wantType = tagKind === 'bigIncome' ? 'income' : 'expense';
+  if (tagKind === 'small') fillEntrySelects(document.getElementById('fBig').value, tag.id);
+  else if (wantType === sheetType) fillEntrySelects(tag.id, document.getElementById('fSmall').value);
+}
+
+function renameTag(id, inputEl) {
+  const tag = currentTagList().find(t => t.id === id);
+  if (!tag) return;
+  const name = inputEl.value.trim().slice(0, 20);
+  if (!name) { inputEl.value = tag.name; setTagMsg('タグ名は空にできません'); return; }
+  if (isDupName(name, id)) { inputEl.value = tag.name; setTagMsg('同じ名前のタグがあります'); return; }
+  tag.name = name;
+  saveData();
+  setTagMsg('');
+  refreshTagViews(); // 一覧・収支表・グラフのタグ表示を更新
+}
+
+function deleteTag(id) {
+  const tag = currentTagList().find(t => t.id === id);
+  if (!tag) return;
+  const field = tagKind === 'small' ? 'smallId' : 'bigId';
+  const used = data.entries.filter(e => e[field] === id).length;
+  const msg = used > 0
+    ? `「${tag.name}」を削除しますか？\n使用中の記録${used}件は「未選択」になります。`
+    : `「${tag.name}」を削除しますか？`;
+  if (!confirm(msg)) return;
+
+  data.entries.forEach(e => { if (e[field] === id) e[field] = ''; });
+  if (tagKind === 'bigExpense') data.tagsBigExpense = data.tagsBigExpense.filter(t => t.id !== id);
+  else if (tagKind === 'bigIncome') data.tagsBigIncome = data.tagsBigIncome.filter(t => t.id !== id);
+  else data.tagsSmall = data.tagsSmall.filter(t => t.id !== id);
+  saveData();
+  setTagMsg('');
+  renderTagSheet();
+  refreshTagViews();
+}
+
+// IME変換確定のEnterでは追加しない
+function onTagNewKey(e) {
+  if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); addTag(); }
+}
+
+/* =====================================================
+   データのバックアップ（JSON／CSV）
+   ・読込は今のデータに「統合」する（置き換えはしない）
+   ・idはHTML属性に埋め込むため、英数字・_・- のみ許可。それ以外は新しいidを振り直す（XSS対策）
+   ・保存に失敗したら元のデータに戻す
+   ===================================================== */
+const SAFE_ID = /^[A-Za-z0-9_-]{1,40}$/;
+
+function isValidDateKey(s) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return false;
+  const y = +m[1], mo = +m[2], d = +m[3];
+  const dt = new Date(y, mo - 1, d);
+  return dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === d;
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// 統合結果を確定。保存に失敗したら元のデータに戻して例外を投げる
+function commitData(next) {
+  const prev = data;
+  data = next;
+  if (!saveData()) { data = prev; throw new Error('save failed'); }
+}
+
+function showImportResult(res) {
+  const lines = [`記録${res.added}件を読み込みました`];
+  if (res.tagsAdded) lines.push(`タグ${res.tagsAdded}件を追加しました`);
+  if (res.dup) lines.push(`重複${res.dup}件はスキップしました`);
+  if (res.bad) lines.push(`形式が不正な${res.bad}件は読み込めませんでした`);
+  alert(lines.join('\n'));
+}
+
+/* ---------- JSON ----------
+   ・同じidの記録は重複とみなしてスキップ（同じ端末の古いバックアップを読んでも二重計上されない）
+   ・タグは「id一致 → 同名タグ → 新規追加」の順で対応づける */
+function exportJson() {
+  const payload = {
+    app: CURRENT_TOOL_ID,
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    tagsBigExpense: data.tagsBigExpense,
+    tagsBigIncome: data.tagsBigIncome,
+    tagsSmall: data.tagsSmall,
+    entries: data.entries,
+  };
+  downloadBlob(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }),
+               `${CURRENT_TOOL_ID}_${todayKey()}.json`);
+}
+
+function mergeImported(d) {
+  if (!d || typeof d !== 'object' || !Array.isArray(d.entries)) throw new Error('invalid format');
+
+  const next = JSON.parse(JSON.stringify(data)); // 失敗時に元へ戻せるよう、コピー上で統合する
+  const res = { tagsAdded: 0, added: 0, dup: 0, bad: 0 };
+
+  // タグ：読み込んだid → 統合後のid の対応表を作る
+  const mapTags = (impList, curList) => {
+    const map = Object.create(null); // '__proto__' 等のキーでも安全なように
+    (Array.isArray(impList) ? impList : []).forEach(t => {
+      if (!t || typeof t.name !== 'string' || typeof t.id !== 'string') return;
+      const name = t.name.trim().slice(0, 20);
+      if (!name) return;
+      const same = curList.find(x => x.id === t.id) || curList.find(x => x.name === name);
+      if (same) { map[t.id] = same.id; return; }
+      const id = SAFE_ID.test(t.id) ? t.id : uid();
+      curList.push({ id, name });
+      map[t.id] = id;
+      res.tagsAdded++;
+    });
+    return map;
+  };
+  const expMap   = mapTags(d.tagsBigExpense, next.tagsBigExpense);
+  const incMap   = mapTags(d.tagsBigIncome, next.tagsBigIncome);
+  const smallMap = mapTags(d.tagsSmall, next.tagsSmall);
+
+  // 記録：検証 → 重複スキップ → 追加
+  const ids = new Set(next.entries.map(e => e.id));
+  d.entries.forEach(e => {
+    const ok = e && (e.type === 'expense' || e.type === 'income') &&
+      typeof e.date === 'string' && isValidDateKey(e.date) &&
+      Number.isInteger(e.amount) && e.amount > 0 && e.amount <= 1e12;
+    if (!ok) { res.bad++; return; }
+
+    const id = (typeof e.id === 'string' && SAFE_ID.test(e.id)) ? e.id : uid();
+    if (ids.has(id)) { res.dup++; return; }
+    ids.add(id);
+
+    const bigMap = e.type === 'income' ? incMap : expMap;
+    next.entries.push({
+      id,
+      date: e.date,
+      type: e.type,
+      amount: e.amount,
+      bigId:   (typeof e.bigId === 'string' && bigMap[e.bigId]) || '',
+      smallId: (typeof e.smallId === 'string' && smallMap[e.smallId]) || '',
+      memo: typeof e.memo === 'string' ? e.memo.slice(0, 100) : '',
+    });
+    res.added++;
+  });
+
+  commitData(next);
+  return res;
+}
+
+function importJson(event) {
+  const input = event.target;
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) {
+    alert('ファイルが大きすぎます（10MBまで）');
+    input.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const res = mergeImported(JSON.parse(e.target.result));
+      renderAll();
+      showImportResult(res);
+    } catch (err) {
+      alert('JSONファイルの読み込みに失敗しました。このツールで書き出したファイルか確認してください。');
+    } finally {
+      input.value = ''; // 同じファイルを連続で選べるようリセット
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- CSV ----------
+   ・列：日付, 種別（支出／収入）, 金額, 大タグ, 小タグ, メモ
+   ・書き出しはUTF-8（BOM付き）。ExcelでそのままダブルクリックしてもOK
+   ・読込はUTF-8を優先し、読めなければShift_JIS（Excelで保存し直したCSV）として解釈
+   ・日付は 2026-10-07 / 2026/10/7 のどちらも可（Excelが書き換える形式に対応）
+   ・タグは名前で対応づけ（種別に合う大タグ／小タグ。同名があればそれを使い、なければ新規追加）
+   ・重複判定：IDが無いので「日付・種別・金額・タグ名・メモ」が全部同じ記録を同一とみなし、件数で比較
+       例）既存に同内容が1件、CSVに同内容が2件 → 1件スキップ・1件追加（正当な同内容2件を潰さない） */
+const CSV_HEADER = ['日付', '種別', '金額', '大タグ', '小タグ', 'メモ'];
+
+function csvCell(v) {
+  const s = String(v);
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+function exportCsv() {
+  const sorted = data.entries.slice().sort((a, b) => a.date.localeCompare(b.date)); // 日付の古い順
+  const rows = [CSV_HEADER].concat(sorted.map(e =>
+    [e.date, TYPE_LABEL[e.type], e.amount, bigName(e.type, e.bigId), smallName(e.smallId), e.memo || '']));
+  const text = '\uFEFF' + rows.map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
+  downloadBlob(new Blob([text], { type: 'text/csv;charset=utf-8' }), `${CURRENT_TOOL_ID}_${todayKey()}.csv`);
+}
+
+// ダブルクォート・カンマ・セル内改行に対応した簡易CSVパーサ
+function parseCsv(text) {
+  const rows = [];
+  let row = [], cur = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { cur += '"'; i++; } else inQ = false;
+      } else cur += c;
+    } else if (c === '"') {
+      inQ = true;
+    } else if (c === ',') {
+      row.push(cur); cur = '';
+    } else if (c === '\n' || c === '\r') {
+      if (c === '\r' && text[i + 1] === '\n') i++;
+      row.push(cur); cur = '';
+      rows.push(row); row = [];
+    } else {
+      cur += c;
+    }
+  }
+  if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+  return rows;
+}
+
+function decodeCsvBuffer(buf) {
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(buf); // BOMは自動で除去される
+  } catch (e) {
+    return new TextDecoder('shift_jis').decode(buf);
+  }
+}
+
+// 2026-10-07 / 2026/10/7 / 2026/10/7 0:00 → 'YYYY-MM-DD'。不正ならnull
+function normalizeDateKey(s) {
+  const m = /^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})(?:\s.*)?$/.exec(String(s).trim());
+  if (!m) return null;
+  const key = `${m[1]}-${pad2(+m[2])}-${pad2(+m[3])}`;
+  return isValidDateKey(key) ? key : null;
+}
+// 「支出」「収入」（expense / income も可）→ 'expense' | 'income'。不明はnull
+function parseTypeText(s) {
+  const t = String(s).trim().toLowerCase();
+  if (t === '支出' || t === 'expense') return 'expense';
+  if (t === '収入' || t === 'income') return 'income';
+  return null;
+}
+
+function mergeCsv(rows) {
+  if (!rows.length) throw new Error('empty');
+  const head = rows[0].map(h => String(h).replace(/^\uFEFF/, '').trim());
+  const col = name => head.indexOf(name);
+  const cDate = col('日付'), cType = col('種別'), cAmt = col('金額');
+  const cBig = col('大タグ'), cSmall = col('小タグ'), cMemo = col('メモ');
+  if (cDate < 0 || cType < 0 || cAmt < 0) throw new Error('header'); // 必須列がない
+
+  const next = JSON.parse(JSON.stringify(data));
+  const res = { tagsAdded: 0, added: 0, dup: 0, bad: 0 };
+
+  // 既存記録の「内容キー → 件数」
+  const keyOf = (date, type, amt, bn, sn, memo) => [date, type, amt, bn, sn, memo].join('\u0001');
+  const stock = new Map();
+  data.entries.forEach(e => {
+    const k = keyOf(e.date, e.type, e.amount, bigName(e.type, e.bigId), smallName(e.smallId), e.memo || '');
+    stock.set(k, (stock.get(k) || 0) + 1);
+  });
+
+  const ensureTag = (list, name) => {
+    if (!name) return '';
+    let t = list.find(x => x.name === name);
+    if (!t) { t = { id: uid(), name }; list.push(t); res.tagsAdded++; }
+    return t.id;
+  };
+  const cell = (r, c) => (c >= 0 && r[c] !== undefined) ? String(r[c]).trim() : '';
+
+  rows.slice(1).forEach(r => {
+    if (r.every(c => String(c).trim() === '')) return; // 空行は無視
+
+    const date = normalizeDateKey(cell(r, cDate));
+    const type = parseTypeText(cell(r, cType));
+    const amt  = parseAmount(cell(r, cAmt));
+    if (!date || !type || isNaN(amt) || amt <= 0 || amt > 1e12) { res.bad++; return; }
+
+    const bn = cell(r, cBig).slice(0, 20);
+    const sn = cell(r, cSmall).slice(0, 20);
+    const memo = cell(r, cMemo).slice(0, 100);
+
+    const k = keyOf(date, type, amt, bn, sn, memo);
+    const left = stock.get(k) || 0;
+    if (left > 0) { stock.set(k, left - 1); res.dup++; return; }
+
+    next.entries.push({
+      id: uid(), date, type, amount: amt,
+      bigId: ensureTag(type === 'income' ? next.tagsBigIncome : next.tagsBigExpense, bn),
+      smallId: ensureTag(next.tagsSmall, sn),
+      memo,
+    });
+    res.added++;
+  });
+
+  commitData(next);
+  return res;
+}
+
+function importCsv(event) {
+  const input = event.target;
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) {
+    alert('ファイルが大きすぎます（10MBまで）');
+    input.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const res = mergeCsv(parseCsv(decodeCsvBuffer(e.target.result)));
+      renderAll();
+      showImportResult(res);
+    } catch (err) {
+      alert('CSVの読み込みに失敗しました。1行目に「日付・種別・金額」を含むヘッダー行があるか確認してください。');
+    } finally {
+      input.value = '';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* =====================================================
+   初期化（common.jsのDOMContentLoadedの後に実行される）
+   ===================================================== */
+document.addEventListener('DOMContentLoaded', () => {
+  setView('calendar');
+  renderAll();
+  renderSettings();
+});
+</script>
+</body>
+</html>
