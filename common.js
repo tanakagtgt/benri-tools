@@ -180,7 +180,7 @@ function injectCommonUI() {
 <footer>
   © <span id="copyrightYear"></span> アリガイツ
   <nav class="footer-links">
-    <a class="footer-back" href="/index.html">一覧</a>
+    <a class="footer-back" href="https://x.com/arigaitsu">𝕏(Twitter)</a>
     <a class="footer-back" href="/about.html">このサイトについて</a>
     <a class="footer-back" href="/privacy-policy.html">プライバシーポリシー</a>
     <a class="footer-back" href="/terms.html">利用規約</a>
