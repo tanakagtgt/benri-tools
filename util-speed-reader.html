@@ -233,21 +233,23 @@ function getChunk() { return parseInt($('chunkRange').value, 10) || 6; }
      → 進捗・残り時間・10秒移動は文字位置のまま動く
    - 読込中／失敗時は固定文字数で代用
    ===================================================== */
-const BUDOUX_URLS = [
-  'https://unpkg.com/budoux@0.9.2/module/index.js',
-  'https://unpkg.com/budoux/module/index.js'   // 上が失敗した時の予備
+// ★module/index.jsはDOM処理用にbare import('linkedom')を含み、ブラウザでは読めない。
+//   そのため依存のない parser.js（分割処理）と models/ja.js（学習済みモデル）だけを直接読む
+const BUDOUX_BASES = [
+  'https://unpkg.com/budoux@0.9.2/module',
+  'https://cdn.jsdelivr.net/npm/budoux@0.9.2/module'   // 上が失敗した時の予備
 ];
 let budouxParser = null;
 let budouxState = 'loading';   // loading / ok / ng
 let ends = [], endsKey = null; // 各表示単位の終了位置（累計文字数）
 
 async function loadBudoux() {
-  for (const url of BUDOUX_URLS) {
+  for (const base of BUDOUX_BASES) {
     try {
-      const m = await import(url);
-      budouxParser = m.loadDefaultJapaneseParser();
+      const [pm, mm] = await Promise.all([import(base + '/parser.js'), import(base + '/data/models/ja.js')]);
+      budouxParser = new pm.Parser(mm.model);
       break;
-    } catch (e) { /* 次のURLを試す */ }
+    } catch (e) { console.warn('BudouX読込失敗:', base, e); /* 次のURLを試す */ }
   }
   budouxState = budouxParser ? 'ok' : 'ng';
   endsKey = null;
