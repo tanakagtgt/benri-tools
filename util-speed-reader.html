@@ -102,20 +102,12 @@
     <label for="speedRange">速度：<span id="speedVal"></span></label>
     <input type="range" id="speedRange" min="1" max="40" step="1" value="8" oninput="onSettingChange()">
   </div>
+  <div class="error-msg" id="engineMsg"></div>
   <div class="input-group">
-    <label for="modeSelect">区切り方</label>
-    <select id="modeSelect" onchange="onSettingChange()">
-      <option value="b">文節で区切る（自動）</option>
-      <option value="r">文節（BudouXそのまま）</option>
-      <option value="f">文字数で固定</option>
-    </select>
-    <div class="text-info" id="modeNote"></div>
+    <label for="minRange">最低文字数：<span id="minVal"></span></label>
+    <input type="range" id="minRange" min="1" max="20" step="1" value="3" oninput="onSettingChange()">
+    <div class="text-info">文節が最低文字数に届くまで、次の文節をつなげて表示します（。、！？などはまたぎません）</div>
   </div>
-  <div class="input-group">
-    <label for="chunkRange"><span id="chunkLabel">1回に表示する文字数</span>：<span id="chunkVal"></span></label>
-    <input type="range" id="chunkRange" min="1" max="20" step="1" value="6" oninput="onSettingChange()">
-  </div>
-  <label class="checkbox-item"><input type="checkbox" id="mergeCheck" onchange="onSettingChange()">短い文節を最大文字数までまとめて表示</label>
   <details class="fold">
     <summary>🎨 表示設定（縦横・色）</summary>
     <div class="input-group">
@@ -157,7 +149,7 @@
 <!-- 解説文（AdSense有用性対策） -->
 <section class="tool-desc">
   <h2>速読トレーナー（RSVP）の使い方</h2>
-  <p>RSVP（高速逐次視覚提示）は、文章を画面の同じ位置に少しずつ表示する方式です。視線を動かさずに済むため、読む速度を一定に保つ練習になります。文章を貼り付けて再生するだけで使え、速度は1〜40文字/秒（毎分60〜2,400文字）、1回の表示文字数は1〜20文字から選べます。「文節で区切る」を選ぶと、Google製のBudouXで「日本の／人口は／減少して／います。」のように意味のまとまりごとに表示します（この場合の文字数は最大値）。</p>
+  <p>RSVP（高速逐次視覚提示）は、文章を画面の同じ位置に少しずつ表示する方式です。視線を動かさずに済むため、読む速度を一定に保つ練習になります。文章を貼り付けて再生するだけで使え、速度は1〜40文字/秒（毎分60〜2,400文字）。文章はGoogle製のBudouXで「日本の／人口は／減少しています。」のように意味のまとまり（文節）ごとに区切って表示します。「最低文字数」を設定すると、短い文節を最低文字数に届くまでつなげて表示します（句読点・文末記号・改行はまたぎません）。</p>
   <h3>こんな場面で</h3>
   <p>ニュース記事や資格テキストを速く読む練習、自分の読書速度の把握、読書スピードの記録に向いています。一般的な日本語の黙読は毎分400〜600文字程度と言われますが、個人差が大きいので、まずは8文字/秒（毎分480文字）前後から試してください。</p>
   <h3>仕様の補足</h3>
@@ -186,12 +178,12 @@ const HISTORY_KEY     = 'util-speed-reader_history';
 const HISTORY_MAX     = 50;   // 履歴の最大保存件数
 const JUMP_SEC        = 10;   // 戻る／進むの秒数
 
-const STORAGE_FIELDS = ['titleInput','textInput','speedRange','chunkRange','modeSelect','mergeCheck','orientSelect','bgColor','fgColor'];
-const INPUT_LABELS   = { speedRange:'速度（文字/秒）', chunkRange:'1画面の文字数' };
+const STORAGE_FIELDS = ['titleInput','textInput','speedRange','minRange','orientSelect','bgColor','fgColor'];
+const INPUT_LABELS   = { speedRange:'速度（文字/秒）', minRange:'最低文字数' };
 const RESULT_LABELS  = { main:'推定所要時間（秒）', total:'総文字数' };
 
-// リセット時に戻す初期値（mergeCheckはresetAllでOFFになるため不要）
-const DEFAULTS = { speedRange:'8', chunkRange:'6', modeSelect:'b', orientSelect:'h', bgColor:'#1d2027', fgColor:'#e7e9ee' };
+// リセット時に戻す初期値
+const DEFAULTS = { speedRange:'8', minRange:'3', orientSelect:'h', bgColor:'#1d2027', fgColor:'#e7e9ee' };
 
 /* =====================================================
    状態管理
@@ -206,6 +198,7 @@ let timer = null;          // setTimeoutのID
 let playMs = 0;            // 再生時間の累計（一時停止中は含まない）
 let lastTick = 0;          // 直近の再生開始時刻(performance.now)
 let startedAt = null;      // セッション開始日時（履歴用）
+let shownCount = 0;       // 表示した単位の数（1画面平均の算出用）
 
 const $ = id => document.getElementById(id);
 
@@ -219,13 +212,20 @@ function normalize(t) {
           .replace(/ ([^\x00-\x7F])/g, '$1');
 }
 // 文字配列を返す（テキストが変わった時だけ再パース）
+// ★改行ごとの行配列(lineArrs)も保持：BudouXは行単位で解析し、行末（改行）をまたいで接合しない
+let lineArrs = [];
 function getChars() {
   const raw = $('textInput').value;
-  if (raw !== cachedRaw) { cachedRaw = raw; chars = Array.from(normalize(raw)); textVersion++; }
+  if (raw !== cachedRaw) {
+    cachedRaw = raw;
+    lineArrs = raw.split(/\r\n|\r|\n/).map(l => Array.from(normalize(l))).filter(a => a.length);
+    chars = lineArrs.flat();
+    textVersion++;
+  }
   return chars;
 }
 function getSpeed() { return parseFloat($('speedRange').value) || 8; }
-function getChunk() { return parseInt($('chunkRange').value, 10) || 6; }
+function getMin() { return parseInt($('minRange').value, 10) || 1; }
 
 /* =====================================================
    文節区切り（BudouX）
@@ -252,55 +252,59 @@ async function loadBudoux() {
     } catch (e) { console.warn('BudouX読込失敗:', base, e); /* 次のURLを試す */ }
   }
   budouxState = budouxParser ? 'ok' : 'ng';
+  if (budouxState === 'ng' && !playing && pos === 0) showIdle('⚠ 文節エンジンの読込に失敗しました');
   endsKey = null;
   syncLabels();
   fitFont();
   refreshPreview();
 }
 
-// 'b'=文節（最大文字数で分割・まとめ可） / 'r'=BudouXの判定のみ / 'f'=文字数固定
-function isRaw() { return $('modeSelect').value === 'r'; }
-function useBunsetsu() { return $('modeSelect').value !== 'f' && !!budouxParser; }
+function engineReady() { return !!budouxParser; }
+function engineStatusText() {
+  return budouxState === 'loading'
+    ? '文節エンジン（BudouX）を読み込み中です。少し待ってからもう一度お試しください'
+    : '⚠ 文節エンジン（BudouX）の読み込みに失敗しました。通信環境を確認して、ページを再読み込みしてください';
+}
 
-// 文節→最大文字数で分割→（任意で）短いものをまとめる、の順で終了位置の配列を作る
+/* 最低文字数での接合ルール
+   ・BudouXの文節を、最低文字数に届くまで次の文節とつなげる
+   ・直前の塊が STOP_CHARS（。、！？や閉じ括弧など）で終わっていたら、またがない
+   ・次の文節が OPEN_CHARS（開き括弧）で始まる場合も、またがない
+   ・改行（行末）は行ごとに処理するのでまたがない */
+const STOP_CHARS = '。．！？!?、，,；;：:…‥）)」』】］〕〉》”';
+const OPEN_CHARS = '（(「『【［〔〈《“';
+
 function getEnds() {
-  const raw = isRaw(), max = getChunk(), merge = $('mergeCheck').checked && !raw;
-  const key = textVersion + '|' + max + '|' + merge + '|' + raw;
+  const min = getMin();
+  const key = textVersion + '|' + min;
   if (key === endsKey) return ends;
   endsKey = key;
-  const lens = [];
-  for (const seg of budouxParser.parse(chars.join(''))) {
-    const n = Array.from(seg).length;
-    if (raw) { lens.push(n); continue; }  // BudouXの判定のみ：分割もまとめもしない
-    // 最大文字数を超える文節は「前詰め」ではなく「均等割り」で分割（例：8字→4+4）
-    const k = Math.ceil(n / max);                    // 何分割するか
-    const base = Math.floor(n / k), extra = n % k;   // 端数は前から1字ずつ配分
-    for (let i = 0; i < k; i++) lens.push(base + (i < extra ? 1 : 0));
-  }
   ends = [];
-  let acc = 0, curLen = 0;
-  for (const l of lens) {
-    acc += l;
-    if (merge && curLen > 0 && curLen + l <= max) { curLen += l; ends[ends.length - 1] = acc; }
-    else { curLen = l; ends.push(acc); }
+  let offset = 0;
+  for (const line of lineArrs) {
+    let curLen = 0, curLast = '';
+    for (const seg of budouxParser.parse(line.join(''))) {
+      const a = Array.from(seg);
+      const canJoin = curLen > 0 && curLen < min && !STOP_CHARS.includes(curLast) && !OPEN_CHARS.includes(a[0]);
+      offset += a.length;
+      if (canJoin) { curLen += a.length; ends[ends.length - 1] = offset; }
+      else { curLen = a.length; ends.push(offset); }
+      curLast = a[a.length - 1];
+    }
   }
-  if (acc < chars.length) ends.push(chars.length); // 念のための取りこぼし防止
   return ends;
 }
 
 // 位置pの次の区切り位置（必ずp+1以上を返して無限ループを防ぐ）
 function nextEnd(p) {
-  const len = chars.length;
-  if (!useBunsetsu()) return Math.min(p + getChunk(), len);
   const e = getEnds();
   let lo = 0, hi = e.length;
   while (lo < hi) { const m = (lo + hi) >> 1; if (e[m] > p) hi = m; else lo = m + 1; }
-  return Math.max(p + 1, lo < e.length ? e[lo] : len);
+  return Math.max(p + 1, lo < e.length ? e[lo] : chars.length);
 }
 
 // 位置pまでに表示済みの直近1単位（停止中のジャンプ表示用）
 function pieceBefore(p) {
-  if (!useBunsetsu()) return chars.slice(Math.max(0, p - getChunk()), p);
   const e = getEnds();
   let lo = 0, hi = e.length;
   while (lo < hi) { const m = (lo + hi) >> 1; if (e[m] >= p) hi = m; else lo = m + 1; }
@@ -329,24 +333,20 @@ function togglePreview() {
 function refreshPreview() { if ($('splitPreview').style.display !== 'none') renderPreview(); }
 function renderPreview() {
   const box = $('splitPreview');
+  if (!engineReady()) { box.innerHTML = `<div class="split-head">${engineStatusText()}</div>`; return; }
   const pieces = getPieces();
   if (!pieces.length) { box.innerHTML = '<div class="split-head">文章を入力してください</div>'; return; }
-  const mode = $('modeSelect').value;
-  const modeName = mode === 'f' ? `文字数で固定（${getChunk()}文字）`
-    : !budouxParser ? `固定文字数で代用中（BudouX ${budouxState === 'loading' ? '読み込み中' : '読み込み失敗'}）`
-    : mode === 'r' ? '文節（BudouXそのまま）'
-    : `文節（最大${getChunk()}文字${$('mergeCheck').checked ? '・まとめ表示ON' : ''}）`;
   const longest = Math.max(...pieces.map(x => Array.from(x).length));
   const chips = pieces.slice(0, PREVIEW_MAX).map(x => `<span class="split-chip">${escapeHtml(x)}</span>`).join('');
   const more = pieces.length > PREVIEW_MAX ? `<div class="split-head">…以降 ${pieces.length - PREVIEW_MAX}個は省略</div>` : '';
-  box.innerHTML = `<div class="split-head">方式：${modeName}<br>${pieces.length}個に分割／最長${longest}文字</div>${chips}${more}`;
+  box.innerHTML = `<div class="split-head">方式：文節（BudouX・最低${getMin()}文字）<br>${pieces.length}個に分割／最長${longest}文字</div>${chips}${more}`;
 }
 
 /* =====================================================
    common.js連携（calculate系）
    ★常に結果オブジェクトを返す（nullだとshareX/shareLineが動かないため）
    ===================================================== */
-function calculateInputs() { return { total:getChars().length, speed:getSpeed(), chunk:getChunk() }; }
+function calculateInputs() { return { total:getChars().length, speed:getSpeed(), min:getMin() }; }
 function calculateResult(i) { return { main: i.total / i.speed, total: i.total }; }
 function displayResult(r) {
   $('textInfo').textContent = r.total > 0
@@ -379,16 +379,16 @@ function applyDisplayStyle() {
   box.classList.toggle('vertical', $('orientSelect').value === 'v');
   fitFont();
 }
-// フォントサイズ計算の基準文字数（BudouXそのままの時は最長の文節に合わせる）
+// フォントサイズ計算の基準文字数（最長の塊に合わせる。エンジン未読込時は仮に6）
 function fitChars() {
-  if (useBunsetsu() && isRaw() && getChars().length) {
+  if (engineReady() && getChars().length) {
     let longest = 1, prev = 0;
     getEnds().forEach(x => { longest = Math.max(longest, x - prev); prev = x; });
     return longest;
   }
-  return getChunk();
+  return 6;
 }
-// 最大文字数に合わせて文字サイズを自動調整（枠からはみ出さない・表示中にサイズが揺れない）
+// 最長の塊に合わせて文字サイズを自動調整（枠からはみ出さない・表示中にサイズが揺れない）
 function fitFont() {
   const box = $('rsvpBox');
   const vertical = $('orientSelect').value === 'v';
@@ -397,16 +397,13 @@ function fitFont() {
   $('rsvpText').style.fontSize = fs + 'px';
 }
 function syncLabels() {
-  const sp = getSpeed(), mode = $('modeSelect').value, b = mode !== 'f', raw = mode === 'r';
+  const sp = getSpeed();
   $('speedVal').textContent = `${sp}文字/秒（毎分${sp * 60}文字）`;
-  $('chunkLabel').textContent = raw ? '1回の文字数（BudouXそのままでは未使用）' : b ? '1回の最大文字数' : '1回に表示する文字数';
-  $('chunkVal').textContent = `${getChunk()}文字`;
-  $('chunkRange').disabled = raw;   // BudouXそのままの時は最大文字数・まとめ表示を使わない
-  $('mergeCheck').disabled = raw;
-  $('modeNote').textContent = !b ? '' :
-    budouxState === 'ok' ? '文節エンジン（BudouX）：読み込み済み' :
-    budouxState === 'loading' ? '文節エンジン読み込み中…（完了まで固定文字数で表示）' :
-    '文節エンジンの読み込みに失敗（固定文字数で代用中）';
+  $('minVal').textContent = `${getMin()}文字`;
+  // 文節エンジンの読込に失敗した時はエラー表示（代用動作はしない）
+  const msg = $('engineMsg');
+  msg.textContent = budouxState === 'ng' ? engineStatusText() : '';
+  msg.classList.toggle('show', budouxState === 'ng');
 }
 function updateProgress() {
   const len = getChars().length;
@@ -439,6 +436,7 @@ function togglePlay() { playing ? pausePlay() : startPlay(); }
 function startPlay() {
   const len = getChars().length;
   if (!len) { showError('文章を入力してください'); return; }
+  if (!engineReady()) { showError(engineStatusText()); return; }   // 読込失敗・読込中は再生しない
   $('errorMsg').classList.remove('show');
   if (finished || pos >= len) resetSession();      // 読了後は最初から
   if (pos === 0) { startedAt = new Date(); hideResult(); }
@@ -465,6 +463,7 @@ function tick() {
   const piece = chars.slice(pos, end);
   showText(piece.join(''));
   pos = end;
+  shownCount++;
   updateProgress();
   timer = setTimeout(tick, (piece.length / getSpeed()) * 1000);
 }
@@ -475,7 +474,7 @@ function restartSession() { resetSession(); }
 function resetSession() {
   clearTimeout(timer);
   playing = false; finished = false;
-  pos = 0; playMs = 0; startedAt = null;
+  pos = 0; playMs = 0; startedAt = null; shownCount = 0;
   hideResult();
   showIdle();
   updateProgress();
@@ -485,7 +484,7 @@ function resetSession() {
 // 10秒戻る／進む（速度×秒数ぶん文字位置を動かす）
 function jump(sec) {
   const len = getChars().length;
-  if (!len || finished) return;
+  if (!len || finished || !engineReady()) return;
   pos = Math.min(len, Math.max(0, pos + Math.round(sec * getSpeed())));
   if (!playing) {
     // 停止中は移動先の表示単位を出して確認できるようにする
@@ -516,8 +515,7 @@ function finishSession(early) {
     id: Date.now(),
     title: $('titleInput').value.trim() || '（無題）',
     at: (startedAt || new Date()).toISOString(),
-    total: len, speed: getSpeed(), actualSec: sec, chunk: getChunk(), rate: rate,
-    mode: useBunsetsu() ? (isRaw() ? 'r' : 'b') : 'f'
+    total: len, speed: getSpeed(), actualSec: sec, minChars: getMin(), avgChunk: shownCount ? Math.round(pos / shownCount * 10) / 10 : 0, rate: rate
   };
   saveHistory(entry);
   showResult(entry, pos, early);
@@ -530,7 +528,7 @@ function finishSession(early) {
 function showResult(e, readChars, early) {
   $('resLabel').textContent = early ? '⏹ 途中終了の結果' : '🎉 読了結果';
   $('resRate').textContent = e.rate;
-  $('resSub').textContent = `${e.title} ／ 設定 ${e.speed}文字/秒・${e.mode === 'r' ? '文節（BudouXそのまま）' : e.mode === 'b' ? '文節（最大' + e.chunk + '文字）' : e.chunk + '文字表示'}`;
+  $('resSub').textContent = `${e.title} ／ 設定 ${e.speed}文字/秒・文節（最低${e.minChars}文字）`;
   $('resTime').textContent = fmtTime(e.actualSec);
   $('resEff').textContent = e.actualSec > 0 ? (readChars / e.actualSec).toFixed(1) : '—';
   $('resTotal').textContent = e.total.toLocaleString();
@@ -556,7 +554,7 @@ function renderHistory() {
       <div class="hist-title">${escapeHtml(h.title)}</div>
       <div>実施：${d}</div>
       <div>総文字数：${h.total.toLocaleString()}字 ／ 完読率：${h.rate}%</div>
-      <div>設定速度：${h.speed}文字/秒 ／ 1画面：${h.mode === 'r' ? '文節（BudouXそのまま）' : (h.mode === 'b' ? '文節・最大' : '') + h.chunk + '文字'} ／ 所要時間：${fmtTime(h.actualSec)}</div>
+      <div>設定速度：${h.speed}文字/秒 ／ 1画面：${h.minChars ? '平均' + h.avgChunk + '文字（最低' + h.minChars + '）' : h.chunk + '文字'} ／ 所要時間：${fmtTime(h.actualSec)}</div>
     </div>`;
   }).join('') : '<div class="hist-empty">まだ履歴がありません</div>';
 }
