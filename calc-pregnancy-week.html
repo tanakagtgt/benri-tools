@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+
+  <!-- AdSense（静的配置） -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2195458991382480" crossorigin="anonymous"></script>
+
+  <!-- canonical（拡張子なし） -->
+  <link rel="canonical" href="https://arigato-tools.com/calc-pregnancy-week">
+
+  <!-- gtag（★測定IDは既存ツールのHTMLからコピーして差し替え） -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=【GA測定IDをここに】"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', '【GA測定IDをここに】');
+  </script>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>妊娠週数・出産予定日計算｜今日は妊娠何週何日か自動計算</title>
+  <meta name="description" content="最終月経開始日から出産予定日と今日の妊娠週数（○週○日）を自動計算。出産予定日からの逆算、妊娠○週○日は何月何日か、週数ごとのカレンダーも確認できる無料ツール。">
+
+  <!-- OGP -->
+  <meta property="og:title" content="妊娠週数・出産予定日計算｜今日は妊娠何週何日か自動計算">
+  <meta property="og:description" content="最終月経開始日を入れるだけで、妊娠週数・出産予定日・週数ごとのカレンダーが分かる無料ツール。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://arigato-tools.com/calc-pregnancy-week">
+  <meta name="twitter:card" content="summary">
+
+  <!-- Googleフォント（BIZ UDPGothic） -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/common.css">
+
+  <style>
+    /* =====================================================
+       このツール専用CSS（色は必ずCSS変数を使う）
+       ===================================================== */
+
+    /* 大きい結果数字は「25週3日」のように文字数が多いので小さめに */
+    #resultNum { font-size: clamp(40px, 12vw, 58px); }
+
+    /* 出産予定日の表示行（結果パネル内） */
+    .result-due {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--color-text);
+      margin-top: 8px;
+    }
+
+    /* 補足の小さい説明文（入力欄の下など） */
+    .hint { font-size: 11px; color: var(--color-text-muted); line-height: 1.7; }
+
+    /* 週数＋日数を横並びにする入力（⑤逆算用） */
+    .target-result {
+      margin-top: 4px;
+      padding: 12px;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--color-primary);
+      background: var(--color-primary-bg);
+      border: 1px solid var(--color-primary-border);
+      border-radius: var(--radius-input);
+    }
+
+    /* 妊娠カレンダー表（④＋⑥） */
+    .cal-wrap { overflow-x: auto; }
+    .cal-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .cal-table th {
+      text-align: left;
+      font-size: 11px;
+      color: var(--color-text-muted);
+      border-bottom: 1px solid var(--color-border);
+      padding: 6px 6px;
+      white-space: nowrap;
+    }
+    .cal-table td {
+      border-bottom: 1px solid var(--color-border);
+      padding: 8px 6px;
+      vertical-align: top;
+      line-height: 1.6;
+      color: var(--color-text);
+    }
+    .cal-table td.cal-week { font-weight: 700; white-space: nowrap; }
+    .cal-table td.cal-date { white-space: nowrap; color: var(--color-text-sub); }
+    /* 現在の週の行を強調 */
+    .cal-table tr.current td { background: var(--color-primary-bg); }
+    .cal-table tr.current td.cal-week { color: var(--color-primary); }
+
+    /* 解説文（AdSense有用性対策。将来common.cssへ移動可） */
+    .tool-desc {
+      background: var(--color-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-card);
+      padding: 20px;
+      margin-bottom: 14px;
+      font-size: 13px;
+      line-height: 1.9;
+      color: var(--color-text-sub);
+    }
+    .tool-desc h2 { font-size: 15px; color: var(--color-text); margin-bottom: 8px; }
+    .tool-desc h3 { font-size: 13px; color: var(--color-text); margin: 14px 0 4px; }
+    .tool-desc p { margin-bottom: 8px; }
+    .tool-desc .note {
+      background: var(--color-input-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-input);
+      padding: 10px 12px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div id="topNavSlot"></div>
+
+  <header>
+    <h1>🤰 妊娠週数・出産予定日計算</h1>
+    <p class="subtitle">最終月経開始日から、出産予定日と今日の妊娠週数を自動計算</p>
+  </header>
+
+  <!-- ========== ツール本体：入力 ========== -->
+  <div class="card">
+    <div class="section-title">▶ 日付を入力</div>
+    <div class="input-group">
+      <label for="lmpDate">最終月経開始日（生理が始まった日）</label>
+      <input type="date" id="lmpDate" oninput="onInputChange()">
+    </div>
+    <div class="input-group">
+      <label for="dueDate">出産予定日（わかっている場合）</label>
+      <input type="date" id="dueDate" oninput="onInputChange()">
+    </div>
+    <div class="input-group">
+      <label for="baseDate">基準日（空欄なら今日）</label>
+      <input type="date" id="baseDate" oninput="onInputChange()">
+    </div>
+    <p class="hint">最終月経開始日が入っていればそちらを優先。空欄で出産予定日だけ入っている場合は、そこから週数を逆算します。基準日を変えると「その日は何週か」も分かります。</p>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <!-- ========== ツール本体：結果 ========== -->
+  <div class="result-panel">
+    <div class="result-main">
+      <div class="result-label">現在の妊娠週数</div>
+      <div class="result-number placeholder" id="resultNum">—</div>
+      <div class="result-due" id="resultDue"></div>
+      <div class="result-sub">0週0日＝最終月経開始日（28日周期の場合）</div>
+    </div>
+    <div class="breakdown-wrap">
+      <div class="breakdown">
+        <div class="breakdown-item"><div class="b-num placeholder" id="bA">—</div><div class="b-label">妊娠月数</div></div>
+        <div class="breakdown-item"><div class="b-num placeholder" id="bB">—</div><div class="b-label">予定日まで(日)</div></div>
+        <div class="breakdown-item"><div class="b-num placeholder" id="bC">—</div><div class="b-label">予定日まで(週)</div></div>
+      </div>
+      <div class="copy-actions">
+        <button class="btn-action" id="btnCopyText" onclick="copyResultText()" disabled>📄 テキストでコピー</button>
+        <button class="btn-action" id="btnCopyExcel" onclick="copyResultExcel()" disabled>📊 Excel用コピー</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== ⑤ 妊娠○週○日は何月何日？ ========== -->
+  <div class="card">
+    <div class="section-title">▶ 妊娠○週○日は何月何日？</div>
+    <div class="input-grid">
+      <div class="input-group" style="margin-bottom:0">
+        <label for="targetWeeks">週</label>
+        <input type="number" id="targetWeeks" inputmode="numeric" min="0" max="42" placeholder="例：20" oninput="onInputChange()">
+      </div>
+      <div class="input-group" style="margin-bottom:0">
+        <label for="targetDays">日</label>
+        <select id="targetDays" onchange="onInputChange()">
+          <option value="">—</option>
+          <option value="0">0日</option>
+          <option value="1">1日</option>
+          <option value="2">2日</option>
+          <option value="3">3日</option>
+          <option value="4">4日</option>
+          <option value="5">5日</option>
+          <option value="6">6日</option>
+        </select>
+      </div>
+    </div>
+    <div class="target-result" id="targetResult">—</div>
+  </div>
+
+  <!-- ========== ④⑥ 妊娠カレンダー＋週数ごとの目安 ========== -->
+  <div class="card">
+    <div class="section-title">▶ 妊娠カレンダー（週数ごとの目安）</div>
+    <div class="cal-wrap">
+      <table class="cal-table">
+        <thead>
+          <tr><th>週数</th><th>月数</th><th>その週の開始日</th><th>時期の目安</th></tr>
+        </thead>
+        <tbody id="calBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========== 解説文（AdSense有用性対策：丸写し禁止の独自文） ========== -->
+  <section class="tool-desc">
+    <h2>妊娠週数・出産予定日計算の使い方</h2>
+    <p>最終月経開始日（直近の生理が始まった日）を入力すると、出産予定日と、基準日時点の妊娠週数が「○週○日」で表示されます。基準日を空欄にすれば今日の週数、未来や過去の日付を入れればその日の週数が分かります。出産予定日だけが分かっている場合は、そこから280日さかのぼって現在の週数を逆算します。</p>
+    <p>「妊娠20週0日は何月何日？」のように、週数から日付を調べる機能もあります。健診の予約、産休・育休の準備、里帰り時期の検討、職場への報告時期の目安づくりなどにお使いください。妊娠中の本人はもちろん、パートナーやご家族が予定を立てる場面にも便利です。</p>
+    <h3>計算のしくみ</h3>
+    <p>妊娠週数は最終月経開始日を0週0日として数えます。出産予定日は「最終月経開始日＋280日（40週0日）」で、月経周期が28日であることを前提にしています。妊娠月数は「週数÷4の切り捨て＋1」で求め、0〜3週が1か月、4〜7週が2か月…という数え方です（40週前後は10か月）。</p>
+    <h3>よくある質問</h3>
+    <p>Q. 月経周期が28日ではない場合は？<br>A. 周期が長い・短い人は実際の排卵日とずれるため、予定日も前後します。病院では超音波検査での赤ちゃんの大きさをもとに予定日が修正されることがあります。</p>
+    <p>Q. 予定日ぴったりに生まれますか？<br>A. 予定日に出産するのは一部で、37週0日〜41週6日（正期産）の間に生まれることが多いとされています。</p>
+    <p class="note">※本ツールは一般的な計算式にもとづく目安です。実際の出産予定日や週数は、医師の診察・検査で決まります。体調や健診のことは必ずかかりつけの医療機関に相談してください。</p>
+  </section>
+
+  <div id="shareAreaSlot"></div>
+  <div id="resetBtnSlot"></div>
+  <div id="bottomNavSlot"></div>
+  <div id="adAreaSlot"></div>
+  <div id="qrModalSlot"></div>
+  <div id="footerSlot"></div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="/common.js"></script>
+<script>
+/* =====================================================
+   ツール固有の設定（common.jsが前提とする定義）
+   ===================================================== */
+const CURRENT_TOOL_ID = 'calc-pregnancy-week';
+const STORAGE_KEY     = 'arigato_calc_pregnancy_week';
+const STORAGE_FIELDS  = ['lmpDate', 'dueDate', 'baseDate', 'targetWeeks', 'targetDays'];
+
+// テキスト／Excelコピー用の入力ラベル（⑤の逆算入力は結果ではないので含めない）
+const INPUT_LABELS = {
+  lmpDate:  '最終月経開始日',
+  dueDate:  '出産予定日(入力値)',
+  baseDate: '基準日(空欄は今日)'
+};
+
+// 結果ラベル（main / subA〜C はcommon.js共通。dueDate以降はこのツール専用）
+const RESULT_LABELS = {
+  main:   '妊娠週数',
+  subA:   '妊娠月数',
+  subB:   '出産予定日まで(日)',
+  subC:   '出産予定日まで(週)',
+  dueStr: '出産予定日',
+  lmpStr: '最終月経開始日(0週0日)'
+};
+
+/* =====================================================
+   カレンダー表のデータ（④＋⑥）
+   ・week：その週の0日目から該当
+   ・★内容を足したい時はここに1行追加するだけ
+   ===================================================== */
+const CAL_ROWS = [
+  [4,  '妊娠超初期。生理予定日ごろで、妊娠検査薬が反応しやすくなる'],
+  [8,  '心拍確認ができる目安。つわりが強くなりやすい時期'],
+  [12, '初期の終わり。妊娠届を出して母子手帳をもらう目安（自治体で異なる）'],
+  [16, '安定期の目安。つわりが落ち着き、胎動を感じ始める人も'],
+  [20, '胎動を感じやすくなる。お腹が目立ち始める'],
+  [24, '妊娠糖尿病のスクリーニングを24〜28週に行うことが多い'],
+  [28, '妊娠後期のはじまり。里帰りや出産準備を考え始める'],
+  [32, '腰痛や息苦しさが出やすい。入院準備を始める目安'],
+  [34, '産休開始の目安（出産予定日の6週間前。双子以上は14週間前）'],
+  [36, '健診が週1回ペースになることが多い。出産準備を済ませたい'],
+  [37, '正期産のはじまり（37週0日〜41週6日）'],
+  [40, '出産予定日']
+];
+
+/* =====================================================
+   日付ユーティリティ（UTCで扱い、夏時間などのズレを防ぐ）
+   ===================================================== */
+const DAY_MS = 86400000;
+
+// 'YYYY-MM-DD' → UTCミリ秒（空・不正はnull）
+function parseDate(s) {
+  if (!s) return null;
+  const [y, m, d] = s.split('-').map(Number);
+  if (!y || !m || !d) return null;
+  return Date.UTC(y, m - 1, d);
+}
+
+// 今日（端末のローカル日付）をUTCミリ秒で返す
+function todayMs() {
+  const n = new Date();
+  return Date.UTC(n.getFullYear(), n.getMonth(), n.getDate());
+}
+
+// ミリ秒 → 「2026年10月8日(木)」
+function fmtDate(ms) {
+  const d = new Date(ms);
+  const w = '日月火水木金土'[d.getUTCDay()];
+  return `${d.getUTCFullYear()}年${d.getUTCMonth() + 1}月${d.getUTCDate()}日(${w})`;
+}
+
+// 妊娠月数：0〜3週=1か月、4〜7週=2か月…（上限10か月）
+function monthOf(weeks) {
+  return Math.min(10, Math.floor(weeks / 4) + 1);
+}
+
+/* =====================================================
+   入力取得（★alertは出さない。未入力はnullで返す）
+   ===================================================== */
+function calculateInputs() {
+  return {
+    lmp:  parseDate(document.getElementById('lmpDate').value),
+    due:  parseDate(document.getElementById('dueDate').value),
+    base: parseDate(document.getElementById('baseDate').value) ?? todayMs()
+  };
+}
+
+/* =====================================================
+   計算本体（不正・範囲外はnull）
+   ・最終月経開始日があればそれを優先、なければ出産予定日から逆算
+   ===================================================== */
+function calculateResult(inputs) {
+  let lmp;
+  if (inputs.lmp !== null) {
+    lmp = inputs.lmp;
+  } else if (inputs.due !== null) {
+    lmp = inputs.due - 280 * DAY_MS;
+  } else {
+    return null;
+  }
+
+  const due = lmp + 280 * DAY_MS;
+  const elapsed = Math.round((inputs.base - lmp) / DAY_MS); // 0週0日からの経過日数
+  if (elapsed < 0 || elapsed > 300) return null;           // 妊娠前 or 約43週超は対象外
+
+  const weeks = Math.floor(elapsed / 7);
+  const days  = elapsed % 7;
+  const remain = Math.round((due - inputs.base) / DAY_MS);  // 予定日までの日数（過ぎたらマイナス）
+  const remainAbs = Math.abs(remain);
+
+  return {
+    main:   `${weeks}週${days}日`,
+    subA:   `${monthOf(weeks)}か月`,
+    subB:   remain >= 0 ? `${remain}日` : `${remainAbs}日超過`,
+    subC:   remain >= 0 ? `${Math.floor(remain / 7)}週${remain % 7}日` : `${Math.floor(remainAbs / 7)}週${remainAbs % 7}日超過`,
+    dueStr: fmtDate(due),
+    lmpStr: fmtDate(lmp),
+    // 以下は表示処理用（コピーには使わない）
+    lmpMs: lmp,
+    weeks: weeks
+  };
+}
+
+/* =====================================================
+   結果表示
+   ===================================================== */
+function displayResult(result) {
+  const numEl = document.getElementById('resultNum');
+  numEl.textContent = result.main;
+  numEl.classList.remove('placeholder');
+
+  [['bA', result.subA], ['bB', result.subB], ['bC', result.subC]].forEach(([id, v]) => {
+    const el = document.getElementById(id);
+    el.textContent = v;
+    el.classList.remove('placeholder');
+  });
+
+  document.getElementById('resultDue').textContent = `出産予定日：${result.dueStr}`;
+
+  // reset()で無効化されるコピーボタンを有効に戻す
+  ['btnCopyText', 'btnCopyExcel'].forEach(id => {
+    document.getElementById(id).disabled = false;
+  });
+
+  renderCalendar(result);
+  renderTarget(result);
+}
+
+/* =====================================================
+   ⑤ 妊娠○週○日は何月何日？
+   ===================================================== */
+function renderTarget(result) {
+  const el = document.getElementById('targetResult');
+  const w = document.getElementById('targetWeeks').value;
+  const d = document.getElementById('targetDays').value;
+  if (!result || w === '' ) { el.textContent = '—'; return; }
+  const weeks = Number(w);
+  const days  = d === '' ? 0 : Number(d); // 日が未選択なら0日として扱う
+  if (weeks < 0 || weeks > 42) { el.textContent = '0〜42週で入力してください'; return; }
+  el.textContent = `${weeks}週${days}日 ＝ ${fmtDate(result.lmpMs + (weeks * 7 + days) * DAY_MS)}`;
+}
+
+/* =====================================================
+   ④⑥ 妊娠カレンダー描画
+   ・result=nullの時は日付なし・ハイライトなしで表示
+   ===================================================== */
+function renderCalendar(result) {
+  // 現在週以下で最大の行を「現在」として強調（40週超は40週行）
+  let currentWeek = -1;
+  if (result) {
+    CAL_ROWS.forEach(([w]) => { if (w <= result.weeks) currentWeek = w; });
+  }
+
+  document.getElementById('calBody').innerHTML = CAL_ROWS.map(([w, text]) => {
+    const dateStr = result ? fmtDate(result.lmpMs + w * 7 * DAY_MS) : '—';
+    const cls = (w === currentWeek) ? ' class="current"' : '';
+    return `<tr${cls}>
+      <td class="cal-week">${w}週</td>
+      <td class="cal-week">${monthOf(w)}か月</td>
+      <td class="cal-date">${dateStr}</td>
+      <td>${text}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* =====================================================
+   common.jsのreset()を拡張
+   ・入力が空（結果null）の時に、出産予定日・⑤・カレンダーも空に戻す
+   ===================================================== */
+const baseReset = reset;
+reset = function () {
+  baseReset();
+  document.getElementById('resultDue').textContent = '';
+  renderCalendar(null);
+  renderTarget(null);
+};
+
+/* =====================================================
+   リセットボタン追加処理
+   ・resetAll()でselectが空になるが、先頭の「—」が空値なので崩れない
+   ===================================================== */
+function onResetExtra() {
+  renderCalendar(null);
+  renderTarget(null);
+}
+
+/* =====================================================
+   シェア（結果がnullでも動くようにcommon.jsを上書き）
+   ・個人の妊娠情報は載せず、ツール紹介だけを送る
+   ===================================================== */
+function buildShareText() {
+  return '妊娠週数・出産予定日を計算できる無料ツール。最終月経開始日を入れるだけで、今日が妊娠何週何日か・出産予定日・週数ごとのカレンダーが分かる。';
+}
+function buildShareUrl() {
+  return 'https://arigato-tools.com/calc-pregnancy-week';
+}
+function shareX() {
+  const text = buildShareText() + '\n' + buildShareUrl();
+  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+}
+function shareLine() {
+  const text = buildShareText() + '\n' + buildShareUrl();
+  window.open(`https://line.me/R/msg/text/${encodeURIComponent(text)}`, '_blank');
+}
+
+/* =====================================================
+   初期表示：カレンダー表を先に描画（保存値があれば後でrestoreInputsが上書き）
+   ===================================================== */
+renderCalendar(null);
+</script>
+</body>
+</html>
