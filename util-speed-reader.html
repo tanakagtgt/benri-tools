@@ -8,9 +8,9 @@
 <!-- ★gtag：既存ツールのheadからここにコピペ -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>速読トレーナー（RSVP）｜文章を高速表示して速読練習【無料】</title>
-<meta name="description" content="文章を1か所に高速表示するRSVP方式の速読練習ツール。速度・1回の表示文字数・縦横表示・色を自由に調整でき、読了後に完読率と所要時間を履歴として保存できます。無料・登録不要。">
+<meta name="description" content="文章を1か所に高速表示するRSVP方式の速読練習ツール。文節ごとの区切り表示、速度・表示文字数・縦横表示・色を自由に調整でき、読了後に完読率と所要時間を履歴として保存できます。無料・登録不要。">
 <meta property="og:title" content="速読トレーナー（RSVP）｜文章を高速表示して速読練習【無料】">
-<meta property="og:description" content="RSVP方式の速読練習ツール。速度・表示文字数・縦横・色を調整でき、履歴も保存できます。">
+<meta property="og:description" content="RSVP方式の速読練習ツール。文節区切り・速度・表示文字数・縦横・色を調整でき、履歴も保存できます。">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://arigato-tools.com/util-speed-reader">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -98,9 +98,18 @@
     <input type="range" id="speedRange" min="1" max="40" step="1" value="8" oninput="onSettingChange()">
   </div>
   <div class="input-group">
-    <label for="chunkRange">1回に表示する文字数：<span id="chunkVal"></span></label>
-    <input type="range" id="chunkRange" min="1" max="10" step="1" value="2" oninput="onSettingChange()">
+    <label for="modeSelect">区切り方</label>
+    <select id="modeSelect" onchange="onSettingChange()">
+      <option value="b">文節で区切る（自動）</option>
+      <option value="f">文字数で固定</option>
+    </select>
+    <div class="text-info" id="modeNote"></div>
   </div>
+  <div class="input-group">
+    <label for="chunkRange"><span id="chunkLabel">1回に表示する文字数</span>：<span id="chunkVal"></span></label>
+    <input type="range" id="chunkRange" min="1" max="20" step="1" value="6" oninput="onSettingChange()">
+  </div>
+  <label class="checkbox-item"><input type="checkbox" id="mergeCheck" onchange="onSettingChange()">短い文節を最大文字数までまとめて表示</label>
   <details class="fold">
     <summary>🎨 表示設定（縦横・色）</summary>
     <div class="input-group">
@@ -142,11 +151,11 @@
 <!-- 解説文（AdSense有用性対策） -->
 <section class="tool-desc">
   <h2>速読トレーナー（RSVP）の使い方</h2>
-  <p>RSVP（高速逐次視覚提示）は、文章を画面の同じ位置に少しずつ表示する方式です。視線を動かさずに済むため、読む速度を一定に保つ練習になります。文章を貼り付けて再生するだけで使え、速度は1〜40文字/秒（毎分60〜2,400文字）、1回の表示文字数は1〜10文字から選べます。</p>
+  <p>RSVP（高速逐次視覚提示）は、文章を画面の同じ位置に少しずつ表示する方式です。視線を動かさずに済むため、読む速度を一定に保つ練習になります。文章を貼り付けて再生するだけで使え、速度は1〜40文字/秒（毎分60〜2,400文字）、1回の表示文字数は1〜20文字から選べます。「文節で区切る」を選ぶと、Google製のBudouXで「日本の／人口は／減少して／います。」のように意味のまとまりごとに表示します（この場合の文字数は最大値）。</p>
   <h3>こんな場面で</h3>
   <p>ニュース記事や資格テキストを速く読む練習、自分の読書速度の把握、読書スピードの記録に向いています。一般的な日本語の黙読は毎分400〜600文字程度と言われますが、個人差が大きいので、まずは8文字/秒（毎分480文字）前後から試してください。</p>
   <h3>仕様の補足</h3>
-  <p>表示間隔は「1回の文字数÷速度」で決まります。所要時間は一時停止中を除いた再生時間で、完読率は表示済み文字数÷総文字数です。履歴や入力内容はブラウザ内にのみ保存され、サーバーには送信されません。</p>
+  <p>表示間隔は「表示した文字数÷速度」で決まります。所要時間は一時停止中を除いた再生時間で、完読率は表示済み文字数÷総文字数です。文節の区切りは機械学習による自動判定のため、実際の文節と異なる場合があります。履歴や入力内容はブラウザ内にのみ保存され、サーバーには送信されません。</p>
   <h3>よくある質問</h3>
   <p>Q. 理解度は測れますか？ A. 本ツールは速度の練習用で、内容理解は測りません。速度を上げすぎると理解が落ちるため、無理のない範囲で調整してください。</p>
 </section>
@@ -171,18 +180,19 @@ const HISTORY_KEY     = 'util-speed-reader_history';
 const HISTORY_MAX     = 50;   // 履歴の最大保存件数
 const JUMP_SEC        = 10;   // 戻る／進むの秒数
 
-const STORAGE_FIELDS = ['titleInput','textInput','speedRange','chunkRange','orientSelect','bgColor','fgColor'];
+const STORAGE_FIELDS = ['titleInput','textInput','speedRange','chunkRange','modeSelect','mergeCheck','orientSelect','bgColor','fgColor'];
 const INPUT_LABELS   = { speedRange:'速度（文字/秒）', chunkRange:'1画面の文字数' };
 const RESULT_LABELS  = { main:'推定所要時間（秒）', total:'総文字数' };
 
-// リセット時に戻す初期値
-const DEFAULTS = { speedRange:'8', chunkRange:'2', orientSelect:'h', bgColor:'#1d2027', fgColor:'#e7e9ee' };
+// リセット時に戻す初期値（mergeCheckはresetAllでOFFになるため不要）
+const DEFAULTS = { speedRange:'8', chunkRange:'6', modeSelect:'b', orientSelect:'h', bgColor:'#1d2027', fgColor:'#e7e9ee' };
 
 /* =====================================================
    状態管理
    ===================================================== */
 let chars = [];            // 読む文章（1文字ずつの配列）
 let cachedRaw = null;      // 前回パースした生テキスト（変化検知用）
+let textVersion = 0;       // 文章が変わるたびに+1（文節キャッシュ判定用）
 let pos = 0;               // 次に表示する文字位置（＝表示済み文字数）
 let playing = false;       // 再生中か
 let finished = false;      // 読了（または終了記録）済みか
@@ -196,7 +206,7 @@ const $ = id => document.getElementById(id);
 /* =====================================================
    文章の整形・取得
    ===================================================== */
-// 空白・改行を詰める（全角/日本語まわりの空白は削除、英数字どうしの空白は1つ残す）
+// 空白・改行を詰める（日本語まわりの空白は削除、英数字どうしの空白は1つ残す）
 function normalize(t) {
   return t.replace(/\s+/g, ' ').trim()
           .replace(/([^\x00-\x7F]) /g, '$1')
@@ -205,11 +215,81 @@ function normalize(t) {
 // 文字配列を返す（テキストが変わった時だけ再パース）
 function getChars() {
   const raw = $('textInput').value;
-  if (raw !== cachedRaw) { cachedRaw = raw; chars = Array.from(normalize(raw)); }
+  if (raw !== cachedRaw) { cachedRaw = raw; chars = Array.from(normalize(raw)); textVersion++; }
   return chars;
 }
 function getSpeed() { return parseFloat($('speedRange').value) || 8; }
-function getChunk() { return parseInt($('chunkRange').value, 10) || 2; }
+function getChunk() { return parseInt($('chunkRange').value, 10) || 6; }
+
+/* =====================================================
+   文節区切り（BudouX）
+   - 区切り位置は「累計文字位置(ends)」で持つ
+     → 進捗・残り時間・10秒移動は文字位置のまま動く
+   - 読込中／失敗時は固定文字数で代用
+   ===================================================== */
+const BUDOUX_URLS = [
+  'https://unpkg.com/budoux@0.9.2/module/index.js',
+  'https://unpkg.com/budoux/module/index.js'   // 上が失敗した時の予備
+];
+let budouxParser = null;
+let budouxState = 'loading';   // loading / ok / ng
+let ends = [], endsKey = null; // 各表示単位の終了位置（累計文字数）
+
+async function loadBudoux() {
+  for (const url of BUDOUX_URLS) {
+    try {
+      const m = await import(url);
+      budouxParser = m.loadDefaultJapaneseParser();
+      break;
+    } catch (e) { /* 次のURLを試す */ }
+  }
+  budouxState = budouxParser ? 'ok' : 'ng';
+  endsKey = null;
+  syncLabels();
+}
+
+function useBunsetsu() { return $('modeSelect').value === 'b' && !!budouxParser; }
+
+// 文節→最大文字数で分割→（任意で）短いものをまとめる、の順で終了位置の配列を作る
+function getEnds() {
+  const max = getChunk(), merge = $('mergeCheck').checked;
+  const key = textVersion + '|' + max + '|' + merge;
+  if (key === endsKey) return ends;
+  endsKey = key;
+  const lens = [];
+  for (const seg of budouxParser.parse(chars.join(''))) {
+    const n = Array.from(seg).length;
+    for (let r = n; r > 0; r -= max) lens.push(Math.min(r, max));
+  }
+  ends = [];
+  let acc = 0, curLen = 0;
+  for (const l of lens) {
+    acc += l;
+    if (merge && curLen > 0 && curLen + l <= max) { curLen += l; ends[ends.length - 1] = acc; }
+    else { curLen = l; ends.push(acc); }
+  }
+  if (acc < chars.length) ends.push(chars.length); // 念のための取りこぼし防止
+  return ends;
+}
+
+// 位置pの次の区切り位置（必ずp+1以上を返して無限ループを防ぐ）
+function nextEnd(p) {
+  const len = chars.length;
+  if (!useBunsetsu()) return Math.min(p + getChunk(), len);
+  const e = getEnds();
+  let lo = 0, hi = e.length;
+  while (lo < hi) { const m = (lo + hi) >> 1; if (e[m] > p) hi = m; else lo = m + 1; }
+  return Math.max(p + 1, lo < e.length ? e[lo] : len);
+}
+
+// 位置pまでに表示済みの直近1単位（停止中のジャンプ表示用）
+function pieceBefore(p) {
+  if (!useBunsetsu()) return chars.slice(Math.max(0, p - getChunk()), p);
+  const e = getEnds();
+  let lo = 0, hi = e.length;
+  while (lo < hi) { const m = (lo + hi) >> 1; if (e[m] >= p) hi = m; else lo = m + 1; }
+  return chars.slice(lo > 0 ? e[lo - 1] : 0, p);
+}
 
 /* =====================================================
    common.js連携（calculate系）
@@ -248,7 +328,7 @@ function applyDisplayStyle() {
   box.classList.toggle('vertical', $('orientSelect').value === 'v');
   fitFont();
 }
-// 1回の表示文字数に合わせて文字サイズを自動調整（枠からはみ出さない）
+// 最大文字数に合わせて文字サイズを自動調整（枠からはみ出さない・表示中にサイズが揺れない）
 function fitFont() {
   const box = $('rsvpBox');
   const vertical = $('orientSelect').value === 'v';
@@ -257,9 +337,14 @@ function fitFont() {
   $('rsvpText').style.fontSize = fs + 'px';
 }
 function syncLabels() {
-  const sp = getSpeed();
+  const sp = getSpeed(), b = $('modeSelect').value === 'b';
   $('speedVal').textContent = `${sp}文字/秒（毎分${sp * 60}文字）`;
+  $('chunkLabel').textContent = b ? '1回の最大文字数' : '1回に表示する文字数';
   $('chunkVal').textContent = `${getChunk()}文字`;
+  $('modeNote').textContent = !b ? '' :
+    budouxState === 'ok' ? '文節エンジン（BudouX）：読み込み済み' :
+    budouxState === 'loading' ? '文節エンジン読み込み中…（完了まで固定文字数で表示）' :
+    '文節エンジンの読み込みに失敗（固定文字数で代用中）';
 }
 function updateProgress() {
   const len = getChars().length;
@@ -307,14 +392,15 @@ function pausePlay() {
   updatePlayBtn();
 }
 
-// 1回分を表示→次回をタイマー予約
+// 1単位（文節 or 固定文字数）を表示→次回をタイマー予約
 function tick() {
   if (!playing) return;
   const len = chars.length;
   if (pos >= len) { finishSession(false); return; }
-  const piece = chars.slice(pos, pos + getChunk());
+  const end = nextEnd(pos);
+  const piece = chars.slice(pos, end);
   showText(piece.join(''));
-  pos = Math.min(pos + piece.length, len);
+  pos = end;
   updateProgress();
   timer = setTimeout(tick, (piece.length / getSpeed()) * 1000);
 }
@@ -338,8 +424,8 @@ function jump(sec) {
   if (!len || finished) return;
   pos = Math.min(len, Math.max(0, pos + Math.round(sec * getSpeed())));
   if (!playing) {
-    // 停止中は移動先の文字を表示して確認できるようにする
-    pos === 0 ? showIdle() : showText(chars.slice(Math.max(0, pos - getChunk()), pos).join(''));
+    // 停止中は移動先の表示単位を出して確認できるようにする
+    pos === 0 ? showIdle() : showText(pieceBefore(pos).join(''));
   }
   updateProgress();
   updatePlayBtn();
@@ -366,7 +452,8 @@ function finishSession(early) {
     id: Date.now(),
     title: $('titleInput').value.trim() || '（無題）',
     at: (startedAt || new Date()).toISOString(),
-    total: len, speed: getSpeed(), actualSec: sec, chunk: getChunk(), rate: rate
+    total: len, speed: getSpeed(), actualSec: sec, chunk: getChunk(), rate: rate,
+    mode: useBunsetsu() ? 'b' : 'f'
   };
   saveHistory(entry);
   showResult(entry, pos, early);
@@ -379,7 +466,7 @@ function finishSession(early) {
 function showResult(e, readChars, early) {
   $('resLabel').textContent = early ? '⏹ 途中終了の結果' : '🎉 読了結果';
   $('resRate').textContent = e.rate;
-  $('resSub').textContent = `${e.title} ／ 設定 ${e.speed}文字/秒・${e.chunk}文字表示`;
+  $('resSub').textContent = `${e.title} ／ 設定 ${e.speed}文字/秒・${e.mode === 'b' ? '文節（最大' + e.chunk + '文字）' : e.chunk + '文字表示'}`;
   $('resTime').textContent = fmtTime(e.actualSec);
   $('resEff').textContent = e.actualSec > 0 ? (readChars / e.actualSec).toFixed(1) : '—';
   $('resTotal').textContent = e.total.toLocaleString();
@@ -405,7 +492,7 @@ function renderHistory() {
       <div class="hist-title">${escapeHtml(h.title)}</div>
       <div>実施：${d}</div>
       <div>総文字数：${h.total.toLocaleString()}字 ／ 完読率：${h.rate}%</div>
-      <div>設定速度：${h.speed}文字/秒 ／ 1画面：${h.chunk}文字 ／ 所要時間：${fmtTime(h.actualSec)}</div>
+      <div>設定速度：${h.speed}文字/秒 ／ 1画面：${h.mode === 'b' ? '文節・最大' : ''}${h.chunk}文字 ／ 所要時間：${fmtTime(h.actualSec)}</div>
     </div>`;
   }).join('') : '<div class="hist-empty">まだ履歴がありません</div>';
 }
@@ -432,6 +519,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderHistory();
   updateProgress();
   updatePlayBtn();
+  loadBudoux();   // 文節エンジンを非同期で読込（読込中は固定文字数で動く）
 });
 window.addEventListener('resize', fitFont);
 </script>
