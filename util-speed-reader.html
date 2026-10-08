@@ -101,6 +101,7 @@
     <label for="modeSelect">区切り方</label>
     <select id="modeSelect" onchange="onSettingChange()">
       <option value="b">文節で区切る（自動）</option>
+      <option value="r">文節（BudouXそのまま）</option>
       <option value="f">文字数で固定</option>
     </select>
     <div class="text-info" id="modeNote"></div>
@@ -246,20 +247,27 @@ async function loadBudoux() {
   budouxState = budouxParser ? 'ok' : 'ng';
   endsKey = null;
   syncLabels();
+  fitFont();
 }
 
-function useBunsetsu() { return $('modeSelect').value === 'b' && !!budouxParser; }
+// 'b'=文節（最大文字数で分割・まとめ可） / 'r'=BudouXの判定のみ / 'f'=文字数固定
+function isRaw() { return $('modeSelect').value === 'r'; }
+function useBunsetsu() { return $('modeSelect').value !== 'f' && !!budouxParser; }
 
 // 文節→最大文字数で分割→（任意で）短いものをまとめる、の順で終了位置の配列を作る
 function getEnds() {
-  const max = getChunk(), merge = $('mergeCheck').checked;
-  const key = textVersion + '|' + max + '|' + merge;
+  const raw = isRaw(), max = getChunk(), merge = $('mergeCheck').checked && !raw;
+  const key = textVersion + '|' + max + '|' + merge + '|' + raw;
   if (key === endsKey) return ends;
   endsKey = key;
   const lens = [];
   for (const seg of budouxParser.parse(chars.join(''))) {
     const n = Array.from(seg).length;
-    for (let r = n; r > 0; r -= max) lens.push(Math.min(r, max));
+    if (raw) { lens.push(n); continue; }  // BudouXの判定のみ：分割もまとめもしない
+    // 最大文字数を超える文節は「前詰め」ではなく「均等割り」で分割（例：8字→4+4）
+    const k = Math.ceil(n / max);                    // 何分割するか
+    const base = Math.floor(n / k), extra = n % k;   // 端数は前から1字ずつ配分
+    for (let i = 0; i < k; i++) lens.push(base + (i < extra ? 1 : 0));
   }
   ends = [];
   let acc = 0, curLen = 0;
@@ -328,19 +336,30 @@ function applyDisplayStyle() {
   box.classList.toggle('vertical', $('orientSelect').value === 'v');
   fitFont();
 }
+// フォントサイズ計算の基準文字数（BudouXそのままの時は最長の文節に合わせる）
+function fitChars() {
+  if (useBunsetsu() && isRaw() && getChars().length) {
+    let longest = 1, prev = 0;
+    getEnds().forEach(x => { longest = Math.max(longest, x - prev); prev = x; });
+    return longest;
+  }
+  return getChunk();
+}
 // 最大文字数に合わせて文字サイズを自動調整（枠からはみ出さない・表示中にサイズが揺れない）
 function fitFont() {
   const box = $('rsvpBox');
   const vertical = $('orientSelect').value === 'v';
   const avail = (vertical ? box.clientHeight : box.clientWidth) - 24;
-  const fs = Math.max(14, Math.min(56, Math.floor(avail / getChunk())));
+  const fs = Math.max(14, Math.min(56, Math.floor(avail / fitChars())));
   $('rsvpText').style.fontSize = fs + 'px';
 }
 function syncLabels() {
-  const sp = getSpeed(), b = $('modeSelect').value === 'b';
+  const sp = getSpeed(), mode = $('modeSelect').value, b = mode !== 'f', raw = mode === 'r';
   $('speedVal').textContent = `${sp}文字/秒（毎分${sp * 60}文字）`;
-  $('chunkLabel').textContent = b ? '1回の最大文字数' : '1回に表示する文字数';
+  $('chunkLabel').textContent = raw ? '1回の文字数（BudouXそのままでは未使用）' : b ? '1回の最大文字数' : '1回に表示する文字数';
   $('chunkVal').textContent = `${getChunk()}文字`;
+  $('chunkRange').disabled = raw;   // BudouXそのままの時は最大文字数・まとめ表示を使わない
+  $('mergeCheck').disabled = raw;
   $('modeNote').textContent = !b ? '' :
     budouxState === 'ok' ? '文節エンジン（BudouX）：読み込み済み' :
     budouxState === 'loading' ? '文節エンジン読み込み中…（完了まで固定文字数で表示）' :
@@ -365,6 +384,7 @@ function onTextChange() {
   // 読書途中で文章が変わったらセッションを破棄
   if (playing || pos > 0 || finished) resetSession();
   onInputChange();
+  fitFont();   // BudouXそのまま時は最長文節で文字サイズが変わるため
 }
 
 /* =====================================================
@@ -453,7 +473,7 @@ function finishSession(early) {
     title: $('titleInput').value.trim() || '（無題）',
     at: (startedAt || new Date()).toISOString(),
     total: len, speed: getSpeed(), actualSec: sec, chunk: getChunk(), rate: rate,
-    mode: useBunsetsu() ? 'b' : 'f'
+    mode: useBunsetsu() ? (isRaw() ? 'r' : 'b') : 'f'
   };
   saveHistory(entry);
   showResult(entry, pos, early);
@@ -466,7 +486,7 @@ function finishSession(early) {
 function showResult(e, readChars, early) {
   $('resLabel').textContent = early ? '⏹ 途中終了の結果' : '🎉 読了結果';
   $('resRate').textContent = e.rate;
-  $('resSub').textContent = `${e.title} ／ 設定 ${e.speed}文字/秒・${e.mode === 'b' ? '文節（最大' + e.chunk + '文字）' : e.chunk + '文字表示'}`;
+  $('resSub').textContent = `${e.title} ／ 設定 ${e.speed}文字/秒・${e.mode === 'r' ? '文節（BudouXそのまま）' : e.mode === 'b' ? '文節（最大' + e.chunk + '文字）' : e.chunk + '文字表示'}`;
   $('resTime').textContent = fmtTime(e.actualSec);
   $('resEff').textContent = e.actualSec > 0 ? (readChars / e.actualSec).toFixed(1) : '—';
   $('resTotal').textContent = e.total.toLocaleString();
@@ -492,7 +512,7 @@ function renderHistory() {
       <div class="hist-title">${escapeHtml(h.title)}</div>
       <div>実施：${d}</div>
       <div>総文字数：${h.total.toLocaleString()}字 ／ 完読率：${h.rate}%</div>
-      <div>設定速度：${h.speed}文字/秒 ／ 1画面：${h.mode === 'b' ? '文節・最大' : ''}${h.chunk}文字 ／ 所要時間：${fmtTime(h.actualSec)}</div>
+      <div>設定速度：${h.speed}文字/秒 ／ 1画面：${h.mode === 'r' ? '文節（BudouXそのまま）' : (h.mode === 'b' ? '文節・最大' : '') + h.chunk + '文字'} ／ 所要時間：${fmtTime(h.actualSec)}</div>
     </div>`;
   }).join('') : '<div class="hist-empty">まだ履歴がありません</div>';
 }
