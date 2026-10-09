@@ -53,6 +53,53 @@
 .arrow-center { text-align:center; color:#aaa; font-size:18px; padding-bottom:9px; }
 .space-center { text-align:center; }
 
+/* =====================================================
+   日付入力の上の情報エリア
+   左：和暦⇔西暦変換／右：今日の日付
+   ・色はCSS変数のみ使用（ダークモード対応）
+   ・input/selectは16px以上、タップ領域44px以上
+   ===================================================== */
+.date-info-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px 14px;
+  align-items: start;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+.era-conv-label,
+.today-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-sub);
+  letter-spacing: 0.08em;
+  margin-bottom: 5px;
+}
+.era-conv-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.era-conv-row select,
+.era-conv-row input {
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-input);
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 16px; /* iPhoneの自動ズーム防止 */
+  min-height: 44px;
+  padding: 0 6px;
+  outline: none;
+}
+.era-conv-row select:focus,
+.era-conv-row input:focus { border-color: var(--color-primary); }
+.era-conv-row select { width: 74px; }
+.era-conv-row input { width: 68px; }
+.era-conv-unit { font-size: 13px; color: var(--color-text-sub); }
+.era-conv-arrow { font-size: 16px; font-weight: 700; color: var(--color-primary); padding: 0 2px; }
+.era-conv-note { font-size: 11px; color: var(--color-text-muted); margin-top: 6px; line-height: 1.6; min-height: 1.6em; }
+.era-conv-note.error { color: var(--color-error-text); }
+.today-box { text-align: right; }
+.today-text { font-size: 13px; font-weight: 700; color: var(--color-text); line-height: 1.6; white-space: nowrap; }
+
 /* オプション欄・有給休暇欄の区切り線（同じ見た目なので1クラスに共通化） */
 .bordered-section {
   border-top: 1px solid #eaeff6;
@@ -202,6 +249,9 @@
 @media (max-width:440px) {
   .date-grid { grid-template-columns:1fr; gap:8px 0; }
   .arrow-center, .space-center { display:none; }
+  /* 日付情報エリアは縦積み（今日の日付を上、変換機能を下） */
+  .date-info-row { grid-template-columns:1fr; }
+  .today-box { order:-1; }
 }
 </style>
 </head>
@@ -222,6 +272,30 @@
   </header>
 
   <div class="card">
+    <!-- 日付入力の上：左＝和暦⇔西暦変換／右＝今日の日付 -->
+    <div class="date-info-row">
+      <div class="era-conv">
+        <div class="era-conv-label">▶ 和暦 ⇔ 西暦 変換</div>
+        <div class="era-conv-row">
+          <select id="eraSelect" onchange="onEraInput()" aria-label="元号">
+            <option value="showa">昭和</option>
+            <option value="heisei">平成</option>
+            <option value="reiwa" selected>令和</option>
+          </select>
+          <input type="number" id="eraYear" inputmode="numeric" placeholder="年数" min="1" oninput="onEraInput()" aria-label="和暦の年数">
+          <span class="era-conv-unit">年</span>
+          <span class="era-conv-arrow">⇔</span>
+          <input type="number" id="seirekiYear" inputmode="numeric" placeholder="西暦" min="1926" oninput="onSeirekiInput()" aria-label="西暦の年">
+          <span class="era-conv-unit">年</span>
+        </div>
+        <div class="era-conv-note" id="eraNote"></div>
+      </div>
+      <div class="today-box">
+        <div class="today-label">📅 今日</div>
+        <div class="today-text" id="todayText"></div>
+      </div>
+    </div>
+
     <div class="date-grid">
       <div class="input-group">
         <label>開始日</label>
@@ -249,8 +323,12 @@
       <div class="section-title">▶ 除外オプション（営業しないならそのままでＯＫ）</div>
       <div class="checkbox-list">
         <label class="checkbox-item">
-          <input type="checkbox" id="chkWeekend" checked onchange="onInputChange()">
-          <span>土日は営業しない</span>
+          <input type="checkbox" id="chkSat" checked onchange="onInputChange()">
+          <span>毎週土曜日は営業しない</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" id="chkSun" checked onchange="onInputChange()">
+          <span>毎週日曜日は営業しない</span>
         </label>
         <label class="checkbox-item">
           <input type="checkbox" id="chkHoliday" checked onchange="onInputChange()">
@@ -471,7 +549,7 @@ const KYUGYO_STORAGE_KEY = STORAGE_KEY + '_kyugyoPeriods';
 // 休業期間はKYUGYO_STORAGE_KEY側で管理するためここには含めない）
 const STORAGE_FIELDS = [
   'startDate', 'endDate',
-  'chkWeekend', 'chkHoliday', 'chkNenmatsuBank', 'chkNenmatsuGovt',
+  'chkSat', 'chkSun', 'chkHoliday', 'chkNenmatsuBank', 'chkNenmatsuGovt',
   'chkMon', 'chkTue', 'chkWed', 'chkThu', 'chkFri',
   'leaveAnnual'
 ];
@@ -480,7 +558,7 @@ const STORAGE_FIELDS = [
 // テンプレート規約に合わせて定義（将来、共通コピー関数に寄せる場合の土台）
 const INPUT_LABELS = {
   startDate: '開始日', endDate: '終了日',
-  chkWeekend: '土日除外', chkHoliday: '祝日除外',
+  chkSat: '土曜除外', chkSun: '日曜除外', chkHoliday: '祝日除外',
   leaveAnnual: '有給休暇',
 };
 const RESULT_LABELS = {
@@ -548,6 +626,85 @@ function isNenmatsuBank(ymd){
 function isNenmatsuGovt(ymd){
   const [,m,d]=ymd.split('-').map(Number);
   return (m===12&&d>=29)||(m===1&&d<=3);
+}
+
+/* =====================================================
+   和暦 ⇔ 西暦 変換（日付入力の上の変換ボックス用）
+   ・年単位の変換（月日までは見ない）
+   ・境目の年（1926/1989/2019）は注記で補足
+   ===================================================== */
+const ERAS = {
+  showa:  { name:'昭和', offset:1925, maxYear:64 },
+  heisei: { name:'平成', offset:1988, maxYear:31 },
+  reiwa:  { name:'令和', offset:2018, maxYear:null }
+};
+
+function eraYearLabel(name, n){ return `${name}${n===1 ? '元' : n}年`; }
+
+// 西暦→{元号キー, 年数}（年単位。1989は平成元年、2019は令和元年として扱う）
+function getEraFromSeireki(y){
+  if(y >= 2019) return { key:'reiwa',  n:y-2018 };
+  if(y >= 1989) return { key:'heisei', n:y-1988 };
+  return { key:'showa', n:y-1925 };
+}
+
+// 元号の切り替わる年だけ補足メッセージを返す
+function eraBoundaryNote(y){
+  if(y===1926) return '※1926年は 大正15年（〜12/24）／昭和元年（12/25〜）';
+  if(y===1989) return '※1989年は 昭和64年（〜1/7）／平成元年（1/8〜）';
+  if(y===2019) return '※2019年は 平成31年（〜4/30）／令和元年（5/1〜）';
+  return '';
+}
+
+function setEraNote(msg, isError=false){
+  const el = document.getElementById('eraNote');
+  el.textContent = msg;
+  el.classList.toggle('error', isError);
+}
+
+// 和暦（元号＋年数）→ 西暦
+function onEraInput(){
+  const era = ERAS[document.getElementById('eraSelect').value];
+  const n = parseInt(document.getElementById('eraYear').value, 10);
+  const seirekiEl = document.getElementById('seirekiYear');
+
+  if(isNaN(n)){ seirekiEl.value=''; setEraNote(''); return; }
+  if(n < 1 || (era.maxYear && n > era.maxYear)){
+    seirekiEl.value='';
+    setEraNote(era.maxYear ? `${era.name}は1〜${era.maxYear}年の範囲で入力してください` : `${era.name}は1年以上で入力してください`, true);
+    return;
+  }
+  const y = era.offset + n;
+  seirekiEl.value = y;
+  setEraNote(`${eraYearLabel(era.name, n)} ＝ ${y}年 ${eraBoundaryNote(y)}`.trim());
+}
+
+// 西暦 → 和暦（元号プルダウンも自動で切り替える）
+function onSeirekiInput(){
+  const raw = document.getElementById('seirekiYear').value;
+  const y = parseInt(raw, 10);
+  const eraYearEl = document.getElementById('eraYear');
+
+  if(isNaN(y)){ eraYearEl.value=''; setEraNote(''); return; }
+  if(y < 1926){
+    eraYearEl.value='';
+    // 入力途中（4桁未満）ではエラーを出さない
+    setEraNote(raw.length >= 4 ? '1926年（昭和元年）以降の西暦を入力してください' : '', raw.length >= 4);
+    return;
+  }
+  const e = getEraFromSeireki(y);
+  document.getElementById('eraSelect').value = e.key;
+  eraYearEl.value = e.n;
+  setEraNote(`${y}年 ＝ ${eraYearLabel(ERAS[e.key].name, e.n)} ${eraBoundaryNote(y)}`.trim());
+}
+
+// 今日の日付表示（例：令和8年（2026年）10月9日（金））
+function showToday(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const e = getEraFromSeireki(y);
+  document.getElementById('todayText').textContent =
+    `${eraYearLabel(ERAS[e.key].name, e.n)}（${y}年）${d.getMonth()+1}月${d.getDate()}日（${WEEK_JP[d.getDay()]}）`;
 }
 
 /* =====================================================
@@ -737,7 +894,8 @@ function calculate(){
   const sv = document.getElementById('startDate').value;
   const ev = document.getElementById('endDate').value;
 
-  const chkW = document.getElementById('chkWeekend').checked;
+  const chkSat = document.getElementById('chkSat').checked;
+  const chkSun = document.getElementById('chkSun').checked;
   const chkH = document.getElementById('chkHoliday').checked;
   const chkNB = document.getElementById('chkNenmatsuBank').checked;
   const chkNG = document.getElementById('chkNenmatsuGovt').checked;
@@ -789,7 +947,6 @@ function calculate(){
     const ymd=toYMD(cur);
     const [y]=ymd.split('-').map(Number);
     const hName=hMaps[y]?.get(ymd);
-    const isWE=(dow===0||dow===6);
 
     const isNen = (chkNB && isNenmatsuBank(ymd)) || (chkNG && isNenmatsuGovt(ymd));
     const isExtraDow = extraDow.has(dow);
@@ -797,8 +954,11 @@ function calculate(){
 
     let cls='business', eigyoNum=null;
 
-    if(isWE){
-      if(chkW || isExtraDow) weekendOnly++;
+    // 土曜／日曜は個別に「営業しない」を判定（チェックOFFの曜日は通常の営業日扱い）
+    const isWeekOff = (dow===6 && chkSat) || (dow===0 && chkSun);
+
+    if(isWeekOff){
+      weekendOnly++;
       cls=(chkH && hName || isNen)?'holiday-wend':(dow===0?'weekend-sun':'weekend-sat');
       if(isNen && !hitHols.find(h=>h.date===ymd)) hitHols.push({date:ymd,name:'年末年始'});
     } else if(chkH && hName){
@@ -1092,7 +1252,8 @@ function onResetExtra() {
   document.getElementById('daysBefore').value = '';
 
   // resetAll()で全チェックボックスがOFFになるため、デフォルトONの項目だけ戻す
-  document.getElementById('chkWeekend').checked = true;
+  document.getElementById('chkSat').checked = true;
+  document.getElementById('chkSun').checked = true;
   document.getElementById('chkHoliday').checked = true;
   document.getElementById('chkNenmatsuBank').checked = true;
 
@@ -1118,6 +1279,9 @@ window.addEventListener('DOMContentLoaded', () => {
   const endEl = document.getElementById('endDate');
   if (!startEl.value) startEl.value = todayYMD;
   if (!endEl.value) endEl.value = todayYMD;
+
+  // 日付入力の上の「今日の日付」を表示
+  showToday();
 
   // 休業期間：保存があれば復元、無ければ空欄1行を用意
   restoreKyugyoPeriods();
