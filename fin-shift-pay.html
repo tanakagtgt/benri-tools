@@ -1,0 +1,1965 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<!-- AdSense（静的配置） -->
+<script async src="https://pagead2.googleapis.com/pagead/js/adsbygoogle.js?client=ca-pub-2195458991382480" crossorigin="anonymous"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>シフト給料カレンダー｜バイト・パートの給料を深夜・休日・残業込みで自動計算</title>
+<meta name="description" content="シフトをカレンダーに入力するだけで、バイト・パートの給料を自動計算。深夜・休日・残業の割増、交通費、臨時の手当や天引き、締日と給料日（土日祝の前倒し・後ろ倒し）に対応した無料ツール。労基法の休憩・割増チェック付き。データは端末内のみに保存。">
+<link rel="canonical" href="https://arigato-tools.com/fin-shift-pay">
+
+<!-- OGP -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="アリガイツ">
+<meta property="og:title" content="シフト給料カレンダー｜バイト・パートの給料を自動計算">
+<meta property="og:description" content="シフトを入れるだけで給料を自動計算。深夜・休日・残業・交通費・締日と給料日に対応した無料ツール。">
+<meta property="og:url" content="https://arigato-tools.com/fin-shift-pay">
+<meta name="twitter:card" content="summary">
+
+<!-- gtag（★既存ツールからGA測定IDのスクリプトをそのままコピーして差し替え） -->
+<!-- 【ここにgtagスクリプトを貼る】 -->
+
+<!-- Googleフォント -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="/common.css">
+
+<style>
+/* =====================================================
+   ツール固有CSS
+   ・色は必ずCSS変数（ダーク対応）。固定色の直書きは「色の上に載せる白」だけ
+   ・勤務先の色は --sw-1〜10（ライト／ダークで自動切替）
+   ・支給（＋）は青、天引き（−）は赤
+   ===================================================== */
+:root {
+  --pay-plus:  #1a56db;   /* 支給・プラス */
+  --pay-minus: #d93025;   /* 天引き・マイナス */
+  --color-sun: #d93025;
+  --color-sat: #1a56db;
+  --color-warn-bg:     #fff8e6;   /* 労基の警告ボックス */
+  --color-warn-border: #f5d58a;
+  --color-warn-text:   #8a5a00;
+  --color-info-bg:     #eef4ff;   /* 補足ボックス */
+
+  /* 勤務先の色（番号は JS の COLOR_PALETTE と対応） */
+  --sw-1:  #d93025;  --sw-2:  #1a56db;  --sw-3:  #0f9d58;  --sw-4:  #e8710a;  --sw-5:  #c79100;
+  --sw-6:  #7c3aed;  --sw-7:  #d6336c;  --sw-8:  #0891b2;  --sw-9:  #8d5524;  --sw-10: #5f6368;
+}
+html[data-theme="dark"] {
+  --pay-plus:  #7ca6ff;
+  --pay-minus: #ff8a80;
+  --color-sun: #ff8a80;
+  --color-sat: #7ca6ff;
+  --color-warn-bg:     #2b2210;
+  --color-warn-border: #7a5a1c;
+  --color-warn-text:   #f2c46d;
+  --color-info-bg:     #182236;
+  --sw-1:  #ff8a80;  --sw-2:  #7ca6ff;  --sw-3:  #5fd68a;  --sw-4:  #ffa94d;  --sw-5:  #ffd54f;
+  --sw-6:  #b794f6;  --sw-7:  #ff8fb3;  --sw-8:  #4dd0e1;  --sw-9:  #d2a679;  --sw-10: #b0b5bd;
+}
+.pay-plus  { color: var(--pay-plus); }
+.pay-minus { color: var(--pay-minus); }
+
+/* ---------- 画面切替タブ ---------- */
+.view-tabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.view-tab {
+  flex: 0 0 auto; font-family: 'BIZ UDPGothic', sans-serif; font-size: 13px; font-weight: 700;
+  color: var(--color-text-sub); background: var(--color-input-bg); border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-input); padding: 8px 12px; min-height: 44px; cursor: pointer; white-space: nowrap;
+}
+.view-tab.active { border-color: var(--color-primary); background: var(--color-primary-bg); color: var(--color-primary); }
+
+/* ---------- 月ナビ ---------- */
+.month-bar .month-nav { border-bottom: none; }
+.month-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; }
+.month-btn {
+  font-family: 'BIZ UDPGothic', sans-serif; font-size: 14px; font-weight: 700; color: var(--color-primary);
+  background: var(--color-chip-bg); border: 1px solid var(--color-primary-border); border-radius: var(--radius-input);
+  min-width: 44px; min-height: 44px; padding: 0 10px; cursor: pointer;
+}
+.month-btn:hover { background: var(--color-chip-hover); }
+.month-label { font-size: 17px; font-weight: 700; color: var(--color-text); }
+
+/* ---------- 月間サマリー ---------- */
+.result-panel .result-main { padding: 12px 12px 10px; }
+#resultNum { font-size: clamp(30px, 9vw, 44px); color: var(--pay-plus); }
+#resultNum.placeholder { color: var(--color-text-label); }
+.result-panel .breakdown-wrap { padding: 10px; }
+.result-panel .breakdown { margin-bottom: 0; }
+.result-panel .b-num { font-size: 16px; }
+
+/* ---------- カレンダー ---------- */
+.cal-card { padding: 8px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cal-dow { text-align: center; font-size: 11px; font-weight: 700; color: var(--color-text-muted); padding: 4px 0; }
+.cal-dow.sun { color: var(--color-sun); }
+.cal-dow.sat { color: var(--color-sat); }
+.cal-empty { min-height: 62px; }
+.cal-cell {
+  min-height: 62px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 2px;
+  padding: 5px 1px 3px; background: var(--color-input-bg); border: 1px solid var(--color-border); border-radius: 6px;
+  font-family: 'BIZ UDPGothic', sans-serif; color: var(--color-text); cursor: pointer;
+}
+.cal-cell.today    { border: 2px solid var(--color-primary); }
+.cal-cell.selected { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+.cal-day { font-size: 12px; font-weight: 700; line-height: 1; margin-bottom: 1px; }
+.cal-cell.sun .cal-day, .cal-cell.hol .cal-day { color: var(--color-sun); }
+.cal-cell.sat .cal-day { color: var(--color-sat); }
+.cal-amt { font-size: 9.5px; font-weight: 700; line-height: 1.15; white-space: nowrap; color: var(--pay-plus); }
+.cal-dots { display: flex; gap: 2px; justify-content: center; min-height: 6px; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--c); display: inline-block; flex: 0 0 auto; }
+
+/* ---------- 選択日パネル・シフト行 ---------- */
+.day-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; gap: 8px; }
+.day-title { font-size: 14px; font-weight: 700; color: var(--color-text); }
+.day-total { font-size: 15px; font-weight: 700; color: var(--pay-plus); }
+.day-empty { font-size: 13px; color: var(--color-text-muted); padding: 6px 0 12px; }
+.trade-item {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; text-align: left;
+  font-family: 'BIZ UDPGothic', sans-serif; color: var(--color-text); background: var(--color-input-bg);
+  border: 1px solid var(--color-border); border-radius: var(--radius-input); padding: 10px 12px; margin-bottom: 8px;
+  min-height: 44px; cursor: pointer;
+}
+.trade-main { display: block; min-width: 0; flex: 1; }
+.trade-time { display: block; font-size: 14px; font-weight: 700; margin-top: 2px; }
+.trade-sub  { display: block; font-size: 11px; color: var(--color-text-muted); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trade-pl { font-size: 16px; font-weight: 700; white-space: nowrap; color: var(--pay-plus); }
+.chip {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: var(--color-text-sub);
+  background: var(--color-card); border: 1px solid var(--color-border); border-radius: 5px; padding: 2px 7px; margin: 0 4px 2px 0;
+}
+
+/* ---------- ボトムシート ---------- */
+.sheet-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); z-index: 900;
+  align-items: flex-end; justify-content: center;
+}
+.sheet-overlay.show { display: flex; }
+.sheet-overlay.top { z-index: 950; }
+.sheet {
+  width: 100%; max-width: 600px; max-height: 94vh; overflow-y: auto; background: var(--color-card);
+  border: 1px solid var(--color-border); border-radius: 14px 14px 0 0; padding: 16px 16px 24px;
+}
+.sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.sheet-title { font-size: 16px; font-weight: 700; color: var(--color-text); }
+.sheet-close {
+  font-family: 'BIZ UDPGothic', sans-serif; font-size: 16px; color: var(--color-text-muted); background: transparent;
+  border: none; min-width: 44px; min-height: 44px; cursor: pointer;
+}
+.sheet .input-grid .input-group { margin-bottom: 0; }
+.sheet input[type="date"], .sheet input[type="time"] { -webkit-appearance: none; appearance: none; }
+.sheet-sub-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.sheet-sub-actions .btn-reset { margin-bottom: 0; }
+
+/* シート内のセクション見出し・補助文 */
+.sec { border-top: 1px solid var(--color-border); padding-top: 12px; margin-top: 14px; }
+.sec-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.sec-title { font-size: 13px; font-weight: 700; color: var(--color-text); }
+.hint { font-size: 11px; color: var(--color-text-muted); line-height: 1.7; margin: 4px 0 8px; }
+.sheet .toggle-wrap { margin-bottom: 10px; }
+.sheet .toggle-btn { font-size: 13px; padding: 8px 4px; }
+.sheet-input, .sheet textarea {
+  width: 100%; border: 1px solid var(--color-border-input); border-radius: var(--radius-input);
+  background: var(--color-input-bg); color: var(--color-text); font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 16px; padding: 10px; min-height: 44px; outline: none;
+}
+.sheet-input:focus { border-color: var(--color-primary); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.fld label { display: block; font-size: 11px; font-weight: 700; color: var(--color-text-sub); margin-bottom: 4px; letter-spacing: 0.04em; }
+.unit-row { display: flex; align-items: center; gap: 6px; }
+.unit-row .unit { font-size: 12px; color: var(--color-text-muted); white-space: nowrap; }
+
+/* ON/OFFスイッチ代わりのチェック */
+.check-line { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; color: var(--color-text); min-height: 44px; cursor: pointer; }
+.check-line input { width: 20px; height: 20px; accent-color: var(--color-primary); flex-shrink: 0; }
+
+/* 曜日チップ */
+.day-chips { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; margin-bottom: 8px; }
+.day-chip {
+  font-family: 'BIZ UDPGothic', sans-serif; font-size: 13px; font-weight: 700; color: var(--color-text-sub);
+  background: var(--color-input-bg); border: 2px solid var(--color-border-input); border-radius: var(--radius-input);
+  min-height: 44px; cursor: pointer; padding: 0;
+}
+.day-chip.on { border-color: var(--color-primary); background: var(--color-primary-bg); color: var(--color-primary); }
+
+/* 残業ルール・臨時項目の行 */
+.rule-box { background: var(--color-input-bg); border: 1px solid var(--color-border); border-radius: var(--radius-input); padding: 10px; margin-bottom: 8px; }
+.rule-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; font-size: 12px; font-weight: 700; color: var(--color-text-sub); }
+.mini-del {
+  font-family: 'BIZ UDPGothic', sans-serif; font-size: 12px; font-weight: 700; color: var(--color-error-text);
+  background: var(--color-error-bg); border: 1px solid var(--color-error-border); border-radius: var(--radius-input);
+  min-width: 56px; min-height: 36px; cursor: pointer;
+}
+.extra-row { display: grid; grid-template-columns: 82px 1fr; gap: 8px; margin-bottom: 6px; }
+.extra-row2 { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 10px; }
+
+/* 休憩のクイック選択 */
+.quick { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 6px; }
+.quick button {
+  font-family: 'BIZ UDPGothic', sans-serif; font-size: 12px; font-weight: 700; color: var(--color-primary);
+  background: var(--color-chip-bg); border: 1px solid var(--color-primary-border); border-radius: var(--radius-input);
+  min-height: 40px; cursor: pointer;
+}
+
+/* 警告・補足ボックス */
+.warn-box { background: var(--color-warn-bg); border: 1px solid var(--color-warn-border); color: var(--color-warn-text); border-radius: var(--radius-input); padding: 9px 12px; margin: 8px 0; font-size: 12px; line-height: 1.7; }
+.info-box { background: var(--color-info-bg); border: 1px solid var(--color-primary-border); color: var(--color-text-sub); border-radius: var(--radius-input); padding: 9px 12px; margin: 8px 0; font-size: 12px; line-height: 1.7; }
+.warn-box b { display: block; margin-bottom: 2px; }
+.preview-box { background: var(--color-input-bg); border: 1px solid var(--color-border); border-radius: var(--radius-input); padding: 10px 12px; margin: 10px 0; font-size: 13px; line-height: 1.8; color: var(--color-text-sub); }
+.preview-box b { color: var(--color-text); }
+
+/* 色選択 */
+.sw-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 4px; }
+.sw { min-height: 44px; border-radius: 8px; border: 2px solid transparent; background: var(--c); cursor: pointer; font-size: 16px; font-weight: 700; }
+.sw.on { border-color: var(--color-text); box-shadow: inset 0 0 0 2px var(--color-card); }
+.sw.on::after { content: '✓'; color: #fff; text-shadow: 0 0 3px rgba(0, 0, 0, 0.6); } /* 色の上に載せるチェックだけ白固定 */
+
+/* ---------- リスト・収支表・グラフ共通 ---------- */
+.l-controls { padding: 12px; }
+.l-controls .input-group { margin-bottom: 8px; }
+.l-controls .input-grid { margin-bottom: 8px; gap: 8px; }
+.l-controls .input-grid .input-group { margin-bottom: 0; }
+.l-note { font-size: 11px; color: var(--color-text-muted); text-align: center; padding: 0 12px 10px; line-height: 1.7; }
+.l-note:empty { display: none; }
+.l-controls .l-note { padding: 0; }
+.l-head { padding: 12px 14px 4px; font-size: 16px; font-weight: 700; color: var(--color-text); }
+.l-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 6px 12px 12px; }
+.l-sum-item { background: var(--color-input-bg); border: 1px solid var(--color-border); border-radius: var(--radius-btn); padding: 9px 4px; text-align: center; }
+.l-sum-label { font-size: 11px; color: var(--color-text-muted); margin-bottom: 2px; }
+.l-sum-num { font-size: clamp(13px, 4vw, 17px); font-weight: 700; color: var(--color-text); white-space: nowrap; }
+.l-sort-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
+.l-sort-row .input-group { margin-bottom: 0; }
+.l-sort-row .btn-action { padding: 0 14px; }
+.l-item {
+  width: 100%; display: block; text-align: left; font-family: 'BIZ UDPGothic', sans-serif; color: var(--color-text);
+  background: var(--color-card); border: 1px solid var(--color-border); border-radius: var(--radius-card);
+  padding: 10px 12px; margin-bottom: 8px; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.l-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.l-date { font-size: 13px; font-weight: 700; }
+.l-main { display: flex; align-items: center; gap: 8px; }
+.l-time { font-size: 12px; color: var(--color-text-sub); flex: 1; min-width: 0; }
+.l-amt { flex: 0 0 auto; margin-left: auto; font-size: clamp(14px, 4.2vw, 18px); font-weight: 700; white-space: nowrap; color: var(--pay-plus); }
+.l-empty { text-align: center; font-size: 13px; color: var(--color-text-muted); padding: 24px 0; }
+.sub-toggle { margin-bottom: 8px; }
+.sub-toggle .toggle-btn { font-size: 13px; padding: 8px 4px; }
+.t-card { padding: 12px; }
+
+/* ---------- 収支表（給与明細カード） ---------- */
+.slip-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.slip-name { font-size: 15px; font-weight: 700; color: var(--color-text); display: flex; align-items: center; gap: 6px; }
+.slip-pay  { font-size: 20px; font-weight: 700; color: var(--pay-plus); white-space: nowrap; }
+.slip-meta { font-size: 11px; color: var(--color-text-muted); line-height: 1.8; margin-bottom: 8px; }
+.t-row { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; padding: 6px 0; border-bottom: 1px solid var(--color-border); }
+.t-row:last-child { border-bottom: none; }
+.t-label { font-size: 12px; color: var(--color-text-muted); }
+.t-val { font-size: 14px; font-weight: 700; color: var(--color-text); white-space: nowrap; }
+.t-row.strong .t-label, .t-row.strong .t-val { color: var(--color-text); font-weight: 700; }
+.t-row.strong { border-top: 1px solid var(--color-border-input); }
+
+/* ---------- グラフ ---------- */
+.g-toggle { margin-bottom: 8px; }
+.g-toggle .toggle-btn { font-size: 13px; padding: 8px 4px; }
+.g-summary { font-size: 12px; color: var(--color-text-sub); line-height: 1.7; margin-bottom: 8px; }
+.g-box { width: 100%; -webkit-tap-highlight-color: transparent; }
+.g-box svg { display: block; width: 100%; height: auto; }
+.g-axis  { fill: var(--color-text-muted); font-size: 9px; }
+.g-grid  { stroke: var(--color-border); stroke-width: 1; }
+.g-zero  { stroke: var(--color-border-input); stroke-width: 1.2; }
+.g-hit   { fill: transparent; pointer-events: all; cursor: pointer; }
+.g-hit.sel { fill: var(--color-primary-bg); }
+.g-bar   { pointer-events: none; fill: var(--pay-plus); }
+.g-empty { fill: var(--color-text-muted); font-size: 12px; text-anchor: middle; }
+.g-detail { font-size: 12px; color: var(--color-text-sub); line-height: 1.7; margin-top: 8px; min-height: 3.4em; }
+
+/* ---------- 設定画面 ---------- */
+.wp-card { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; font-family: 'BIZ UDPGothic', sans-serif;
+  background: var(--color-input-bg); border: 1px solid var(--color-border); border-radius: var(--radius-input);
+  padding: 10px 12px; margin-bottom: 8px; min-height: 52px; cursor: pointer; color: var(--color-text); }
+.wp-card .dot { width: 12px; height: 12px; }
+.wp-card-main { flex: 1; min-width: 0; }
+.wp-card-name { font-size: 14px; font-weight: 700; display: block; }
+.wp-card-sub { font-size: 11px; color: var(--color-text-muted); display: block; line-height: 1.6; }
+.wp-card-go { color: var(--color-text-muted); font-size: 16px; }
+.set-note { font-size: 12px; color: var(--color-text-sub); line-height: 1.7; margin-bottom: 10px; }
+.set-wide { width: 100%; }
+.set-kind { font-size: 11px; color: var(--color-text-muted); margin: 10px 0 4px; }
+.data-bar { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 4px; }
+.btn-data {
+  flex: 1; min-width: 100px; background: var(--color-card); border: 1px solid var(--color-primary-border);
+  border-radius: var(--radius-input); color: var(--color-primary); font-family: inherit; font-size: 13px; font-weight: 700;
+  padding: 10px; min-height: 44px; cursor: pointer;
+}
+.btn-data:hover { background: var(--color-primary-bg); }
+#importFileInput { display: none; }
+.data-note { font-size: 11px; color: var(--color-text-muted); line-height: 1.7; margin-top: 8px; }
+
+/* ---------- 解説文 ---------- */
+.tool-desc {
+  background: var(--color-card); border: 1px solid var(--color-border); border-radius: var(--radius-card);
+  padding: 16px 18px; margin-bottom: 14px; font-size: 13px; line-height: 1.9; color: var(--color-text-sub);
+}
+.tool-desc h2 { font-size: 14px; color: var(--color-text); margin-bottom: 8px; }
+.tool-desc h3 { font-size: 12px; color: var(--color-text); margin: 10px 0 2px; }
+</style>
+</head>
+
+<body>
+<div class="container">
+
+  <div id="topNavSlot"></div>
+
+  <header>
+    <h1>シフト給料カレンダー</h1>
+    <p class="subtitle">シフトを入れるだけで、深夜・休日・残業・交通費込みの給料を自動計算<br>データはこの端末のブラウザ内にだけ保存されます</p>
+  </header>
+
+  <!-- 画面切替タブ（JSのVIEWSから生成） -->
+  <nav class="view-tabs" id="viewTabs" aria-label="表示切替"></nav>
+
+  <!-- ===== 月ナビ（カレンダー／リスト／収支表で共通。グラフ・設定では隠す） ===== -->
+  <div class="result-panel month-bar">
+    <div class="month-nav">
+      <button type="button" class="month-btn" onclick="changeMonth(-1)" aria-label="前の月">◀</button>
+      <div class="month-label" id="monthLabel">—</div>
+      <button type="button" class="month-btn" onclick="goToday()">今日</button>
+      <button type="button" class="month-btn" onclick="changeMonth(1)" aria-label="次の月">▶</button>
+    </div>
+  </div>
+
+  <!-- ===== 画面：カレンダー ===== -->
+  <section class="view" id="view-calendar">
+
+    <!-- 月間サマリー（idはcommon.jsのreset()が参照するので変えない） -->
+    <div class="result-panel">
+      <div class="result-main">
+        <div class="result-label">この月の給料見込み（勤務した日ベース）</div>
+        <div><span class="result-number placeholder" id="resultNum">—</span><span class="result-unit">円</span></div>
+        <div class="result-sub" id="resultSub">&nbsp;</div>
+      </div>
+      <div class="breakdown-wrap">
+        <div class="breakdown">
+          <div class="breakdown-item"><div class="b-num placeholder" id="bA">—</div><div class="b-label">勤務日数</div></div>
+          <div class="breakdown-item"><div class="b-num placeholder" id="bB">—</div><div class="b-label">勤務時間</div></div>
+          <div class="breakdown-item"><div class="b-num placeholder" id="bC">—</div><div class="b-label">平均時給</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- カレンダー本体 -->
+    <div class="card cal-card">
+      <div class="cal-grid" id="calDow"></div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+
+    <!-- 選択日のシフト一覧＋追加ボタン -->
+    <div class="card">
+      <div class="day-head">
+        <div class="day-title" id="dayTitle">—</div>
+        <div class="day-total" id="dayTotal"></div>
+      </div>
+      <div id="dayList"></div>
+      <button type="button" class="btn-calc" onclick="openShiftSheet()">＋ この日のシフトを追加</button>
+    </div>
+
+  </section>
+
+  <!-- ===== 画面：リスト ===== -->
+  <section class="view" id="view-list" hidden>
+
+    <div class="result-panel">
+      <div class="l-head" id="lTitle">—</div>
+      <div class="l-summary">
+        <div class="l-sum-item"><div class="l-sum-label">シフト数</div><div class="l-sum-num" id="lSumCnt">—</div></div>
+        <div class="l-sum-item"><div class="l-sum-label">勤務時間</div><div class="l-sum-num" id="lSumHrs">—</div></div>
+        <div class="l-sum-item"><div class="l-sum-label">金額</div><div class="l-sum-num pay-plus" id="lSumAmt">—</div></div>
+      </div>
+    </div>
+
+    <div class="card l-controls">
+      <div class="input-group">
+        <label for="lSearch">メモ・臨時項目の検索</label>
+        <input type="text" id="lSearch" placeholder="キーワード" autocomplete="off" oninput="renderListRows()">
+      </div>
+      <div class="input-group">
+        <label for="lWp">勤務先</label>
+        <select id="lWp" onchange="renderListRows()"></select>
+      </div>
+      <div class="l-sort-row">
+        <div class="input-group">
+          <label for="lSort">並び替え</label>
+          <select id="lSort" onchange="renderListRows()">
+            <option value="date">日付</option>
+            <option value="amount">金額</option>
+          </select>
+        </div>
+        <button type="button" class="btn-action" id="lDirBtn" onclick="toggleListDir()">降順 ▼</button>
+      </div>
+    </div>
+
+    <div id="listRows"></div>
+
+  </section>
+
+  <!-- ===== 画面：収支表（給与明細） ===== -->
+  <section class="view" id="view-table" hidden>
+
+    <div class="card l-controls">
+      <div class="section-title" id="tTitle">—</div>
+      <div class="input-group">
+        <label for="tWp">勤務先</label>
+        <select id="tWp" onchange="renderPayTable()"></select>
+      </div>
+      <div class="l-note">上の月に「支給日」が来る給料を、締日ごとに集計しています</div>
+    </div>
+
+    <div class="result-panel">
+      <div class="result-main">
+        <div class="result-label">この月に振り込まれる給料（差引支給額）</div>
+        <div><span class="result-number" id="tTotal" style="font-size:clamp(30px,9vw,44px);color:var(--pay-plus)">—</span><span class="result-unit">円</span></div>
+        <div class="result-sub" id="tTotalSub">&nbsp;</div>
+      </div>
+    </div>
+
+    <div id="slipList"></div>
+
+  </section>
+
+  <!-- ===== 画面：グラフ ===== -->
+  <section class="view" id="view-graph" hidden>
+
+    <div class="card l-controls">
+      <div class="toggle-wrap g-toggle" id="gMetric">
+        <button type="button" class="toggle-btn" data-v="amt" onclick="setGraphMetric('amt')">金額</button>
+        <button type="button" class="toggle-btn" data-v="hrs" onclick="setGraphMetric('hrs')">勤務時間</button>
+      </div>
+      <div class="toggle-wrap g-toggle" id="gPeriod">
+        <button type="button" class="toggle-btn" data-v="d7" onclick="setGraphPeriod('d7')">7日間</button>
+        <button type="button" class="toggle-btn" data-v="d30" onclick="setGraphPeriod('d30')">30日間</button>
+        <button type="button" class="toggle-btn" data-v="m12" onclick="setGraphPeriod('m12')">12ヶ月間</button>
+      </div>
+      <div class="input-group" style="margin-bottom:0">
+        <label for="gWp">勤務先</label>
+        <select id="gWp" onchange="onGraphFilterChange()"></select>
+      </div>
+    </div>
+
+    <div class="card t-card">
+      <div class="g-summary" id="gSummary"></div>
+      <div class="g-box" id="gBox"></div>
+      <div class="g-detail" id="gDetail"></div>
+    </div>
+
+  </section>
+
+  <!-- ===== 画面：設定 ===== -->
+  <section class="view" id="view-settings" hidden>
+
+    <div class="card">
+      <div class="section-title">🏢 勤務先と給料ルール</div>
+      <p class="set-note">勤務先ごとに、給料・交通費・休日／深夜／残業の割増・締日と給料日を設定します。先にここで勤務先を登録してから、シフトを追加してください。</p>
+      <div id="wpList"></div>
+      <button type="button" class="btn-action set-wide" onclick="openWpSheet()">＋ 勤務先を追加</button>
+    </div>
+
+    <div class="card">
+      <div class="section-title">💾 データ管理（バックアップ）</div>
+      <div class="set-kind">JSON：勤務先設定とシフトの完全バックアップ（このツール用）</div>
+      <div class="data-bar">
+        <button type="button" class="btn-data" onclick="exportJson()">⬇️ JSONで書き出し</button>
+        <button type="button" class="btn-data" onclick="document.getElementById('importFileInput').click()">⬆️ JSON読み込み</button>
+      </div>
+      <div class="set-kind">CSV：Excelで開ける一覧表（シフトごとの内訳つき・書き出しのみ）</div>
+      <div class="data-bar">
+        <button type="button" class="btn-data" onclick="exportCsv()">⬇️ CSVで書き出し</button>
+      </div>
+      <input type="file" id="importFileInput" accept="application/json,.json" onchange="importJson(event)">
+      <p class="data-note">JSONの読み込みは今のデータに追加されます（同じIDの勤務先・シフトは重複せずスキップ）。表示設定はバックアップに含まれません。</p>
+    </div>
+
+    <div class="card">
+      <div class="section-title">🎨 表示変更</div>
+      <div class="input-group" style="margin-bottom:0">
+        <label for="setWeekStart">カレンダーの開始曜日</label>
+        <select id="setWeekStart" onchange="setWeekStart(this.value)">
+          <option value="0">日曜日</option>
+          <option value="1">月曜日</option>
+          <option value="2">火曜日</option>
+          <option value="3">水曜日</option>
+          <option value="4">木曜日</option>
+          <option value="5">金曜日</option>
+          <option value="6">土曜日</option>
+        </select>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ===== 解説文（AdSense有用性対策） ===== -->
+  <section class="tool-desc">
+    <h2>シフト給料カレンダーの使い方</h2>
+    <p>まず「設定」で勤務先を登録し、時給（または日給）、交通費、休日・深夜・残業の割増、締日と給料日を入力します。次に「カレンダー」で日付をタップしてシフトを追加し、開始・終了の日時と休憩時間を入れると、基本給・休日加算・深夜加算・残業加算が自動で計算されます。臨時の手当や天引きも件名と金額で追加できます。「収支表」では締日ごとの給与明細と支給日、「グラフ」では日別・月別の推移を確認できます。</p>
+    <h3>こんな方に</h3>
+    <p>シフト制のアルバイト・パート・複数の掛け持ちで、給料日前に手取りの目安を知りたい方、深夜や休日の割増が正しく付いているか確かめたい方向けです。</p>
+    <h3>計算の考え方</h3>
+    <p>勤務時間を1分単位で見て、深夜帯・休日の対象日・残業の適用時間に当てはめます。休憩は勤務時間全体に均等にかかるものとして按分します。残業の追加は「時給×％＋追加金額」を同時に適用でき、複数の段階（例：8時間超と10時間超）も設定できます。日給の場合は「日給÷所定時間」を時給換算の基準にします。支給日が土日祝のときは、前日（前倒し）または翌日（後ろ倒し）に自動で移します。</p>
+    <h3>労働基準法のチェック</h3>
+    <p>休憩（6時間超で45分以上、8時間超で60分以上）、1日8時間超の割増（25％以上）、深夜（22時〜5時）の割増（25％以上）が不足していると警告を表示します。警告が出ても入力・保存はできます。</p>
+    <h3>データの保存について</h3>
+    <p>記録はこの端末のブラウザ内（localStorage）にのみ保存され、サーバーには送信されません。ブラウザのデータ削除や端末の変更で消えるため、設定タブからJSONで定期的にバックアップしてください。</p>
+    <h3>ご注意</h3>
+    <p>本ツールは簡易的な試算であり、実際の支給額を保証するものではありません。所得税・社会保険料・住民税などは自動では引かれないため、必要に応じて「天引き」として入力してください。祝日は自動判定しますが、会社独自の休日（お盆・年末年始など）は含まれません。実際の給与は雇用契約・就業規則・給与明細をご確認ください。</p>
+  </section>
+
+  <div id="shareAreaSlot"></div>
+  <!-- resetBtnSlot は置かない：全データ削除は誤タップが怖いので、このツールでは用意しない -->
+  <div id="bottomNavSlot"></div>
+  <div id="adAreaSlot"></div>
+  <div id="qrModalSlot"></div>
+  <div id="footerSlot"></div>
+
+</div>
+
+<!-- =====================================================
+     シフト入力シート（追加／編集）
+     ===================================================== -->
+<div class="sheet-overlay" id="shiftOverlay" onclick="closeOnOverlay(event, 'shiftOverlay')">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="shiftSheetTitle">
+    <div class="sheet-head">
+      <div class="sheet-title" id="shiftSheetTitle">シフトを追加</div>
+      <button type="button" class="sheet-close" onclick="closeShiftSheet()" aria-label="閉じる">✕</button>
+    </div>
+
+    <div class="input-group">
+      <label for="fWp">勤務先</label>
+      <select id="fWp" onchange="onShiftFormChange()"></select>
+    </div>
+
+    <div class="input-grid">
+      <div class="input-group">
+        <label for="fSDate">開始 日付</label>
+        <input type="date" id="fSDate" onchange="onStartDateChange()">
+      </div>
+      <div class="input-group">
+        <label for="fSTime">開始 時刻</label>
+        <input type="time" id="fSTime" onchange="onTimeChange()">
+      </div>
+    </div>
+    <div class="input-grid">
+      <div class="input-group">
+        <label for="fEDate">終了 日付</label>
+        <input type="date" id="fEDate" onchange="onShiftFormChange()">
+      </div>
+      <div class="input-group">
+        <label for="fETime">終了 時刻</label>
+        <input type="time" id="fETime" onchange="onTimeChange()">
+      </div>
+    </div>
+
+    <div class="input-group">
+      <label for="fBreak">休憩（分）</label>
+      <input type="text" inputmode="numeric" id="fBreak" placeholder="0" autocomplete="off" oninput="onShiftFormChange()">
+      <div class="quick">
+        <button type="button" onclick="setBreak(0)">なし</button>
+        <button type="button" onclick="setBreak(30)">30分</button>
+        <button type="button" onclick="setBreak(45)">45分</button>
+        <button type="button" onclick="setBreak(60)">1時間</button>
+        <button type="button" onclick="setBreak(90)">1.5時間</button>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head"><div class="sec-title">🧾 臨時の手当・天引き</div></div>
+      <div id="extraList"></div>
+      <button type="button" class="btn-action set-wide" onclick="addExtraRow()">＋ 臨時項目を追加</button>
+      <datalist id="extraTitles"></datalist>
+    </div>
+
+    <div class="input-group" style="margin-top:14px">
+      <label for="fMemo">メモ</label>
+      <input type="text" id="fMemo" maxlength="100" placeholder="例：ヘルプ出勤、研修 など" autocomplete="off">
+    </div>
+
+    <div id="shiftPreview"></div>
+    <div id="shiftWarn"></div>
+    <div class="error-msg" id="errorMsg"></div>
+
+    <button type="button" class="btn-calc" style="margin-top:12px" onclick="saveShift()">保存</button>
+    <div class="sheet-sub-actions">
+      <button type="button" class="btn-action" onclick="closeShiftSheet()">キャンセル</button>
+      <button type="button" class="btn-reset" id="btnDeleteShift" onclick="deleteShift()">🗑 このシフトを削除</button>
+    </div>
+  </div>
+</div>
+
+<!-- =====================================================
+     勤務先設定シート（中身はJSが wpDraft から描画）
+     ===================================================== -->
+<div class="sheet-overlay top" id="wpOverlay" onclick="closeOnOverlay(event, 'wpOverlay')">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="wpSheetTitle">
+    <div class="sheet-head">
+      <div class="sheet-title" id="wpSheetTitle">勤務先を追加</div>
+      <button type="button" class="sheet-close" onclick="closeWpSheet()" aria-label="閉じる">✕</button>
+    </div>
+
+    <div id="wpBody"></div>
+
+    <div id="wpWarn"></div>
+    <div class="error-msg" id="wpError"></div>
+
+    <button type="button" class="btn-calc" style="margin-top:12px" onclick="saveWp()">保存</button>
+    <div class="sheet-sub-actions">
+      <button type="button" class="btn-action" onclick="closeWpSheet()">キャンセル</button>
+      <button type="button" class="btn-reset" id="btnDeleteWp" onclick="deleteWp()">🗑 この勤務先を削除</button>
+    </div>
+  </div>
+</div>
+
+<!-- QRコード生成ライブラリ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="/common.js"></script>
+
+<script>
+/* =====================================================
+   ツール固有ロジック
+   【データ構造】localStorage（DATA_KEY）に1つのJSONで保存
+   {
+     version: 1,
+     workplaces: [{                         // 勤務先ごとの給料ルール
+       id, name, color,
+       closing:  0〜28            // 締日（0＝月末）
+       payMonth: 0|1|2            // 給料日の月（0当月／1翌月／2翌々月）
+       payDay:   0〜28            // 給料日（0＝月末）
+       payShift: 'none'|'before'|'after'   // 給料日が土日祝のとき（そのまま／前日／翌日）
+       payType: 'hourly'|'daily', payAmount, dailyHours（日給を時給換算する所定時間）
+       transType: 'none'|'perDay'|'perMonth', transAmount
+       hol:      { on, type, amount, days:[0〜6(日〜土), 7(祝)] }   // 休日給料
+       night:    { on, rate, start, end }                          // 深夜の時給と時間帯
+       holNight: { on, rate, start, end }                          // 休日深夜の時給と時間帯
+       ot:       { on, rules:[{ h, m, yen, pct }] }                // 残業手当（円と％は同時適用）
+     }],
+     shifts: [{ id, wpId, startDate, startTime, endDate, endTime, breakMin,
+                extras:[{ id, kind:'plus'|'minus', title, amount }], memo }]
+   }
+   ・給料の内訳は保存せず、表示のたびに calcShiftCore() で計算する
+   ・勤務先はidで参照 → 名前を変えても過去のシフトに反映される
+   ===================================================== */
+
+/* ---------- common.jsが要求する定数 ---------- */
+const CURRENT_TOOL_ID = 'fin-shift-pay';
+const STORAGE_KEY     = 'fin-shift-pay-ui'; // common.js用（このツールでは実質未使用）
+const STORAGE_FIELDS  = [];                 // 記録は独自保存のため空
+const INPUT_LABELS    = {};
+const RESULT_LABELS   = { main: '月の給料見込み', subA: '勤務日数', subB: '勤務時間', subC: '平均時給' };
+
+/* ---------- このツール専用の定数 ---------- */
+const DATA_KEY     = 'fin-shift-pay-data-v1';
+const SETTINGS_KEY = 'fin-shift-pay-settings-v1';
+const DOW_NAMES    = ['日', '月', '火', '水', '木', '金', '土'];
+const LEGAL_DAY_MIN = 480;   // 法定労働時間（1日8時間）
+
+const VIEWS = [
+  { id: 'calendar', label: '📅 カレンダー' },
+  { id: 'list',     label: '📋 リスト' },
+  { id: 'table',    label: '📊 収支表' },
+  { id: 'graph',    label: '📈 グラフ' },
+  { id: 'settings', label: '⚙️ 設定' },
+];
+const VIEWS_WITHOUT_MONTH_BAR = ['graph', 'settings'];
+
+// 勤務先の色（CSS の --sw-1〜10 と並びを合わせる）
+const COLOR_PALETTE = [
+  { id: 'red', name: '赤' }, { id: 'blue', name: '青' }, { id: 'green', name: '緑' }, { id: 'orange', name: 'オレンジ' },
+  { id: 'yellow', name: '黄' }, { id: 'purple', name: '紫' }, { id: 'pink', name: 'ピンク' }, { id: 'cyan', name: '水色' },
+  { id: 'brown', name: '茶' }, { id: 'gray', name: 'グレー' },
+];
+
+/* ---------- 状態 ---------- */
+let data         = loadData();
+let settings     = loadSettings();          // { weekStart, lastForm }
+let viewYear     = new Date().getFullYear();
+let viewMonth    = new Date().getMonth();   // 0〜11
+let selectedDate = todayKey();
+let currentView  = 'calendar';
+let editingShiftId = null;
+let extrasDraft  = [];                      // シフトシート内の臨時項目
+let wpDraft      = null;                    // 勤務先シート内の編集中データ
+let editingWpId  = null;
+let listDir      = 'desc';
+let graphMetric  = 'amt';                   // 'amt' | 'hrs'
+let graphPeriod  = 'd30';                   // 'd7' | 'd30' | 'm12'
+let graphSel     = null;
+let calc         = new Map();               // シフトid → 計算結果（recalcAll()で作り直す）
+
+/* =====================================================
+   ユーティリティ
+   ===================================================== */
+let uidSeq = 0;
+function uid() { return Date.now().toString(36) + (uidSeq++).toString(36) + Math.random().toString(36).slice(2, 6); }
+function pad2(n) { return String(n).padStart(2, '0'); }
+function ymd(y, m, d) { return `${y}-${pad2(m + 1)}-${pad2(d)}`; }   // mは0始まり
+function todayKey() { const n = new Date(); return ymd(n.getFullYear(), n.getMonth(), n.getDate()); }
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function fmtNum(n) { return Math.round(n).toLocaleString('ja-JP'); }
+function fmtSigned(n) { return n > 0 ? '+' + fmtNum(n) : n < 0 ? '−' + fmtNum(Math.abs(n)) : '0'; }
+function fmtShort(n) { // カレンダーのセル用
+  n = Math.round(n);
+  if (n < 100000) return fmtNum(n);
+  return (n / 10000).toFixed(1).replace(/\.0$/, '') + '万';
+}
+function fmtHM(min) { min = Math.max(0, Math.round(min)); return `${Math.floor(min / 60)}:${pad2(min % 60)}`; }
+function toHalf(s) { return String(s).replace(/[０-９．，]/g, c => c === '．' ? '.' : c === '，' ? ',' : String.fromCharCode(c.charCodeAt(0) - 0xFEE0)); }
+// 数値入力 → 数値。空は0、不正はNaN（小数OK）
+function parseDec(s) {
+  const t = toHalf(s).replace(/[,\s]/g, '');
+  if (t === '') return 0;
+  if (!/^\d+(\.\d+)?$/.test(t)) return NaN;
+  return Number(t);
+}
+function parseInt0(s) { const v = parseDec(s); return Number.isInteger(v) ? v : NaN; }
+
+/* ---------- 日付計算（YYYY-MM-DD文字列で扱う） ---------- */
+function keyToDate(k) { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); }
+function dateToKey(dt) { return ymd(dt.getFullYear(), dt.getMonth(), dt.getDate()); }
+function addDays(k, n) { const dt = keyToDate(k); dt.setDate(dt.getDate() + n); return dateToKey(dt); }
+function dayDiff(a, b) { // b - a（日数）
+  const [y1, m1, d1] = a.split('-').map(Number), [y2, m2, d2] = b.split('-').map(Number);
+  return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86400000);
+}
+function dowOf(k) { return keyToDate(k).getDay(); }
+function lastDayOf(y, m0) { return new Date(y, m0 + 1, 0).getDate(); }
+function isValidDateKey(s) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || '');
+  if (!m) return false;
+  const dt = new Date(+m[1], +m[2] - 1, +m[3]);
+  return dt.getFullYear() === +m[1] && dt.getMonth() === +m[2] - 1 && dt.getDate() === +m[3];
+}
+function isValidTime(s) { return /^([01]\d|2[0-3]):[0-5]\d$/.test(s || ''); }
+function toMin(t) { const [h, m] = t.split(':').map(Number); return h * 60 + m; }
+function shortDate(k) { const [, m, d] = k.split('-').map(Number); return `${m}/${d}（${DOW_NAMES[dowOf(k)]}）`; }
+
+/* =====================================================
+   日本の祝日判定（振替休日・国民の休日・春分／秋分の日を含む）
+   ・2000年以降を想定した計算式。2020・2021年の五輪特例日も反映
+   ・会社独自の休日（お盆・年末年始など）は含まない
+   ===================================================== */
+const holidayCache = new Map();
+function nthMonday(y, m0, n) { // m0は0始まり
+  const first = new Date(y, m0, 1).getDay();
+  return 1 + ((1 - first + 7) % 7) + (n - 1) * 7;
+}
+function buildHolidays(y) {
+  const map = new Map();
+  const put = (m1, d, name) => map.set(ymd(y, m1 - 1, d), name);
+  const eq = base => Math.floor(base + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4));
+
+  put(1, 1, '元日');
+  put(1, nthMonday(y, 0, 2), '成人の日');
+  put(2, 11, '建国記念の日');
+  if (y >= 2020) put(2, 23, '天皇誕生日');
+  put(3, eq(20.8431), '春分の日');
+  put(4, 29, '昭和の日');
+  put(5, 3, '憲法記念日');
+  put(5, 4, 'みどりの日');
+  put(5, 5, 'こどもの日');
+  // 海の日（2020・2021は五輪特例）
+  if (y === 2020) put(7, 23, '海の日'); else if (y === 2021) put(7, 22, '海の日'); else put(7, nthMonday(y, 6, 3), '海の日');
+  // 山の日
+  if (y === 2020) put(8, 10, '山の日'); else if (y === 2021) put(8, 8, '山の日'); else if (y >= 2016) put(8, 11, '山の日');
+  put(9, nthMonday(y, 8, 3), '敬老の日');
+  put(9, eq(23.2488), '秋分の日');
+  // スポーツの日（体育の日）
+  if (y === 2020) put(7, 24, 'スポーツの日'); else if (y === 2021) put(7, 23, 'スポーツの日'); else put(10, nthMonday(y, 9, 2), 'スポーツの日');
+  put(11, 3, '文化の日');
+  put(11, 23, '勤労感謝の日');
+  if (y === 2019) { put(5, 1, '即位の日'); put(10, 22, '即位礼正殿の儀'); }
+
+  // 振替休日：日曜の祝日 → 次の「祝日でない日」
+  [...map.keys()].forEach(k => {
+    if (dowOf(k) !== 0) return;
+    let n = addDays(k, 1);
+    while (map.has(n)) n = addDays(n, 1);
+    map.set(n, '振替休日');
+  });
+  // 国民の休日：祝日に挟まれた平日
+  for (let m0 = 0; m0 < 12; m0++) {
+    for (let d = 1; d <= lastDayOf(y, m0); d++) {
+      const k = ymd(y, m0, d);
+      if (map.has(k) || dowOf(k) === 0) continue;
+      if (map.has(addDays(k, -1)) && map.has(addDays(k, 1))) map.set(k, '国民の休日');
+    }
+  }
+  return map;
+}
+function holidayName(k) {
+  const y = Number(k.slice(0, 4));
+  if (!holidayCache.has(y)) holidayCache.set(y, buildHolidays(y));
+  return holidayCache.get(y).get(k) || '';
+}
+// 給料の振込日用：土日祝＋銀行休業日（12/31・1/2・1/3）
+function isBankOff(k) {
+  const dow = dowOf(k), md = k.slice(5);
+  return dow === 0 || dow === 6 || !!holidayName(k) || md === '12-31' || md === '01-02' || md === '01-03';
+}
+
+/* =====================================================
+   勤務先データの既定値と正規化
+   ===================================================== */
+function defaultWp() {
+  return {
+    id: '', name: '', color: 'blue',
+    closing: 0, payMonth: 1, payDay: 25, payShift: 'before',
+    payType: 'hourly', payAmount: 1000, dailyHours: 8,
+    transType: 'none', transAmount: 0,
+    hol:      { on: false, type: 'hourly', amount: 1000, days: [0, 6, 7] },
+    night:    { on: false, rate: 1250, start: '22:00', end: '05:00' },
+    holNight: { on: false, rate: 1250, start: '22:00', end: '05:00' },
+    ot:       { on: false, rules: [{ h: 8, m: 0, yen: 0, pct: 25 }] },
+  };
+}
+function clampNum(v, def, min, max) { v = Number(v); return Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : def; }
+function pickIn(v, list, def) { return list.includes(v) ? v : def; }
+function normTime(s, def) { return isValidTime(s) ? s : def; }
+
+// 外部データ（localStorage・インポート）を安全な形に整える
+function normalizeWp(raw) {
+  const d = defaultWp();
+  const w = (raw && typeof raw === 'object') ? raw : {};
+  const hol = w.hol || {}, ni = w.night || {}, hn = w.holNight || {}, ot = w.ot || {};
+  const days = Array.isArray(hol.days) ? [...new Set(hol.days.map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 7))] : d.hol.days;
+  const rules = Array.isArray(ot.rules) ? ot.rules.slice(0, 6).map(r => ({
+    h: clampNum(r && r.h, 8, 0, 24), m: clampNum(r && r.m, 0, 0, 59),
+    yen: clampNum(r && r.yen, 0, 0, 1e6), pct: clampNum(r && r.pct, 0, 0, 1000),
+  })) : d.ot.rules;
+  return {
+    id: String(w.id || uid()),
+    name: String(w.name || '勤務先').slice(0, 20),
+    color: COLOR_PALETTE.some(c => c.id === w.color) ? w.color : d.color,
+    closing:  Math.round(clampNum(w.closing, d.closing, 0, 28)),
+    payMonth: Math.round(clampNum(w.payMonth, d.payMonth, 0, 2)),
+    payDay:   Math.round(clampNum(w.payDay, d.payDay, 0, 28)),
+    payShift: pickIn(w.payShift, ['none', 'before', 'after'], d.payShift),
+    payType:  pickIn(w.payType, ['hourly', 'daily'], d.payType),
+    payAmount: clampNum(w.payAmount, d.payAmount, 0, 1e7),
+    dailyHours: clampNum(w.dailyHours, d.dailyHours, 1, 24),
+    transType: pickIn(w.transType, ['none', 'perDay', 'perMonth'], d.transType),
+    transAmount: clampNum(w.transAmount, 0, 0, 1e7),
+    hol: { on: !!hol.on, type: pickIn(hol.type, ['hourly', 'daily'], 'hourly'), amount: clampNum(hol.amount, d.hol.amount, 0, 1e7), days },
+    night:    { on: !!ni.on, rate: clampNum(ni.rate, d.night.rate, 0, 1e7), start: normTime(ni.start, '22:00'), end: normTime(ni.end, '05:00') },
+    holNight: { on: !!hn.on, rate: clampNum(hn.rate, d.holNight.rate, 0, 1e7), start: normTime(hn.start, '22:00'), end: normTime(hn.end, '05:00') },
+    ot: { on: !!ot.on, rules: rules.length ? rules : d.ot.rules },
+  };
+}
+function normalizeShift(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  if (!raw.wpId || !isValidDateKey(raw.startDate) || !isValidDateKey(raw.endDate) ||
+      !isValidTime(raw.startTime) || !isValidTime(raw.endTime)) return null;
+  const extras = Array.isArray(raw.extras) ? raw.extras.slice(0, 20).map(x => ({
+    id: String((x && x.id) || uid()),
+    kind: x && x.kind === 'minus' ? 'minus' : 'plus',
+    title: String((x && x.title) || '').slice(0, 20),
+    amount: clampNum(x && x.amount, 0, 0, 1e9),
+  })).filter(x => x.amount > 0) : [];
+  return {
+    id: String(raw.id || uid()), wpId: String(raw.wpId),
+    startDate: raw.startDate, startTime: raw.startTime, endDate: raw.endDate, endTime: raw.endTime,
+    breakMin: Math.round(clampNum(raw.breakMin, 0, 0, 1440)),
+    extras, memo: String(raw.memo || '').slice(0, 100),
+  };
+}
+
+/* =====================================================
+   データ読み書き
+   ===================================================== */
+function loadData() {
+  try {
+    const raw = localStorage.getItem(DATA_KEY);
+    if (!raw) return { version: 1, workplaces: [], shifts: [] };
+    const d = JSON.parse(raw);
+    const wps = Array.isArray(d.workplaces) ? d.workplaces.map(normalizeWp) : [];
+    const shifts = Array.isArray(d.shifts) ? d.shifts.map(normalizeShift).filter(Boolean) : [];
+    return { version: 1, workplaces: wps, shifts };
+  } catch (e) {
+    return { version: 1, workplaces: [], shifts: [] };
+  }
+}
+function saveData() {
+  try { localStorage.setItem(DATA_KEY, JSON.stringify(data)); return true; } catch (e) { return false; }
+}
+function loadSettings() {
+  const def = { weekStart: 0, lastForm: {} };
+  try {
+    const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
+    if (!s || typeof s !== 'object') return def;
+    return {
+      weekStart: Number.isInteger(s.weekStart) && s.weekStart >= 0 && s.weekStart <= 6 ? s.weekStart : 0,
+      lastForm: (s.lastForm && typeof s.lastForm === 'object') ? s.lastForm : {},
+    };
+  } catch (e) { return def; }
+}
+function saveSettings() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {} }
+
+function wpById(id) { return data.workplaces.find(w => w.id === id) || null; }
+function wpName(id) { const w = wpById(id); return w ? w.name : '（削除済み）'; }
+function colorVar(wp) { const i = wp ? COLOR_PALETTE.findIndex(c => c.id === wp.color) : 9; return `var(--sw-${(i < 0 ? 9 : i) + 1})`; }
+function dotHtml(wp) { return `<span class="dot" style="--c:${colorVar(wp)}"></span>`; }
+
+/* =====================================================
+   給料計算エンジン
+   ・勤務時間を「1分ずつ」見て、その分の時給を決めて足し上げる
+   ・休憩は勤務全体に均等にかかる想定（実働/拘束 の比率で按分）
+   ・1分あたりの時給 ＝ 基準時給 → 休日なら休日時給 → 深夜帯なら深夜時給（高い方）
+   ・残業は「実働の累計が適用時間を超えた分」に、基準時給×％＋追加金額を足す
+   ・日給の場合：日給は固定、深夜は（深夜時給−日給÷所定時間）の差額を加算、残業も同様
+   ===================================================== */
+function inBand(tod, band) { // tod：その日の0:00からの分。日付またぎの時間帯に対応
+  const s = toMin(band.start), e = toMin(band.end);
+  if (s === e) return false;
+  return s < e ? (tod >= s && tod < e) : (tod >= s || tod < e);
+}
+function isTargetDay(days, k) {
+  if (days.includes(dowOf(k))) return true;
+  return days.includes(7) && !!holidayName(k);
+}
+function otTiers(wp) {
+  if (!wp.ot.on) return [];
+  return wp.ot.rules
+    .map(r => ({ T: r.h * 60 + r.m, yen: r.yen, pct: r.pct }))
+    .filter(r => r.yen > 0 || r.pct > 0)
+    .sort((a, b) => a.T - b.T);
+}
+
+// 1シフトの計算（交通費は含まない。交通費は recalcAll() で日／月ごとに割り当てる）
+function calcShiftCore(wp, sh) {
+  const s = toMin(sh.startTime);
+  const e = dayDiff(sh.startDate, sh.endDate) * 1440 + toMin(sh.endTime);
+  const span = e - s;
+  if (!(span > 0) || span > 1440) return null;
+  const brk = Math.min(Math.max(0, sh.breakMin | 0), span);
+  const work = span - brk;
+  const w = work / span;                       // 1分あたりの実働比率（休憩の按分）
+
+  const mainHourly = wp.payType === 'hourly' ? wp.payAmount : wp.payAmount / Math.max(1, wp.dailyHours);
+  const startHol = wp.hol.on && isTargetDay(wp.hol.days, sh.startDate);
+  const dailyMode = startHol ? wp.hol.type === 'daily' : wp.payType === 'daily';
+  const normalBase = wp.payType === 'daily' ? wp.payAmount : wp.payAmount * work / 60;
+
+  const r = { span, brk, work, base: 0, hol: 0, night: 0, ot: 0, transport: 0, plus: 0, minus: 0 };
+  let equiv = mainHourly;
+  if (dailyMode) {
+    const dayAmt = startHol ? wp.hol.amount : wp.payAmount;
+    equiv = dayAmt / Math.max(1, wp.dailyHours);
+    r.base = normalBase;
+    r.hol  = dayAmt - normalBase;
+  }
+
+  const tiers = otTiers(wp);
+  const dayCache = {};
+  let cum = 0;
+  for (let t = s; t < e; t++) {
+    const off = Math.floor(t / 1440), tod = t - off * 1440;
+    let dc = dayCache[off];
+    if (!dc) {
+      const key = addDays(sh.startDate, off);
+      dc = dayCache[off] = { hol: wp.hol.on && isTargetDay(wp.hol.days, key) };
+    }
+    const baseline = dailyMode ? equiv : (dc.hol && wp.hol.type === 'hourly' ? wp.hol.amount : mainHourly);
+    let rate = baseline;
+    if (wp.night.on && inBand(tod, wp.night)) rate = Math.max(rate, wp.night.rate);
+    if (dc.hol && wp.holNight.on && inBand(tod, wp.holNight)) rate = Math.max(rate, wp.holNight.rate);
+
+    const prev = cum; cum += w;
+    for (let i = 0; i < tiers.length; i++) {
+      const lo = Math.max(prev, tiers[i].T);
+      const hi = Math.min(cum, i + 1 < tiers.length ? tiers[i + 1].T : Infinity);
+      if (hi > lo) r.ot += (hi - lo) * (baseline * tiers[i].pct / 100 + tiers[i].yen) / 60;
+    }
+    if (!dailyMode) {
+      r.base += mainHourly * w / 60;
+      r.hol  += (baseline - mainHourly) * w / 60;
+    }
+    r.night += (rate - baseline) * w / 60;
+  }
+  ['base', 'hol', 'night', 'ot'].forEach(k => { r[k] = Math.round(r[k] + 1e-6); });
+  sh.extras.forEach(x => { if (x.kind === 'minus') r.minus += x.amount; else r.plus += x.amount; });
+  r.pay   = r.base + r.hol + r.night + r.ot;      // 勤務による給与
+  r.gross = r.pay + r.plus;                        // 総支給（交通費は後で加算）
+  r.net   = r.gross - r.minus;
+  return r;
+}
+
+// 全シフトを計算し、交通費を割り当てる
+function periodOf(wp, key) { // 勤務日 → その日が属する締め期間
+  const [y, m, d] = key.split('-').map(Number);
+  let ey = y, em = m - 1;                          // 期間末の年・月（0始まり）
+  if (wp.closing === 0) {
+    const endKey = ymd(ey, em, lastDayOf(ey, em));
+    return { startKey: ymd(ey, em, 1), endKey, key: wp.id + '|' + endKey };
+  }
+  if (d > wp.closing) { const nx = new Date(y, m, 1); ey = nx.getFullYear(); em = nx.getMonth(); }
+  const endKey = ymd(ey, em, wp.closing);
+  const pv = new Date(ey, em - 1, 1);
+  const prevEnd = ymd(pv.getFullYear(), pv.getMonth(), wp.closing);
+  return { startKey: addDays(prevEnd, 1), endKey, key: wp.id + '|' + endKey };
+}
+function payDateOf(wp, endKey) { // 締め期間の末日 → 実際の支給日（土日祝の移動込み）
+  const [y, m] = endKey.split('-').map(Number);
+  const t = new Date(y, m - 1 + wp.payMonth, 1);
+  const day = wp.payDay === 0 ? lastDayOf(t.getFullYear(), t.getMonth()) : wp.payDay;
+  const planned = ymd(t.getFullYear(), t.getMonth(), day);
+  let k = planned;
+  if (wp.payShift === 'before') { while (isBankOff(k)) k = addDays(k, -1); }
+  else if (wp.payShift === 'after') { while (isBankOff(k)) k = addDays(k, 1); }
+  return { date: k, planned, moved: k !== planned };
+}
+
+function recalcAll() {
+  calc = new Map();
+  const byWp = new Map();
+  data.shifts.forEach(sh => {
+    const wp = wpById(sh.wpId);
+    if (!wp) return;
+    const r = calcShiftCore(wp, sh);
+    if (!r) return;
+    calc.set(sh.id, r);
+    if (!byWp.has(wp.id)) byWp.set(wp.id, []);
+    byWp.get(wp.id).push(sh);
+  });
+  byWp.forEach((list, wpId) => {
+    const wp = wpById(wpId);
+    if (wp.transType === 'none' || wp.transAmount <= 0) return;
+    list.sort((a, b) => (a.startDate + a.startTime).localeCompare(b.startDate + b.startTime));
+    const seen = new Set();
+    list.forEach(sh => {
+      const k = wp.transType === 'perDay' ? sh.startDate : periodOf(wp, sh.startDate).key;
+      if (seen.has(k)) return;
+      seen.add(k);
+      const r = calc.get(sh.id);
+      r.transport = wp.transAmount;
+      r.gross += wp.transAmount;
+      r.net   += wp.transAmount;
+    });
+  });
+}
+
+// 締め期間ごとの給与明細を作る
+function buildPayslips() {
+  const m = new Map();
+  data.shifts.forEach(sh => {
+    const r = calc.get(sh.id), wp = wpById(sh.wpId);
+    if (!r || !wp) return;
+    const p = periodOf(wp, sh.startDate);
+    let s = m.get(p.key);
+    if (!s) {
+      s = { wp, period: p, pay: payDateOf(wp, p.endKey), count: 0, days: new Set(), work: 0,
+            base: 0, hol: 0, night: 0, ot: 0, transport: 0, plus: 0, minus: 0 };
+      m.set(p.key, s);
+    }
+    s.count++; s.days.add(sh.startDate); s.work += r.work;
+    ['base', 'hol', 'night', 'ot', 'transport', 'plus', 'minus'].forEach(k => { s[k] += r[k]; });
+  });
+  m.forEach(s => { s.gross = s.base + s.hol + s.night + s.ot + s.transport + s.plus; s.net = s.gross - s.minus; });
+  return [...m.values()];
+}
+
+/* =====================================================
+   労基法チェック（警告のみ。入力・保存は止めない）
+   ===================================================== */
+function wpBaseHourly(wp) { return wp.payType === 'hourly' ? wp.payAmount : wp.payAmount / Math.max(1, wp.dailyHours); }
+
+function wpWarnings(wp) {
+  const out = [];
+  const base = wpBaseHourly(wp);
+  if (!(base > 0)) return out;
+  const fmtPct = n => (Math.round(n * 10) / 10) + '％';
+
+  if (wp.night.on && wp.night.rate > 0 && wp.night.rate < base * 1.25) {
+    out.push({ lv: 'warn', title: '深夜の時給が割増の最低ラインを下回っています',
+      text: `深夜（22時〜翌5時）は通常の時給の25％以上（${fmtNum(Math.ceil(base * 1.25))}円以上）の割増が必要です。` });
+  }
+  if (wp.ot.on) {
+    const tiers = otTiers(wp);
+    const at8 = tiers.filter(t => t.T <= LEGAL_DAY_MIN).pop();   // 8時間時点で効いているルール
+    if (!at8) {
+      out.push({ lv: 'warn', title: '8時間を超える勤務に割増が付いていません',
+        text: '1日8時間を超える部分には25％以上の割増賃金が必要です。適用時間を8時間（またはそれ以前）にすると安全です。' });
+    } else {
+      const eff = at8.pct + (at8.yen / base) * 100;
+      if (eff < 25) {
+        out.push({ lv: 'warn', title: '8時間超の割増が25％未満です',
+          text: `現在の設定は時給の約${fmtPct(eff)}増しです。1日8時間を超える部分は25％以上が必要です（25％ちょうどなら適法）。` });
+      }
+    }
+  }
+  if (wp.hol.on && wp.hol.type === 'hourly' && wp.hol.amount > 0 && wp.hol.amount < base * 1.35) {
+    out.push({ lv: 'info', title: '休日給料について',
+      text: '週1日の「法定休日」に働く場合は35％以上の割増が必要です。会社が決めた所定休日（土日など）なら法律上の割増は不要です。契約や就業規則で確認してください。' });
+  }
+  return out;
+}
+
+function shiftWarnings(wp, r) {
+  const out = [];
+  if (!r) return out;
+  if (r.work > 480 && r.brk < 60) {
+    out.push({ lv: 'warn', title: '休憩が足りない可能性があります',
+      text: `実働${fmtHM(r.work)}のため、労働基準法では60分以上の休憩が必要です（現在${r.brk}分）。` });
+  } else if (r.work > 360 && r.brk < 45) {
+    out.push({ lv: 'warn', title: '休憩が足りない可能性があります',
+      text: `実働${fmtHM(r.work)}のため、労働基準法では45分以上の休憩が必要です（現在${r.brk}分）。` });
+  }
+  if (r.work > LEGAL_DAY_MIN && wp) {
+    const tiers = otTiers(wp);
+    if (!tiers.some(t => t.T <= LEGAL_DAY_MIN)) {
+      out.push({ lv: 'warn', title: '8時間超の割増が設定されていません',
+        text: '実働が8時間を超えています。超えた分には25％以上の割増賃金が必要です。勤務先の「残業手当」を確認してください。' });
+    }
+  }
+  return out;
+}
+function warnHtml(list) {
+  return list.map(x => `<div class="${x.lv === 'warn' ? 'warn-box' : 'info-box'}"><b>${x.lv === 'warn' ? '⚠️ ' : 'ℹ️ '}${esc(x.title)}</b>${esc(x.text)}</div>`).join('');
+}
+
+/* =====================================================
+   common.jsから呼ばれる関数
+   ===================================================== */
+function calculateInputs() { return { y: viewYear, m: viewMonth }; }
+
+function shiftsOfMonth(y, m) {
+  const prefix = `${y}-${pad2(m + 1)}-`;
+  return data.shifts.filter(sh => sh.startDate.startsWith(prefix) && calc.has(sh.id));
+}
+// 月間集計。シフトが0件でもnullにしない（シェア等が止まらないように）
+function calculateResult(inputs) {
+  const list = shiftsOfMonth(inputs.y, inputs.m);
+  let net = 0, work = 0;
+  const days = new Set();
+  list.forEach(sh => { const r = calc.get(sh.id); net += r.net; work += r.work; days.add(sh.startDate); });
+  return { main: net, subA: days.size, subB: work, subC: work > 0 ? Math.round(net / (work / 60)) : 0, count: list.length };
+}
+function displayResult(r) {
+  const num = document.getElementById('resultNum');
+  num.textContent = fmtNum(r.main);
+  num.classList.remove('placeholder');
+  document.getElementById('resultSub').textContent =
+    r.count > 0 ? `シフト${r.count}件（交通費・臨時手当・天引き込み）` : 'この月のシフトはまだありません';
+  const set = (id, text) => { const el = document.getElementById(id); el.textContent = text; el.classList.remove('placeholder'); };
+  set('bA', r.subA + '日');
+  set('bB', fmtHM(r.subB));
+  set('bC', r.count > 0 ? fmtNum(r.subC) + '円' : '—');
+}
+// シェアは金額を含めずツール紹介のみ（給料を無自覚に晒さない）
+function buildShareText(result) { return 'シフトを入れるだけで給料を自動計算できる無料ツール（深夜・休日・残業対応）🗓️'; }
+function buildShareUrl() { return 'https://arigato-tools.com/fin-shift-pay'; }
+
+/* =====================================================
+   画面切替
+   ===================================================== */
+function renderTabs() {
+  document.getElementById('viewTabs').innerHTML = VIEWS.map(v =>
+    `<button type="button" class="view-tab${v.id === currentView ? ' active' : ''}" onclick="setView('${v.id}')">${v.label}</button>`
+  ).join('');
+}
+function setView(id) {
+  currentView = id;
+  document.querySelector('.month-bar').hidden = VIEWS_WITHOUT_MONTH_BAR.includes(id);
+  document.querySelectorAll('.view').forEach(el => { el.hidden = el.id !== 'view-' + id; });
+  renderTabs();
+  if (id === 'graph') renderGraph(); // 非表示中は幅が取れないので、表示した時に描き直す
+}
+function renderAll() {
+  recalcAll();
+  renderCalendar();
+  renderDayPanel();
+  renderWpFilters();
+  renderListRows();
+  renderPayTable();
+  renderGraph();
+  renderSettings();
+  calculate(); // common.js：月間サマリーを再計算して表示
+}
+
+/* =====================================================
+   カレンダー
+   ===================================================== */
+function renderCalendar() {
+  document.getElementById('monthLabel').textContent = `${viewYear}年${viewMonth + 1}月`;
+  document.getElementById('calDow').innerHTML = Array.from({ length: 7 }, (_, k) => {
+    const wd = (settings.weekStart + k) % 7;
+    return `<div class="cal-dow${wd === 0 ? ' sun' : wd === 6 ? ' sat' : ''}">${DOW_NAMES[wd]}</div>`;
+  }).join('');
+
+  // 日別集計：金額と、勤務先の色ドット
+  const dayMap = {};
+  shiftsOfMonth(viewYear, viewMonth).forEach(sh => {
+    const o = dayMap[sh.startDate] || (dayMap[sh.startDate] = { net: 0, wps: [] });
+    o.net += calc.get(sh.id).net;
+    if (!o.wps.includes(sh.wpId)) o.wps.push(sh.wpId);
+  });
+
+  const firstDow = new Date(viewYear, viewMonth, 1).getDay();
+  const lastDay  = lastDayOf(viewYear, viewMonth);
+  const today    = todayKey();
+  let html = '';
+  const offset = (firstDow - settings.weekStart + 7) % 7;
+  for (let i = 0; i < offset; i++) html += '<div class="cal-empty"></div>';
+  for (let d = 1; d <= lastDay; d++) {
+    const key = ymd(viewYear, viewMonth, d);
+    const info = dayMap[key];
+    const dow = (firstDow + d - 1) % 7;
+    let cls = 'cal-cell';
+    if (dow === 0) cls += ' sun';
+    if (dow === 6) cls += ' sat';
+    if (holidayName(key)) cls += ' hol';
+    if (key === today) cls += ' today';
+    if (key === selectedDate) cls += ' selected';
+    const amt = info ? `<span class="cal-amt">${fmtShort(info.net)}</span>` : '';
+    const dots = info ? info.wps.slice(0, 3).map(id => dotHtml(wpById(id))).join('') : '';
+    html += `<button type="button" class="${cls}" onclick="selectDate('${key}')" aria-label="${viewMonth + 1}月${d}日">` +
+            `<span class="cal-day">${d}</span>${amt}<span class="cal-dots">${dots}</span></button>`;
+  }
+  document.getElementById('calGrid').innerHTML = html;
+}
+function selectDate(key) { selectedDate = key; renderCalendar(); renderDayPanel(); }
+function changeMonth(delta) {
+  const d = new Date(viewYear, viewMonth + delta, 1);
+  viewYear = d.getFullYear(); viewMonth = d.getMonth();
+  const now = new Date();
+  selectedDate = (viewYear === now.getFullYear() && viewMonth === now.getMonth()) ? todayKey() : ymd(viewYear, viewMonth, 1);
+  renderAll();
+}
+function goToday() {
+  const now = new Date();
+  viewYear = now.getFullYear(); viewMonth = now.getMonth(); selectedDate = todayKey();
+  renderAll();
+}
+
+/* ---------- シフト表示の共通部品 ---------- */
+function timeRangeText(sh) {
+  return `${sh.startTime}〜${sh.endDate !== sh.startDate ? '翌' : ''}${sh.endTime}`;
+}
+function extrasText(sh) {
+  return sh.extras.map(x => `${x.title || (x.kind === 'minus' ? '天引き' : '手当')}${x.kind === 'minus' ? '−' : '＋'}${fmtNum(x.amount)}`).join(' / ');
+}
+
+function renderDayPanel() {
+  const [y, m, d] = selectedDate.split('-').map(Number);
+  const hn = holidayName(selectedDate);
+  document.getElementById('dayTitle').textContent = `${m}月${d}日（${DOW_NAMES[dowOf(selectedDate)]}）${hn ? '・' + hn : ''}`;
+  const list = data.shifts.filter(sh => sh.startDate === selectedDate && calc.has(sh.id))
+    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+  const total = list.reduce((s, sh) => s + calc.get(sh.id).net, 0);
+  document.getElementById('dayTotal').textContent = list.length ? fmtNum(total) + '円' : '';
+
+  if (!list.length) {
+    document.getElementById('dayList').innerHTML = '<div class="day-empty">この日のシフトはありません</div>';
+    return;
+  }
+  document.getElementById('dayList').innerHTML = list.map(sh => {
+    const r = calc.get(sh.id), wp = wpById(sh.wpId);
+    const sub = [extrasText(sh), sh.memo].filter(Boolean).join('　');
+    return `<button type="button" class="trade-item" onclick="openShiftSheet('${sh.id}')">` +
+      `<span class="trade-main">` +
+        `<span class="chip">${dotHtml(wp)}${esc(wp.name)}</span>` +
+        `<span class="trade-time">${timeRangeText(sh)}（実働${fmtHM(r.work)}）</span>` +
+        (sub ? `<span class="trade-sub">${esc(sub)}</span>` : '') +
+      `</span>` +
+      `<span class="trade-pl">${fmtNum(r.net)}</span>` +
+    `</button>`;
+  }).join('');
+}
+
+/* =====================================================
+   勤務先フィルタ（リスト・収支表・グラフ共用）
+   ===================================================== */
+function fillWpSelect(el, withAll) {
+  const cur = el.value;
+  el.innerHTML = (withAll ? '<option value="">すべての勤務先</option>' : '') +
+    data.workplaces.map(w => `<option value="${w.id}">${esc(w.name)}</option>`).join('');
+  if ([...el.options].some(o => o.value === cur)) el.value = cur;
+}
+function renderWpFilters() {
+  fillWpSelect(document.getElementById('lWp'), true);
+  fillWpSelect(document.getElementById('tWp'), true);
+  fillWpSelect(document.getElementById('gWp'), true);
+}
+
+/* =====================================================
+   リスト
+   ===================================================== */
+function toggleListDir() {
+  listDir = listDir === 'desc' ? 'asc' : 'desc';
+  document.getElementById('lDirBtn').textContent = listDir === 'desc' ? '降順 ▼' : '昇順 ▲';
+  renderListRows();
+}
+function renderListRows() {
+  document.getElementById('lTitle').textContent = `${viewYear}年${viewMonth + 1}月のシフト`;
+  const wpSel = document.getElementById('lWp').value;
+  const q = document.getElementById('lSearch').value.trim().toLowerCase();
+  const sortBy = document.getElementById('lSort').value;
+
+  let list = shiftsOfMonth(viewYear, viewMonth).filter(sh => !wpSel || sh.wpId === wpSel);
+  if (q) list = list.filter(sh => (sh.memo + ' ' + sh.extras.map(x => x.title).join(' ')).toLowerCase().includes(q));
+  const sign = listDir === 'desc' ? -1 : 1;
+  list.sort((a, b) => {
+    const diff = sortBy === 'amount' ? calc.get(a.id).net - calc.get(b.id).net
+                                     : (a.startDate + a.startTime).localeCompare(b.startDate + b.startTime);
+    return diff * sign;
+  });
+
+  let net = 0, work = 0;
+  list.forEach(sh => { const r = calc.get(sh.id); net += r.net; work += r.work; });
+  document.getElementById('lSumCnt').textContent = list.length + '件';
+  document.getElementById('lSumHrs').textContent = fmtHM(work);
+  document.getElementById('lSumAmt').textContent = fmtNum(net) + '円';
+
+  const box = document.getElementById('listRows');
+  if (!list.length) { box.innerHTML = '<div class="l-empty">条件に合うシフトはありません</div>'; return; }
+  box.innerHTML = list.map(sh => {
+    const r = calc.get(sh.id), wp = wpById(sh.wpId);
+    const sub = [extrasText(sh), sh.memo].filter(Boolean).join('　');
+    return `<button type="button" class="l-item" onclick="openShiftSheet('${sh.id}')">` +
+      `<div class="l-top"><span class="l-date">${shortDate(sh.startDate)}</span><span class="chip">${dotHtml(wp)}${esc(wp.name)}</span></div>` +
+      `<div class="l-main"><span class="l-time">${timeRangeText(sh)}（実働${fmtHM(r.work)}）</span><span class="l-amt">${fmtNum(r.net)}円</span></div>` +
+      (sub ? `<div class="trade-sub" style="margin-top:3px">${esc(sub)}</div>` : '') +
+    `</button>`;
+  }).join('');
+}
+
+/* =====================================================
+   収支表（給与明細）：選択月に支給日が来る明細を表示
+   ===================================================== */
+function mdText(k) { const [, m, d] = k.split('-').map(Number); return `${m}/${d}`; }
+
+function renderPayTable() {
+  const ym = `${viewYear}-${pad2(viewMonth + 1)}`;
+  document.getElementById('tTitle').textContent = `${viewYear}年${viewMonth + 1}月に支給される給料`;
+  const wpSel = document.getElementById('tWp').value;
+  const today = todayKey();
+
+  const slips = buildPayslips()
+    .filter(s => s.pay.date.startsWith(ym) && (!wpSel || s.wp.id === wpSel))
+    .sort((a, b) => a.pay.date.localeCompare(b.pay.date));
+
+  const total = slips.reduce((s, x) => s + x.net, 0);
+  document.getElementById('tTotal').textContent = fmtNum(total);
+  document.getElementById('tTotalSub').textContent = slips.length ? `${slips.length}件の給与（予定を含む見込み額）` : 'この月に支給される給料はありません';
+
+  const box = document.getElementById('slipList');
+  if (!slips.length) { box.innerHTML = ''; return; }
+  const row = (label, val, cls, strong) =>
+    `<div class="t-row${strong ? ' strong' : ''}"><span class="t-label">${label}</span><span class="t-val ${cls || ''}">${val}</span></div>`;
+
+  box.innerHTML = slips.map(s => {
+    const pd = s.pay;
+    const moved = pd.moved ? `（${mdText(pd.planned)}が休みのため${pd.date < pd.planned ? '前倒し' : '後ろ倒し'}）` : '';
+    const open = s.period.endKey >= today;
+    return `<div class="card">` +
+      `<div class="slip-head"><div class="slip-name">${dotHtml(s.wp)}${esc(s.wp.name)}</div><div class="slip-pay">${fmtNum(s.net)}円</div></div>` +
+      `<div class="slip-meta">締め期間：${mdText(s.period.startKey)}〜${mdText(s.period.endKey)}${open ? '（まだ締まっていない見込み）' : ''}<br>` +
+        `支給日：${mdText(pd.date)}（${DOW_NAMES[dowOf(pd.date)]}）${moved}<br>` +
+        `勤務：${s.days.size}日・${s.count}シフト・${fmtHM(s.work)}</div>` +
+      row('基本給', fmtNum(s.base) + '円') +
+      (s.hol   ? row('休日の加算', fmtSigned(s.hol) + '円') : '') +
+      (s.night ? row('深夜の加算', fmtSigned(s.night) + '円') : '') +
+      (s.ot    ? row('残業の加算', fmtSigned(s.ot) + '円') : '') +
+      (s.transport ? row('交通費', fmtNum(s.transport) + '円') : '') +
+      (s.plus  ? row('臨時の手当', fmtNum(s.plus) + '円') : '') +
+      row('総支給額', fmtNum(s.gross) + '円', '', true) +
+      (s.minus ? row('天引き', '−' + fmtNum(s.minus) + '円', 'pay-minus') : '') +
+      row('差引支給額', fmtNum(s.net) + '円', 'pay-plus', true) +
+    `</div>`;
+  }).join('');
+}
+
+/* =====================================================
+   グラフ（棒グラフ：30日間・7日間は日別／12ヶ月間は月別。勤務日ベース）
+   ===================================================== */
+const GRAPH_METRICS = { amt: '金額', hrs: '勤務時間' };
+const GRAPH_PERIODS = { d7: '7日間', d30: '30日間', m12: '12ヶ月間' };
+
+function setGraphMetric(v) { graphMetric = v; graphSel = null; renderGraph(); }
+function setGraphPeriod(v) { graphPeriod = v; graphSel = null; renderGraph(); }
+function onGraphFilterChange() { graphSel = null; renderGraph(); }
+function selectGraphBar(i) { graphSel = (graphSel === i) ? null : i; renderGraph(); }
+function syncGraphButtons() {
+  document.querySelectorAll('#gMetric .toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.v === graphMetric));
+  document.querySelectorAll('#gPeriod .toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.v === graphPeriod));
+}
+function buildGraphBuckets() {
+  const now = new Date(), out = [];
+  if (graphPeriod === 'm12') {
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      out.push({ key: `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`, label: `${d.getMonth() + 1}月`, full: `${d.getFullYear()}年${d.getMonth() + 1}月` });
+    }
+  } else {
+    const days = graphPeriod === 'd7' ? 7 : 30;
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const k = dateToKey(d);
+      out.push({ key: k, label: `${d.getMonth() + 1}/${d.getDate()}`, full: `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日（${DOW_NAMES[d.getDay()]}）` });
+    }
+  }
+  return out;
+}
+function graphData() {
+  const wpSel = document.getElementById('gWp').value;
+  const monthly = graphPeriod === 'm12';
+  const buckets = buildGraphBuckets();
+  const idx = new Map(buckets.map((b, i) => [b.key, i]));
+  buckets.forEach(b => { b.net = 0; b.work = 0; b.count = 0; });
+  data.shifts.forEach(sh => {
+    const r = calc.get(sh.id);
+    if (!r || (wpSel && sh.wpId !== wpSel)) return;
+    const i = idx.get(monthly ? sh.startDate.slice(0, 7) : sh.startDate);
+    if (i === undefined) return;
+    const b = buckets[i];
+    b.net += r.net; b.work += r.work; b.count++;
+  });
+  return buckets;
+}
+function graphValue(b) { return graphMetric === 'amt' ? b.net : b.work / 60; }
+function niceScale(hi, ticks) {
+  if (hi <= 0) hi = 1;
+  const rough = hi / ticks;
+  const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+  const norm = rough / mag;
+  const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag;
+  return { max: Math.ceil(hi / step) * step, step };
+}
+function fmtAxis(v) {
+  if (graphMetric === 'hrs') return (Math.round(v * 10) / 10) + 'h';
+  if (v >= 10000) return (v / 10000).toFixed(1).replace(/\.0$/, '') + '万';
+  return fmtNum(v);
+}
+function renderGraph() {
+  syncGraphButtons();
+  const buckets = graphData();
+  const n = buckets.length;
+  const hasData = buckets.some(b => b.count > 0);
+  if (graphSel !== null && graphSel >= n) graphSel = null;
+
+  const box = document.getElementById('gBox');
+  const W = Math.max(280, Math.min(600, box.clientWidth || 340));
+  const H = 220, L = 46, R = 8, T = 10, B = 24;
+  const pw = W - L - R, ph = H - T - B;
+
+  const vals = buckets.map(graphValue);
+  const sc = niceScale(Math.max(0, ...vals), 4);
+  const y = v => T + (sc.max - v) / sc.max * ph;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${GRAPH_METRICS[graphMetric]}の棒グラフ（${GRAPH_PERIODS[graphPeriod]}）">`;
+  const steps = Math.round(sc.max / sc.step);
+  for (let i = 0; i <= steps; i++) {
+    const v = i * sc.step, yy = y(v);
+    svg += `<line class="${v === 0 ? 'g-zero' : 'g-grid'}" x1="${L}" x2="${W - R}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}"/>`;
+    svg += `<text class="g-axis" x="${L - 5}" y="${(yy + 3).toFixed(1)}" text-anchor="end">${fmtAxis(v)}</text>`;
+  }
+  const cw = pw / n, bw = Math.max(3, Math.min(28, cw * 0.62)), y0 = y(0);
+  buckets.forEach((b, i) => {
+    const cx = L + cw * i + cw / 2, v = vals[i];
+    svg += `<rect class="g-hit${i === graphSel ? ' sel' : ''}" x="${(L + cw * i).toFixed(1)}" y="${T}" width="${cw.toFixed(1)}" height="${ph}" onclick="selectGraphBar(${i})"/>`;
+    if (v > 0) {
+      const yv = y(v);
+      svg += `<rect class="g-bar" x="${(cx - bw / 2).toFixed(1)}" y="${yv.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, y0 - yv).toFixed(1)}" rx="1.5"/>`;
+    }
+    if (n <= 12 || (n - 1 - i) % 5 === 0) svg += `<text class="g-axis" x="${cx.toFixed(1)}" y="${H - 8}" text-anchor="middle">${b.label}</text>`;
+  });
+  if (!hasData) svg += `<text class="g-empty" x="${W / 2}" y="${T + ph / 2}">この期間のシフトはありません</text>`;
+  box.innerHTML = svg + '</svg>';
+
+  const tNet = buckets.reduce((s, b) => s + b.net, 0), tWork = buckets.reduce((s, b) => s + b.work, 0);
+  document.getElementById('gSummary').innerHTML =
+    `${GRAPH_PERIODS[graphPeriod]}の合計：<b class="pay-plus">${fmtNum(tNet)}円</b> ／ 勤務 <b>${fmtHM(tWork)}</b>`;
+  const det = document.getElementById('gDetail');
+  if (graphSel === null) det.textContent = '棒をタップすると、その日（月）の詳細が表示されます';
+  else {
+    const b = buckets[graphSel];
+    det.innerHTML = `<b>${b.full}</b>（${b.count}シフト）<br>金額 <b class="pay-plus">${fmtNum(b.net)}円</b> ／ 勤務時間 <b>${fmtHM(b.work)}</b>`;
+  }
+}
+window.addEventListener('resize', () => { if (currentView === 'graph') renderGraph(); });
+
+/* =====================================================
+   設定画面：勤務先一覧・表示変更
+   ===================================================== */
+function wpSummaryText(w) {
+  const pay = w.payType === 'hourly' ? `時給${fmtNum(w.payAmount)}円` : `日給${fmtNum(w.payAmount)}円`;
+  const close = w.closing === 0 ? '月末締め' : `${w.closing}日締め`;
+  const payDay = ['当月', '翌月', '翌々月'][w.payMonth] + (w.payDay === 0 ? '末' : w.payDay + '日') + '払い';
+  return `${pay}／${close}・${payDay}`;
+}
+function renderSettings() {
+  const box = document.getElementById('wpList');
+  box.innerHTML = data.workplaces.length
+    ? data.workplaces.map(w =>
+        `<button type="button" class="wp-card" onclick="openWpSheet('${w.id}')">${dotHtml(w)}` +
+        `<span class="wp-card-main"><span class="wp-card-name">${esc(w.name)}</span><span class="wp-card-sub">${esc(wpSummaryText(w))}</span></span>` +
+        `<span class="wp-card-go">›</span></button>`).join('')
+    : '<div class="day-empty">勤務先がまだありません。まずは下のボタンから追加してください。</div>';
+  document.getElementById('setWeekStart').value = String(settings.weekStart);
+}
+function setWeekStart(v) { settings.weekStart = Number(v); saveSettings(); renderCalendar(); }
+
+/* =====================================================
+   シート共通（開閉・背景スクロール固定）
+   ===================================================== */
+function updateBodyLock() {
+  document.body.style.overflow = document.querySelector('.sheet-overlay.show') ? 'hidden' : '';
+}
+function closeOnOverlay(e, id) {
+  if (e.target !== document.getElementById(id)) return;
+  if (id === 'wpOverlay') closeWpSheet(); else closeShiftSheet();
+}
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (document.getElementById('wpOverlay').classList.contains('show')) closeWpSheet();
+  else if (document.getElementById('shiftOverlay').classList.contains('show')) closeShiftSheet();
+});
+function showShiftError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg; el.classList.add('show');
+}
+
+/* =====================================================
+   シフトの追加・編集・削除
+   ===================================================== */
+let prevStartDate = '';   // 開始日を変えた時、終了日を一緒に動かすための記録
+let pendingShift = false; // 勤務先が未登録のままシフト追加を押した場合の再開用
+
+function openShiftSheet(id) {
+  if (!data.workplaces.length) { pendingShift = true; openWpSheet(); return; }
+  const sh = id ? data.shifts.find(x => x.id === id) : null;
+  editingShiftId = sh ? sh.id : null;
+  document.getElementById('shiftSheetTitle').textContent = sh ? 'シフトを編集' : 'シフトを追加';
+
+  fillWpSelect(document.getElementById('fWp'), false);
+  const wpId = sh ? sh.wpId : (wpById(settings.lastForm.wpId) ? settings.lastForm.wpId : data.workplaces[0].id);
+  document.getElementById('fWp').value = wpId;
+
+  // 新規は「その勤務先で前回入れた時刻・休憩」から始める
+  const last = settings.lastForm[wpId] || {};
+  const startDate = sh ? sh.startDate : selectedDate;
+  document.getElementById('fSDate').value = startDate;
+  document.getElementById('fSTime').value = sh ? sh.startTime : (last.startTime || '09:00');
+  document.getElementById('fETime').value = sh ? sh.endTime   : (last.endTime   || '18:00');
+  document.getElementById('fEDate').value = sh ? sh.endDate   : startDate;
+  document.getElementById('fBreak').value = String(sh ? sh.breakMin : (last.breakMin != null ? last.breakMin : 60));
+  document.getElementById('fMemo').value  = sh ? sh.memo : '';
+  prevStartDate = startDate;
+  if (!sh) autoFixEnd();
+
+  extrasDraft = sh ? sh.extras.map(x => ({ id: x.id, kind: x.kind, title: x.title, amount: String(x.amount) })) : [];
+  renderExtraRows();
+  fillExtraTitles();
+  document.getElementById('btnDeleteShift').style.display = sh ? 'block' : 'none';
+  document.getElementById('errorMsg').classList.remove('show');
+  onShiftFormChange();
+
+  document.getElementById('shiftOverlay').classList.add('show');
+  updateBodyLock();
+}
+function closeShiftSheet() {
+  document.getElementById('shiftOverlay').classList.remove('show');
+  updateBodyLock();
+}
+
+function setBreak(n) { document.getElementById('fBreak').value = String(n); onShiftFormChange(); }
+
+// 開始日を変えたら、終了日が開始日と同じだった場合に限り一緒に動かす
+function onStartDateChange() {
+  const s = document.getElementById('fSDate').value, eEl = document.getElementById('fEDate');
+  if (isValidDateKey(s) && isValidDateKey(prevStartDate)) {
+    const gap = dayDiff(prevStartDate, eEl.value);
+    if (isValidDateKey(eEl.value) && gap >= 0 && gap <= 1) eEl.value = addDays(s, gap);
+  }
+  prevStartDate = s;
+  onShiftFormChange();
+}
+// 時刻を変えた時の終了日の自動調整（夜勤の日またぎ対応）
+function autoFixEnd() {
+  const sd = document.getElementById('fSDate').value, ed = document.getElementById('fEDate');
+  const st = document.getElementById('fSTime').value, et = document.getElementById('fETime').value;
+  if (!isValidDateKey(sd) || !isValidTime(st) || !isValidTime(et)) return;
+  if (ed.value === sd && toMin(et) <= toMin(st)) ed.value = addDays(sd, 1);
+  else if (isValidDateKey(ed.value) && dayDiff(sd, ed.value) === 1 && toMin(et) > toMin(st)) ed.value = sd; // 24時間超になる組み合わせは同日に戻す
+}
+function onTimeChange() { autoFixEnd(); onShiftFormChange(); }
+
+/* ---------- 臨時の手当・天引き ---------- */
+function renderExtraRows() {
+  document.getElementById('extraList').innerHTML = extrasDraft.map((x, i) =>
+    `<div class="extra-row">` +
+      `<select class="sheet-input" onchange="setExtra(${i},'kind',this.value)">` +
+        `<option value="plus"${x.kind === 'plus' ? ' selected' : ''}>手当＋</option>` +
+        `<option value="minus"${x.kind === 'minus' ? ' selected' : ''}>天引き−</option>` +
+      `</select>` +
+      `<input type="text" class="sheet-input" list="extraTitles" maxlength="20" placeholder="件名（例：研修手当）" value="${esc(x.title)}" oninput="setExtra(${i},'title',this.value)">` +
+    `</div>` +
+    `<div class="extra-row2">` +
+      `<div class="unit-row"><input type="text" class="sheet-input" inputmode="numeric" placeholder="金額" value="${esc(x.amount)}" oninput="setExtra(${i},'amount',this.value)"><span class="unit">円</span></div>` +
+      `<button type="button" class="mini-del" onclick="delExtraRow(${i})">削除</button>` +
+    `</div>`
+  ).join('');
+}
+function addExtraRow() { extrasDraft.push({ id: uid(), kind: 'plus', title: '', amount: '' }); renderExtraRows(); }
+function delExtraRow(i) { extrasDraft.splice(i, 1); renderExtraRows(); onShiftFormChange(); }
+function setExtra(i, key, val) { extrasDraft[i][key] = val; onShiftFormChange(); }
+function fillExtraTitles() { // 過去に使った件名を候補に出す
+  const seen = new Set();
+  data.shifts.forEach(sh => sh.extras.forEach(x => { if (x.title) seen.add(x.title); }));
+  document.getElementById('extraTitles').innerHTML = [...seen].slice(0, 30).map(t => `<option value="${esc(t)}">`).join('');
+}
+
+// フォーム → シフト（検証つき）。strict=falseの時は途中状態でも組み立てられる所まで作る
+function readShiftForm(strict) {
+  const wpId = document.getElementById('fWp').value;
+  const sd = document.getElementById('fSDate').value, st = document.getElementById('fSTime').value;
+  const ed = document.getElementById('fEDate').value, et = document.getElementById('fETime').value;
+  const brk = parseInt0(document.getElementById('fBreak').value);
+
+  const err = msg => ({ err: msg });
+  if (!wpById(wpId)) return err('勤務先を選んでください');
+  if (!isValidDateKey(sd) || !isValidDateKey(ed)) return err('開始・終了の日付を入力してください');
+  if (!isValidTime(st) || !isValidTime(et)) return err('開始・終了の時刻を入力してください');
+  if (isNaN(brk) || brk < 0) return err('休憩は0以上の整数（分）で入力してください');
+  const span = dayDiff(sd, ed) * 1440 + toMin(et) - toMin(st);
+  if (span <= 0) return err('終了は開始より後にしてください（夜勤なら終了日を翌日に）');
+  if (span > 1440) return err('1回のシフトは24時間以内にしてください');
+  if (brk >= span) return err('休憩が勤務時間以上になっています');
+
+  const extras = [];
+  for (const x of extrasDraft) {
+    const amt = parseDec(x.amount);
+    if (isNaN(amt)) return err('臨時項目の金額は半角数字で入力してください');
+    if (amt <= 0 && !x.title.trim()) continue;       // 空行は無視
+    if (amt <= 0) return err('臨時項目「' + x.title + '」の金額を入力してください');
+    if (amt > 1e9) return err('臨時項目の金額が大きすぎます');
+    extras.push({ id: x.id, kind: x.kind === 'minus' ? 'minus' : 'plus', title: x.title.trim().slice(0, 20) || (x.kind === 'minus' ? '天引き' : '手当'), amount: Math.round(amt) });
+  }
+  return { sh: {
+    id: editingShiftId || uid(), wpId, startDate: sd, startTime: st, endDate: ed, endTime: et,
+    breakMin: brk, extras, memo: document.getElementById('fMemo').value.trim().slice(0, 100),
+  } };
+}
+
+// 入力のたびにプレビューと労基チェックを更新
+function onShiftFormChange() {
+  document.getElementById('errorMsg').classList.remove('show');
+  const pv = document.getElementById('shiftPreview'), wn = document.getElementById('shiftWarn');
+  const res = readShiftForm(false);
+  if (res.err) { pv.innerHTML = `<div class="preview-box">${esc(res.err)}</div>`; wn.innerHTML = ''; return; }
+  const wp = wpById(res.sh.wpId), r = calcShiftCore(wp, res.sh);
+  if (!r) { pv.innerHTML = ''; wn.innerHTML = ''; return; }
+  const parts = [];
+  if (r.hol)   parts.push('休日' + fmtSigned(r.hol));
+  if (r.night) parts.push('深夜' + fmtSigned(r.night));
+  if (r.ot)    parts.push('残業' + fmtSigned(r.ot));
+  pv.innerHTML = `<div class="preview-box">拘束 ${fmtHM(r.span)}（休憩${r.brk}分）→ 実働 <b>${fmtHM(r.work)}</b><br>` +
+    `勤務給与 <b>${fmtNum(r.pay)}円</b>` + (parts.length ? `（基本${fmtNum(r.base)}／${parts.join('／')}）` : '') +
+    (r.plus || r.minus ? `<br>臨時 手当＋${fmtNum(r.plus)}／天引き−${fmtNum(r.minus)}` : '') +
+    `<br><span style="font-size:11px">※交通費は日ごと・月ごとに自動で加算されます（保存後に反映）</span></div>`;
+  wn.innerHTML = warnHtml(shiftWarnings(wp, r));
+}
+
+function saveShift() {
+  const res = readShiftForm(true);
+  if (res.err) { showShiftError(res.err); return; }
+  const sh = res.sh;
+  const idx = data.shifts.findIndex(x => x.id === sh.id);
+  if (idx >= 0) data.shifts[idx] = sh; else data.shifts.push(sh);
+  if (!saveData()) { showShiftError('保存できませんでした（ブラウザの保存設定をご確認ください）'); return; }
+
+  // 次回の入力を楽にするため、勤務先ごとの時刻・休憩を覚えておく
+  settings.lastForm.wpId = sh.wpId;
+  settings.lastForm[sh.wpId] = { startTime: sh.startTime, endTime: sh.endTime, breakMin: sh.breakMin };
+  saveSettings();
+
+  const [y, m] = sh.startDate.split('-').map(Number);
+  viewYear = y; viewMonth = m - 1; selectedDate = sh.startDate;
+  closeShiftSheet();
+  renderAll();
+}
+function deleteShift() {
+  if (!editingShiftId) return;
+  if (!confirm('このシフトを削除しますか？')) return;
+  data.shifts = data.shifts.filter(x => x.id !== editingShiftId);
+  saveData();
+  closeShiftSheet();
+  renderAll();
+}
+
+/* =====================================================
+   勤務先設定シート
+   ・編集中の値は wpDraft に持ち、保存で初めて data に反映
+   ・ON/OFFや種別ボタンは全体を描き直し、数値入力は描き直さない（入力中にフォーカスが外れないように）
+   ===================================================== */
+function openWpSheet(id) {
+  const w = id ? wpById(id) : null;
+  editingWpId = w ? w.id : null;
+  wpDraft = w ? JSON.parse(JSON.stringify(w)) : defaultWp();
+  if (!w) wpDraft.color = COLOR_PALETTE[data.workplaces.length % COLOR_PALETTE.length].id; // 新規は未使用っぽい色から
+  document.getElementById('wpSheetTitle').textContent = w ? '勤務先を編集' : '勤務先を追加';
+  document.getElementById('btnDeleteWp').style.display = w ? 'block' : 'none';
+  document.getElementById('wpError').classList.remove('show');
+  renderWpBody();
+  updateWpWarn();
+  document.getElementById('wpOverlay').classList.add('show');
+  updateBodyLock();
+}
+function closeWpSheet() {
+  document.getElementById('wpOverlay').classList.remove('show');
+  pendingShift = false;
+  updateBodyLock();
+}
+
+function wpSet(path, val, kind, rerender) {
+  let v = val;
+  if (kind === 'n') v = parseDec(val);
+  else if (kind === 'b') v = !!val;
+  const keys = path.split('.');
+  let o = wpDraft;
+  for (let i = 0; i < keys.length - 1; i++) o = o[keys[i]];
+  o[keys[keys.length - 1]] = v;
+  if (rerender) renderWpBody();
+  updateWpWarn();
+}
+function wpToggleDay(n) {
+  const days = wpDraft.hol.days, i = days.indexOf(n);
+  if (i >= 0) days.splice(i, 1); else days.push(n);
+  renderWpBody();
+}
+function wpRuleSet(i, key, val) { wpDraft.ot.rules[i][key] = parseDec(val); updateWpWarn(); }
+function wpAddRule() {
+  if (wpDraft.ot.rules.length >= 6) return;
+  const last = wpDraft.ot.rules[wpDraft.ot.rules.length - 1];
+  wpDraft.ot.rules.push({ h: (Number(last.h) || 8) + 2, m: 0, yen: 0, pct: 50 });
+  renderWpBody(); updateWpWarn();
+}
+function wpDelRule(i) { wpDraft.ot.rules.splice(i, 1); renderWpBody(); updateWpWarn(); }
+function updateWpWarn() { document.getElementById('wpWarn').innerHTML = warnHtml(wpWarnings(normalizeWp(wpDraft))); }
+
+function renderWpBody() {
+  const w = wpDraft;
+  const nv = x => Number.isFinite(x) ? String(x) : '';
+  const opts = (list, sel) => list.map(([v, t]) => `<option value="${v}"${Number(sel) === v ? ' selected' : ''}>${t}</option>`).join('');
+  const dayOpts = [[0, '末日']].concat(Array.from({ length: 28 }, (_, i) => [i + 1, (i + 1) + '日']));
+  const tg = (path, cur, items) => `<div class="toggle-wrap">` + items.map(([v, t]) =>
+    `<button type="button" class="toggle-btn${cur === v ? ' active' : ''}" onclick="wpSet('${path}','${v}','s',true)">${t}</button>`).join('') + `</div>`;
+  const num = (path, val, ph) => `<input type="text" class="sheet-input" inputmode="decimal" value="${nv(val)}" placeholder="${ph || ''}" oninput="wpSet('${path}',this.value,'n')">`;
+  const band = (path, o) =>
+    `<div class="row2"><div class="fld"><label>開始</label><input type="time" class="sheet-input" value="${o.start}" onchange="wpSet('${path}.start',this.value,'s')"></div>` +
+    `<div class="fld"><label>終了</label><input type="time" class="sheet-input" value="${o.end}" onchange="wpSet('${path}.end',this.value,'s')"></div></div>`;
+  const chk = (path, on, label) => `<label class="check-line"><input type="checkbox"${on ? ' checked' : ''} onchange="wpSet('${path}',this.checked,'b',true)">${label}</label>`;
+
+  let h = '';
+  if (pendingShift) h += `<div class="info-box">先に勤務先を登録してください。保存すると、そのままシフト入力に進みます。</div>`;
+
+  // 基本情報
+  h += `<div class="input-group"><label for="wpName">勤務先の名前</label><input type="text" id="wpName" maxlength="20" placeholder="例：コンビニ、居酒屋" value="${esc(w.name)}" oninput="wpDraft.name=this.value" autocomplete="off"></div>`;
+  h += `<div class="fld"><label>カレンダーの色</label><div class="sw-grid">` + COLOR_PALETTE.map((c, i) =>
+    `<button type="button" class="sw${w.color === c.id ? ' on' : ''}" style="--c:var(--sw-${i + 1})" aria-label="${c.name}" onclick="wpSet('color','${c.id}','s',true)"></button>`).join('') + `</div></div>`;
+
+  // 締日・給料日
+  h += `<div class="sec"><div class="sec-head"><div class="sec-title">📅 締日と給料日</div></div>` +
+    `<div class="row2"><div class="fld"><label>締日</label><select class="sheet-input" onchange="wpSet('closing',this.value,'n')">${opts(dayOpts, w.closing)}</select></div>` +
+    `<div class="fld"><label>給料日の月</label><select class="sheet-input" onchange="wpSet('payMonth',this.value,'n')">${opts([[0, '当月'], [1, '翌月'], [2, '翌々月']], w.payMonth)}</select></div></div>` +
+    `<div class="row2"><div class="fld"><label>給料日</label><select class="sheet-input" onchange="wpSet('payDay',this.value,'n')">${opts(dayOpts, w.payDay)}</select></div>` +
+    `<div class="fld"><label>給料日が土日祝の場合</label><select class="sheet-input" onchange="wpSet('payShift',this.value,'s')">` +
+      `<option value="none"${w.payShift === 'none' ? ' selected' : ''}>そのまま</option><option value="before"${w.payShift === 'before' ? ' selected' : ''}>前日（前倒し）</option><option value="after"${w.payShift === 'after' ? ' selected' : ''}>翌日（後ろ倒し）</option></select></div></div>` +
+    `<p class="hint">前日・翌日は「土日祝・12/31・1/2・1/3以外の日」まで自動でずらします。</p></div>`;
+
+  // 給料
+  h += `<div class="sec"><div class="sec-head"><div class="sec-title">💴 給料</div></div>` +
+    tg('payType', w.payType, [['hourly', '時給'], ['daily', '日給']]) +
+    `<div class="fld"><label>${w.payType === 'hourly' ? '時給' : '日給（1シフトあたり）'}</label><div class="unit-row">${num('payAmount', w.payAmount, '1000')}<span class="unit">円</span></div></div>` +
+    (w.payType === 'daily' ? `<div class="fld" style="margin-top:8px"><label>日給を時給換算する所定時間</label><div class="unit-row">${num('dailyHours', w.dailyHours, '8')}<span class="unit">時間</span></div></div><p class="hint">深夜・残業の加算を計算する時に「日給÷所定時間」を時給の代わりに使います。</p>` : '') +
+    `</div>`;
+
+  // 交通費
+  h += `<div class="sec"><div class="sec-head"><div class="sec-title">🚃 交通費</div></div>` +
+    tg('transType', w.transType, [['none', 'なし'], ['perDay', '1日ごと'], ['perMonth', '1ヶ月ごと']]) +
+    (w.transType !== 'none' ? `<div class="unit-row">${num('transAmount', w.transAmount, '500')}<span class="unit">円${w.transType === 'perDay' ? '／出勤した日' : '／締め期間（1回でも出勤したら）'}</span></div>` : '') +
+    `</div>`;
+
+  // 休日給料
+  h += `<div class="sec"><div class="sec-head">${chk('hol.on', w.hol.on, '🎌 休日給料を設定する')}</div>`;
+  if (w.hol.on) {
+    h += tg('hol.type', w.hol.type, [['hourly', '時給'], ['daily', '日給']]) +
+      `<div class="fld"><label>休日の${w.hol.type === 'hourly' ? '時給' : '日給'}</label><div class="unit-row">${num('hol.amount', w.hol.amount, '1100')}<span class="unit">円</span></div></div>` +
+      `<div class="fld" style="margin-top:8px"><label>対象日（タップで選択）</label><div class="day-chips">` +
+      [[6, '土'], [0, '日'], [7, '祝'], [1, '月'], [2, '火'], [3, '水'], [4, '木'], [5, '金']].map(([n, t]) =>
+        `<button type="button" class="day-chip${w.hol.days.includes(n) ? ' on' : ''}" onclick="wpToggleDay(${n})">${t}</button>`).join('') + `</div></div>` +
+      `<p class="hint">祝＝国民の祝日（振替休日を含む）。日またぎの勤務は、0時以降の分を翌日の曜日で判定します。</p>`;
+  }
+  h += `</div>`;
+
+  // 深夜
+  h += `<div class="sec"><div class="sec-head">${chk('night.on', w.night.on, '🌙 深夜料金を設定する')}</div>`;
+  if (w.night.on) h += `<div class="fld"><label>深夜の時給</label><div class="unit-row">${num('night.rate', w.night.rate, '1250')}<span class="unit">円</span></div></div><div style="margin-top:8px"></div>` + band('night', w.night) +
+    `<p class="hint">この時間帯は、通常の時給と深夜の時給のうち高い方で計算します。</p>`;
+  h += `</div>`;
+
+  // 休日深夜
+  h += `<div class="sec"><div class="sec-head">${chk('holNight.on', w.holNight.on, '🌙🎌 休日深夜料金を設定する')}</div>`;
+  if (w.holNight.on) h += `<div class="fld"><label>休日深夜の時給</label><div class="unit-row">${num('holNight.rate', w.holNight.rate, '1350')}<span class="unit">円</span></div></div><div style="margin-top:8px"></div>` + band('holNight', w.holNight) +
+    `<p class="hint">休日給料の対象日の、この時間帯に適用します（休日給料の設定が必要です）。</p>`;
+  h += `</div>`;
+
+  // 残業
+  h += `<div class="sec"><div class="sec-head">${chk('ot.on', w.ot.on, '⏱ 残業手当を設定する')}</div>`;
+  if (w.ot.on) {
+    h += `<p class="hint">実働が設定の時間以上になった分に、「時給×％」と「追加金額（1時間あたり）」を同時に上乗せします。ルールを複数入れた場合は、超えた時間が長い方のルールが優先されます。</p>`;
+    h += w.ot.rules.map((r, i) =>
+      `<div class="rule-box"><div class="rule-head"><span>ルール${i + 1}</span>${w.ot.rules.length > 1 ? `<button type="button" class="mini-del" onclick="wpDelRule(${i})">削除</button>` : ''}</div>` +
+      `<div class="row2"><div class="fld"><label>適用時間</label><div class="unit-row"><input type="text" class="sheet-input" inputmode="numeric" value="${nv(r.h)}" oninput="wpRuleSet(${i},'h',this.value)"><span class="unit">時間</span></div></div>` +
+      `<div class="fld"><label>&nbsp;</label><div class="unit-row"><input type="text" class="sheet-input" inputmode="numeric" value="${nv(r.m)}" oninput="wpRuleSet(${i},'m',this.value)"><span class="unit">分以上</span></div></div></div>` +
+      `<div class="row2"><div class="fld"><label>追加金額（円／時間）</label><div class="unit-row"><input type="text" class="sheet-input" inputmode="decimal" value="${nv(r.yen)}" oninput="wpRuleSet(${i},'yen',this.value)"><span class="unit">円</span></div></div>` +
+      `<div class="fld"><label>割増率</label><div class="unit-row"><input type="text" class="sheet-input" inputmode="decimal" value="${nv(r.pct)}" oninput="wpRuleSet(${i},'pct',this.value)"><span class="unit">％</span></div></div></div></div>`
+    ).join('');
+    if (w.ot.rules.length < 6) h += `<button type="button" class="btn-action set-wide" onclick="wpAddRule()">＋ ルールを追加（例：10時間以上は50％）</button>`;
+  }
+  h += `</div>`;
+
+  document.getElementById('wpBody').innerHTML = h;
+}
+
+// 編集中の勤務先を検証して正規化。エラーは文字列で返す
+function readWpDraft() {
+  const w = wpDraft;
+  const name = String(w.name || '').trim();
+  if (!name) return { err: '勤務先の名前を入力してください' };
+  if (!(w.payAmount > 0)) return { err: (w.payType === 'hourly' ? '時給' : '日給') + 'を入力してください（0より大きい数）' };
+  if (w.payType === 'daily' && !(w.dailyHours >= 1 && w.dailyHours <= 24)) return { err: '所定時間は1〜24で入力してください' };
+  if (w.transType !== 'none' && !Number.isFinite(w.transAmount)) return { err: '交通費は半角数字で入力してください' };
+  if (w.hol.on) {
+    if (!(w.hol.amount > 0)) return { err: '休日の給料を入力してください' };
+    if (!w.hol.days.length) return { err: '休日給料の対象日を1つ以上選んでください' };
+  }
+  for (const [k, label] of [['night', '深夜'], ['holNight', '休日深夜']]) {
+    const o = w[k];
+    if (!o.on) continue;
+    if (!(o.rate > 0)) return { err: label + 'の時給を入力してください' };
+    if (!isValidTime(o.start) || !isValidTime(o.end) || o.start === o.end) return { err: label + 'の時間帯（開始と終了）を正しく入力してください' };
+  }
+  if (w.ot.on) {
+    if (!w.ot.rules.length) return { err: '残業ルールを1つ以上入れてください' };
+    for (const r of w.ot.rules) {
+      if (![r.h, r.m, r.yen, r.pct].every(Number.isFinite) || r.h < 0 || r.m < 0 || r.m > 59 || r.yen < 0 || r.pct < 0)
+        return { err: '残業手当は、時間・分（0〜59）・追加金額・％をすべて0以上の数字で入力してください' };
+      if (r.yen === 0 && r.pct === 0) return { err: '残業ルールの追加金額か割増率のどちらかを入力してください' };
+    }
+  }
+  const out = normalizeWp(Object.assign({}, w, { name, id: editingWpId || uid() }));
+  return { wp: out };
+}
+
+function saveWp() {
+  const res = readWpDraft();
+  const errEl = document.getElementById('wpError');
+  if (res.err) { errEl.textContent = res.err; errEl.classList.add('show'); return; }
+  errEl.classList.remove('show');
+  const idx = data.workplaces.findIndex(x => x.id === res.wp.id);
+  if (idx >= 0) data.workplaces[idx] = res.wp; else data.workplaces.push(res.wp);
+  if (!saveData()) { errEl.textContent = '保存できませんでした（ブラウザの保存設定をご確認ください）'; errEl.classList.add('show'); return; }
+  const resume = pendingShift;
+  closeWpSheet();
+  renderAll();
+  if (resume) openShiftSheet();
+}
+function deleteWp() {
+  if (!editingWpId) return;
+  const n = data.shifts.filter(s => s.wpId === editingWpId).length;
+  if (!confirm(n ? `この勤務先と、登録済みのシフト${n}件をすべて削除します。よろしいですか？` : 'この勤務先を削除しますか？')) return;
+  data.workplaces = data.workplaces.filter(x => x.id !== editingWpId);
+  data.shifts = data.shifts.filter(s => s.wpId !== editingWpId);
+  saveData();
+  closeWpSheet();
+  renderAll();
+}
+
+/* =====================================================
+   バックアップ（JSON書き出し／読み込み、CSV書き出し）
+   ===================================================== */
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function exportJson() {
+  const payload = { app: CURRENT_TOOL_ID, version: 1, exportedAt: new Date().toISOString(), workplaces: data.workplaces, shifts: data.shifts };
+  downloadBlob(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }), `${CURRENT_TOOL_ID}_${todayKey()}.json`);
+}
+function importJson(event) {
+  const input = event.target, file = input.files && input.files[0];
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) { alert('ファイルが大きすぎます（10MBまで）'); input.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const d = JSON.parse(e.target.result);
+      if (!d || !Array.isArray(d.workplaces) || !Array.isArray(d.shifts)) throw new Error('invalid');
+      const next = { version: 1, workplaces: data.workplaces.slice(), shifts: data.shifts.slice() };
+      const wpIds = new Set(next.workplaces.map(w => w.id)), shIds = new Set(next.shifts.map(s => s.id));
+      let addedWp = 0, addedSh = 0, dup = 0, bad = 0;
+      d.workplaces.forEach(raw => {
+        const w = normalizeWp(raw);
+        if (wpIds.has(w.id)) { dup++; return; }
+        wpIds.add(w.id); next.workplaces.push(w); addedWp++;
+      });
+      d.shifts.forEach(raw => {
+        const s = normalizeShift(raw);
+        if (!s || !wpIds.has(s.wpId)) { bad++; return; }
+        if (shIds.has(s.id)) { dup++; return; }
+        shIds.add(s.id); next.shifts.push(s); addedSh++;
+      });
+      const prev = data;
+      data = next;
+      if (!saveData()) { data = prev; throw new Error('save failed'); }
+      renderAll();
+      const lines = [`勤務先${addedWp}件・シフト${addedSh}件を読み込みました`];
+      if (dup) lines.push(`重複${dup}件はスキップしました`);
+      if (bad) lines.push(`読み込めなかったデータが${bad}件ありました`);
+      alert(lines.join('\n'));
+    } catch (err) {
+      alert('JSONの読み込みに失敗しました。このツールで書き出したファイルか確認してください。');
+    } finally { input.value = ''; }
+  };
+  reader.readAsText(file, 'utf-8');
+}
+function csvCell(v) {
+  let s = String(v);
+  if (/^[=+\-@]/.test(s)) s = "'" + s;   // Excelの数式扱い対策
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function exportCsv() {
+  const head = ['日付', '勤務先', '開始', '終了', '休憩(分)', '実働(時間)', '基本給', '休日加算', '深夜加算', '残業加算', '交通費', '臨時手当', '天引き', '差引支給', 'メモ'];
+  const rows = data.shifts.filter(s => calc.has(s.id)).sort((a, b) => (a.startDate + a.startTime).localeCompare(b.startDate + b.startTime)).map(s => {
+    const r = calc.get(s.id);
+    return [s.startDate, wpName(s.wpId), `${s.startDate} ${s.startTime}`, `${s.endDate} ${s.endTime}`, s.breakMin, (r.work / 60).toFixed(2),
+            r.base, r.hol, r.night, r.ot, r.transport, r.plus, r.minus, r.net, s.memo].map(csvCell).join(',');
+  });
+  downloadBlob(new Blob(['\uFEFF' + [head.join(',')].concat(rows).join('\r\n')], { type: 'text/csv;charset=utf-8' }), `${CURRENT_TOOL_ID}_${todayKey()}.csv`);
+}
+
+/* =====================================================
+   初期化（common.jsのDOMContentLoadedの後に実行される）
+   ===================================================== */
+document.addEventListener('DOMContentLoaded', () => {
+  setView('calendar');
+  renderAll();
+});
+</script>
+</body>
+</html>
