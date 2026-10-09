@@ -54,20 +54,22 @@
 .space-center { text-align:center; }
 
 /* =====================================================
-   日付入力の上の情報エリア
-   左：和暦⇔西暦変換／右：今日の日付
+   日付入力の上の情報エリア（左右2分割）
+   左：今日の日付／右：和暦⇔西暦変換
+   ・スマホでも2分割のまま（変換側は中で折り返す）
    ・色はCSS変数のみ使用（ダークモード対応）
    ・input/selectは16px以上、タップ領域44px以上
    ===================================================== */
 .date-info-row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr 1fr;
   gap: 10px 14px;
   align-items: start;
   margin-bottom: 16px;
   padding-bottom: 14px;
   border-bottom: 1px solid var(--color-border);
 }
+.date-info-row > div { min-width: 0; } /* 中身が長くても2分割を崩さない */
 .era-conv-label,
 .today-label {
   font-size: 11px;
@@ -76,7 +78,13 @@
   letter-spacing: 0.08em;
   margin-bottom: 5px;
 }
-.era-conv-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+/* 今日の日付（2行表示：令和8 2026年／10月9日（金）） */
+.today-box { text-align: left; }
+.today-text { font-size: 15px; font-weight: 700; color: var(--color-text); line-height: 1.6; }
+
+/* 和暦⇔西暦変換：「元号＋年数＋年」と「⇔＋西暦＋年」の2グループ。幅が足りなければグループ単位で折り返す */
+.era-conv-row { display: flex; align-items: center; gap: 4px 6px; flex-wrap: wrap; }
+.era-conv-grp { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .era-conv-row select,
 .era-conv-row input {
   border: 1px solid var(--color-border-input);
@@ -86,19 +94,17 @@
   font-family: 'BIZ UDPGothic', sans-serif;
   font-size: 16px; /* iPhoneの自動ズーム防止 */
   min-height: 44px;
-  padding: 0 6px;
+  padding: 0 4px;
   outline: none;
 }
 .era-conv-row select:focus,
 .era-conv-row input:focus { border-color: var(--color-primary); }
-.era-conv-row select { width: 74px; }
-.era-conv-row input { width: 68px; }
+.era-conv-row select { width: 64px; }
+.era-conv-row input { width: 62px; }
 .era-conv-unit { font-size: 13px; color: var(--color-text-sub); }
-.era-conv-arrow { font-size: 16px; font-weight: 700; color: var(--color-primary); padding: 0 2px; }
+.era-conv-arrow { font-size: 16px; font-weight: 700; color: var(--color-primary); }
 .era-conv-note { font-size: 11px; color: var(--color-text-muted); margin-top: 6px; line-height: 1.6; min-height: 1.6em; }
 .era-conv-note.error { color: var(--color-error-text); }
-.today-box { text-align: right; }
-.today-text { font-size: 13px; font-weight: 700; color: var(--color-text); line-height: 1.6; white-space: nowrap; }
 
 /* オプション欄・有給休暇欄の区切り線（同じ見た目なので1クラスに共通化） */
 .bordered-section {
@@ -148,14 +154,30 @@
 .btn-kyugyo-add:hover { background:#dbeafe; }
 
 /* メイン結果の下に表示する日付（西暦／和暦・曜日付き） */
-.result-reiwa { font-size:12px; color:#444; margin-top:8px; line-height:1.5; text-align:center; }
+.result-reiwa { font-size:14px; font-weight:700; color:var(--color-text); margin-top:4px; line-height:1.6; text-align:center; }
+.result-reiwa .nw { white-space:nowrap; } /* 日付の途中で折り返さない（「～」の所で折り返す） */
+
+/* 結果：総日数 － 休日合計 ＝ 営業日数（3分割＋演算記号） */
+.eq-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  gap: 4px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.eq-row .b-num { font-size: 26px; }
+.eq-op { font-size: 18px; font-weight: 700; color: var(--color-text-sub); text-align: center; }
+
+/* 結果：土日／祝日等／月～金休日／追加休日（4分割。ラベルが長いので余白を詰める） */
+.breakdown-4 { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.breakdown-4 .breakdown-item { padding: 11px 2px; }
 
 /* サブ結果6項目のアクセントカラー（デフォルト色以外だけ上書き） */
 .b-offtotal { color:#dc2626; } /* 休日合計 */
 .b-weekend  { color:#dc2626; } /* 土日 */
-.b-specified{ color:#dc2626; } /* 月～金の指定休日 */
+.b-specified{ color:#dc2626; } /* 月～金休日 */
 .b-holiday  { color:#dc2626; } /* 祝日等 */
-.b-leave    { color:#dc2626; } /* 追加休暇日（有給＋休業期間） */
+.b-leave    { color:#dc2626; } /* 追加休日（有給＋休業期間） */
 
 /* 期間内の祝日・年末年始 一覧 */
 .holiday-section {
@@ -249,9 +271,6 @@
 @media (max-width:440px) {
   .date-grid { grid-template-columns:1fr; gap:8px 0; }
   .arrow-center, .space-center { display:none; }
-  /* 日付情報エリアは縦積み（今日の日付を上、変換機能を下） */
-  .date-info-row { grid-template-columns:1fr; }
-  .today-box { order:-1; }
 }
 </style>
 </head>
@@ -272,27 +291,32 @@
   </header>
 
   <div class="card">
-    <!-- 日付入力の上：左＝和暦⇔西暦変換／右＝今日の日付 -->
+    <!-- 日付入力の上：左＝今日の日付／右＝和暦⇔西暦変換（2分割） -->
     <div class="date-info-row">
+      <div class="today-box">
+        <div class="today-label">▶ 今日</div>
+        <div class="today-text" id="todayLine1"></div>
+        <div class="today-text" id="todayLine2"></div>
+      </div>
       <div class="era-conv">
         <div class="era-conv-label">▶ 和暦 ⇔ 西暦 変換</div>
         <div class="era-conv-row">
-          <select id="eraSelect" onchange="onEraInput()" aria-label="元号">
-            <option value="showa">昭和</option>
-            <option value="heisei">平成</option>
-            <option value="reiwa" selected>令和</option>
-          </select>
-          <input type="number" id="eraYear" inputmode="numeric" placeholder="年数" min="1" oninput="onEraInput()" aria-label="和暦の年数">
-          <span class="era-conv-unit">年</span>
-          <span class="era-conv-arrow">⇔</span>
-          <input type="number" id="seirekiYear" inputmode="numeric" placeholder="西暦" min="1926" oninput="onSeirekiInput()" aria-label="西暦の年">
-          <span class="era-conv-unit">年</span>
+          <span class="era-conv-grp">
+            <select id="eraSelect" onchange="onEraInput()" aria-label="元号">
+              <option value="showa">昭和</option>
+              <option value="heisei">平成</option>
+              <option value="reiwa" selected>令和</option>
+            </select>
+            <input type="number" id="eraYear" inputmode="numeric" placeholder="年数" min="1" oninput="onEraInput()" aria-label="和暦の年数">
+            <span class="era-conv-unit">年</span>
+          </span>
+          <span class="era-conv-grp">
+            <span class="era-conv-arrow">⇔</span>
+            <input type="number" id="seirekiYear" inputmode="numeric" placeholder="西暦" min="1926" oninput="onSeirekiInput()" aria-label="西暦の年">
+            <span class="era-conv-unit">年</span>
+          </span>
         </div>
         <div class="era-conv-note" id="eraNote"></div>
-      </div>
-      <div class="today-box">
-        <div class="today-label">📅 今日</div>
-        <div class="today-text" id="todayText"></div>
       </div>
     </div>
 
@@ -394,42 +418,48 @@
   </div>
 
   <div class="result-panel" id="resultPanel">
+    <!-- 上段：対象期間（令和8 2026年10月9日 ～ 令和8 2026年10月9日） -->
     <div class="result-main">
-      <div class="result-label">営業日数（除外日を引いた日数）</div>
-      <div>
-        <span class="result-number placeholder" id="resultNum">—</span>
-        <span class="result-unit" id="resultUnitEl" style="visibility:hidden">日</span>
-      </div>
+      <div class="result-label">対象期間</div>
       <div class="result-reiwa" id="resultReiwa"></div>
     </div>
     <div class="breakdown-wrap">
-      <!-- サブ結果6項目を2段×3列で表示（common.cssの.breakdownを流用） -->
-      <div class="breakdown" id="breakdownGrid1">
+      <!-- 総日数 － 休日合計 ＝ 営業日数（3分割。休日合計だけ赤） -->
+      <div class="eq-row" id="breakdownGrid1">
         <div class="breakdown-item">
           <div class="b-num placeholder" id="bTotal">—</div>
           <div class="b-label">総日数</div>
         </div>
+        <div class="eq-op">－</div>
         <div class="breakdown-item">
           <div class="b-num b-offtotal placeholder" id="bOffTotal">—</div>
           <div class="b-label">休日合計</div>
         </div>
+        <div class="eq-op">＝</div>
+        <div class="breakdown-item">
+          <div class="b-num placeholder" id="resultNum">—</div>
+          <div class="b-label">営業日数</div>
+          <!-- 単位「日」は表示しない（JS側の参照が残っているためhiddenで保持） -->
+          <span id="resultUnitEl" hidden>日</span>
+        </div>
+      </div>
+      <!-- 休日の内訳（4分割・すべて赤）：土日／祝日等／月～金休日／追加休日 -->
+      <div class="breakdown breakdown-4" id="breakdownGrid2" style="margin-bottom:12px;">
         <div class="breakdown-item">
           <div class="b-num b-weekend placeholder" id="bWeekend">—</div>
           <div class="b-label">土日</div>
         </div>
-      </div>
-      <div class="breakdown" id="breakdownGrid2" style="margin-bottom:12px;">
         <div class="breakdown-item">
           <div class="b-num b-holiday placeholder" id="bHoliday">—</div>
           <div class="b-label">祝日等</div>
         </div>
         <div class="breakdown-item">
           <div class="b-num b-specified placeholder" id="bSpecified">—</div>
-          <div class="b-label">月～金の指定休日</div>
+          <div class="b-label">月～金休日</div>
         </div>
         <div class="breakdown-item">
           <div class="b-num b-leave placeholder" id="bLeave">—</div>
-          <div class="b-label">追加休暇日</div>
+          <div class="b-label">追加休日</div>
         </div>
       </div>
 
@@ -698,13 +728,14 @@ function onSeirekiInput(){
   setEraNote(`${y}年 ＝ ${eraYearLabel(ERAS[e.key].name, e.n)} ${eraBoundaryNote(y)}`.trim());
 }
 
-// 今日の日付表示（例：令和8年（2026年）10月9日（金））
+// 今日の日付表示（2行：「令和8 2026年」／「10月9日（金）」）
 function showToday(){
   const d = new Date();
   const y = d.getFullYear();
   const e = getEraFromSeireki(y);
-  document.getElementById('todayText').textContent =
-    `${eraYearLabel(ERAS[e.key].name, e.n)}（${y}年）${d.getMonth()+1}月${d.getDate()}日（${WEEK_JP[d.getDay()]}）`;
+  const eraName = ERAS[e.key].name + (e.n === 1 ? '元' : e.n);
+  document.getElementById('todayLine1').textContent = `${eraName} ${y}年`;
+  document.getElementById('todayLine2').textContent = `${d.getMonth()+1}月${d.getDate()}日（${WEEK_JP[d.getDay()]}）`;
 }
 
 /* =====================================================
@@ -732,6 +763,17 @@ function toReiwa(d, includeYoubi=false){
     return `昭和${sy === 1 ? '元' : sy}年${m}月${day}日${youbiStr}`;
   }
   return `${y}年${m}月${day}日${youbiStr}`;
+}
+
+// 結果の対象期間用：「令和8 2026年10月9日」形式（元号の切替日も考慮。曜日なし）
+function fmtEraSeireki(d){
+  const y = d.getFullYear(), m = d.getMonth()+1, day = d.getDate();
+  let era = '', n = 0;
+  if(y > 2019 || (y===2019 && m>=5))                             { era='令和'; n=y-2018; }
+  else if(y > 1989 || (y===1989 && (m>1 || day>=8)))             { era='平成'; n=y-1988; }
+  else if(y >= 1926)                                              { era='昭和'; n=y-1925; }
+  const eraStr = era ? `${era}${n===1 ? '元' : n} ` : '';
+  return `${eraStr}${y}年${m}月${day}日`;
 }
 
 function formatSlashingDate(d, includeYoubi=false){
@@ -994,7 +1036,7 @@ function calculate(){
   document.getElementById('resultUnitEl').style.visibility='visible';
 
   const reiwaEl = document.getElementById('resultReiwa');
-  reiwaEl.innerHTML = `${formatSlashingDate(start, true)} 〜 ${formatSlashingDate(end, true)}<br><span style="font-size:11px; color:#666;">（${toReiwa(start, true)} 〜 ${toReiwa(end, true)}）</span>`;
+  reiwaEl.innerHTML = `<span class="nw">${fmtEraSeireki(start)}</span> ～ <span class="nw">${fmtEraSeireki(end)}</span>`;
 
   setBreakdown('bTotal', total);
   setBreakdown('bOffTotal', offTotal);
@@ -1079,14 +1121,14 @@ function copyText(){
         .join('、');
       parts.push(`休業期間 ${kyugyoDays}日（${periodsStr}）`);
     }
-    return `\n追加休暇日：${totalLeave}日（${parts.join('・')}）`;
+    return `\n追加休日：${totalLeave}日（${parts.join('・')}）`;
   })();
 
   const text = `【営業日計算結果】
 期間：${formatSlashingDate(start, true)} 〜 ${formatSlashingDate(end, true)}
 期間：${toReiwa(start, true)}　～${toReiwa(end, true)}
 営業日数：${eigyo}日
-（総日数 ${total}日／休日合計 ${offTotal}日：土日 ${weekendOnly}日・月～金の指定休日 ${specifiedWeekday}日・祝日等 ${holidays}日・追加休暇日 ${totalLeave}日）${leaveBreakdown}`;
+（総日数 ${total}日／休日合計 ${offTotal}日：土日 ${weekendOnly}日・月～金休日 ${specifiedWeekday}日・祝日等 ${holidays}日・追加休日 ${totalLeave}日）${leaveBreakdown}`;
 
   copyToClipboard(text, 'btnCopyText', '📋 結果をテキストでコピー');
 }
