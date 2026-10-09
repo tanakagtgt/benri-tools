@@ -24,5 +24,6 @@
 { "id": "fin-income-tracker", "name": "収支記録カレンダー", "url": "https://arigato-tools.com/fin-income-tracker", "file": "fin-income-tracker.html", "emoji": "📅", "category": "fin", "desc": "投資と回収を日別に記録し、収支・回収率・勝率をカレンダーとチャートで確認できる" },
 { "id": "fin-household-budget", "name": "家計簿", "url": "https://arigato-tools.com/fin-household-budget", "file": "fin-household-budget.html", "emoji": "📒", "category": "fin", "desc": "収入と支出をカレンダーに記録し、リスト・収支表・グラフでタグ別に家計を振り返れる" },
 { "id": "calc-pregnancy-week", "name": "妊娠週数・出産予定日計算", "url": "https://arigato-tools.com/calc-pregnancy-week", "file": "calc-pregnancy-week.html", "emoji": "🤰", "category": "calc", "desc": "最終月経開始日から出産予定日と今日の妊娠週数を自動計算。週数から日付の逆算、週ごとのカレンダーも確認できる" },
-{ "id": "util-speed-reader", "name": "速読トレーナー（RSVP）", "url": "https://arigato-tools.com/util-speed-reader", "file": "util-speed-reader.html", "emoji": "📖", "category": "util", "desc": "文章を高速表示するRSVP方式の速読練習ツール。速度・表示文字数・縦横・色を調整、履歴も保存" }
+{ "id": "util-speed-reader", "name": "速読トレーナー（RSVP）", "url": "https://arigato-tools.com/util-speed-reader", "file": "util-speed-reader.html", "emoji": "📖", "category": "util", "desc": "文章を高速表示するRSVP方式の速読練習ツール。速度・表示文字数・縦横・色を調整、履歴も保存" },
+{ "id": "fin-shift-pay", "name": "シフト給料カレンダー", "url": "https://arigato-tools.com/fin-shift-pay", "file": "fin-shift-pay.html", "emoji": "🗓️", "category": "fin", "desc": "バイト・パートのシフトから給料を自動計算。深夜・休日・残業・交通費・締日と給料日に対応" }
 ]
