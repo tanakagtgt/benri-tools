@@ -160,13 +160,30 @@
 /* 結果：総日数 － 休日合計 ＝ 営業日数（3分割＋演算記号） */
 .eq-row {
   display: grid;
-  grid-template-columns: 1fr auto 1fr auto 1fr;
+  grid-template-columns: 1fr auto 1fr auto 1.25fr; /* 営業日数の枠だけ少し広く */
   gap: 4px;
   align-items: center;
   margin-bottom: 8px;
 }
 .eq-row .b-num { font-size: 26px; }
+/* 営業日数（結果の本命）だけ文字と枠をひと回り大きく */
+.eq-row .eq-main { padding: 15px 6px; }
+.eq-row .eq-main .b-num { font-size: 32px; }
+.eq-row .eq-main .b-label { font-size: 12px; }
 .eq-op { font-size: 18px; font-weight: 700; color: var(--color-text-sub); text-align: center; }
+
+/* 休業期間の入力欄の下に出す「対象期間」表示（背景は総日数ボックスと同じ） */
+.kyugyo-summary {
+  display: none;
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-btn);
+  padding: 10px 8px;
+  margin-top: 10px;
+  text-align: center;
+}
+.kyugyo-summary.show { display: block; }
+.kyugyo-summary .b-label { margin: 0 0 2px; }
 
 /* 結果：土日／祝日等／月～金休日／追加休日（4分割。ラベルが長いので余白を詰める） */
 .breakdown-4 { grid-template-columns: repeat(4, 1fr); gap: 6px; }
@@ -406,6 +423,12 @@
       <div id="kyugyoList"></div>
       <button type="button" class="btn-kyugyo-add" onclick="addKyugyoRow()">＋ 休業期間を追加</button>
 
+      <!-- 入力済みの休業期間を「対象期間」と同じ書式で表示（開始・終了が揃った行のみ） -->
+      <div class="kyugyo-summary" id="kyugyoSummary">
+        <div class="b-label">対象期間</div>
+        <div id="kyugyoSummaryList"></div>
+      </div>
+
       <p class="leave-note">
         ※ 有給休暇＋休業期間の合計日数を営業日数から差し引きます<br>
         ※ 休業期間はメイン期間（開始日〜終了日）と重複する日数のみ対象<br>
@@ -436,7 +459,7 @@
           <div class="b-label">休日合計</div>
         </div>
         <div class="eq-op">＝</div>
-        <div class="breakdown-item">
+        <div class="breakdown-item eq-main">
           <div class="b-num placeholder" id="resultNum">—</div>
           <div class="b-label">営業日数</div>
           <!-- 単位「日」は表示しない（JS側の参照が残っているためhiddenで保持） -->
@@ -913,6 +936,19 @@ function restoreKyugyoPeriods() {
   }
 }
 
+// 休業期間の「対象期間」表示（例：令和8 2026年10月12日 ～ 令和8 2026年11月30日）
+// 有効な期間が1件以上ある時だけ表示。複数あれば1行ずつ並べる
+function renderKyugyoSummary() {
+  const box = document.getElementById('kyugyoSummary');
+  const list = document.getElementById('kyugyoSummaryList');
+  if (!box || !list) return;
+  const periods = collectKyugyoPeriods();
+  list.innerHTML = periods.map(pd =>
+    `<div class="result-reiwa"><span class="nw">${fmtEraSeireki(pd.start)}</span> ～ <span class="nw">${fmtEraSeireki(pd.end)}</span></div>`
+  ).join('');
+  box.classList.toggle('show', periods.length > 0);
+}
+
 // 休業期間の入力変更時のハンドラ（保存→再計算）
 function onKyugyoChange() {
   saveKyugyoPeriods();
@@ -933,6 +969,7 @@ function toggleNenmatsu(type) {
    メイン計算処理
    ===================================================== */
 function calculate(){
+  renderKyugyoSummary(); // 休業期間の対象期間表示は、どの経路で再計算されても毎回更新する
   const sv = document.getElementById('startDate').value;
   const ev = document.getElementById('endDate').value;
 
