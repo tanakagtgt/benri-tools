@@ -162,7 +162,7 @@ textarea#names {
 
 <!-- ================= 3. コイントス ================= -->
 <div class="mode" id="m-coin" hidden>
-  <div class="mode-head"><button class="btn-back" onclick="show('home')">← 戻る</button><h2>🪙 コイントス</h2></div>
+  <div class="mode-head"><button class="btn-back" onclick="show('home')">← 戻る</button><h2>💰 コイントス</h2></div>
   <div class="card">
     <div class="input-grid">
       <div class="input-group"><label>Aの名前</label><input type="text" id="cA" value="先攻" onchange="onInputChange()"></div>
@@ -172,7 +172,7 @@ textarea#names {
       <div class="input-group"><label>投げる回数（1〜20）</label><input type="number" id="cCount" value="1" inputmode="numeric" onchange="onInputChange()"></div>
       <div class="input-group"><label>Aが出る確率（％）</label><input type="number" id="cBias" value="50" inputmode="numeric" onchange="onInputChange()"></div>
     </div>
-    <button class="btn-calc" onclick="run('coin',doCoin)">🪙 トスする</button>
+    <button class="btn-calc" onclick="run('coin',doCoin)">💰 トスする</button>
     <div class="error-msg" id="err-coin"></div>
   </div>
   <div class="res" id="res-coin"><span class="res-hint">ボタンを押すと結果が出るで</span></div>
@@ -329,7 +329,7 @@ function setOt(t) {
    ===================================================== */
 const MODES = [
   ['num','🔢','ランダム数字','範囲も個数も自由'], ['dice','🎲','サイコロ','出目・個数・順番決め'],
-  ['coin','🪙','コイントス','先攻後攻・確率変更'], ['trump','🃏','トランプ抽選','大小で順番決め'],
+  ['coin','💰','コイントス','先攻後攻・確率変更'], ['trump','🃏','トランプ抽選','大小で順番決め'],
   ['lottery','🎯','くじ引き','当選・順番・チーム分け'], ['janken','✌️','じゃんけん','全員一斉に勝負']
 ];
 function show(mode) {
@@ -371,8 +371,15 @@ function present(mode, res) {
     history.unshift(MODES.find(m => m[0] === mode)[1] + ' ' + res.main); history = history.slice(0, 10); renderHist();
     fx();
   };
-  if ($('oAnim').checked) { box.innerHTML = '<div class="res-main">…</div>'; box.classList.add('shake'); setTimeout(reveal, 700); }
-  else reveal();
+  if ($('oAnim').checked) {
+    /* res.tick があるモードは、待ち時間中に数字／表裏をパラパラ切り替えて表示（スロット風） */
+    box.classList.add('shake');
+    const tk = res.tick;
+    const paint = () => { box.innerHTML = '<div class="res-main">' + esc(tk ? tk() : '…') + '</div>'; };
+    paint();
+    const iv = tk ? setInterval(paint, 60) : null;
+    setTimeout(() => { if (iv) clearInterval(iv); reveal(); }, tk ? 1000 : 700);
+  } else reveal();
 }
 function renderHist() {
   $('hist').innerHTML = history.length ? history.map(h => '<div class="hist-item">' + esc(h) + '</div>').join('') : '<span class="res-hint">まだ結果なし</span>';
@@ -394,7 +401,8 @@ function doNum() {
   if (u && c > b - a + 1) return '重複なしやと、個数が範囲より多いで';
   const r = [];
   while (r.length < c) { const v = rint(a, b); if (u && r.includes(v)) continue; r.push(v); }
-  return { main: r.join(' , '), lines: ['範囲 ' + a + '〜' + b + '／' + c + '個' + (u ? '／重複なし' : '')] };
+  return { main: r.join(' , '), lines: ['範囲 ' + a + '〜' + b + '／' + c + '個' + (u ? '／重複なし' : '')],
+    tick: () => Array.from({ length: Math.min(c, 10) }, () => rint(a, b)).join(' , ') };
 }
 
 function doDice() {
@@ -407,7 +415,7 @@ function doDice() {
   const sum = r => r.reduce((x, y) => x + y, 0);
   if (!$('dOrder').checked) {
     const r = roll();
-    return { main: r.join(' ・ '), lines: c > 1 ? ['合計 ' + sum(r)] : [] };
+    return { main: r.join(' ・ '), lines: c > 1 ? ['合計 ' + sum(r)] : [], tick: () => roll().join(' ・ ') };
   }
   const nm = names();
   if (nm.length < 2) return '順番決めは参加者を2人以上入れてな';
@@ -426,8 +434,9 @@ function doCoin() {
   if (isNaN(p) || p < 0 || p > 100) return '確率は0〜100にしてな';
   const r = Array.from({ length: c }, () => rint(1, 10000) <= p * 100 ? A : B);
   const na = r.filter(x => x === A).length;
-  return c === 1 ? { main: r[0], lines: p !== 50 ? ['※' + A + 'が出る確率 ' + p + '％'] : [] }
-                 : { main: A + ' ' + na + '回 / ' + B + ' ' + (c - na) + '回', lines: [r.join(' → ')] };
+  const tick = () => rint(0, 1) ? A : B;
+  return c === 1 ? { main: r[0], lines: p !== 50 ? ['※' + A + 'が出る確率 ' + p + '％'] : [], tick }
+                 : { main: A + ' ' + na + '回 / ' + B + ' ' + (c - na) + '回', lines: [r.join(' → ')], tick };
 }
 
 function doTrump() {
