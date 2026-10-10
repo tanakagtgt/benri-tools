@@ -6,9 +6,9 @@
 <link rel="canonical" href="https://arigato-tools.com/util-order-decider">
 <!-- ★gtagは既存ツールと同じスニペットをここに貼る -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>順番決めツール｜サイコロ・コイントス・くじ引き・じゃんけん</title>
-<meta name="description" content="パーティー・ボードゲーム・オンラインゲームの順番決めに。ランダム数字・サイコロ・コイントス・トランプ抽選・くじ引き・じゃんけんを1ページに集約。出目や確率のカスタマイズ、ホラー／パーティーなどの見た目切替に対応。">
-<meta property="og:title" content="順番決めツール｜サイコロ・コイントス・くじ引き・じゃんけん">
+<title>順番決めツール｜ルーレット・サイコロ・コイントス・くじ引き</title>
+<meta name="description" content="パーティー・ボードゲーム・オンラインゲームの順番決めに。ルーレット・ランダム数字・サイコロ・コイントス・トランプ抽選・くじ引き・じゃんけんを1ページに集約。出目や確率のカスタマイズ、ホラー／パーティーなどの見た目切替に対応。">
+<meta property="og:title" content="順番決めツール｜ルーレット・サイコロ・コイントス・くじ引き">
 <meta property="og:description" content="順番決め・先攻後攻・くじ引きが全部できる。カスタマイズ自由で、見た目テーマも切替OK。">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://arigato-tools.com/util-order-decider">
@@ -59,7 +59,7 @@ body.flash { animation: fl .5s; }
 /* ---------- 部品 ---------- */
 .chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
 .chips .theme-btn { min-height:44px; padding:6px 12px; font-size:13px; }
-textarea#names {
+textarea.ta {
   width:100%; min-height:90px; resize:vertical; border:1px solid var(--color-border-input); border-radius:var(--radius-input);
   background:var(--color-input-bg); color:var(--color-text); font-family:'BIZ UDPGothic',sans-serif; font-size:16px; padding:10px;
 }
@@ -82,6 +82,9 @@ textarea#names {
 .res-line { font-size:14px; color:var(--color-text-sub); margin-top:6px; }
 .res-hint { color:var(--color-text-label); font-size:13px; }
 .hist-item { font-size:12px; color:var(--color-text-sub); padding:4px 0; border-bottom:1px dashed var(--color-border); word-break:break-all; }
+.mode-card.wide { grid-column: span 2; }
+.wheel-wrap { text-align:center; margin:10px 0; }
+.wheel-wrap canvas { width:100%; max-width:320px; height:auto; }
 .btn-calc.big { margin-top:4px; }
 .btn-action.wide { width:100%; margin-top:8px; }
 
@@ -109,11 +112,12 @@ textarea#names {
     <div class="chips" id="themeChips"></div>
     <label class="checkbox-item"><input type="checkbox" id="oAnim" checked onchange="onInputChange()">演出（シェイク・紙吹雪など）</label>
     <label class="checkbox-item"><input type="checkbox" id="oVib" checked onchange="onInputChange()">結果が出たらスマホを振動</label>
+    <label class="checkbox-item"><input type="checkbox" id="oSnd" onchange="onInputChange()">効果音（初期はOFF）</label>
   </div>
 
   <div class="card">
     <div class="section-title">👥 参加者（1行に1人・サイコロ順番決め／トランプ／くじ引き／じゃんけんで使用）</div>
-    <textarea id="names" placeholder="例：&#10;ひろき&#10;たろう&#10;はなこ" oninput="onInputChange()"></textarea>
+    <textarea id="names" class="ta" placeholder="例：&#10;ゆうすけ&#10;たろう&#10;はなこ" oninput="onInputChange()"></textarea>
   </div>
 
   <div class="section-title">▶ 遊びたいモードをタップ</div>
@@ -130,9 +134,10 @@ textarea#names {
   <div class="mode-head"><button class="btn-back" onclick="show('home')">← 戻る</button><h2>🔢 ランダム数字</h2></div>
   <div class="card">
     <div class="input-grid">
-      <div class="input-group"><label>最小値</label><input type="number" id="nMin" value="1" inputmode="numeric" onchange="onInputChange()"></div>
-      <div class="input-group"><label>最大値</label><input type="number" id="nMax" value="100" inputmode="numeric" onchange="onInputChange()"></div>
+      <div class="input-group"><label>最小値</label><input type="number" id="nMin" value="1" step="any" inputmode="decimal" onchange="onInputChange()"></div>
+      <div class="input-group"><label>最大値</label><input type="number" id="nMax" value="100" step="any" inputmode="decimal" onchange="onInputChange()"></div>
     </div>
+    <div class="input-group"><label>小数点</label><select id="nDec" onchange="onInputChange()"><option value="0" selected>整数のみ</option><option value="1">小数第1位まで</option><option value="2">小数第2位まで</option></select></div>
     <div class="input-group"><label>個数（1〜100）</label><input type="number" id="nCount" value="1" inputmode="numeric" onchange="onInputChange()"></div>
     <label class="checkbox-item"><input type="checkbox" id="nUnique" onchange="onInputChange()">重複なし（宝くじ・番号抽選向け）</label>
     <button class="btn-calc" onclick="run('num',doNum)">🔢 数字を出す</button>
@@ -151,6 +156,8 @@ textarea#names {
       <div class="input-group"><label>出目の最大</label><input type="number" id="dMax" value="6" inputmode="numeric" onchange="onInputChange()"></div>
     </div>
     <div class="input-group"><label>振る個数（1〜10）</label><input type="number" id="dCount" value="1" inputmode="numeric" onchange="onInputChange()"></div>
+    <div class="note">よく使う面数（最小1・最大を自動セット）</div>
+    <div class="chips"><button type="button" class="theme-btn" onclick="setDice(4)">D4</button><button type="button" class="theme-btn" onclick="setDice(6)">D6</button><button type="button" class="theme-btn" onclick="setDice(8)">D8</button><button type="button" class="theme-btn" onclick="setDice(10)">D10</button><button type="button" class="theme-btn" onclick="setDice(12)">D12</button><button type="button" class="theme-btn" onclick="setDice(20)">D20</button><button type="button" class="theme-btn" onclick="setDice(100)">D100</button></div>
     <label class="checkbox-item"><input type="checkbox" id="dOrder" onchange="onInputChange()">参加者全員で振って順番決め（大きい順・同点は振り直し）</label>
     <div class="note">👥 参加者：<span class="pc">0</span>人（ホームで編集）</div>
     <button class="btn-calc" onclick="run('dice',doDice)">🎲 振る</button>
@@ -203,6 +210,8 @@ textarea#names {
     <div class="input-group"><label>やり方</label>
       <select id="lMode" onchange="onInputChange()"><option value="pick" selected>当選者を選ぶ</option><option value="shuffle">全員の順番をシャッフル</option><option value="team">チーム分け</option></select></div>
     <div class="input-group"><label>当選人数（チーム分けの時はチーム数）</label><input type="number" id="lWin" value="1" inputmode="numeric" onchange="onInputChange()"></div>
+    <label class="checkbox-item"><input type="checkbox" id="lExcl" onchange="onInputChange()">一度当たった人は次回から除外（「当選者を選ぶ」時）</label>
+    <button class="btn-action wide" style="margin:0 0 10px" onclick="wonSet=[];this.textContent='✅ リセットしたで';setTimeout(()=>this.textContent='♻️ 当選者リセット',1500)">♻️ 当選者リセット</button>
     <div class="note">👥 参加者：<span class="pc">0</span>人（ホームで編集）</div>
     <button class="btn-calc" onclick="run('lottery',doLottery)">🎯 引く</button>
     <div class="error-msg" id="err-lottery"></div>
@@ -216,6 +225,7 @@ textarea#names {
   <div class="mode-head"><button class="btn-back" onclick="show('home')">← 戻る</button><h2>✌️ じゃんけん</h2></div>
   <div class="card">
     <label class="checkbox-item"><input type="checkbox" id="jAuto" checked onchange="onInputChange()">あいこは自動でやり直す</label>
+    <label class="checkbox-item"><input type="checkbox" id="jElim" onchange="onInputChange()">勝ち残り方式（1人になるまで繰り返す）</label>
     <div class="note">👥 参加者：<span class="pc">0</span>人（ホームで編集）／全員が同時に手を出すで</div>
     <button class="btn-calc" onclick="run('janken',doJanken)">✌️ ぽん！</button>
     <div class="error-msg" id="err-janken"></div>
@@ -224,10 +234,29 @@ textarea#names {
   <button class="btn-action wide" id="cp-janken" onclick="copyRes('janken')" disabled>📄 結果をコピー</button>
 </div>
 
+<!-- ================= 7. ルーレット ================= -->
+<div class="mode" id="m-roulette" hidden>
+  <div class="mode-head"><button class="btn-back" onclick="show('home')">← 戻る</button><h2>🎡 ルーレット</h2></div>
+  <div class="card">
+    <div class="input-group"><label>項目（1行に1つ・2個以上）</label>
+      <textarea id="rItems" class="ta" oninput="onInputChange();drawWheel()">赤
+青
+黄
+緑</textarea></div>
+    <button class="btn-action wide" style="margin:0 0 10px" onclick="loadNames()">👥 参加者リストを項目に読み込む</button>
+    <label class="checkbox-item"><input type="checkbox" id="rRemove" onchange="onInputChange()">当たった項目は外す（次回から除外）</label>
+    <div class="wheel-wrap"><canvas id="wheel" width="300" height="300"></canvas></div>
+    <button class="btn-calc" onclick="run('roulette',doRoulette)">🎡 回す</button>
+    <div class="error-msg" id="err-roulette"></div>
+  </div>
+  <div class="res" id="res-roulette"><span class="res-hint">ボタンを押すと結果が出るで</span></div>
+  <button class="btn-action wide" id="cp-roulette" onclick="copyRes('roulette')" disabled>📄 結果をコピー</button>
+</div>
+
 <!-- ================= 解説文 ================= -->
 <section class="tool-desc">
   <h2>使い方</h2>
-  <p>最初に見た目テーマを選び、必要なら参加者の名前を1行ずつ入力します。あとは遊びたいモードのカードをタップして、設定を決めてボタンを押すだけです。</p>
+  <p>ルーレットは好きな項目を自由に入力して回せます。最初に見た目テーマを選び、必要なら参加者の名前を1行ずつ入力します。あとは遊びたいモードのカードをタップして、設定を決めてボタンを押すだけです。</p>
   <h2>こんな場面で</h2>
   <p>飲み会やパーティーの幹事決め、ボードゲームの先攻後攻、オンラインゲームの順番決め、罰ゲームの抽選、班分けやチーム分けなどに使えます。</p>
   <h2>仕様について</h2>
@@ -256,11 +285,13 @@ textarea#names {
 const CURRENT_TOOL_ID = 'util-order-decider';
 const STORAGE_KEY = 'util_order_decider_v1';
 const STORAGE_FIELDS = ['names','oAnim','oVib','nMin','nMax','nCount','nUnique','dMin','dMax','dCount','dOrder',
-  'cA','cB','cCount','cBias','tAce','tDir','tJoker','lMode','lWin','jAuto'];
+  'cA','cB','cCount','cBias','tAce','tDir','tJoker','lMode','lWin','jAuto','oSnd','nDec','lExcl','jElim','rItems','rRemove'];
 const INPUT_LABELS = { names: '参加者' };
 const RESULT_LABELS = { main: '結果' };
 let lastResult = null;       // 直近の結果 {main, lines}
 let history = [];            // 直近10件（メモリのみ）
+let wonSet = [];             // くじ引きで当選済みの人（除外用）
+let rot = 0, spinning = false; // ルーレットの回転角・回転中フラグ
 
 function calculateInputs() { return {}; }
 function calculateResult() { return lastResult; }   // ボタンで出した結果のみ返す
@@ -276,7 +307,7 @@ function onResetExtra() {
     else if (el.tagName === 'SELECT') Array.from(el.options).forEach(o => o.selected = o.defaultSelected);
     else el.value = el.defaultValue;
   });
-  lastResult = null; history = []; renderHist(); updatePc();
+  lastResult = null; history = []; wonSet = []; rot = 0; renderHist(); updatePc(); drawWheel();
   document.querySelectorAll('.res').forEach(r => r.innerHTML = '<span class="res-hint">ボタンを押すと結果が出るで</span>');
   document.querySelectorAll('[id^="cp-"]').forEach(b => b.disabled = true);
   saveInputs();
@@ -330,16 +361,18 @@ function setOt(t) {
 const MODES = [
   ['num','🔢','ランダム数字','範囲も個数も自由'], ['dice','🎲','サイコロ','出目・個数・順番決め'],
   ['coin','💰','コイントス','先攻後攻・確率変更'], ['trump','🃏','トランプ抽選','大小で順番決め'],
-  ['lottery','🎯','くじ引き','当選・順番・チーム分け'], ['janken','✌️','じゃんけん','全員一斉に勝負']
+  ['lottery','🎯','くじ引き','当選・順番・チーム分け'], ['janken','✌️','じゃんけん','全員一斉・勝ち残りも'],
+  ['roulette','🎡','ルーレット','項目を自由に入れて回す']
 ];
 function show(mode) {
   ['home', ...MODES.map(m => m[0])].forEach(m => $('m-' + m).hidden = (m !== mode));
-  updatePc(); window.scrollTo(0, 0);
+  updatePc(); if (mode === 'roulette') drawWheel(); window.scrollTo(0, 0);
 }
 function updatePc() { document.querySelectorAll('.pc').forEach(e => e.textContent = names().length); }
 
 function fx() {
   const t = document.documentElement.getAttribute('data-ot');
+  sfx();
   if ($('oVib').checked && navigator.vibrate) navigator.vibrate(120);
   if (!$('oAnim').checked) return;
   if (t === 'party') {
@@ -356,6 +389,7 @@ function fx() {
 
 /* 実行→エラーなら表示、成功なら結果を出す */
 function run(mode, fn) {
+  if ($('oSnd').checked) getAc();   // iOSは操作の直後でないと音を出せないのでここで準備
   const e = $('err-' + mode); e.classList.remove('show');
   const r = fn();
   if (typeof r === 'string') { e.textContent = r; e.classList.add('show'); return; }
@@ -370,15 +404,20 @@ function present(mode, res) {
     $('cp-' + mode).disabled = false;
     history.unshift(MODES.find(m => m[0] === mode)[1] + ' ' + res.main); history = history.slice(0, 10); renderHist();
     fx();
+    if (res.after) res.after();
   };
-  if ($('oAnim').checked) {
-    /* res.tick があるモードは、待ち時間中に数字／表裏をパラパラ切り替えて表示（スロット風） */
-    box.classList.add('shake');
-    const tk = res.tick;
-    const paint = () => { box.innerHTML = '<div class="res-main">' + esc(tk ? tk() : '…') + '</div>'; };
-    paint();
-    const iv = tk ? setInterval(paint, 60) : null;
-    setTimeout(() => { if (iv) clearInterval(iv); reveal(); }, tk ? 1000 : 700);
+  /* 待ち時間：res.delay（ルーレット）＞ 演出ON時のtick/シェイク */
+  const anim = $('oAnim').checked, tk = anim ? res.tick : null;
+  const wait = res.delay || (anim ? (tk ? 1000 : 700) : 0);
+  if (wait) {
+    let iv = null;
+    if (res.delay) box.innerHTML = '<div class="res-hint">回転中…</div>';
+    else {
+      box.classList.add('shake');   // tickがあるモードはスロット風にパラパラ切替
+      const paint = () => { box.innerHTML = '<div class="res-main">' + esc(tk ? tk() : '…') + '</div>'; };
+      paint(); if (tk) iv = setInterval(paint, 60);
+    }
+    setTimeout(() => { if (iv) clearInterval(iv); reveal(); }, wait);
   } else reveal();
 }
 function renderHist() {
@@ -393,17 +432,22 @@ function copyRes(mode) {
    各モードの処理（文字列を返したらエラー、オブジェクトなら結果）
    ===================================================== */
 function doNum() {
-  const a = N('nMin'), b = N('nMax'), c = N('nCount'), u = $('nUnique').checked;
+  const a = parseFloat($('nMin').value), b = parseFloat($('nMax').value), c = N('nCount'), u = $('nUnique').checked, d = N('nDec') || 0;
   if ([a, b, c].some(isNaN)) return '最小・最大・個数を入力してな';
   if (a > b) return '最小は最大以下にしてな';
-  if (b - a >= 1e9) return '範囲が広すぎるで（10億未満）';
+  const f = Math.pow(10, d), lo = Math.ceil(a * f - 1e-9), hi = Math.floor(b * f + 1e-9);   // 小数は整数に直して抽選
+  if (lo > hi) return 'この範囲には出せる値がないで';
+  if (hi - lo >= 1e9) return '範囲が広すぎるで（10億通り未満）';
   if (c < 1 || c > 100) return '個数は1〜100にしてな';
-  if (u && c > b - a + 1) return '重複なしやと、個数が範囲より多いで';
+  if (u && c > hi - lo + 1) return '重複なしやと、個数が範囲より多いで';
+  const fmt = v => (v / f).toFixed(d);
   const r = [];
-  while (r.length < c) { const v = rint(a, b); if (u && r.includes(v)) continue; r.push(v); }
-  return { main: r.join(' , '), lines: ['範囲 ' + a + '〜' + b + '／' + c + '個' + (u ? '／重複なし' : '')],
-    tick: () => Array.from({ length: Math.min(c, 10) }, () => rint(a, b)).join(' , ') };
+  while (r.length < c) { const v = rint(lo, hi); if (u && r.includes(v)) continue; r.push(v); }
+  return { main: r.map(fmt).join(' , '), lines: ['範囲 ' + a + '〜' + b + (d ? '（小数第' + d + '位）' : '') + '／' + c + '個' + (u ? '／重複なし' : '')],
+    tick: () => Array.from({ length: Math.min(c, 10) }, () => fmt(rint(lo, hi))).join(' , ') };
 }
+
+function setDice(n) { $('dMin').value = 1; $('dMax').value = n; onInputChange(); }
 
 function doDice() {
   const a = N('dMin'), b = N('dMax'), c = N('dCount');
@@ -461,7 +505,13 @@ function doLottery() {
   const s = shuffle(nm);
   if (mode === 'shuffle') return { main: '順番が決まったで！', lines: s.map((n, i) => (i + 1) + '番目：' + n) };
   if (isNaN(w) || w < 1 || w > nm.length) return '人数（チーム数）は1〜参加者数にしてな';
-  if (mode === 'pick') return { main: '🎉 ' + s.slice(0, w).join('、'), lines: ['全' + nm.length + '人中 ' + w + '人が当選'] };
+  if (mode === 'pick') {
+    const ex = $('lExcl').checked, pool = ex ? nm.filter(n => !wonSet.includes(n)) : nm;
+    if (pool.length < w) return '残りの人数が足りんで（「当選者リセット」を押してな）';
+    const win = shuffle(pool).slice(0, w);
+    if (ex) wonSet.push(...win);
+    return { main: '🎉 ' + win.join('、'), lines: ['全' + nm.length + '人中 ' + w + '人が当選' + (ex ? '（残り候補 ' + (pool.length - w) + '人）' : '')] };
+  }
   if (w < 2) return 'チーム数は2以上にしてな';
   const teams = Array.from({ length: w }, () => []);
   s.forEach((n, i) => teams[i % w].push(n));
@@ -469,26 +519,101 @@ function doLottery() {
 }
 
 function doJanken() {
-  const nm = names(), H = ['✊ぐー', '✌️ちょき', '🖐️ぱー'], auto = $('jAuto').checked;
+  const nm = names(), H = ['✊ぐー', '✌️ちょき', '🖐️ぱー'], auto = $('jAuto').checked, elim = $('jElim').checked;
   if (nm.length < 2) return '参加者を2人以上入れてな';
-  let tries = 0, h, w;
-  do {
-    tries++; h = nm.map(() => rint(0, 2)); w = null;
-    const set = [...new Set(h)];
-    if (set.length === 2) { const [x, y] = set; w = ((x + 1) % 3 === y) ? x : y; }  // ぐー(0)はちょき(1)に勝つ…の循環
-  } while (w === null && auto && tries < 100);
-  const win = w === null ? [] : nm.filter((_, i) => h[i] === w);
-  const lines = nm.map((n, i) => n + '：' + H[h[i]]);
-  if (tries > 1) lines.push('あいこ ' + (tries - 1) + '回やり直し');
-  return { main: w === null ? 'あいこ！' : '🏆 勝ち：' + win.join('、'), lines };
+  /* 1ラウンド：全員が手を出す。決着(w≠null)までやり直すかはretryで決める */
+  const hand = (list, retry) => {
+    let t = 0, h, w;
+    do {
+      t++; h = list.map(() => rint(0, 2)); w = null;
+      const set = [...new Set(h)];
+      if (set.length === 2) { const [x, y] = set; w = ((x + 1) % 3 === y) ? x : y; }  // ぐー(0)はちょき(1)に勝つ…の循環
+    } while (w === null && retry && t < 100);
+    return { h, w, t };
+  };
+  if (elim) {   // 勝ち残り方式：1人になるまで繰り返す
+    let alive = nm; const lines = [];
+    for (let r = 1; alive.length > 1 && r <= 30; r++) {
+      const x = hand(alive, true), win = alive.filter((_, i) => x.h[i] === x.w);
+      lines.push('第' + r + '回：' + alive.map((n, i) => n + H[x.h[i]]).join(' ') + (x.t > 1 ? '（あいこ' + (x.t - 1) + '回）' : '') + ' → 残り' + win.length + '人');
+      alive = win;
+    }
+    return { main: '🏆 優勝：' + alive.join('、'), lines };
+  }
+  const x = hand(nm, auto), win = x.w === null ? [] : nm.filter((_, i) => x.h[i] === x.w);
+  const lines = nm.map((n, i) => n + '：' + H[x.h[i]]);
+  if (x.t > 1) lines.push('あいこ ' + (x.t - 1) + '回やり直し');
+  return { main: x.w === null ? 'あいこ！' : '🏆 勝ち：' + win.join('、'), lines };
+}
+
+/* ---------- ルーレット ---------- */
+const items = () => $('rItems').value.split('\n').map(s => s.trim()).filter(Boolean);
+function loadNames() { $('rItems').value = names().join('\n'); onInputChange(); drawWheel(); }
+function drawWheel() {
+  const cv = $('wheel'); if (!cv) return;
+  const S = 300, dpr = window.devicePixelRatio || 1, c = S / 2, R = 140;
+  cv.width = S * dpr; cv.height = S * dpr;
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const it = items(), n = it.length;
+  if (n < 2) { g.fillStyle = '#888'; g.font = '16px sans-serif'; g.textAlign = 'center'; g.fillText('項目を2個以上入れてな', c, c); return; }
+  const s = 2 * Math.PI / n;
+  it.forEach((t, i) => {
+    const a = rot + i * s;
+    g.beginPath(); g.moveTo(c, c); g.arc(c, c, R, a, a + s); g.closePath();
+    g.fillStyle = 'hsl(' + ((i * 360 / n) % 360) + ',70%,' + (i % 2 ? 45 : 55) + '%)'; g.fill();
+    g.strokeStyle = '#fff'; g.lineWidth = 2; g.stroke();
+    g.save(); g.translate(c, c); g.rotate(a + s / 2);
+    g.fillStyle = '#fff'; g.textAlign = 'right'; g.textBaseline = 'middle';
+    g.font = 'bold ' + Math.max(11, Math.min(18, 200 / n + 6)) + 'px sans-serif';
+    g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 3;
+    g.fillText(t.length > 8 ? t.slice(0, 7) + '…' : t, R - 12, 0); g.restore();
+  });
+  g.beginPath(); g.arc(c, c, 12, 0, 7); g.fillStyle = '#fff'; g.fill(); g.strokeStyle = '#333'; g.lineWidth = 2; g.stroke();
+  g.beginPath(); g.moveTo(c - 12, 4); g.lineTo(c + 12, 4); g.lineTo(c, 28); g.closePath();   // 上のポインタ
+  g.fillStyle = '#e11d2e'; g.fill(); g.strokeStyle = '#fff'; g.stroke();
+}
+function doRoulette() {
+  if (spinning) return '回転中やで';
+  const it = items(); if (it.length < 2) return '項目を2個以上入れてな';
+  const n = it.length, s = 2 * Math.PI / n, two = 2 * Math.PI, anim = $('oAnim').checked;
+  const w = rint(0, n - 1);   // 当たりを先に確定（回転は見た目だけ）
+  const target = -Math.PI / 2 - (w + 0.5 + rint(-40, 40) / 100) * s;   // ポインタ(真上)に当たりの扇形が来る角度
+  const delta = (((target - rot) % two) + two) % two + (anim ? two * 5 : 0), r0 = rot, dur = anim ? 4000 : 0, t0 = performance.now();
+  spinning = true;
+  const step = now => {
+    const k = dur ? Math.min(1, (now - t0) / dur) : 1;
+    rot = r0 + delta * (1 - Math.pow(1 - k, 3)); drawWheel();
+    if (k < 1) requestAnimationFrame(step); else spinning = false;
+  };
+  requestAnimationFrame(step);
+  return { main: it[w], lines: ['全' + n + '項目から選出'], delay: dur,
+    after: () => { if ($('rRemove').checked) { $('rItems').value = it.filter((_, i) => i !== w).join('\n'); saveInputs(); drawWheel(); } } };
+}
+
+/* ---------- 効果音（WebAudio・音源ファイル不要） ---------- */
+let ac = null;
+function getAc() { try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch (e) {} }
+function tone(f, t, d, type) {
+  const o = ac.createOscillator(), g = ac.createGain(), T = ac.currentTime + t;
+  o.type = type; o.frequency.value = f; g.gain.setValueAtTime(0.15, T); g.gain.exponentialRampToValueAtTime(0.001, T + d);
+  o.connect(g); g.connect(ac.destination); o.start(T); o.stop(T + d);
+}
+function sfx() {
+  if (!$('oSnd').checked || !ac) return;
+  const t = document.documentElement.getAttribute('data-ot');
+  if (t === 'horror') { tone(220, 0, .5, 'sawtooth'); tone(165, .25, .7, 'sawtooth'); }
+  else if (t === 'neon') { tone(880, 0, .12, 'square'); tone(1320, .12, .2, 'square'); }
+  else [523, 659, 784, 1046].forEach((f, i) => tone(f, i * .1, .25, 'triangle'));
 }
 
 /* =====================================================
    初期化（DOMはこのscriptより上で構築済み）
    ===================================================== */
 $('cards').innerHTML = MODES.map(m =>
-  '<button class="mode-card" onclick="show(\'' + m[0] + '\')"><span class="e">' + m[1] + '</span><span class="t">' + m[2] + '</span><span class="d">' + m[3] + '</span></button>').join('');
+  '<button class="mode-card' + (m[0] === 'roulette' ? ' wide' : '') + '" onclick="show(\'' + m[0] + '\')"><span class="e">' + m[1] + '</span><span class="t">' + m[2] + '</span><span class="d">' + m[3] + '</span></button>').join('');
 $('themeChips').innerHTML = THEMES.map(t => '<button type="button" class="theme-btn" data-t="' + t[0] + '" onclick="setOt(\'' + t[0] + '\')">' + t[1] + '</button>').join('');
+drawWheel();
+document.addEventListener('DOMContentLoaded', drawWheel);   // common.jsの入力復元(restoreInputs)の後にも描き直す
 (function () { let t = 'std'; try { t = localStorage.getItem(OT_KEY) || 'std'; } catch (e) {} setOt(THEMES.some(x => x[0] === t) ? t : 'std'); })();
 </script>
 </body>
