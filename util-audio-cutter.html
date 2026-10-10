@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2195458991382480" crossorigin="anonymous"></script>
+<link rel="canonical" href="https://arigato-tools.com/util-audio-cutter">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NXJCSR0EX1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-NXJCSR0EX1');
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>音声カット・分割ツール｜MP3/WAV/M4Aを複数に分割（ブラウザ完結）</title>
+<meta name="description" content="MP3・WAV・M4Aなどの音声ファイルを、好きな位置で複数のファイルに分割できる無料ツール。分割点の追加・削除・元に戻す、ZIP一括保存に対応。ファイルは送信されずブラウザ内で処理します。">
+<meta property="og:title" content="音声カット・分割ツール｜MP3/WAV/M4Aを複数に分割（ブラウザ完結）">
+<meta property="og:description" content="音声ファイルを好きな位置で複数に分割。分割点の追加・削除、ZIP一括保存に対応。完全無料・登録不要・ブラウザ内で完結。">
+<meta property="og:url" content="https://arigato-tools.com/util-audio-cutter">
+<meta property="og:image" content="https://arigato-tools.com/images/util-audio-cutter-ogp.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<!-- QRコード生成ライブラリ（common.jsのshowQr＝シェア用QRで使用） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- ZIP作成ライブラリ（複数ファイルをまとめて保存する時に使用） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<!-- 共通CSS（色・レイアウト・ボタン・ダークモード等） -->
+<link rel="stylesheet" href="/common.css">
+<!-- =====================================================
+     ★このツール固有の追加スタイル
+     - common.cssに無いパーツだけ。色は必ずCSS変数(--color-*)を使う
+     ===================================================== -->
+<style>
+  /* ---- 処理方式の説明文 ---- */
+  .mode-note { font-size: 12px; color: var(--color-text-muted); line-height: 1.7; }
+  /* 準備中ボタン（グレーアウト） */
+  .toggle-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* ---- ファイルドロップゾーン ---- */
+  .file-dropzone {
+    border: 2px dashed var(--color-border-input);
+    background: var(--color-input-bg);
+    border-radius: var(--radius-card);
+    padding: 26px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 12px;
+  }
+  .file-dropzone.dragover { border-color: var(--color-primary); background: var(--color-primary-bg); }
+  .file-dropzone .icon { font-size: 30px; }
+  .file-dropzone p { margin: 8px 0 0; font-size: 14px; color: var(--color-text-sub); }
+  .file-dropzone .sub { font-size: 11px; color: var(--color-text-muted); }
+
+  /* ---- 読み込み済みファイルのチップ（複数ファイル切替） ---- */
+  .file-chips { display: none; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .file-chip {
+    display: inline-flex; align-items: center;
+    max-width: 100%;
+    background: var(--color-chip-bg);
+    border: 1px solid var(--color-primary-border);
+    border-radius: var(--radius-btn);
+    min-height: 44px;
+  }
+  .file-chip.active { background: var(--color-primary-bg); border-color: var(--color-primary); }
+  .chip-name {
+    font-family: 'BIZ UDPGothic', sans-serif;
+    font-size: 13px; font-weight: 700;
+    color: var(--color-primary);
+    background: none; border: none;
+    padding: 0 6px 0 12px;
+    min-height: 44px;
+    max-width: 220px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    cursor: pointer;
+  }
+  .chip-x {
+    font-size: 12px; color: var(--color-text-muted);
+    background: none; border: none;
+    width: 36px; min-height: 44px;
+    cursor: pointer;
+  }
+  .chip-x:hover { color: var(--color-error-text); }
+
+  /* ---- 状態メッセージ ---- */
+  .status-msg { font-size: 13px; color: var(--color-text-sub); min-height: 20px; margin-top: 6px; word-break: break-all; }
+
+  /* ---- ファイル情報 ---- */
+  .audio-info table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .audio-info td { padding: 4px 0; word-break: break-all; color: var(--color-text); }
+  .audio-info td:first-child { width: 84px; font-weight: 700; color: var(--color-text-sub); word-break: normal; }
+
+  /* ---- 作業エリア（読込完了まで非表示） ---- */
+  #workArea { display: none; }
+
+  /* ---- プレーヤー ---- */
+  .player-time-display {
+    display: flex; justify-content: space-between;
+    font-size: 13px; font-family: monospace; color: var(--color-text-sub);
+  }
+  .player-seekbar { width: 100%; height: 28px; cursor: pointer; accent-color: var(--color-primary); }
+  /* シークバー下の分割点マーカー（波形の代わり） */
+  .marker-track { position: relative; height: 10px; margin: 0 0 2px; }
+  .marker-tick {
+    position: absolute; top: 0;
+    width: 3px; height: 10px; margin-left: -1px;
+    background: #f59e0b; /* 分割線はオレンジ固定（ライト/ダーク両方で見える） */
+    border-radius: 1px;
+  }
+  .player-controls { display: flex; justify-content: center; gap: 10px; margin: 10px 0 14px; }
+  .player-btn {
+    background: var(--color-card);
+    border: 1px solid var(--color-border-input);
+    border-radius: 50%;
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; cursor: pointer; transition: background 0.2s;
+  }
+  .player-btn:hover { background: var(--color-chip-hover); }
+
+  /* ---- 分割点の手動入力 ---- */
+  .manual-row { display: flex; gap: 8px; margin: 12px 0; }
+  .manual-row input {
+    flex: 1; min-width: 0;
+    border: 1px solid var(--color-border-input);
+    border-radius: var(--radius-input);
+    background: var(--color-input-bg);
+    color: var(--color-text);
+    font-family: 'BIZ UDPGothic', sans-serif;
+    font-size: 16px; /* iPhoneの自動ズーム防止 */
+    padding: 10px; min-height: 44px; outline: none;
+  }
+  .manual-row input:focus { border-color: var(--color-primary); }
+  .manual-row .btn-action { flex: 0 0 auto; padding: 10px 18px; }
+  .row-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+  /* ---- 分割点一覧 ---- */
+  .split-summary { font-size: 12px; color: var(--color-text-muted); margin-bottom: 8px; }
+  .table-wrap {
+    max-height: 220px; overflow-y: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-btn);
+    margin-bottom: 14px;
+  }
+  .splits-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .splits-table th, .splits-table td { padding: 8px 10px; border-bottom: 1px solid var(--color-border); text-align: left; }
+  .splits-table th { background: var(--color-input-bg); font-size: 11px; color: var(--color-text-sub); position: sticky; top: 0; }
+  .splits-table tbody tr { cursor: pointer; }
+  .splits-table tbody tr:hover { background: var(--color-primary-bg); }
+  .splits-table td.empty { text-align: center; color: var(--color-text-muted); cursor: default; }
+  .btn-del {
+    font-family: 'BIZ UDPGothic', sans-serif;
+    font-size: 12px; font-weight: 700;
+    color: var(--color-error-text);
+    background: var(--color-error-bg);
+    border: 1px solid var(--color-error-border);
+    border-radius: var(--radius-input);
+    padding: 6px 12px; min-height: 36px; cursor: pointer;
+  }
+  .export-note { font-size: 11px; color: var(--color-text-muted); line-height: 1.7; margin-top: 4px; }
+  #btnZip:disabled, #btnIndividual:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* =====================================================
+     解説文（.tool-desc）AdSenseの有用性判定対策の独自コンテンツ領域
+     ===================================================== */
+  .tool-desc {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    padding: 16px 18px;
+    margin-bottom: 14px;
+    font-size: 13px; line-height: 1.8;
+    color: var(--color-text-sub);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .tool-desc h2 { font-size: 15px; color: var(--color-text); margin-bottom: 8px; }
+  .tool-desc h3 { font-size: 13px; color: var(--color-text); margin: 14px 0 4px; }
+  .tool-desc ul { padding-left: 18px; }
+  .tool-desc li { margin-bottom: 2px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- 上部ナビ（共通・触らない） -->
+  <div id="topNavSlot"></div>
+
+  <header>
+    <h1>✂️ 音声カット・分割ツール</h1>
+    <p class="subtitle">
+      ※ 好きな位置に分割点を置いて、複数のファイルに切り分けます<br>
+      ※ 処理はすべてブラウザ内で完結（ファイルは送信されません）
+    </p>
+  </header>
+
+  <!-- ===== ① 処理方式＋ファイル選択 ===== -->
+  <div class="card">
+    <div class="section-title">▶ ① 処理方式</div>
+    <div class="toggle-wrap">
+      <button type="button" class="toggle-btn" id="modePrecise">🎯 丁寧</button>
+      <button type="button" class="toggle-btn" id="modeFast" disabled title="準備中です">⚡ 高速（準備中）</button>
+    </div>
+    <p class="mode-note" id="modeNote"></p>
+
+    <div class="section-title" style="margin-top:16px;">▶ ② ファイルを選ぶ（複数OK）</div>
+    <div class="file-dropzone" id="dropzone">
+      <div class="icon">🎵</div>
+      <p><strong>ここに音声ファイルをドラッグ＆ドロップ</strong></p>
+      <p class="sub">またはここをタップして選択（MP3 / WAV / M4A など）</p>
+      <input type="file" id="audioFile" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac" multiple style="display:none;">
+    </div>
+    <div class="file-chips" id="fileChips"></div>
+    <div class="status-msg" id="statusMsg"></div>
+    <!-- エラー表示（common.jsのshowErrorが使う #errorMsg） -->
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <!-- ===== 作業エリア（デコード完了後に表示） ===== -->
+  <div id="workArea">
+
+    <!-- ③ 再生して分割点を決める -->
+    <div class="card">
+      <div class="section-title">▶ ③ 再生して分割点を置く</div>
+      <div class="audio-info" style="margin-bottom:12px;">
+        <table>
+          <tr><td>ファイル名</td><td id="infoName">-</td></tr>
+          <tr><td>再生時間</td><td id="infoDuration">-</td></tr>
+          <tr><td>容量</td><td id="infoSize">-</td></tr>
+        </table>
+      </div>
+
+      <input type="range" id="seekBar" class="player-seekbar" value="0" min="0" step="0.1">
+      <!-- 分割点マーカー（オレンジの縦線） -->
+      <div class="marker-track" id="markerTrack"></div>
+      <div class="player-time-display">
+        <span id="timeCurrent">0:00.0</span>
+        <span id="timeTotal">0:00.0</span>
+      </div>
+      <div class="player-controls">
+        <button type="button" class="player-btn" id="btnRewind" title="10秒戻る">⏪</button>
+        <button type="button" class="player-btn" id="btnPlay" title="再生／一時停止">▶️</button>
+        <button type="button" class="player-btn" id="btnStop" title="停止">⏹</button>
+        <button type="button" class="player-btn" id="btnForward" title="10秒進む">⏩</button>
+      </div>
+
+      <button type="button" class="btn-calc" id="btnAddSplit">✂️ 現在位置に分割点を追加</button>
+
+      <div class="manual-row">
+        <input type="text" id="manualTime" placeholder="時間で指定  例: 1:20 / 0:35.250 / 83.5" autocomplete="off" inputmode="text">
+        <button type="button" class="btn-action" id="btnManualAdd">追加</button>
+      </div>
+
+      <div class="row-btns">
+        <button type="button" class="btn-action" id="btnUndo" title="元に戻す (Ctrl+Z)">↩ 元に戻す</button>
+        <button type="button" class="btn-action" id="btnRedo" title="やり直す (Ctrl+Y)">↪ やり直す</button>
+        <button type="button" class="btn-action" id="btnClear">🗑 全削除</button>
+      </div>
+    </div>
+
+    <!-- ④ 分割点一覧＋保存 -->
+    <div class="card">
+      <div class="section-title">▶ ④ 分割点の確認と保存</div>
+      <div class="split-summary" id="splitSummary"></div>
+      <div class="table-wrap">
+        <table class="splits-table">
+          <thead><tr><th>No</th><th>位置</th><th>操作</th></tr></thead>
+          <tbody id="splitsBody"></tbody>
+        </table>
+      </div>
+      <button type="button" class="btn-calc" id="btnZip" style="margin-bottom:8px;">📦 ZIPにまとめて保存</button>
+      <button type="button" class="btn-action" id="btnIndividual" style="width:100%;">⬇ 1ファイルずつ保存</button>
+      <p class="export-note">※ 保存形式はWAV（16bit）です。「1ファイルずつ」はブラウザが複数ダウンロードの許可を求める場合があります。</p>
+    </div>
+  </div>
+
+  <!-- =====================================================
+       解説文（AdSense有用性対策：使い方／利用シーン／仕様／FAQ）
+       ★ツール本体の直後・各Slotの前に置く
+       ===================================================== -->
+  <section class="tool-desc">
+    <h2>音声カット・分割ツールの使い方</h2>
+    <p>音声ファイル（MP3・WAV・M4Aなど）を読み込み、再生しながら区切りたい位置で「分割点を追加」を押すと、分割点の数＋1個のファイルに切り分けられます。「1:20」「83.5」のように時間を入力して追加することもできます。保存はZIPでまとめるか、1つずつ選べます。間違えたときは「元に戻す」、複数ファイルはタブで切り替えられます。</p>
+    <h3>こんな場面で使えます</h3>
+    <ul>
+      <li>長い会議・講義の録音を、議題ごとのファイルに分けたいとき</li>
+      <li>ラジオや配信の録音を、コーナー単位で切り分けたいとき</li>
+      <li>語学音声を、1文ずつに切って練習素材にしたいとき</li>
+    </ul>
+    <h3>処理方式と仕様の補足</h3>
+    <p>現在の「丁寧」モードは、音声をブラウザ内でいったんデコードし、指定位置で切り出して16bit WAVで保存します。元がMP3でも出力はWAVになり、ステレオ44.1kHzで1分あたり約10MBです。音声が外部へ送信されることはありません。長時間の音声は展開時にメモリを多く使い（ステレオ2時間で約2.4GB）、端末によっては失敗することがあります。無劣化で軽い「高速」モードは準備中です。</p>
+    <h3>よくある質問</h3>
+    <p><strong>Q. 音質は劣化しますか？</strong><br>A. 再圧縮はせず、展開した音声をそのままWAVにします。MP3など圧縮済みの音質は元のままです。</p>
+    <p style="margin-top:8px;"><strong>Q. 「1ファイルずつ」で最初の1つしか保存されません。</strong><br>A. ブラウザが連続ダウンロードを制限している可能性があります。その場合はZIP保存をお使いください。</p>
+  </section>
+
+  <!-- シェアエリア（共通・触らない） -->
+  <div id="shareAreaSlot"></div>
+  <!-- リセットボタン（共通・触らない） -->
+  <div id="resetBtnSlot"></div>
+  <!-- 下部ナビ（共通・触らない） -->
+  <div id="bottomNavSlot"></div>
+  <!-- 広告エリア（共通・触らない） -->
+  <div id="adAreaSlot"></div>
+
+</div><!-- /.container -->
+
+<!-- QRコードモーダル（共通・触らない） -->
+<div id="qrModalSlot"></div>
+<!-- フッター（共通・触らない） -->
+<div id="footerSlot"></div>
+
+<!-- 再生用の隠しaudio要素（プレーヤーUIから操作する） -->
+<audio id="hiddenAudio" preload="metadata" style="display:none;"></audio>
+
+<!-- 共通JS（テーマ／シェア／保存復元／リセット等） -->
+<script src="/common.js"></script>
+
+<!-- =====================================================
+     ★ここから下だけがツール固有部分
+     構成：①設定 ②処理エンジン ③状態 ④UI描画 ⑤ファイル読込 ⑥プレーヤー
+           ⑦分割点操作 ⑧書き出し ⑨common.js連携
+     ★機能追加の入口：処理エンジンは Engines に足すだけ（②参照）
+     ===================================================== -->
+<script>
+/* =====================================================
+   ① 設定（common.jsが呼び出し前提にしている定数）
+   ===================================================== */
+const CURRENT_TOOL_ID = 'util-audio-cutter';
+const STORAGE_KEY = 'util_audio_cutter_settings';
+// ※本ツールは数値入力の保存対象なし（音声ファイル自体は保存できないため）
+const STORAGE_FIELDS = [];
+const INPUT_LABELS = {};
+const RESULT_LABELS = { main: '分割後のファイル数' };
+
+// 起動時の処理方式。段階2（高速モードのWAV対応）が完成したら 'fast' に変更する
+const DEFAULT_MODE = 'precise';
+// 長尺警告のしきい値（秒）。丁寧モードはデコードでメモリを食うため
+const LONG_AUDIO_SEC = 30 * 60;
+// 履歴（Undo/Redo）の最大保持数
+const HISTORY_LIMIT = 100;
+
+/* =====================================================
+   ② 処理エンジン
+   - 各エンジンは { label, ready, note, prepare(file), cut(data, start, end) } を持つ
+   - prepare : ファイルを読んで { duration, data } を返す（dataは後でcutに渡す）
+   - cut     : 指定区間をBlobにして返す
+   - ★高速モードを作る時は、fast の ready を true にして
+     prepare / cut を実装するだけでOK（UI側は変更不要）
+   ===================================================== */
+const Engines = {
+  // ---- 丁寧モード：デコード→サンプル単位で切り出し→16bit WAV ----
+  precise: {
+    label: '丁寧',
+    ready: true,
+    note: '🎯 丁寧：音声をデコードして正確に切り出し、WAVで保存します（どの形式でも動作／メモリ多め）。',
+    ctx: null,
+    async prepare(file) {
+      // AudioContextは初回のみ生成（ユーザー操作後に作る方が安全）
+      if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = await this.ctx.decodeAudioData(arrayBuffer);
+      return { duration: buffer.duration, data: buffer };
+    },
+    cut(buffer, startSec, endSec) {
+      return audioBufferToWav(buffer, startSec, endSec);
+    }
+  },
+  // ---- 高速モード：準備中（段階2・3で実装） ----
+  fast: {
+    label: '高速',
+    ready: false,
+    note: '⚡ 高速：デコードせず無劣化で切り出します（準備中）。',
+    async prepare(file) { throw new Error('高速モードは準備中です'); },
+    cut() { throw new Error('高速モードは準備中です'); }
+  }
+};
+
+/**
+ * AudioBufferの指定区間を16bit PCM WAVのBlobにする
+ * ・チャンネル数に依存しない書き方（モノラル／ステレオ／多チャンネル対応）
+ * ・中間の大きなFloat32Arrayを作らず、直接DataViewへ書いてメモリを節約
+ */
+function audioBufferToWav(buffer, startSec, endSec) {
+  const sampleRate = buffer.sampleRate;
+  const channels = buffer.numberOfChannels;
+  const startFrame = Math.max(0, Math.floor(startSec * sampleRate));
+  const endFrame = Math.min(buffer.length, Math.floor(endSec * sampleRate));
+  const frames = endFrame - startFrame;
+  if (frames <= 0) throw new Error('区間の長さが0です');
+
+  const dataBytes = frames * channels * 2;
+  const ab = new ArrayBuffer(44 + dataBytes);
+  const v = new DataView(ab);
+  const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) v.setUint8(off + i, s.charCodeAt(i)); };
+
+  // RIFF/WAVEヘッダ
+  writeStr(0, 'RIFF');
+  v.setUint32(4, 36 + dataBytes, true);
+  writeStr(8, 'WAVE');
+  writeStr(12, 'fmt ');
+  v.setUint32(16, 16, true);                      // fmtチャンク長
+  v.setUint16(20, 1, true);                       // PCM
+  v.setUint16(22, channels, true);
+  v.setUint32(24, sampleRate, true);
+  v.setUint32(28, sampleRate * channels * 2, true); // byteRate
+  v.setUint16(32, channels * 2, true);              // blockAlign
+  v.setUint16(34, 16, true);                        // bit深度
+  writeStr(36, 'data');
+  v.setUint32(40, dataBytes, true);
+
+  // サンプル本体（フレームごとに全チャンネルを交互に書く）
+  const chData = [];
+  for (let c = 0; c < channels; c++) chData.push(buffer.getChannelData(c));
+  let off = 44;
+  for (let i = startFrame; i < endFrame; i++) {
+    for (let c = 0; c < channels; c++) {
+      let x = chData[c][i];
+      x = x < -1 ? -1 : (x > 1 ? 1 : x);
+      v.setInt16(off, x < 0 ? x * 0x8000 : x * 0x7FFF, true);
+      off += 2;
+    }
+  }
+  return new Blob([ab], { type: 'audio/wav' });
+}
+
+/* =====================================================
+   ③ 状態
+   ===================================================== */
+const $ = (id) => document.getElementById(id);
+const files = [];        // 読み込んだファイル [{id, file, splits[], history[][], hIndex}]
+let nextId = 1;          // ファイル固有ID（同名ファイルでも衝突しない）
+let currentId = null;    // 選択中ファイルのID
+let currentMode = DEFAULT_MODE;
+let prepared = null;     // 選択中ファイルのデコード結果 {duration, data}
+let duration = 0;        // 選択中ファイルの長さ（秒）
+let loadToken = 0;       // 読込の世代番号（古い読込結果を捨てるため）
+let busy = false;        // 書き出し中フラグ
+let audioUrl = null;     // 再生用ObjectURL（切替時に解放）
+let seekDragging = false;
+let errTimer = null;
+
+const cur = () => files.find(f => f.id === currentId) || null;
+
+/* =====================================================
+   ④ UI描画
+   ===================================================== */
+// 時間表示：m:ss.mmm（digits桁だけ小数を残す）
+function formatTime(sec, digits = 3) {
+  const totalMs = Math.round(Math.max(0, sec) * 1000);
+  const m = Math.floor(totalMs / 60000);
+  const s = Math.floor((totalMs % 60000) / 1000);
+  const ms = String(totalMs % 1000).padStart(3, '0').slice(0, digits);
+  return `${m}:${String(s).padStart(2, '0')}${digits > 0 ? '.' + ms : ''}`;
+}
+
+function setStatus(msg) { $('statusMsg').textContent = msg || ''; }
+
+// エラー表示（common.jsのshowErrorを使い、5秒で自動で消す）
+function showErr(msg) {
+  showError(msg);
+  clearTimeout(errTimer);
+  errTimer = setTimeout(() => $('errorMsg').classList.remove('show'), 5000);
+}
+
+function renderMode() {
+  $('modePrecise').classList.toggle('active', currentMode === 'precise');
+  $('modeFast').classList.toggle('active', currentMode === 'fast');
+  $('modeFast').disabled = !Engines.fast.ready;
+  if (Engines.fast.ready) {
+    $('modeFast').textContent = '⚡ 高速';
+    $('modeFast').title = '';
+  }
+  $('modeNote').textContent = Engines[currentMode].note;
+}
+
+function renderTabs() {
+  const box = $('fileChips');
+  box.innerHTML = '';
+  files.forEach(it => {
+    const chip = document.createElement('div');
+    chip.className = 'file-chip' + (it.id === currentId ? ' active' : '');
+    const name = document.createElement('button');
+    name.type = 'button';
+    name.className = 'chip-name';
+    name.textContent = it.file.name;
+    name.title = it.file.name;
+    name.addEventListener('click', () => selectFile(it.id));
+    const x = document.createElement('button');
+    x.type = 'button';
+    x.className = 'chip-x';
+    x.textContent = '✕';
+    x.setAttribute('aria-label', it.file.name + ' を一覧から外す');
+    x.addEventListener('click', (e) => { e.stopPropagation(); removeFile(it.id); });
+    chip.append(name, x);
+    box.appendChild(chip);
+  });
+  box.style.display = files.length ? 'flex' : 'none';
+}
+
+// 分割点一覧
+function renderSplits() {
+  const it = cur();
+  const body = $('splitsBody');
+  body.innerHTML = '';
+  if (!it || it.splits.length === 0) {
+    body.innerHTML = '<tr><td class="empty" colspan="3">分割点はまだありません</td></tr>';
+  } else {
+    it.splits.forEach((t, i) => {
+      const tr = document.createElement('tr');
+      const tdNo = document.createElement('td');
+      tdNo.textContent = String(i + 1).padStart(2, '0');
+      const tdTime = document.createElement('td');
+      tdTime.textContent = formatTime(t, 3);
+      const tdAct = document.createElement('td');
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'btn-del';
+      del.textContent = '削除';
+      del.addEventListener('click', (e) => { e.stopPropagation(); deleteSplit(i); });
+      tdAct.appendChild(del);
+      tr.append(tdNo, tdTime, tdAct);
+      tr.addEventListener('click', () => seekTo(t)); // 行タップでその位置へジャンプ
+      body.appendChild(tr);
+    });
+  }
+  const n = it ? it.splits.length : 0;
+  $('splitSummary').textContent = it ? `分割点 ${n}個 → ${n + 1}個のファイルに分割されます` : '';
+}
+
+// シークバー下のオレンジ線
+function renderMarkers() {
+  const track = $('markerTrack');
+  track.innerHTML = '';
+  const it = cur();
+  if (!it || !duration) return;
+  it.splits.forEach(t => {
+    const tick = document.createElement('div');
+    tick.className = 'marker-tick';
+    // つまみの余白(約8px)を考慮した位置
+    tick.style.left = `calc(8px + (100% - 16px) * ${t / duration})`;
+    track.appendChild(tick);
+  });
+}
+
+function updateHistoryButtons() {
+  const it = cur();
+  $('btnUndo').disabled = !it || it.hIndex <= 0;
+  $('btnRedo').disabled = !it || it.hIndex >= it.history.length - 1;
+  $('btnClear').disabled = !it || it.splits.length === 0;
+}
+
+function refreshSplitUI() {
+  renderSplits();
+  renderMarkers();
+  updateHistoryButtons();
+}
+
+function setBusy(flag) {
+  busy = flag;
+  $('btnZip').disabled = flag;
+  $('btnIndividual').disabled = flag;
+}
+
+/* =====================================================
+   ⑤ ファイル読込・切替・削除
+   ===================================================== */
+const dropzone = $('dropzone');
+const fileInput = $('audioFile');
+const hiddenAudio = $('hiddenAudio');
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  handleFiles(Array.from(e.dataTransfer.files));
+});
+fileInput.addEventListener('change', (e) => {
+  const list = Array.from(e.target.files);
+  e.target.value = ''; // 同じファイルをもう一度選べるようにする
+  handleFiles(list);
+});
+
+function isAudioFile(f) {
+  return f.type.startsWith('audio/') || /\.(mp3|wav|m4a|aac|ogg|flac)$/i.test(f.name);
+}
+
+function handleFiles(list) {
+  if (busy) return;
+  const ok = list.filter(isAudioFile);
+  if (ok.length < list.length) showErr('音声ファイル以外は読み込めませんでした。');
+  if (ok.length === 0) return;
+  const added = ok.map(file => {
+    const it = { id: nextId++, file, splits: [], history: [[]], hIndex: 0 };
+    files.push(it);
+    return it;
+  });
+  selectFile(added[0].id); // 追加した先頭のファイルを開く
+}
+
+async function selectFile(id) {
+  if (busy) return;
+  const it = files.find(f => f.id === id);
+  if (!it) return;
+  if (id === currentId && prepared) return; // すでに開いている
+
+  const token = ++loadToken;
+  hiddenAudio.pause();
+  prepared = null;
+  duration = 0;
+  currentId = id;
+  $('workArea').style.display = 'none';
+  renderTabs();
+  setStatus(`🔄 「${it.file.name}」をデコード中…（長い音声は時間がかかります）`);
+
+  try {
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
+    audioUrl = URL.createObjectURL(it.file);
+    hiddenAudio.src = audioUrl;
+    hiddenAudio.load();
+
+    const p = await Engines[currentMode].prepare(it.file);
+    if (token !== loadToken) return; // 読込中に別ファイルへ切り替えられた
+    prepared = p;
+    duration = p.duration;
+
+    $('infoName').textContent = it.file.name;
+    $('infoDuration').textContent = `${formatTime(duration, 2)}（${duration.toFixed(2)} 秒）`;
+    $('infoSize').textContent = (it.file.size / (1024 * 1024)).toFixed(2) + ' MB';
+    $('seekBar').max = duration;
+    $('seekBar').value = 0;
+    $('timeTotal').textContent = formatTime(duration, 1);
+    $('timeCurrent').textContent = formatTime(0, 1);
+    $('workArea').style.display = 'block';
+    refreshSplitUI();
+
+    setStatus(duration > LONG_AUDIO_SEC && currentMode === 'precise'
+      ? '⚠️ 長い音声です。丁寧モードはメモリを多く使うため、保存に失敗する場合があります。'
+      : '');
+  } catch (err) {
+    if (token !== loadToken) return;
+    console.error(err);
+    setStatus('');
+    showErr('音声のデコードに失敗しました。壊れているか未対応の形式かもしれません。');
+  }
+}
+
+function removeFile(id) {
+  if (busy) return;
+  const idx = files.findIndex(f => f.id === id);
+  if (idx < 0) return;
+  files.splice(idx, 1);
+  if (id !== currentId) { renderTabs(); return; }
+  if (files.length > 0) {
+    currentId = null; // 強制的に読み直す
+    selectFile(files[Math.min(idx, files.length - 1)].id);
+  } else {
+    clearWorkspace();
+  }
+}
+
+// 全クリア（ファイルなしの初期状態へ）
+function clearWorkspace() {
+  loadToken++;
+  hiddenAudio.pause();
+  hiddenAudio.removeAttribute('src');
+  hiddenAudio.load();
+  if (audioUrl) { URL.revokeObjectURL(audioUrl); audioUrl = null; }
+  prepared = null;
+  duration = 0;
+  currentId = null;
+  $('workArea').style.display = 'none';
+  setStatus('');
+  renderTabs();
+  refreshSplitUI();
+}
+
+/* =====================================================
+   ⑥ プレーヤー
+   ===================================================== */
+const seekBar = $('seekBar');
+
+function updateSeekUI() {
+  seekBar.value = hiddenAudio.currentTime;
+  $('timeCurrent').textContent = formatTime(hiddenAudio.currentTime, 1);
+}
+function seekTo(sec) {
+  if (!prepared) return;
+  hiddenAudio.currentTime = Math.min(Math.max(0, sec), duration);
+  updateSeekUI();
+}
+
+$('btnPlay').addEventListener('click', () => {
+  if (!prepared) return;
+  if (hiddenAudio.paused) hiddenAudio.play().catch(() => {});
+  else hiddenAudio.pause();
+});
+$('btnStop').addEventListener('click', () => { hiddenAudio.pause(); seekTo(0); });
+$('btnRewind').addEventListener('click', () => seekTo(hiddenAudio.currentTime - 10));
+$('btnForward').addEventListener('click', () => seekTo(hiddenAudio.currentTime + 10));
+
+// 再生状態に合わせてボタン表示を同期
+hiddenAudio.addEventListener('play', () => { $('btnPlay').textContent = '⏸'; });
+hiddenAudio.addEventListener('pause', () => { $('btnPlay').textContent = '▶️'; });
+hiddenAudio.addEventListener('timeupdate', () => { if (!seekDragging) updateSeekUI(); });
+
+// シークバー操作（ドラッグ中は再生側からの更新を止める）
+seekBar.addEventListener('pointerdown', () => { seekDragging = true; });
+window.addEventListener('pointerup', () => { seekDragging = false; });
+window.addEventListener('pointercancel', () => { seekDragging = false; });
+seekBar.addEventListener('input', () => {
+  hiddenAudio.currentTime = parseFloat(seekBar.value);
+  $('timeCurrent').textContent = formatTime(seekBar.value, 1);
+});
+
+/* =====================================================
+   ⑦ 分割点の追加・削除・Undo/Redo
+   ===================================================== */
+// 履歴に現在の状態を積む（Redo側の履歴は捨てる）
+function pushHistory(it) {
+  it.history = it.history.slice(0, it.hIndex + 1);
+  it.history.push([...it.splits]);
+  if (it.history.length > HISTORY_LIMIT) it.history.shift();
+  it.hIndex = it.history.length - 1;
+}
+
+function addSplit(t) {
+  const it = cur();
+  if (!it || !prepared) return false;
+  t = Math.round(t * 1000) / 1000; // ミリ秒に丸めて重複判定を安定させる
+  if (t <= 0.001 || t >= duration - 0.001) {
+    showErr('分割点は「0秒より後ろ」かつ「ファイルの終わりより手前」に置いてください。');
+    return false;
+  }
+  if (it.splits.includes(t)) {
+    showErr('同じ位置にすでに分割点があります。');
+    return false;
+  }
+  it.splits.push(t);
+  it.splits.sort((a, b) => a - b);
+  pushHistory(it);
+  refreshSplitUI();
+  return true;
+}
+
+function deleteSplit(index) {
+  const it = cur();
+  if (!it) return;
+  it.splits.splice(index, 1);
+  pushHistory(it);
+  refreshSplitUI();
+}
+
+function undo() {
+  const it = cur();
+  if (!it || it.hIndex <= 0) return;
+  it.hIndex--;
+  it.splits = [...it.history[it.hIndex]];
+  refreshSplitUI();
+}
+function redo() {
+  const it = cur();
+  if (!it || it.hIndex >= it.history.length - 1) return;
+  it.hIndex++;
+  it.splits = [...it.history[it.hIndex]];
+  refreshSplitUI();
+}
+
+// 時間文字列→秒。対応：「1:20」「0:35.250」「1:02:03」「83.5」（全角もOK）。不正ならnull
+function parseTime(str) {
+  str = str.trim()
+    .replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/[：]/g, ':')
+    .replace(/[．]/g, '.');
+  if (!str) return null;
+  const parts = str.split(':');
+  if (parts.length > 3) return null;
+  if (!parts.every(p => /^\d+(\.\d+)?$/.test(p))) return null;
+  // 小数が許されるのは最後（秒）だけ
+  for (let i = 0; i < parts.length - 1; i++) if (parts[i].includes('.')) return null;
+  return parts.reduce((acc, p) => acc * 60 + parseFloat(p), 0);
+}
+
+function handleManualAdd() {
+  const input = $('manualTime');
+  const sec = parseTime(input.value);
+  if (sec === null) {
+    showErr('時間の形式が正しくありません。例: 1:20 / 0:35.250 / 83.5');
+    return;
+  }
+  if (addSplit(sec)) input.value = '';
+}
+
+$('btnAddSplit').addEventListener('click', () => addSplit(hiddenAudio.currentTime));
+$('btnManualAdd').addEventListener('click', handleManualAdd);
+$('manualTime').addEventListener('keydown', (e) => { if (e.key === 'Enter') handleManualAdd(); });
+$('btnUndo').addEventListener('click', undo);
+$('btnRedo').addEventListener('click', redo);
+$('btnClear').addEventListener('click', () => {
+  const it = cur();
+  if (!it || it.splits.length === 0) return;
+  if (!confirm('すべての分割点を削除しますか？（「元に戻す」で復元できます）')) return;
+  it.splits = [];
+  pushHistory(it);
+  refreshSplitUI();
+});
+
+// Ctrl+Z / Ctrl+Y（入力欄にフォーカスがある時は邪魔しない）
+window.addEventListener('keydown', (e) => {
+  if (!(e.ctrlKey || e.metaKey)) return;
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+  const k = e.key.toLowerCase();
+  if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+  else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); redo(); }
+});
+
+/* =====================================================
+   ⑧ 書き出し（ZIP／個別）
+   ・[0, 分割点…, 終端] の隣同士を1区間として順番にWAV化
+   ・区間の境目は同じサンプル位置になるため、隙間も重複も出ない
+   ===================================================== */
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+function downloadBlob(blob, fileName) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+async function exportFiles(asZip) {
+  const it = cur();
+  if (!it || !prepared || busy) return;
+  if (it.splits.length === 0) {
+    showErr('分割点がまだありません。再生位置で「分割点を追加」を押してください。');
+    return;
+  }
+  if (asZip && typeof JSZip === 'undefined') {
+    showErr('ZIPライブラリを読み込めませんでした。「1ファイルずつ保存」をお試しください。');
+    return;
+  }
+
+  setBusy(true);
+  try {
+    const points = [0, ...it.splits, duration];
+    const total = points.length - 1;
+    const dot = it.file.name.lastIndexOf('.');
+    const rawBase = dot > 0 ? it.file.name.slice(0, dot) : it.file.name;
+    const base = rawBase.replace(/[\\/:*?"<>|]/g, '_');
+    const pad = Math.max(3, String(total).length);
+    const zip = asZip ? new JSZip() : null;
+
+    for (let i = 0; i < total; i++) {
+      setStatus(`✂️ 切り出し中… ${i + 1} / ${total}`);
+      await sleep(0); // 画面の表示更新を挟む
+      const blob = Engines[currentMode].cut(prepared.data, points[i], points[i + 1]);
+      const name = `${base}_${String(i + 1).padStart(pad, '0')}.wav`;
+      if (zip) {
+        zip.file(name, blob);
+      } else {
+        downloadBlob(blob, name);
+        await sleep(400); // 連続ダウンロードがブロックされにくいよう間隔を空ける
+      }
+    }
+
+    if (zip) {
+      setStatus('📦 ZIPを作成中…');
+      await sleep(0);
+      // WAVはほぼ圧縮されないため、無圧縮(STORE)で高速に作る
+      const content = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
+      downloadBlob(content, `${base}_split.zip`);
+    }
+    setStatus(`✨ ${total}個のファイルを保存しました。`);
+  } catch (err) {
+    console.error(err);
+    setStatus('');
+    showErr('保存中にエラーが発生しました（メモリ不足の可能性があります）: ' + err.message);
+  } finally {
+    setBusy(false);
+  }
+}
+
+$('btnZip').addEventListener('click', () => exportFiles(true));
+$('btnIndividual').addEventListener('click', () => exportFiles(false));
+
+/* =====================================================
+   ⑨ common.js連携（呼び出し契約）
+   - calculateInputsはページ読込時(restoreInputs→calculate)にも呼ばれる
+     → alertは出さず、未読込ならnullを返す
+   ===================================================== */
+function calculateInputs() {
+  return (cur() && prepared) ? {} : null;
+}
+function calculateResult(inputs) {
+  if (!inputs) return null;
+  return { main: cur().splits.length + 1 };
+}
+// 結果パネルを持たないツールのため表示処理は不要
+function displayResult(result) {}
+
+function buildShareText(result) {
+  return '「音声カット・分割ツール」音声を好きな位置で複数に分割！ブラウザ完結で安全 #音声カット';
+}
+function buildShareUrl() {
+  return location.href.split('?')[0];
+}
+
+// common.jsのshareX/shareLineは結果がnullだと何もしないため、ツール紹介用に上書き
+function shareX() {
+  const text = buildShareText(null) + '\n' + buildShareUrl();
+  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+}
+function shareLine() {
+  const text = buildShareText(null) + '\n' + buildShareUrl();
+  window.open(`https://line.me/R/msg/text/${encodeURIComponent(text)}`, '_blank');
+}
+
+// リセットボタン拡張（common.jsのhandleResetから自動で呼ばれる）
+function onResetExtra() {
+  files.length = 0;
+  clearWorkspace();
+  $('manualTime').value = '';
+  $('errorMsg').classList.remove('show');
+}
+
+/* =====================================================
+   初期化
+   ===================================================== */
+renderMode();
+renderTabs();
+refreshSplitUI();
+// モード切替（準備中の高速はdisabledなので押せない。将来readyになれば有効化）
+$('modePrecise').addEventListener('click', () => switchMode('precise'));
+$('modeFast').addEventListener('click', () => switchMode('fast'));
+function switchMode(mode) {
+  if (busy || !Engines[mode].ready || mode === currentMode) return;
+  currentMode = mode;
+  renderMode();
+  // ファイルを開いている場合は、新しい方式で読み直す
+  const id = currentId;
+  if (id !== null) { currentId = null; selectFile(id); }
+}
+</script>
+</body>
+</html>
