@@ -202,7 +202,7 @@
     <div class="section-title">▶ ① 処理方式</div>
     <div class="toggle-wrap">
       <button type="button" class="toggle-btn" id="modePrecise">🎯 丁寧</button>
-      <button type="button" class="toggle-btn" id="modeFast" disabled title="準備中です">⚡ 高速（準備中）</button>
+      <button type="button" class="toggle-btn" id="modeFast" title="WAVのみ対応。無劣化・軽量">⚡ 高速</button>
     </div>
     <p class="mode-note" id="modeNote"></p>
 
@@ -230,6 +230,7 @@
           <tr><td>ファイル名</td><td id="infoName">-</td></tr>
           <tr><td>再生時間</td><td id="infoDuration">-</td></tr>
           <tr><td>容量</td><td id="infoSize">-</td></tr>
+          <tr><td>処理方式</td><td id="infoEngine">-</td></tr>
         </table>
       </div>
 
@@ -271,9 +272,11 @@
           <tbody id="splitsBody"></tbody>
         </table>
       </div>
+      <label class="checkbox-item"><input type="checkbox" id="zipKeepJa"> ZIP内のファイル名も日本語のままにする</label>
+      <p class="export-note" style="margin:-4px 0 10px;">※ OFFだと日本語名は「audio」に置き換えます（Windows標準の解凍で文字化けしないため）。Macの解凍ならONでも読めることが多いです。</p>
       <button type="button" class="btn-calc" id="btnZip" style="margin-bottom:8px;">📦 ZIPにまとめて保存</button>
       <button type="button" class="btn-action" id="btnIndividual" style="width:100%;">⬇ 1ファイルずつ保存</button>
-      <p class="export-note">※ 保存形式はWAV（16bit）です。「1ファイルずつ」はブラウザが複数ダウンロードの許可を求める場合があります。</p>
+      <p class="export-note">※ 保存形式はWAVです（高速モードは元のビット深度のまま、丁寧モードは16bit）。「1ファイルずつ」はブラウザが複数ダウンロードの許可を求める場合があります。</p>
     </div>
   </div>
 
@@ -291,10 +294,10 @@
       <li>語学音声を、1文ずつに切って練習素材にしたいとき</li>
     </ul>
     <h3>処理方式と仕様の補足</h3>
-    <p>現在の「丁寧」モードは、音声をブラウザ内でいったんデコードし、指定位置で切り出して16bit WAVで保存します。元がMP3でも出力はWAVになり、ステレオ44.1kHzで1分あたり約10MBです。音声が外部へ送信されることはありません。長時間の音声は展開時にメモリを多く使い（ステレオ2時間で約2.4GB）、端末によっては失敗することがあります。無劣化で軽い「高速」モードは準備中です。</p>
+    <p>「高速」はWAVの元データをそのまま切り出す方式で、デコード不要のため長時間でも軽く、音質も変わりません（現在はWAVのみ対応）。MP3・M4Aなどは自動で「丁寧」に切り替わり、音声をブラウザ内でデコードして16bit WAVで保存します。丁寧モードはメモリを多く使い（ステレオ2時間で約2.4GB）、端末によっては失敗します。音声が外部へ送信されることはありません。</p>
     <h3>よくある質問</h3>
-    <p><strong>Q. 音質は劣化しますか？</strong><br>A. 再圧縮はせず、展開した音声をそのままWAVにします。MP3など圧縮済みの音質は元のままです。</p>
-    <p style="margin-top:8px;"><strong>Q. 「1ファイルずつ」で最初の1つしか保存されません。</strong><br>A. ブラウザが連続ダウンロードを制限している可能性があります。その場合はZIP保存をお使いください。</p>
+    <p><strong>Q. MP3を高速モードで切れますか？</strong><br>A. 現在はWAVのみです。MP3などは自動で丁寧モードになります。</p>
+    <p style="margin-top:8px;"><strong>Q. ZIPの中の日本語ファイル名が文字化けします。</strong><br>A. 既定では英数字のみの名前にして回避しています。Macなどで日本語名にしたい場合は、保存前のチェックをONにしてください。</p>
   </section>
 
   <!-- シェアエリア（共通・触らない） -->
@@ -336,8 +339,9 @@ const STORAGE_FIELDS = [];
 const INPUT_LABELS = {};
 const RESULT_LABELS = { main: '分割後のファイル数' };
 
-// 起動時の処理方式。段階2（高速モードのWAV対応）が完成したら 'fast' に変更する
-const DEFAULT_MODE = 'precise';
+// 初回の処理方式（利用者が手動で切り替えた選択は localStorage に保存して優先する）
+const DEFAULT_MODE = 'fast';
+const MODE_STORAGE_KEY = 'util_audio_cutter_mode';
 // 長尺警告のしきい値（秒）。丁寧モードはデコードでメモリを食うため
 const LONG_AUDIO_SEC = 30 * 60;
 // 履歴（Undo/Redo）の最大保持数
@@ -369,13 +373,87 @@ const Engines = {
       return audioBufferToWav(buffer, startSec, endSec);
     }
   },
-  // ---- 高速モード：準備中（段階2・3で実装） ----
+  // ---- 高速モード：デコードせず、WAVの元データをそのまま切り出す（無劣化・軽量） ----
+  // ・ファイル先頭のヘッダ(fmt/dataチャンク)だけ読み、区間ごとにヘッダを付け直す
+  // ・本体データは file.slice() の参照のままBlobにするため、長時間でもメモリをほぼ使わない
+  // ・対応：PCM(整数)／IEEE float／WAVE_FORMAT_EXTENSIBLE。非対応は unsupported エラー
+  //   → 呼び出し側(selectFile)が検知して丁寧モードへ自動で切り替える
+  // ・★MP3対応（段階3）は、このprepare内で「WAVでなければMP3を調べる」分岐を足す想定
   fast: {
     label: '高速',
-    ready: false,
-    note: '⚡ 高速：デコードせず無劣化で切り出します（準備中）。',
-    async prepare(file) { throw new Error('高速モードは準備中です'); },
-    cut() { throw new Error('高速モードは準備中です'); }
+    ready: true,
+    note: '⚡ 高速：デコードせず元データをそのまま切り出します（無劣化・軽量／現在はWAVのみ対応）。',
+    async prepare(file) {
+      const unsupported = (msg) => { const e = new Error(msg); e.unsupported = true; return e; };
+      const read = (s, e) => file.slice(s, e).arrayBuffer();
+      const tag = (dv, o) => String.fromCharCode(dv.getUint8(o), dv.getUint8(o + 1), dv.getUint8(o + 2), dv.getUint8(o + 3));
+
+      if (file.size < 44) throw unsupported('このファイルはWAV形式ではない');
+      const head = new DataView(await read(0, 12));
+      if (tag(head, 0) !== 'RIFF' || tag(head, 8) !== 'WAVE') throw unsupported('このファイルはWAV形式ではない');
+
+      // チャンクを順にたどって fmt と data の位置を探す（LIST等の他チャンクは読み飛ばす）
+      let pos = 12, fmt = null, dataOffset = -1, dataSize = 0;
+      while (pos + 8 <= file.size) {
+        const ch = new DataView(await read(pos, pos + 8));
+        const id = tag(ch, 0);
+        const size = ch.getUint32(4, true);
+        if (id === 'fmt ') {
+          if (size < 16 || size > 256) throw unsupported('このWAVはヘッダが特殊で高速モードに未対応な');
+          fmt = await read(pos + 8, pos + 8 + size);
+        } else if (id === 'data') {
+          dataOffset = pos + 8;
+          // サイズ0／0xFFFFFFFF／ファイル超過（ストリーム録音など）は残り全部をデータとみなす
+          dataSize = (size === 0 || size === 0xFFFFFFFF || dataOffset + size > file.size) ? file.size - dataOffset : size;
+          break;
+        }
+        pos += 8 + size + (size & 1); // チャンクは偶数バイト境界に詰められる
+      }
+      if (!fmt || dataOffset < 0) throw unsupported('WAVの音声データが見つからない');
+
+      const fv = new DataView(fmt);
+      const formatTag = fv.getUint16(0, true);
+      const channels = fv.getUint16(2, true);
+      const sampleRate = fv.getUint32(4, true);
+      const blockAlign = fv.getUint16(12, true);
+      if (![1, 3, 0xFFFE].includes(formatTag) || !channels || !sampleRate || !blockAlign) {
+        throw unsupported('このWAVは圧縮形式などで高速モードに未対応な');
+      }
+      const frames = Math.floor(dataSize / blockAlign);
+      if (frames <= 0) throw unsupported('WAVの音声データが空な');
+
+      return {
+        duration: frames / sampleRate,
+        data: { file, fmt, sampleRate, blockAlign, dataOffset, frames, duration: frames / sampleRate }
+      };
+    },
+    cut(d, startSec, endSec) {
+      // 区間→フレーム位置。終端は丸め誤差で最後の1フレームを落とさないよう全体長に固定
+      const sf = Math.max(0, Math.round(startSec * d.sampleRate));
+      const ef = endSec >= d.duration - 1e-9 ? d.frames : Math.min(d.frames, Math.round(endSec * d.sampleRate));
+      if (ef <= sf) throw new Error('区間の長さが0です');
+
+      const dataBytes = (ef - sf) * d.blockAlign;
+      const fmtLen = d.fmt.byteLength;
+      const fmtPad = fmtLen & 1;
+      const dataPad = dataBytes & 1;
+      const riffSize = 4 + (8 + fmtLen + fmtPad) + (8 + dataBytes + dataPad);
+      if (riffSize > 0xFFFFFFFF) throw new Error('出力が4GBを超えるため、分割点を増やしてください');
+
+      // ヘッダ組み立て：RIFF(12) + fmt(元のfmtをそのまま) + dataヘッダ(8)
+      const hdr = new ArrayBuffer(12 + 8 + fmtLen + fmtPad + 8);
+      const v = new DataView(hdr);
+      const w = (off, s) => { for (let i = 0; i < 4; i++) v.setUint8(off + i, s.charCodeAt(i)); };
+      w(0, 'RIFF'); v.setUint32(4, riffSize, true); w(8, 'WAVE');
+      w(12, 'fmt '); v.setUint32(16, fmtLen, true);
+      new Uint8Array(hdr, 20, fmtLen).set(new Uint8Array(d.fmt));
+      const dataHead = 20 + fmtLen + fmtPad;
+      w(dataHead, 'data'); v.setUint32(dataHead + 4, dataBytes, true);
+
+      const parts = [hdr, d.file.slice(d.dataOffset + sf * d.blockAlign, d.dataOffset + ef * d.blockAlign)];
+      if (dataPad) parts.push(new Uint8Array(1));
+      return new Blob(parts, { type: 'audio/wav' });
+    }
   }
 };
 
@@ -387,8 +465,8 @@ const Engines = {
 function audioBufferToWav(buffer, startSec, endSec) {
   const sampleRate = buffer.sampleRate;
   const channels = buffer.numberOfChannels;
-  const startFrame = Math.max(0, Math.floor(startSec * sampleRate));
-  const endFrame = Math.min(buffer.length, Math.floor(endSec * sampleRate));
+  const startFrame = Math.max(0, Math.round(startSec * sampleRate));
+  const endFrame = Math.min(buffer.length, Math.round(endSec * sampleRate));
   const frames = endFrame - startFrame;
   if (frames <= 0) throw new Error('区間の長さが0です');
 
@@ -434,7 +512,8 @@ const $ = (id) => document.getElementById(id);
 const files = [];        // 読み込んだファイル [{id, file, splits[], history[][], hIndex}]
 let nextId = 1;          // ファイル固有ID（同名ファイルでも衝突しない）
 let currentId = null;    // 選択中ファイルのID
-let currentMode = DEFAULT_MODE;
+let preferredMode = loadPreferredMode(); // 利用者が選んでいる方式
+let activeKey = null;    // 今開いているファイルで実際に使っている方式（未対応なら自動で丁寧に切替）
 let prepared = null;     // 選択中ファイルのデコード結果 {duration, data}
 let duration = 0;        // 選択中ファイルの長さ（秒）
 let loadToken = 0;       // 読込の世代番号（古い読込結果を捨てるため）
@@ -444,6 +523,18 @@ let seekDragging = false;
 let errTimer = null;
 
 const cur = () => files.find(f => f.id === currentId) || null;
+
+// 方式の選択を保存／復元（手動で切り替えた場合のみ保存）
+function loadPreferredMode() {
+  try {
+    const m = localStorage.getItem(MODE_STORAGE_KEY);
+    if (m === 'fast' || m === 'precise') return m;
+  } catch (e) { /* プライベートモード等は無視 */ }
+  return DEFAULT_MODE;
+}
+function savePreferredMode(m) {
+  try { localStorage.setItem(MODE_STORAGE_KEY, m); } catch (e) { /* 無視 */ }
+}
 
 /* =====================================================
    ④ UI描画
@@ -467,14 +558,11 @@ function showErr(msg) {
 }
 
 function renderMode() {
-  $('modePrecise').classList.toggle('active', currentMode === 'precise');
-  $('modeFast').classList.toggle('active', currentMode === 'fast');
-  $('modeFast').disabled = !Engines.fast.ready;
-  if (Engines.fast.ready) {
-    $('modeFast').textContent = '⚡ 高速';
-    $('modeFast').title = '';
-  }
-  $('modeNote').textContent = Engines[currentMode].note;
+  // 開いているファイルがあれば実際に使っている方式、なければ選択中の方式を強調
+  const key = activeKey || preferredMode;
+  $('modePrecise').classList.toggle('active', key === 'precise');
+  $('modeFast').classList.toggle('active', key === 'fast');
+  $('modeNote').textContent = Engines[key].note;
 }
 
 function renderTabs() {
@@ -613,10 +701,12 @@ async function selectFile(id) {
   hiddenAudio.pause();
   prepared = null;
   duration = 0;
+  activeKey = null;
   currentId = id;
   $('workArea').style.display = 'none';
   renderTabs();
-  setStatus(`🔄 「${it.file.name}」をデコード中…（長い音声は時間がかかります）`);
+  renderMode();
+  setStatus(`🔄 「${it.file.name}」を読み込み中…（丁寧モードの長い音声は時間がかかります）`);
 
   try {
     if (audioUrl) URL.revokeObjectURL(audioUrl);
@@ -624,29 +714,44 @@ async function selectFile(id) {
     hiddenAudio.src = audioUrl;
     hiddenAudio.load();
 
-    const p = await Engines[currentMode].prepare(it.file);
+    // 選択中の方式で読み込み。高速が未対応(unsupported)なら丁寧へ自動で切り替える
+    let key = preferredMode;
+    let notice = '';
+    let p;
+    try {
+      p = await Engines[key].prepare(it.file);
+    } catch (err) {
+      if (!err.unsupported || key === 'precise') throw err;
+      notice = `ℹ️ ${err.message}ため、丁寧モードで開きました。`;
+      key = 'precise';
+      p = await Engines.precise.prepare(it.file);
+    }
     if (token !== loadToken) return; // 読込中に別ファイルへ切り替えられた
+    activeKey = key;
     prepared = p;
     duration = p.duration;
 
     $('infoName').textContent = it.file.name;
     $('infoDuration').textContent = `${formatTime(duration, 2)}（${duration.toFixed(2)} 秒）`;
     $('infoSize').textContent = (it.file.size / (1024 * 1024)).toFixed(2) + ' MB';
+    $('infoEngine').textContent = Engines[key].label;
     $('seekBar').max = duration;
     $('seekBar').value = 0;
     $('timeTotal').textContent = formatTime(duration, 1);
     $('timeCurrent').textContent = formatTime(0, 1);
     $('workArea').style.display = 'block';
+    renderMode();
     refreshSplitUI();
 
-    setStatus(duration > LONG_AUDIO_SEC && currentMode === 'precise'
+    const warn = (key === 'precise' && duration > LONG_AUDIO_SEC)
       ? '⚠️ 長い音声です。丁寧モードはメモリを多く使うため、保存に失敗する場合があります。'
-      : '');
+      : '';
+    setStatus([notice, warn].filter(Boolean).join(' '));
   } catch (err) {
     if (token !== loadToken) return;
     console.error(err);
     setStatus('');
-    showErr('音声のデコードに失敗しました。壊れているか未対応の形式かもしれません。');
+    showErr('音声の読み込みに失敗しました。壊れているか未対応の形式かもしれません。');
   }
 }
 
@@ -673,10 +778,12 @@ function clearWorkspace() {
   if (audioUrl) { URL.revokeObjectURL(audioUrl); audioUrl = null; }
   prepared = null;
   duration = 0;
+  activeKey = null;
   currentId = null;
   $('workArea').style.display = 'none';
   setStatus('');
   renderTabs();
+  renderMode();
   refreshSplitUI();
 }
 
@@ -850,6 +957,12 @@ async function exportFiles(asZip) {
     return;
   }
 
+  // 大きいファイルをZIPにすると、ZIP作成時にメモリを大きく使うため確認する
+  if (asZip && it.file.size > 1024 * 1024 * 1024 &&
+      !confirm('ファイルが大きいため、ZIP作成でメモリ不足になる可能性があります。\n「1ファイルずつ保存」がおすすめです。ZIPで続けますか？')) {
+    return;
+  }
+
   setBusy(true);
   try {
     const points = [0, ...it.splits, duration];
@@ -859,16 +972,21 @@ async function exportFiles(asZip) {
     const base = rawBase.replace(/[\\/:*?"<>|]/g, '_');
     const pad = Math.max(3, String(total).length);
     const zip = asZip ? new JSZip() : null;
+    // ZIP内のファイル名：日本語等はWindows標準の解凍で文字化けしやすいため、
+    // 既定ではASCII文字だけにする（日本語のみの名前は「audio」）。ONなら日本語のまま
+    const keepJa = $('zipKeepJa').checked;
+    const zipBase = keepJa ? base
+      : (base.replace(/[^\x20-\x7E]/g, '').replace(/\s+/g, '_').replace(/^[_.\-]+|[_.\-]+$/g, '') || 'audio');
 
     for (let i = 0; i < total; i++) {
       setStatus(`✂️ 切り出し中… ${i + 1} / ${total}`);
       await sleep(0); // 画面の表示更新を挟む
-      const blob = Engines[currentMode].cut(prepared.data, points[i], points[i + 1]);
-      const name = `${base}_${String(i + 1).padStart(pad, '0')}.wav`;
+      const blob = Engines[activeKey].cut(prepared.data, points[i], points[i + 1]);
+      const num = String(i + 1).padStart(pad, '0');
       if (zip) {
-        zip.file(name, blob);
+        zip.file(`${zipBase}_${num}.wav`, blob);
       } else {
-        downloadBlob(blob, name);
+        downloadBlob(blob, `${base}_${num}.wav`); // 個別保存は日本語名のままでOK（ブラウザが処理）
         await sleep(400); // 連続ダウンロードがブロックされにくいよう間隔を空ける
       }
     }
@@ -939,16 +1057,21 @@ function onResetExtra() {
 renderMode();
 renderTabs();
 refreshSplitUI();
-// モード切替（準備中の高速はdisabledなので押せない。将来readyになれば有効化）
+// モード切替：選択を保存し、開いているファイルは新しい方式で読み直す
 $('modePrecise').addEventListener('click', () => switchMode('precise'));
 $('modeFast').addEventListener('click', () => switchMode('fast'));
 function switchMode(mode) {
-  if (busy || !Engines[mode].ready || mode === currentMode) return;
-  currentMode = mode;
-  renderMode();
-  // ファイルを開いている場合は、新しい方式で読み直す
+  if (busy || !Engines[mode].ready) return;
+  const changed = mode !== preferredMode;
+  preferredMode = mode;
+  savePreferredMode(mode);
   const id = currentId;
-  if (id !== null) { currentId = null; selectFile(id); }
+  if (id !== null && (changed || activeKey !== mode)) {
+    currentId = null; // 強制的に読み直す
+    selectFile(id);
+  } else {
+    renderMode();
+  }
 }
 </script>
 </body>
