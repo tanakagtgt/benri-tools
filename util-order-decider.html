@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2195458991382480" crossorigin="anonymous"></script>
+<link rel="canonical" href="https://arigato-tools.com/util-order-decider">
+<!-- ★gtagは既存ツールと同じスニペットをここに貼る -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>順番決めツール｜サイコロ・コイントス・くじ引き・じゃんけん</title>
+<meta name="description" content="パーティー・ボードゲーム・オンラインゲームの順番決めに。ランダム数字・サイコロ・コイントス・トランプ抽選・くじ引き・じゃんけんを1ページに集約。出目や確率のカスタマイズ、ホラー／パーティーなどの見た目切替に対応。">
+<meta property="og:title" content="順番決めツール｜サイコロ・コイントス・くじ引き・じゃんけん">
+<meta property="og:description" content="順番決め・先攻後攻・くじ引きが全部できる。カスタマイズ自由で、見た目テーマも切替OK。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://arigato-tools.com/util-order-decider">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/common.css">
+<style>
+/* =====================================================
+   このツール固有のCSS
+   ===================================================== */
+[hidden] { display: none !important; }
+
+/* ---------- 色テーマ（data-ot属性で切替） ----------
+   ・common.cssの変数を上書きするだけ。標準(std)は何も上書きせず、サイト共通のライト/ダークに従う
+   ・テーマを増やす時は、下のブロックをコピーしてJSのTHEMES配列に1行足すだけ */
+html[data-ot="party"] {
+  --color-primary:#e91e8c; --color-primary-hover:#c2177a; --color-primary-bg:#fff0f8; --color-primary-border:#f9a8d4;
+  --color-bg:#fff7d6; --color-card:#fff; --color-input-bg:#fff5fb; --color-border:#f5c2e0; --color-border-input:#f0a6cf;
+  --color-text:#3b0a2e; --color-text-sub:#6b2057; --color-text-muted:#8a3b73; --color-text-label:#b7699f;
+  --color-chip-bg:#ffe4f3; --color-chip-hover:#ffd0ea; color-scheme:light;
+}
+html[data-ot="party"] body { background: linear-gradient(120deg,#fff7d6,#ffe0f3,#d9f0ff); }
+html[data-ot="horror"] {
+  --color-primary:#e11d2e; --color-primary-hover:#ff3b4a; --color-primary-bg:#2a0a0d; --color-primary-border:#6b1620;
+  --color-bg:#07070a; --color-card:#12090b; --color-input-bg:#1a0d10; --color-border:#3a1519; --color-border-input:#55202a;
+  --color-text:#e8dcd8; --color-text-sub:#c4a9a5; --color-text-muted:#9c807c; --color-text-label:#6f5753;
+  --color-chip-bg:#1f0c10; --color-chip-hover:#33121a; color-scheme:dark;
+}
+html[data-ot="neon"] {
+  --color-primary:#22d3ee; --color-primary-hover:#67e8f9; --color-primary-bg:#0b2a3a; --color-primary-border:#155e75;
+  --color-bg:#05060f; --color-card:#0c0f24; --color-input-bg:#10153a; --color-border:#1e2a5a; --color-border-input:#2f3f8f;
+  --color-text:#e6f0ff; --color-text-sub:#b4c4f0; --color-text-muted:#8a9bd0; --color-text-label:#5f6fa8;
+  --color-chip-bg:#0e1a3a; --color-chip-hover:#16264f; color-scheme:dark;
+}
+/* テーマごとの演出（結果文字の雰囲気） */
+html[data-ot="horror"] .res-main { font-family:'Yu Mincho','Hiragino Mincho ProN',serif; text-shadow:0 0 12px #e11d2e; animation:flick 2.5s infinite; }
+html[data-ot="neon"] .res-main { text-shadow:0 0 10px #22d3ee,0 0 24px #22d3ee; }
+html[data-ot="party"] .res-main { animation:pop .5s; }
+@keyframes flick { 0%,100%{opacity:1} 45%{opacity:1} 50%{opacity:.35} 55%{opacity:1} 80%{opacity:.8} }
+@keyframes pop { 0%{transform:scale(.5)} 70%{transform:scale(1.15)} 100%{transform:scale(1)} }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px) rotate(-2deg)} 75%{transform:translateX(6px) rotate(2deg)} }
+@keyframes fl { 0%,100%{filter:none} 30%{filter:brightness(2) saturate(2)} }
+@keyframes fall { to { transform:translateY(105vh) rotate(360deg); opacity:.8; } }
+body.flash { animation: fl .5s; }
+.cf { position:fixed; top:-30px; font-size:24px; pointer-events:none; z-index:999; animation:fall 2.4s linear forwards; }
+
+/* ---------- 部品 ---------- */
+.chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+.chips .theme-btn { min-height:44px; padding:6px 12px; font-size:13px; }
+textarea#names {
+  width:100%; min-height:90px; resize:vertical; border:1px solid var(--color-border-input); border-radius:var(--radius-input);
+  background:var(--color-input-bg); color:var(--color-text); font-family:'BIZ UDPGothic',sans-serif; font-size:16px; padding:10px;
+}
+.cards { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+.mode-card {
+  background:var(--color-card); border:2px solid var(--color-border); border-radius:var(--radius-card); color:var(--color-text);
+  font-family:'BIZ UDPGothic',sans-serif; padding:12px 6px; min-height:96px; cursor:pointer; text-align:center; transition:all .15s;
+}
+.mode-card:hover, .mode-card:active { border-color:var(--color-primary); background:var(--color-primary-bg); transform:translateY(-2px); }
+.mode-card .e { font-size:32px; display:block; }
+.mode-card .t { font-size:15px; font-weight:700; display:block; margin-top:2px; }
+.mode-card .d { font-size:11px; color:var(--color-text-muted); display:block; margin-top:2px; }
+.mode-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.mode-head h2 { font-size:18px; color:var(--color-primary); }
+.note { font-size:12px; color:var(--color-text-muted); margin-bottom:10px; }
+.res { background:var(--color-primary-bg); border:1px solid var(--color-primary-border); border-radius:var(--radius-card);
+  padding:16px 12px; margin-top:14px; text-align:center; min-height:96px; display:flex; flex-direction:column; justify-content:center; }
+.res.shake { animation:shake .25s infinite; }
+.res-main { font-size:clamp(22px,7vw,34px); font-weight:700; color:var(--color-primary); word-break:break-all; line-height:1.3; }
+.res-line { font-size:14px; color:var(--color-text-sub); margin-top:6px; }
+.res-hint { color:var(--color-text-label); font-size:13px; }
+.hist-item { font-size:12px; color:var(--color-text-sub); padding:4px 0; border-bottom:1px dashed var(--color-border); word-break:break-all; }
+.btn-calc.big { margin-top:4px; }
+.btn-action.wide { width:100%; margin-top:8px; }
+
+/* ---------- 解説文（将来common.cssへ移動可） ---------- */
+.tool-desc { background:var(--color-card); border:1px solid var(--color-border); border-radius:var(--radius-card);
+  padding:18px 16px; margin-bottom:14px; font-size:13px; line-height:1.9; color:var(--color-text-sub); }
+.tool-desc h2 { font-size:14px; color:var(--color-text); margin:12px 0 4px; }
+.tool-desc h2:first-child { margin-top:0; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div id="topNavSlot"></div>
+
+<header>
+  <h1>🎲 順番決めツール</h1>
+  <p class="subtitle">サイコロ・コイントス・くじ引き・じゃんけん等をまとめて。見た目も変えられるで</p>
+</header>
+
+<!-- ================= ホーム ================= -->
+<div id="m-home">
+  <div class="card">
+    <div class="section-title">🎨 見た目テーマ</div>
+    <div class="chips" id="themeChips"></div>
+    <label class="checkbox-item"><input type="checkbox" id="oAnim" checked onchange="onInputChange()">演出（シェイク・紙吹雪など）</label>
+    <label class="checkbox-item"><input type="checkbox" id="oVib" checked onchange="onInputChange()">結果が出たらスマホを振動</label>
+  </div>
+
+  <div class="card">
+    <div class="section-title">👥 参加者（1行に1人・サイコロ順番決め／トランプ／くじ引き／じゃんけんで使用）</div>
+    <textarea id="names" placeholder="例：&#10;ひろき&#10;たろう&#10;はなこ" oninput="onInputChange()"></textarea>
+  </div>
+
+  <div class="section-title">▶ 遊びたいモードをタップ</div>
+  <div class="cards" id="cards"></div>
+
+  <div class="card">
+    <div class="section-title">📜 直近の結果（最大10件）</div>
+    <div id="hist"><span class="res-hint">まだ結果なし</span></div>
+  </div>
+</div>
+
+<!-- ================= 1. ランダム数字 ================= -->
+<div class="mode" id="m-num" hidden>
+  <div class="mode-head"><button class="btn-back" onclick="show('home')">← 戻る</button><h2>🔢 ランダム数字</h2></div>
+  <div class="card">
+    <div class="input-grid">
+      <div class="input-group"><label>最小値</label><input type="number" id="nMin" value="1" inputmode="numeric" onchange="onInputChange()"></div>
+      <div class="input-group"><label>最大値</label><input type="number" id="nMax" value="100" inputmode="numeric" onchange="onInputChange()"></div>
+    </div>
+    <div class="input-group"><label>個数（1〜100）</label><input type="number" id="nCount" value="1" inputmode="numeric" onchange="onInputChange()"></div>
+    <label class="checkbox-item"><input type="checkbox" id="nUnique" onchange="onInputChange()">重複なし（宝くじ・番号抽選向け）</label>
+    <button class="btn-calc" onclick="run('num',doNum)">🔢 数字を出す</button>
+    <div class="error-msg" id="err-num"></div>
+  </div>
+  <div class="res" id="res-num"><span class="res-hint">ボタンを押すと結果が出るで</span></div>
+  <button class="btn-action wide" id="cp-num" onclick="copyRes('num')" disabled>📄 結果をコピー</button>
+</div>
+
+<!-- ================= 2. サイコロ ================= -->
+<div class="mode" id="m-dice" hidden>
+  <div class="mode-head"><button class="btn-back" onclick="show('home')">← 戻る</button><h2>🎲 サイコロ</h2></div>
+  <div class="card">
+    <div class="input-grid">
+      <div class="input-group"><label>出目の最小</label><input type="number" id="dMin" value="1" inputmode="numeric" onchange="onInputChange()"></div>
+      <div class="input-group"><label>出目の最大</label><input type="number" id="dMax" value="6" inputmode="numeric" onchange="onInputChange()"></div>
+    </div>
+    <div class="input-group"><label>振る個数（1〜10）</label><input type="number" id="dCount" value="1" inputmode="numeric" onchange="onInputChange()"></div>
+    <label class="checkbox-item"><input type="checkbox" id="dOrder" onchange="onInputChange()">参加者全員で振って順番決め（大きい順・同点は振り直し）</label>
+    <div class="note">👥 参加者：<span class="pc">0</span>人（ホームで編集）</div>
+    <button class="btn-calc" onclick="run('dice',doDice)">🎲 振る</button>
+    <div class="error-msg" id="err-dice"></div>
+  </div>
+  <div class="res" id="res-dice"><span class="res-hint">ボタンを押すと結果が出るで</span></div>
+  <button class="btn-action wide" id="cp-dice" onclick="copyRes('dice')" disabled>📄 結果をコピー</button>
+</div>
+
+<!-- ================= 3. コイントス ================= -->
+<div class="mode" id="m-coin" hidden>
+  <div class="mode-head"><button class="btn-back" onclick="show('home')">← 戻る</button><h2>🪙 コイントス</h2></div>
+  <div class="card">
+    <div class="input-grid">
+      <div class="input-group"><label>Aの名前</label><input type="text" id="cA" value="先攻" onchange="onInputChange()"></div>
+      <div class="input-group"><label>Bの名前</label><input type="text" id="cB" value="後攻" onchange="onInputChange()"></div>
+    </div>
+    <div class="input-grid">
+      <div class="input-group"><label>投げる回数（1〜20）</label><input type="number" id="cCount" value="1" inputmode="numeric" onchange="onInputChange()"></div>
+      <div class="input-group"><label>Aが出る確率（％）</label><input type="number" id="cBias" value="50" inputmode="numeric" onchange="onInputChange()"></div>
+    </div>
+    <button class="btn-calc" onclick="run('coin',doCoin)">🪙 トスする</button>
+    <div class="error-msg" id="err-coin"></div>
+  </div>
+  <div class="res" id="res-coin"><span class="res-hint">ボタンを押すと結果が出るで</span></div>
+  <button class="btn-action wide" id="cp-coin" onclick="copyRes('coin')" disabled>📄 結果をコピー</button>
+</div>
+
+<!-- ================= 4. トランプ抽選 ================= -->
+<div class="mode" id="m-trump" hidden>
+  <div class="mode-head"><button class="btn-back" onclick="show('home')">← 戻る</button><h2>🃏 トランプ抽選</h2></div>
+  <div class="card">
+    <div class="input-group"><label>Aの扱い</label>
+      <select id="tAce" onchange="onInputChange()"><option value="14" selected>Aが一番強い（14）</option><option value="1">Aが一番弱い（1）</option></select></div>
+    <div class="input-group"><label>順番</label>
+      <select id="tDir" onchange="onInputChange()"><option value="big" selected>強い順に並べる</option><option value="small">弱い順に並べる</option></select></div>
+    <label class="checkbox-item"><input type="checkbox" id="tJoker" onchange="onInputChange()">ジョーカーを入れる（最強）</label>
+    <div class="note">👥 参加者：<span class="pc">0</span>人（ホームで編集）／同数字は ♠＞♥＞♦＞♣</div>
+    <button class="btn-calc" onclick="run('trump',doTrump)">🃏 全員が引く</button>
+    <div class="error-msg" id="err-trump"></div>
+  </div>
+  <div class="res" id="res-trump"><span class="res-hint">ボタンを押すと結果が出るで</span></div>
+  <button class="btn-action wide" id="cp-trump" onclick="copyRes('trump')" disabled>📄 結果をコピー</button>
+</div>
+
+<!-- ================= 5. くじ引き ================= -->
+<div class="mode" id="m-lottery" hidden>
+  <div class="mode-head"><button class="btn-back" onclick="show('home')">← 戻る</button><h2>🎯 くじ引き</h2></div>
+  <div class="card">
+    <div class="input-group"><label>やり方</label>
+      <select id="lMode" onchange="onInputChange()"><option value="pick" selected>当選者を選ぶ</option><option value="shuffle">全員の順番をシャッフル</option><option value="team">チーム分け</option></select></div>
+    <div class="input-group"><label>当選人数（チーム分けの時はチーム数）</label><input type="number" id="lWin" value="1" inputmode="numeric" onchange="onInputChange()"></div>
+    <div class="note">👥 参加者：<span class="pc">0</span>人（ホームで編集）</div>
+    <button class="btn-calc" onclick="run('lottery',doLottery)">🎯 引く</button>
+    <div class="error-msg" id="err-lottery"></div>
+  </div>
+  <div class="res" id="res-lottery"><span class="res-hint">ボタンを押すと結果が出るで</span></div>
+  <button class="btn-action wide" id="cp-lottery" onclick="copyRes('lottery')" disabled>📄 結果をコピー</button>
+</div>
+
+<!-- ================= 6. じゃんけん ================= -->
+<div class="mode" id="m-janken" hidden>
+  <div class="mode-head"><button class="btn-back" onclick="show('home')">← 戻る</button><h2>✌️ じゃんけん</h2></div>
+  <div class="card">
+    <label class="checkbox-item"><input type="checkbox" id="jAuto" checked onchange="onInputChange()">あいこは自動でやり直す</label>
+    <div class="note">👥 参加者：<span class="pc">0</span>人（ホームで編集）／全員が同時に手を出すで</div>
+    <button class="btn-calc" onclick="run('janken',doJanken)">✌️ ぽん！</button>
+    <div class="error-msg" id="err-janken"></div>
+  </div>
+  <div class="res" id="res-janken"><span class="res-hint">ボタンを押すと結果が出るで</span></div>
+  <button class="btn-action wide" id="cp-janken" onclick="copyRes('janken')" disabled>📄 結果をコピー</button>
+</div>
+
+<!-- ================= 解説文 ================= -->
+<section class="tool-desc">
+  <h2>使い方</h2>
+  <p>最初に見た目テーマを選び、必要なら参加者の名前を1行ずつ入力します。あとは遊びたいモードのカードをタップして、設定を決めてボタンを押すだけです。</p>
+  <h2>こんな場面で</h2>
+  <p>飲み会やパーティーの幹事決め、ボードゲームの先攻後攻、オンラインゲームの順番決め、罰ゲームの抽選、班分けやチーム分けなどに使えます。</p>
+  <h2>仕様について</h2>
+  <p>乱数にはブラウザ標準の暗号論的乱数（crypto.getRandomValues）を使い、偏りを抑えています。サイコロは出目の範囲と個数、コイントスは出る確率も変更可能です。順番決めで同点になった場合は、同点の人だけ自動で振り直します。入力内容と選んだテーマはこの端末のブラウザにだけ保存され、外部には送信されません。</p>
+  <h2>よくある質問</h2>
+  <p>Q. 本当に公平？ → 確率を変えていなければ、各結果の出やすさは同じです。<br>Q. 結果をみんなに見せたい → 結果をコピーするか、下のシェアボタンを使ってください。</p>
+</section>
+
+<div id="shareAreaSlot"></div>
+<div id="resetBtnSlot"></div>
+<div id="bottomNavSlot"></div>
+<div id="adAreaSlot"></div>
+<div id="qrModalSlot"></div>
+<div id="footerSlot"></div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="/common.js"></script>
+<script>
+/* =====================================================
+   common.js が呼び出す前提の定義
+   ・ランダム系は「ボタンを押した結果」が lastResult に入る
+   ・ページ読込時に勝手に結果が出ないよう、初期は null
+   ===================================================== */
+const CURRENT_TOOL_ID = 'util-order-decider';
+const STORAGE_KEY = 'util_order_decider_v1';
+const STORAGE_FIELDS = ['names','oAnim','oVib','nMin','nMax','nCount','nUnique','dMin','dMax','dCount','dOrder',
+  'cA','cB','cCount','cBias','tAce','tDir','tJoker','lMode','lWin','jAuto'];
+const INPUT_LABELS = { names: '参加者' };
+const RESULT_LABELS = { main: '結果' };
+let lastResult = null;       // 直近の結果 {main, lines}
+let history = [];            // 直近10件（メモリのみ）
+
+function calculateInputs() { return {}; }
+function calculateResult() { return lastResult; }   // ボタンで出した結果のみ返す
+function displayResult() { /* 結果表示は各モードのpresent()で行うので何もしない */ }
+function buildShareText(r) { return '【順番決めツール】\n' + r.main + (r.lines.length ? '\n' + r.lines.join('\n') : ''); }
+function buildShareUrl() { return 'https://arigato-tools.com/util-order-decider'; }
+
+/* リセット後：空になった入力を初期値(HTMLのvalue/checked/selected)へ戻す */
+function onResetExtra() {
+  STORAGE_FIELDS.forEach(id => {
+    const el = $(id); if (!el) return;
+    if (el.type === 'checkbox') el.checked = el.defaultChecked;
+    else if (el.tagName === 'SELECT') Array.from(el.options).forEach(o => o.selected = o.defaultSelected);
+    else el.value = el.defaultValue;
+  });
+  lastResult = null; history = []; renderHist(); updatePc();
+  document.querySelectorAll('.res').forEach(r => r.innerHTML = '<span class="res-hint">ボタンを押すと結果が出るで</span>');
+  document.querySelectorAll('[id^="cp-"]').forEach(b => b.disabled = true);
+  saveInputs();
+}
+
+/* =====================================================
+   ユーティリティ
+   ===================================================== */
+const $ = id => document.getElementById(id);
+const N = id => parseInt($(id).value, 10);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const names = () => $('names').value.split('\n').map(s => s.trim()).filter(Boolean);
+
+/* 偏りのない整数乱数 min〜max（crypto + 棄却法） */
+function rint(min, max) {
+  const r = max - min + 1, a = new Uint32Array(1), lim = Math.floor(4294967296 / r) * r;
+  do { crypto.getRandomValues(a); } while (a[0] >= lim);
+  return min + a[0] % r;
+}
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = rint(0, i); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+/* 同点者だけ振り直して強い順に並べる（p.v が点数、reroll(p)で振り直し） */
+function rank(list, reroll, d = 0) {
+  const m = {};
+  list.forEach(p => (m[p.v] = m[p.v] || []).push(p));
+  return Object.keys(m).map(Number).sort((a, b) => b - a).flatMap(k => {
+    const g = m[k];
+    if (g.length < 2 || d > 30) return g;
+    g.forEach(p => { reroll(p); p.t = (p.t || 0) + 1; });
+    return rank(g, reroll, d + 1);
+  });
+}
+
+/* =====================================================
+   テーマ切替（ここに1行足せばテーマ追加。CSS側も対応するブロックを足す）
+   ===================================================== */
+const THEMES = [['std','標準'],['party','🎉 パーティー'],['horror','👻 ホラー'],['neon','🌃 ネオン']];
+const OT_KEY = 'arigato_order_theme';
+function setOt(t) {
+  document.documentElement.setAttribute('data-ot', t);
+  try { localStorage.setItem(OT_KEY, t); } catch (e) {}
+  document.querySelectorAll('#themeChips .theme-btn').forEach(b => b.classList.toggle('active', b.dataset.t === t));
+}
+
+/* =====================================================
+   画面切替・演出
+   ===================================================== */
+const MODES = [
+  ['num','🔢','ランダム数字','範囲も個数も自由'], ['dice','🎲','サイコロ','出目・個数・順番決め'],
+  ['coin','🪙','コイントス','先攻後攻・確率変更'], ['trump','🃏','トランプ抽選','大小で順番決め'],
+  ['lottery','🎯','くじ引き','当選・順番・チーム分け'], ['janken','✌️','じゃんけん','全員一斉に勝負']
+];
+function show(mode) {
+  ['home', ...MODES.map(m => m[0])].forEach(m => $('m-' + m).hidden = (m !== mode));
+  updatePc(); window.scrollTo(0, 0);
+}
+function updatePc() { document.querySelectorAll('.pc').forEach(e => e.textContent = names().length); }
+
+function fx() {
+  const t = document.documentElement.getAttribute('data-ot');
+  if ($('oVib').checked && navigator.vibrate) navigator.vibrate(120);
+  if (!$('oAnim').checked) return;
+  if (t === 'party') {
+    const em = ['🎉','🎊','✨','⭐','🎈'];
+    for (let i = 0; i < 30; i++) {
+      const s = document.createElement('span'); s.className = 'cf'; s.textContent = em[i % em.length];
+      s.style.left = rint(0, 95) + 'vw'; s.style.animationDelay = (rint(0, 8) / 10) + 's';
+      document.body.appendChild(s); setTimeout(() => s.remove(), 3500);
+    }
+  } else if (t === 'horror') {
+    document.body.classList.add('flash'); setTimeout(() => document.body.classList.remove('flash'), 500);
+  }
+}
+
+/* 実行→エラーなら表示、成功なら結果を出す */
+function run(mode, fn) {
+  const e = $('err-' + mode); e.classList.remove('show');
+  const r = fn();
+  if (typeof r === 'string') { e.textContent = r; e.classList.add('show'); return; }
+  present(mode, r);
+}
+function present(mode, res) {
+  const box = $('res-' + mode);
+  lastResult = res;
+  const reveal = () => {
+    box.classList.remove('shake');
+    box.innerHTML = '<div class="res-main">' + esc(res.main) + '</div>' + res.lines.map(l => '<div class="res-line">' + esc(l) + '</div>').join('');
+    $('cp-' + mode).disabled = false;
+    history.unshift(MODES.find(m => m[0] === mode)[1] + ' ' + res.main); history = history.slice(0, 10); renderHist();
+    fx();
+  };
+  if ($('oAnim').checked) { box.innerHTML = '<div class="res-main">…</div>'; box.classList.add('shake'); setTimeout(reveal, 700); }
+  else reveal();
+}
+function renderHist() {
+  $('hist').innerHTML = history.length ? history.map(h => '<div class="hist-item">' + esc(h) + '</div>').join('') : '<span class="res-hint">まだ結果なし</span>';
+}
+function copyRes(mode) {
+  if (!lastResult) return;
+  copyToClipboard(buildShareText(lastResult), 'cp-' + mode, '📄 結果をコピー');
+}
+
+/* =====================================================
+   各モードの処理（文字列を返したらエラー、オブジェクトなら結果）
+   ===================================================== */
+function doNum() {
+  const a = N('nMin'), b = N('nMax'), c = N('nCount'), u = $('nUnique').checked;
+  if ([a, b, c].some(isNaN)) return '最小・最大・個数を入力してな';
+  if (a > b) return '最小は最大以下にしてな';
+  if (b - a >= 1e9) return '範囲が広すぎるで（10億未満）';
+  if (c < 1 || c > 100) return '個数は1〜100にしてな';
+  if (u && c > b - a + 1) return '重複なしやと、個数が範囲より多いで';
+  const r = [];
+  while (r.length < c) { const v = rint(a, b); if (u && r.includes(v)) continue; r.push(v); }
+  return { main: r.join(' , '), lines: ['範囲 ' + a + '〜' + b + '／' + c + '個' + (u ? '／重複なし' : '')] };
+}
+
+function doDice() {
+  const a = N('dMin'), b = N('dMax'), c = N('dCount');
+  if ([a, b, c].some(isNaN)) return '最小・最大・個数を入力してな';
+  if (a > b) return '最小は最大以下にしてな';
+  if (b - a >= 1e9) return '範囲が広すぎるで';
+  if (c < 1 || c > 10) return '個数は1〜10にしてな';
+  const roll = () => Array.from({ length: c }, () => rint(a, b));
+  const sum = r => r.reduce((x, y) => x + y, 0);
+  if (!$('dOrder').checked) {
+    const r = roll();
+    return { main: r.join(' ・ '), lines: c > 1 ? ['合計 ' + sum(r)] : [] };
+  }
+  const nm = names();
+  if (nm.length < 2) return '順番決めは参加者を2人以上入れてな';
+  const items = nm.map(n => { const p = { n }; p.r = roll(); p.v = sum(p.r); return p; });
+  const re = p => { p.r = roll(); p.v = sum(p.r); };
+  const ranked = rank(items, re);
+  return {
+    main: '順番が決まったで！',
+    lines: ranked.map((p, i) => (i + 1) + '番目：' + p.n + '（' + p.r.join('+') + (c > 1 ? '＝' + p.v : '') + '）' + (p.t ? ' ※振り直し' + p.t + '回' : ''))
+  };
+}
+
+function doCoin() {
+  const A = $('cA').value.trim() || '表', B = $('cB').value.trim() || '裏', c = N('cCount'), p = N('cBias');
+  if (isNaN(c) || c < 1 || c > 20) return '回数は1〜20にしてな';
+  if (isNaN(p) || p < 0 || p > 100) return '確率は0〜100にしてな';
+  const r = Array.from({ length: c }, () => rint(1, 10000) <= p * 100 ? A : B);
+  const na = r.filter(x => x === A).length;
+  return c === 1 ? { main: r[0], lines: p !== 50 ? ['※' + A + 'が出る確率 ' + p + '％'] : [] }
+                 : { main: A + ' ' + na + '回 / ' + B + ' ' + (c - na) + '回', lines: [r.join(' → ')] };
+}
+
+function doTrump() {
+  const nm = names(), joker = $('tJoker').checked, ace14 = $('tAce').value === '14';
+  if (nm.length < 2) return '参加者を2人以上入れてな';
+  if (nm.length > (joker ? 54 : 52)) return '参加者が多すぎるで（トランプの枚数まで）';
+  const deck = [];
+  ['♠','♥','♦','♣'].forEach((s, si) => { for (let k = 1; k <= 13; k++) deck.push({ s, k, si }); });
+  if (joker) deck.push({ joker: 1 });
+  const d = shuffle(deck);
+  /* 強さ：ジョーカー最強、次に数字、同数字は ♠＞♥＞♦＞♣ */
+  const val = c => c.joker ? 999 : ((c.k === 1 && ace14) ? 14 : c.k) * 10 + (3 - c.si);
+  const lab = c => c.joker ? '🃏JOKER' : c.s + ({ 1: 'A', 11: 'J', 12: 'Q', 13: 'K' }[c.k] || c.k);
+  const dealt = nm.map((n, i) => ({ n, c: d[i], v: val(d[i]) }));
+  dealt.sort((x, y) => $('tDir').value === 'big' ? y.v - x.v : x.v - y.v);
+  return { main: '順番が決まったで！', lines: dealt.map((p, i) => (i + 1) + '番目：' + p.n + '（' + lab(p.c) + '）') };
+}
+
+function doLottery() {
+  const nm = names(), mode = $('lMode').value, w = N('lWin');
+  if (nm.length < 2) return '参加者を2人以上入れてな';
+  const s = shuffle(nm);
+  if (mode === 'shuffle') return { main: '順番が決まったで！', lines: s.map((n, i) => (i + 1) + '番目：' + n) };
+  if (isNaN(w) || w < 1 || w > nm.length) return '人数（チーム数）は1〜参加者数にしてな';
+  if (mode === 'pick') return { main: '🎉 ' + s.slice(0, w).join('、'), lines: ['全' + nm.length + '人中 ' + w + '人が当選'] };
+  if (w < 2) return 'チーム数は2以上にしてな';
+  const teams = Array.from({ length: w }, () => []);
+  s.forEach((n, i) => teams[i % w].push(n));
+  return { main: w + 'チームに分けたで！', lines: teams.map((t, i) => 'チーム' + (i + 1) + '：' + t.join('、')) };
+}
+
+function doJanken() {
+  const nm = names(), H = ['✊ぐー', '✌️ちょき', '🖐️ぱー'], auto = $('jAuto').checked;
+  if (nm.length < 2) return '参加者を2人以上入れてな';
+  let tries = 0, h, w;
+  do {
+    tries++; h = nm.map(() => rint(0, 2)); w = null;
+    const set = [...new Set(h)];
+    if (set.length === 2) { const [x, y] = set; w = ((x + 1) % 3 === y) ? x : y; }  // ぐー(0)はちょき(1)に勝つ…の循環
+  } while (w === null && auto && tries < 100);
+  const win = w === null ? [] : nm.filter((_, i) => h[i] === w);
+  const lines = nm.map((n, i) => n + '：' + H[h[i]]);
+  if (tries > 1) lines.push('あいこ ' + (tries - 1) + '回やり直し');
+  return { main: w === null ? 'あいこ！' : '🏆 勝ち：' + win.join('、'), lines };
+}
+
+/* =====================================================
+   初期化（DOMはこのscriptより上で構築済み）
+   ===================================================== */
+$('cards').innerHTML = MODES.map(m =>
+  '<button class="mode-card" onclick="show(\'' + m[0] + '\')"><span class="e">' + m[1] + '</span><span class="t">' + m[2] + '</span><span class="d">' + m[3] + '</span></button>').join('');
+$('themeChips').innerHTML = THEMES.map(t => '<button type="button" class="theme-btn" data-t="' + t[0] + '" onclick="setOt(\'' + t[0] + '\')">' + t[1] + '</button>').join('');
+(function () { let t = 'std'; try { t = localStorage.getItem(OT_KEY) || 'std'; } catch (e) {} setOt(THEMES.some(x => x[0] === t) ? t : 'std'); })();
+</script>
+</body>
+</html>
