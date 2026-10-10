@@ -85,6 +85,9 @@ textarea.ta {
 .mode-card.wide { grid-column: span 2; }
 .wheel-wrap { text-align:center; margin:10px 0; }
 .wheel-wrap canvas { width:100%; max-width:320px; height:auto; }
+.hist-box { max-height:280px; overflow-y:auto; margin-bottom:8px; }
+.hist-item summary { cursor:pointer; list-style:none; }
+.hist-body { padding:6px 4px 4px; line-height:1.6; }
 .btn-calc.big { margin-top:4px; }
 .btn-action.wide { width:100%; margin-top:8px; }
 
@@ -124,8 +127,9 @@ textarea.ta {
   <div class="cards" id="cards"></div>
 
   <div class="card">
-    <div class="section-title">📜 直近の結果（最大10件）</div>
+    <div class="section-title">📜 全モードの直近の結果（新しい10件／各モードの画面に履歴100件まで）</div>
     <div id="hist"><span class="res-hint">まだ結果なし</span></div>
+    <div class="copy-actions" style="margin-top:8px"><button class="btn-action" id="hc-all" onclick="copyHist('all')">📋 全履歴をコピー</button><button class="btn-action" onclick="clearHist('all')">🗑 全履歴を消す</button></div>
   </div>
 </div>
 
@@ -156,6 +160,9 @@ textarea.ta {
       <div class="input-group"><label>出目の最大</label><input type="number" id="dMax" value="6" inputmode="numeric" onchange="onInputChange()"></div>
     </div>
     <div class="input-group"><label>振る個数（1〜10）</label><input type="number" id="dCount" value="1" inputmode="numeric" onchange="onInputChange()"></div>
+    <div class="input-group"><label>面を直接指定（任意）※入れると上の最小・最大より優先</label>
+      <input type="text" id="dFaces" placeholder="例：1,2,3,4,6,6　または　1,2,3,4,5,6*2" oninput="onInputChange();dInfo()"></div>
+    <div class="note" id="dInfo">同じ数を複数書く（または 6*2 と書く）と、その目が出やすくなるで</div>
     <div class="note">よく使う面数（最小1・最大を自動セット）</div>
     <div class="chips"><button type="button" class="theme-btn" onclick="setDice(4)">D4</button><button type="button" class="theme-btn" onclick="setDice(6)">D6</button><button type="button" class="theme-btn" onclick="setDice(8)">D8</button><button type="button" class="theme-btn" onclick="setDice(10)">D10</button><button type="button" class="theme-btn" onclick="setDice(12)">D12</button><button type="button" class="theme-btn" onclick="setDice(20)">D20</button><button type="button" class="theme-btn" onclick="setDice(100)">D100</button></div>
     <label class="checkbox-item"><input type="checkbox" id="dOrder" onchange="onInputChange()">参加者全員で振って順番決め（大きい順・同点は振り直し）</label>
@@ -285,11 +292,12 @@ textarea.ta {
 const CURRENT_TOOL_ID = 'util-order-decider';
 const STORAGE_KEY = 'util_order_decider_v1';
 const STORAGE_FIELDS = ['names','oAnim','oVib','nMin','nMax','nCount','nUnique','dMin','dMax','dCount','dOrder',
-  'cA','cB','cCount','cBias','tAce','tDir','tJoker','lMode','lWin','jAuto','oSnd','nDec','lExcl','jElim','rItems','rRemove'];
+  'cA','cB','cCount','cBias','tAce','tDir','tJoker','lMode','lWin','jAuto','oSnd','nDec','lExcl','jElim','rItems','rRemove','dFaces'];
 const INPUT_LABELS = { names: '参加者' };
 const RESULT_LABELS = { main: '結果' };
 let lastResult = null;       // 直近の結果 {main, lines}
-let history = [];            // 直近10件（メモリのみ）
+let H = [];                  // 履歴 {m:モード, t:日時, text:全文}。各モード100件まで・localStorageに保存
+const HIST_KEY = 'util_order_decider_hist_v1';
 let wonSet = [];             // くじ引きで当選済みの人（除外用）
 let rot = 0, spinning = false; // ルーレットの回転角・回転中フラグ
 
@@ -307,7 +315,7 @@ function onResetExtra() {
     else if (el.tagName === 'SELECT') Array.from(el.options).forEach(o => o.selected = o.defaultSelected);
     else el.value = el.defaultValue;
   });
-  lastResult = null; history = []; wonSet = []; rot = 0; renderHist(); updatePc(); drawWheel();
+  lastResult = null; H = []; saveHist(); wonSet = []; rot = 0; renderHist(); updatePc(); drawWheel();
   document.querySelectorAll('.res').forEach(r => r.innerHTML = '<span class="res-hint">ボタンを押すと結果が出るで</span>');
   document.querySelectorAll('[id^="cp-"]').forEach(b => b.disabled = true);
   saveInputs();
@@ -402,7 +410,7 @@ function present(mode, res) {
     box.classList.remove('shake');
     box.innerHTML = '<div class="res-main">' + esc(res.main) + '</div>' + res.lines.map(l => '<div class="res-line">' + esc(l) + '</div>').join('');
     $('cp-' + mode).disabled = false;
-    history.unshift(MODES.find(m => m[0] === mode)[1] + ' ' + res.main); history = history.slice(0, 10); renderHist();
+    addHist(mode, res);
     fx();
     if (res.after) res.after();
   };
@@ -420,9 +428,34 @@ function present(mode, res) {
     setTimeout(() => { if (iv) clearInterval(iv); reveal(); }, wait);
   } else reveal();
 }
-function renderHist() {
-  $('hist').innerHTML = history.length ? history.map(h => '<div class="hist-item">' + esc(h) + '</div>').join('') : '<span class="res-hint">まだ結果なし</span>';
+/* ---------- 履歴（全モード共通。結果が長い時（数字100個など）は折りたたみ表示） ---------- */
+const clip = (t, n) => t.length > n ? t.slice(0, n) + '…' : t;
+const modeInfo = m => MODES.find(x => x[0] === m);
+function addHist(mode, res) {
+  const d = new Date(), z = n => String(n).padStart(2, '0');
+  const t = (d.getMonth() + 1) + '/' + d.getDate() + ' ' + z(d.getHours()) + ':' + z(d.getMinutes());
+  H.unshift({ m: mode, t, text: res.main + (res.lines.length ? '\n' + res.lines.join('\n') : '') });
+  const cnt = {}; H = H.filter(e => (cnt[e.m] = (cnt[e.m] || 0) + 1) <= 100);   // 各モード100件まで
+  saveHist(); renderHist();
 }
+function saveHist() { try { localStorage.setItem(HIST_KEY, JSON.stringify(H)); } catch (e) {} }
+function loadHist() { try { const r = JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); if (Array.isArray(r)) H = r; } catch (e) {} }
+function renderHist() {
+  const none = '<span class="res-hint">まだ結果なし</span>';
+  $('hist').innerHTML = H.length ? H.slice(0, 10).map(e => '<div class="hist-item">' + esc(e.t) + ' ' + modeInfo(e.m)[1] + ' ' + esc(clip(e.text.split('\n')[0], 40)) + '</div>').join('') : none;
+  MODES.forEach(([m]) => {
+    const l = H.filter(e => e.m === m), box = $('hist-' + m); if (!box) return;
+    $('hn-' + m).textContent = l.length;
+    box.innerHTML = l.length ? l.map(e => '<details class="hist-item"><summary>' + esc(e.t) + ' ' + esc(clip(e.text.split('\n')[0], 28)) + '</summary><div class="hist-body">' + esc(e.text).replace(/\n/g, '<br>') + '</div></details>').join('') : none;
+  });
+}
+function copyHist(mode) {
+  const l = H.filter(e => mode === 'all' || e.m === mode); if (!l.length) return;
+  const txt = l.map(e => '【' + e.t + (mode === 'all' ? ' ' + modeInfo(e.m)[1] + modeInfo(e.m)[2] : '') + '】\n' + e.text).join('\n\n');
+  copyToClipboard(txt, 'hc-' + mode, mode === 'all' ? '📋 全履歴をコピー' : '📋 履歴をコピー');
+}
+function clearHist(mode) { H = mode === 'all' ? [] : H.filter(e => e.m !== mode); saveHist(); renderHist(); }
+
 function copyRes(mode) {
   if (!lastResult) return;
   copyToClipboard(buildShareText(lastResult), 'cp-' + mode, '📄 結果をコピー');
@@ -447,19 +480,42 @@ function doNum() {
     tick: () => Array.from({ length: Math.min(c, 10) }, () => fmt(rint(lo, hi))).join(' , ') };
 }
 
-function setDice(n) { $('dMin').value = 1; $('dMax').value = n; onInputChange(); }
+function setDice(n) { $('dMin').value = 1; $('dMax').value = n; $('dFaces').value = ''; dInfo(); onInputChange(); }
 
+/* 面の直接指定を読む。空→null／エラー→文字列／OK→面の配列（同じ数が複数＝出やすい）。書式：6 や 6*2（6を2面分） */
+function parseFaces() {
+  const raw = $('dFaces').value.trim(); if (!raw) return null;
+  const out = [];
+  for (const tk of raw.split(/[\s,、，]+/).filter(Boolean)) {
+    const m = tk.match(/^(-?\d+(?:\.\d+)?)(?:[*×x](\d{1,3}))?$/i);
+    if (!m) return '「' + tk + '」が読めへん（例：1,2,3,4,6,6）';
+    for (let k = m[2] ? parseInt(m[2], 10) : 1; k > 0; k--) out.push(parseFloat(m[1]));
+  }
+  return (out.length < 2 || out.length > 1000) ? '面は2〜1000面の間にしてな' : out;
+}
+/* 指定した面ごとの出る確率を表示 */
+function dInfo() {
+  const el = $('dInfo'); if (!el) return;
+  const f = parseFaces();
+  if (f === null) { el.textContent = '同じ数を複数書く（または 6*2 と書く）と、その目が出やすくなるで'; return; }
+  if (typeof f === 'string') { el.textContent = '⚠ ' + f; return; }
+  const m = new Map(); f.forEach(v => m.set(v, (m.get(v) || 0) + 1));
+  el.textContent = '確率：' + [...m].sort((a, b) => a[0] - b[0]).map(([v, c]) => v + '→' + (c / f.length * 100).toFixed(1) + '％').join(' ／ ');
+}
 function doDice() {
+  const fc = parseFaces(); if (typeof fc === 'string') return fc;
   const a = N('dMin'), b = N('dMax'), c = N('dCount');
-  if ([a, b, c].some(isNaN)) return '最小・最大・個数を入力してな';
-  if (a > b) return '最小は最大以下にしてな';
-  if (b - a >= 1e9) return '範囲が広すぎるで';
-  if (c < 1 || c > 10) return '個数は1〜10にしてな';
-  const roll = () => Array.from({ length: c }, () => rint(a, b));
+  if (isNaN(c) || c < 1 || c > 10) return '個数は1〜10にしてな';
+  if (!fc) {
+    if ([a, b].some(isNaN)) return '最小・最大を入力してな';
+    if (a > b) return '最小は最大以下にしてな';
+    if (b - a >= 1e9) return '範囲が広すぎるで';
+  }
+  const roll = () => Array.from({ length: c }, () => fc ? fc[rint(0, fc.length - 1)] : rint(a, b));
   const sum = r => r.reduce((x, y) => x + y, 0);
   if (!$('dOrder').checked) {
     const r = roll();
-    return { main: r.join(' ・ '), lines: c > 1 ? ['合計 ' + sum(r)] : [], tick: () => roll().join(' ・ ') };
+    return { main: r.join(' ・ '), lines: [...(c > 1 ? ['合計 ' + sum(r)] : []), ...(fc ? ['カスタム面（' + fc.length + '面）'] : [])], tick: () => roll().join(' ・ ') };
   }
   const nm = names();
   if (nm.length < 2) return '順番決めは参加者を2人以上入れてな';
@@ -612,8 +668,15 @@ function sfx() {
 $('cards').innerHTML = MODES.map(m =>
   '<button class="mode-card' + (m[0] === 'roulette' ? ' wide' : '') + '" onclick="show(\'' + m[0] + '\')"><span class="e">' + m[1] + '</span><span class="t">' + m[2] + '</span><span class="d">' + m[3] + '</span></button>').join('');
 $('themeChips').innerHTML = THEMES.map(t => '<button type="button" class="theme-btn" data-t="' + t[0] + '" onclick="setOt(\'' + t[0] + '\')">' + t[1] + '</button>').join('');
+MODES.forEach(m => {   // 各モード画面の下に履歴カードを追加
+  const el = document.createElement('div'); el.className = 'card';
+  el.innerHTML = '<div class="section-title">📜 ' + m[2] + 'の履歴（<span id="hn-' + m[0] + '">0</span>件・新しい順・タップで全文）</div><div class="hist-box" id="hist-' + m[0] + '"></div>' +
+    '<div class="copy-actions"><button class="btn-action" id="hc-' + m[0] + '" onclick="copyHist(\'' + m[0] + '\')">📋 履歴をコピー</button><button class="btn-action" onclick="clearHist(\'' + m[0] + '\')">🗑 履歴を消す</button></div>';
+  $('m-' + m[0]).appendChild(el);
+});
+loadHist(); renderHist();
 drawWheel();
-document.addEventListener('DOMContentLoaded', drawWheel);   // common.jsの入力復元(restoreInputs)の後にも描き直す
+document.addEventListener('DOMContentLoaded', () => { drawWheel(); dInfo(); });   // common.jsの入力復元(restoreInputs)の後にも描き直す
 (function () { let t = 'std'; try { t = localStorage.getItem(OT_KEY) || 'std'; } catch (e) {} setOt(THEMES.some(x => x[0] === t) ? t : 'std'); })();
 </script>
 </body>
