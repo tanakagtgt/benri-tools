@@ -17,7 +17,7 @@
   { "id": "jidouteate-calculator", "name": "児童手当計算ツール", "url": "https://arigato-tools.com/jidouteate-calculator", "file": "jidouteate-calculator.html", "emoji": "👶", "category": "calc", "desc": "生年月日を入力するだけで月額・年額・生涯累計を試算" },
   { "id": "mitumorisho-seikyuusho", "name": "見積書・請求書 作成ツール", "url": "https://arigato-tools.com/mitumorisho-seikyuusho", "file": "mitumorisho-seikyuusho.html", "emoji": "🧾", "category": "doc", "desc": "スマホで見積書・請求書を作成しコンビニ印刷可能" },
   { "id": "qrcode-creator", "name": "QRコード作成ツール", "url": "https://arigato-tools.com/qrcode-creator", "file": "qrcode-creator.html", "emoji": "📷", "category": "util", "desc": "入力したテキスト・URLがそのままQRコードになります" },
-  { "id": "audio-splitter", "name": "音声カット・切り出しツール", "url": "https://arigato-tools.com/audio-splitter", "file": "audio-splitter.html", "emoji": "🎵", "category": "conv", "desc": "MP3　WAV　M4A　m4aを分割できます" },
+  { "id": "util-audio-cutter", "name": "音声カット・分割ツール", "url": "https://arigato-tools.com/util-audio-cutter", "file": "util-audio-cutter.html", "emoji": "✂️", "category": "util", "desc": "MP3・WAVを好きな位置で複数に分割。無劣化の高速モードとZIP一括保存に対応" },
   { "id": "calc-function-calculator", "name": "関数電卓", "url": "https://arigato-tools.com/calc-function-calculator", "file": "calc-function-calculator.html", "emoji": "🧮", "category": "calc", "desc": "三角関数・対数・べき乗・階乗などに対応したフル機能の関数電卓。DEG/RAD切替、メモリ機能、計算履歴つき。" },
   { "id": "fin-money-fire-sim", "name": "FIREできるかシミュレーター", "url": "https://arigato-tools.com/fin-money-fire-sim", "file": "fin-money-fire-sim.html", "emoji": "🔥", "category": "fin", "desc": "NISA・課税口座・生活防衛資金から税金・国保・年金まで込みで、資産が何歳まで持つかを試算。暴落テストや「もしも」の比較にも対応" },
 { "id": "fin-income-tracker", "name": "収支記録カレンダー", "url": "https://arigato-tools.com/fin-income-tracker", "file": "fin-income-tracker.html", "emoji": "📅", "category": "fin", "desc": "投資と回収を日別に記録し、収支・回収率・勝率をカレンダーとチャートで確認できる" },
@@ -25,6 +25,6 @@
 { "id": "calc-pregnancy-week", "name": "妊娠週数・出産予定日計算", "url": "https://arigato-tools.com/calc-pregnancy-week", "file": "calc-pregnancy-week.html", "emoji": "🤰", "category": "calc", "desc": "最終月経開始日から出産予定日と今日の妊娠週数を自動計算。週数から日付の逆算、週ごとのカレンダーも確認できる" },
 { "id": "util-speed-reader", "name": "速読トレーナー（RSVP）", "url": "https://arigato-tools.com/util-speed-reader", "file": "util-speed-reader.html", "emoji": "📖", "category": "util", "desc": "文章を高速表示するRSVP方式の速読練習ツール。速度・表示文字数・縦横・色を調整、履歴も保存" },
 { "id": "fin-shift-pay", "name": "シフト給料カレンダー", "url": "https://arigato-tools.com/fin-shift-pay", "file": "fin-shift-pay.html", "emoji": "🗓️", "category": "fin", "desc": "バイト・パートのシフトから給料を自動計算。深夜・休日・残業・交通費・締日と給料日に対応" },
-{ "id": "conv-bunsho-henkan", "name": "文章変換ツール", "url": "https://arigato-tools.com/conv-bunsho-henkan", "file": "conv-bunsho-henkan.html", "emoji": "🔧", "category": "conv", "desc": "文字数カウント・全角半角変換・置換・改行をまとめて処理" },
- { "id": "util-audio-cutter", "name": "音声カット・分割ツール", "url": "https://arigato-tools.com/util-audio-cutter", "file": "util-audio-cutter.html", "emoji": "✂️", "category": "util", "desc": "MP3・WAVを好きな位置で複数に分割。無劣化の高速モードとZIP一括保存に対応" }
+{ "id": "conv-bunsho-henkan", "name": "文章変換ツール", "url": "https://arigato-tools.com/conv-bunsho-henkan", "file": "conv-bunsho-henkan.html", "emoji": "🔧", "category": "conv", "desc": "文字数カウント・全角半角変換・置換・改行をまとめて処理" }
+
 ]
