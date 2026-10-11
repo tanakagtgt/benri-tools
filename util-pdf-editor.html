@@ -9,10 +9,10 @@
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XXXXXXXXXX');</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PDF編集ツール｜ハイライト・文字・コメント・手書きをブラウザで追加（無料）</title>
-<meta name="description" content="PDFにハイライト・文字入力・コメント・手書きペンをブラウザ上で追加して保存できる無料ツール。ファイルは外部に送信されず端末内で処理。保存したPDFはこのツールで再編集も可能。">
-<meta property="og:title" content="PDF編集ツール｜ハイライト・文字・コメント・手書きをブラウザで追加">
-<meta property="og:description" content="PDFにハイライト・文字・コメント・手書きを追加して保存。ファイルは外部送信なし。">
+<title>PDF編集ツール｜ハイライト・図形・文字・フォーム入力をブラウザで（無料）</title>
+<meta name="description" content="PDFにハイライト・下線・図形・吹き出し・文字・コメント・手書きを追加し、入力欄にも記入して保存できる無料ツール。ファイルは外部に送信されず端末内で処理。保存したPDFはこのツールで再編集も可能。">
+<meta property="og:title" content="PDF編集ツール｜ハイライト・図形・文字・フォーム入力をブラウザで">
+<meta property="og:description" content="PDFに注釈を追加して保存。ファイルは外部送信なし。">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://arigato-tools.com/util-pdf-editor">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,7 +20,7 @@
 <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/common.css">
 <style>
-/* ===== このツール専用CSS（色は全てCSS変数。注釈の色データだけは固定色） ===== */
+/* ===== このツール専用CSS（色は全てCSS変数。PDF面の上に載せる要素の白／注釈色だけは固定色） ===== */
 .container { max-width: 1920px; }  /* PC・iPad横向き想定。共通の600pxより大きく広げる */
 
 .pe-bar { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:6px; }
@@ -50,7 +50,7 @@
 .pe-pageinput { width:64px; text-align:center; }
 .pe-status { font-size:12px; color:var(--color-text-muted); min-height:16px; margin-bottom:4px; }
 
-/* PDF表示エリア：縦に長くなりすぎないよう高さ制限してスクロール */
+/* PDF表示エリア：高さはJSで「画面の残り全部」に合わせる（初期値はCSS） */
 .pe-viewer {
   position:relative; overflow:auto; height:75vh; height:75dvh; min-height:420px;
   background:var(--color-input-bg); border:1px solid var(--color-border);
@@ -61,20 +61,31 @@
 .pe-page { position:relative; display:inline-block; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.25); text-align:left; }
 .pe-page canvas { display:block; }
 .pe-page svg { position:absolute; left:0; top:0; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
-/* 描画系ツール中はスクロールより描画を優先。選択中の注釈があれば移動ドラッグ優先 */
-.pe-page.drawing svg, .pe-page.hassel svg { touch-action:none; }
+/* 描画系ツール中・選択中・複数選択モード中は、スクロールより操作を優先 */
+.pe-page.drawing svg, .pe-page.hassel svg, .pe-page.multi svg { touch-action:none; }
 .pe-page.drawing svg { cursor:crosshair; }
 /* 「指では描かない」ON時：指の操作はスクロール優先（Apple Pencil・マウスで描く） */
 .pe-page.fingerscroll svg { touch-action:pan-x pan-y; }
 
-/* 文字ハイライト用の透明テキストレイヤー（文字ハイライトツール中だけ操作可能） */
+/* 文字選択系ツール（文字ハイライト・下線・取り消し線）用の透明テキストレイヤー */
 .pe-page .textLayer { position:absolute; left:0; top:0; overflow:hidden; line-height:1; pointer-events:none; }
 .pe-page.texthl .textLayer { pointer-events:auto; user-select:text; -webkit-user-select:text; }
 .pe-page.texthl svg { pointer-events:none; }
 .textLayer span, .textLayer br { color:transparent; position:absolute; white-space:pre; cursor:text; transform-origin:0% 0%; }
 .textLayer ::selection { background:rgba(26,86,219,.35); }
 
-/* 文字・コメント入力欄（PDF上に重ねる） */
+/* フォーム入力欄（PDFの入力欄の位置に重ねる。PDF面は白なので固定色） */
+.pe-form-layer { position:absolute; left:0; top:0; pointer-events:none; }
+.pe-ff {
+  position:absolute; box-sizing:border-box; margin:0; padding:0 2px; pointer-events:none;
+  background:#fff; color:#111; border:1px solid #9aa7bd; font-family:'BIZ UDPGothic', sans-serif; line-height:1.2;
+}
+textarea.pe-ff { padding:2px; resize:none; }
+button.pe-ff { display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
+.pe-page.formtool .pe-ff { pointer-events:auto; background:#eef4ff; border:2px solid #1a56db; }
+.pe-page.formtool .pe-ff:disabled { background:#eee; border-color:#999; }
+
+/* 文字・コメント・吹き出しの入力欄（PDF上に重ねる） */
 .pe-editor {
   position:absolute; display:none; z-index:5; width:200px; height:76px; resize:both;
   font-family:inherit; font-size:16px; line-height:1.35; padding:2px 5px;
@@ -143,7 +154,7 @@ body.pe-focus .back-to-index, body.pe-focus header { display:none; }
 
 <header>
   <h1>PDF編集ツール</h1>
-  <p class="subtitle">ハイライト・文字・コメント・手書きを追加して保存｜ファイルは外部に送信されません</p>
+  <p class="subtitle">ハイライト・図形・文字・コメント・フォーム入力｜ファイルは外部に送信されません</p>
 </header>
 
 <!-- ===== ツール本体 ===== -->
@@ -170,20 +181,33 @@ body.pe-focus .back-to-index, body.pe-focus header { display:none; }
     <button class="pe-btn" id="btnFocus">⛶ 集中表示</button>
   </div>
 
-  <!-- 行2：ツール選択＋選択中の操作 -->
+  <!-- 行2：ツール選択 -->
   <div class="pe-bar">
     <button class="pe-btn active" data-tool="select">👆 選択・移動</button>
+    <button class="pe-btn" id="btnMulti">☑ 複数選択</button>
     <button class="pe-btn" data-tool="texthl">🖍 文字ハイライト</button>
+    <button class="pe-btn" data-tool="underline"><u>U</u>&nbsp;下線</button>
+    <button class="pe-btn" data-tool="strike"><s>S</s>&nbsp;取り消し線</button>
     <button class="pe-btn" data-tool="highlight">▭ 範囲ハイライト</button>
     <button class="pe-btn" data-tool="pen">✏️ ペン</button>
+    <button class="pe-btn" data-tool="shape">⬜ 図形</button>
     <button class="pe-btn" data-tool="text">🔤 文字</button>
+    <button class="pe-btn" data-tool="callout">🗨 吹き出し</button>
     <button class="pe-btn" data-tool="comment">💬 コメント</button>
-    <button class="pe-btn" id="btnApplyHl" style="display:none">✔ 選択した文字をハイライト</button>
+    <button class="pe-btn" data-tool="form">📋 フォーム入力</button>
+  </div>
+
+  <!-- 行3：選択中の操作 -->
+  <div class="pe-bar">
+    <button class="pe-btn" id="btnApplyHl" style="display:none">✔ 選択した文字に適用</button>
     <button class="pe-btn" id="btnEdit" disabled>✎ 文字を編集</button>
+    <button class="pe-btn" id="btnCopy" disabled>📄 コピー</button>
+    <button class="pe-btn" id="btnPaste" disabled>📥 貼り付け</button>
+    <button class="pe-btn" id="btnDup" disabled>⧉ 複製</button>
     <button class="pe-btn" id="btnDelete" disabled>🗑 選択を削除</button>
   </div>
 
-  <!-- 行3：色・太さ・濃さ・文字サイズ・Apple Pencil設定 -->
+  <!-- 行4：色・太さ・図形の種類・濃さ・文字サイズ・Apple Pencil設定 -->
   <div class="pe-bar">
     <span class="pe-label">色</span>
     <span id="swatches" class="pe-bar" style="margin:0"></span>
@@ -191,22 +215,29 @@ body.pe-focus .back-to-index, body.pe-focus header { display:none; }
     <select class="pe-sel" id="penWidth">
       <option value="1">1pt</option><option value="2">2pt</option><option value="3" selected>3pt</option><option value="4">4pt</option><option value="5">5pt</option><option value="6">6pt</option><option value="7">7pt</option><option value="8">8pt</option><option value="9">9pt</option><option value="10">10pt</option><option value="11">11pt</option><option value="12">12pt</option>
     </select>
+    <span class="pe-label">図形</span>
+    <select class="pe-sel" id="shapeKind">
+      <option value="rect">四角</option><option value="ellipse">丸（楕円）</option><option value="line">直線</option><option value="arrow">矢印</option>
+    </select>
     <span class="pe-label">蛍光ペン</span>
     <select class="pe-sel" id="hlOpacity">
       <option value="0.3">薄い</option><option value="0.5" selected>普通</option><option value="0.75">濃い</option>
     </select>
-    <span class="pe-label">文字</span>
+    <span class="pe-label">文字サイズ</span>
     <select class="pe-sel" id="textSize">
-      <option value="12">小</option><option value="16" selected>中</option><option value="24">大</option><option value="32">特大</option>
+      <option value="6">6pt</option><option value="7">7pt</option><option value="8">8pt</option><option value="9">9pt</option><option value="10">10pt</option><option value="11">11pt</option><option value="12">12pt</option><option value="14">14pt</option><option value="16" selected>16pt</option><option value="18">18pt</option><option value="20">20pt</option><option value="22">22pt</option><option value="24">24pt</option><option value="28">28pt</option><option value="32">32pt</option><option value="36">36pt</option><option value="40">40pt</option><option value="48">48pt</option><option value="56">56pt</option><option value="64">64pt</option><option value="72">72pt</option>
     </select>
     <label class="pe-check"><input type="checkbox" id="penOnly"> 指では描かない（Apple Pencil・マウス用）</label>
   </div>
 
   <details class="pe-help">
     <summary>操作方法・ショートカット</summary>
-    <div>・文字ハイライト：ツールを選んで文字をなぞる（マウスは離すと確定／iPadは「選択した文字をハイライト」ボタン）<br>
-    ・選択・移動：注釈をタップ→ドラッグで移動、右下の○をドラッグでリサイズ、文字はダブルクリックで編集<br>
-    ・ショートカット：Ctrl+S 保存／Ctrl+Z 戻す／Ctrl+Y やり直す／V 選択・H 文字ハイライト・R 範囲・P ペン・T 文字・C コメント／＋－ ズーム／Ctrl+ホイール ズーム／「全体表示」でA4・A3が枠にぴったり、「実寸」で原寸サイズ／←→ ページ移動／Esc 選択解除</div>
+    <div>・文字ハイライト／下線／取り消し線：ツールを選んで文字をなぞる（マウスは離すと確定／iPadは「選択した文字に適用」ボタン）<br>
+    ・図形：ドラッグで描く（種類は「図形」で選択）。吹き出し：先端にしたい点から、箱を置きたい場所までドラッグ→文字を入力<br>
+    ・選択・移動：注釈をタップ→ドラッグで移動、右下の○でリサイズ、吹き出しの先端の○で向きを変更、文字はダブルクリックで編集<br>
+    ・複数選択：Shift（またはCtrl/⌘）+クリック、空白をドラッグして囲む、Ctrl+A（このページ全部）。iPadは「☑ 複数選択」をONにしてタップ。コピー／貼り付け／複製／削除もまとめて可能<br>
+    ・フォーム入力：入力欄のあるPDFは自動で「📋 フォーム入力」になります。入力欄をタップして記入<br>
+    ・ショートカット：Ctrl+S 保存／Ctrl+Z 戻す／Ctrl+Y やり直す／Ctrl+C コピー／Ctrl+V 貼り付け／V 選択・H 文字ハイライト・U 下線・S 取り消し線・R 範囲・P ペン・G 図形・T 文字・B 吹き出し・C コメント・F フォーム／＋－ ズーム／Ctrl+ホイール ズーム／←→ ページ移動／Esc 選択解除</div>
   </details>
 
   <div class="pe-status" id="peStatus"></div>
@@ -230,6 +261,7 @@ body.pe-focus .back-to-index, body.pe-focus header { display:none; }
         <canvas id="pdfCanvas"></canvas>
         <svg id="pdfOverlay" xmlns="http://www.w3.org/2000/svg"></svg>
         <div class="textLayer" id="textLayer"></div>
+        <div class="pe-form-layer" id="formLayer"></div>
         <textarea class="pe-editor" id="textEditor" placeholder="ここに入力（Ctrl+Enterで確定）"></textarea>
       </div>
     </div>
@@ -239,13 +271,13 @@ body.pe-focus .back-to-index, body.pe-focus header { display:none; }
 <!-- ===== 解説文 ===== -->
 <section class="tool-desc">
   <h2>PDF編集ツールの使い方</h2>
-  <p>「PDFを開く」でファイルを選び、ツールを選んでページ上を操作します。文字ハイライトは文字をなぞって「選択した文字をハイライト」、文字・コメントは置きたい場所をタップして入力。選択・移動ツールで注釈をタップすると、移動・リサイズ・色変更・削除ができ、「戻す」「やり直す」も使えます。終わったら「保存」で編集済みPDFをダウンロードします。</p>
+  <p>「PDFを開く」でファイルを選び、ツールを選んで操作します。文字ハイライト・下線・取り消し線は文字をなぞって適用、図形（四角・丸・直線・矢印）はドラッグ、吹き出し・文字・コメントは置きたい場所で入力。入力欄のあるPDFは「フォーム入力」で記入できます。選択ツールで注釈を移動・リサイズ・色変更・削除でき、複数選択してコピー＆貼り付けも可能です。終わったら「保存」でダウンロードします。</p>
   <h3>こんな場面に</h3>
-  <p>回覧資料の確認箇所に蛍光ペンで印をつける、申込書に文字や手書きのチェックを入れる、レビュー用にコメントを残す、といった使い方を想定しています。インストール不要で、パソコンでもスマホでも使えます。</p>
+  <p>回覧資料への蛍光ペンや赤枠・矢印、申込書への記入、レビュー用のコメント、図面や契約書への吹き出しメモといった使い方を想定しています。インストール不要で、パソコンでもiPadでも使えます。</p>
   <h3>仕様と注意</h3>
-  <p>PDFは端末のブラウザ内だけで処理し、サーバーへは送信しません。追加した内容はPDF標準の注釈（ハイライト・文字・テキスト・インク）として書き込み、元のページ内容は書き換えません。このツールで保存したPDFは、開き直すと注釈をそのまま再編集できます。他のソフトで作った注釈は表示のみで、編集できません。文字注釈は見た目を画像として保持するため、Adobe Acrobat Readerなど他のソフトで文字内容を書き換えると見た目が変わる場合があります。パスワード付きPDFには対応していません。パソコンのブラウザとiPad（Apple Pencil対応）での利用を想定しており、スマホでは画面が狭く操作しにくい場合があります。</p>
+  <p>PDFは端末のブラウザ内だけで処理し、サーバーへは送信しません。追加した内容はPDF標準の注釈として書き込み、元のページ内容は書き換えません。このツールで保存したPDFは開き直すと注釈を再編集できます（他のソフトで作った注釈は表示のみ）。日本語の文字注釈・フォーム入力を保存する時は、日本語フォント（約5MB）を初回のみ読み込みます。パスワード付きPDFには対応していません。ソフトによって見え方・編集のしかたが異なる場合があります。</p>
   <h3>よくある質問</h3>
-  <p>Q. 保存したPDFを他の人に渡しても注釈は見えますか？ A. 一般的なPDFビューアで表示できますが、ソフトによって見え方や編集のしかたが異なる場合があります。</p>
+  <p>Q. 保存したPDFを他の人に渡しても見えますか？ A. 一般的なPDFビューアで表示できます。Q. 入力欄の内容も保存されますか？ A. はい、保存したPDFの入力欄に書き込まれます。</p>
 </section>
 
 <div id="shareAreaSlot"></div>
@@ -257,7 +289,7 @@ body.pe-focus .back-to-index, body.pe-focus header { display:none; }
 
 </div>
 
-<!-- 外部ライブラリ（cdnjs） -->
+<!-- 外部ライブラリ（cdnjs）。fontkitと日本語フォントは「保存」時に必要な場合だけ読み込む -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -276,7 +308,7 @@ const RESULT_LABELS   = { main: 'PDF編集' };
 function calculateInputs()  { return {}; }  // alertは出さない
 function calculateResult()  { return { main: 0 }; }
 function displayResult()    { /* 表示するものなし */ }
-function buildShareText()   { return '📄 PDFにハイライト・文字・コメント・手書きを追加できる無料ツール。ファイルは外部送信なし！'; }
+function buildShareText()   { return '📄 PDFにハイライト・図形・文字・フォーム入力ができる無料ツール。ファイルは外部送信なし！'; }
 function buildShareUrl()    { return 'https://arigato-tools.com/util-pdf-editor'; }
 
 // 「入力値をリセット」＝未保存の注釈をすべて消す（PDF自体は開いたまま）
@@ -284,7 +316,7 @@ function onResetExtra() {
   commitEditor();
   if (!annots.length) return;
   if (!confirm('追加した注釈をすべて消します。よろしいですか？')) return;
-  pushUndo(); annots = []; selectedId = null; dirty = true;
+  pushUndo(); annots = []; selIds = []; dirty = true;
   drawOverlay(); updateUi();
 }
 
@@ -293,25 +325,36 @@ function onResetExtra() {
    座標系：注釈は「scale=1・回転適用後・左上原点」の座標(pt)で保持。
    表示は scale 倍、保存時に PDF 座標へ変換する。
    注釈の種類：
-     highlight … rects:[[x,y,w,h],…] color opacity
+     highlight … rects:[[x,y,w,h],…] color opacity style('hl'|'ul'|'st'。省略=hl)
      pen       … pts:[[x,y],…] color width
-     text      … x y text size color（見た目は画像でPDFに埋め込む）
+     shape     … shape('rect'|'ellipse'|'line'|'arrow') x1 y1 x2 y2 color width
+     text      … x y text size color
+     callout   … x y text size color tx ty（tx,ty＝吹き出しの先端）
      comment   … x y text（付箋アイコン）
    ===================================================== */
 const $ = id => document.getElementById(id);
 const PDFJS_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+// 保存時に埋め込む日本語フォント（画面表示と同じBIZ UDPGothic）とfontkit。バージョン固定
+const FONT_URL    = 'https://cdn.jsdelivr.net/npm/@expo-google-fonts/biz-udpgothic@0.4.2/400Regular/BIZUDPGothic_400Regular.ttf';
+const FONTKIT_URL = 'https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js';
+// フォントのサブセット化（必要な文字だけ残す）用。HarfBuzzのwasm（約670KB）。pdf-libの標準サブセットは日本語フォントで文字が欠けるため使わない
+const HB_WASM_URL = 'https://cdn.jsdelivr.net/npm/harfbuzzjs@1.6.3/dist/harfbuzz-subset.wasm';
 const SWATCHES = ['#ffeb3b', '#69f0ae', '#40c4ff', '#ff5252', '#111111'];
 const NOTE = 18;      // コメント付箋アイコンの大きさ(pt)
 const PAD = 2;        // 文字注釈の内側余白(pt)
+const CPX = 4, CPY = 3; // 吹き出しの箱の内側余白(pt)
+const TEXTSEL = ['texthl', 'underline', 'strike'];   // 文字選択を使うツール
 
 let pdfDoc = null, pdfBytes = null, fileName = 'document.pdf', hadImported = false;
 let pageNum = 1, scale = 1, tool = 'select';
-let pageW = 0, pageH = 0;
+let pageW = 0, pageH = 0, curV1 = null;
 let annots = [], undoStack = [], redoStack = [];
-let selectedId = null, nextId = 1, dirty = false;
-let colorByTool = { highlight: '#ffeb3b', pen: '#ff5252', text: '#111111' };
+let selIds = [], multiMode = false, clip = [], pasteN = 0;
+let nextId = 1, dirty = false;
+let colorByTool = { highlight: '#ffeb3b', underline: '#ff5252', strike: '#ff5252', pen: '#ff5252', shape: '#ff5252', text: '#111111', callout: '#111111' };
 let renderTask = null, renderSeq = 0, workerReady = null, drag = null, editor = null;
 let fitMode = 'page';   // 'page'=全体表示 / 'width'=幅に合わせる / null=手動ズーム・実寸
+let formFields = [], formValues = {}, formInit = {};   // PDFの入力欄（フォーム）
 
 /* ---------- ユーティリティ ---------- */
 function setStatus(t) { $('peStatus').textContent = t || ''; }
@@ -320,9 +363,12 @@ function mk(tag, attrs) {
   for (const k in attrs) e.setAttribute(k, attrs[k]);
   return e;
 }
+const clone = o => JSON.parse(JSON.stringify(o));
 const hex2rgb = h => [1, 3, 5].map(i => parseInt(h.substr(i, 2), 16) / 255);
 const colorKey = () => (tool === 'texthl' ? 'highlight' : tool);
-const getSel = () => annots.find(a => a.id === selectedId);
+const isSel = id => selIds.includes(id);
+const selAnnots = () => annots.filter(a => isSel(a.id));
+const getSel = () => (selIds.length === 1 ? annots.find(a => a.id === selIds[0]) || null : null);   // 単一選択の時だけ
 
 // pdf.jsのworkerはクロスオリジンで直接読めないため、Blob化して読み込む
 function setupWorker() {
@@ -334,6 +380,63 @@ function setupWorker() {
   return workerReady;
 }
 
+/* ---------- 日本語フォントとfontkit（必要になった時だけ読み込む） ---------- */
+let fontBytesP = null, fontkitP = null;
+function loadFontBytes() {
+  if (!fontBytesP) {
+    fontBytesP = fetch(FONT_URL).then(r => { if (!r.ok) throw new Error('font'); return r.arrayBuffer(); }).then(b => new Uint8Array(b));
+    fontBytesP.catch(() => { fontBytesP = null; });
+  }
+  return fontBytesP;
+}
+function ensureFontkit() {
+  if (window.fontkit) return Promise.resolve();
+  if (!fontkitP) {
+    fontkitP = new Promise((res, rej) => {
+      const s = document.createElement('script'); s.src = FONTKIT_URL; s.onload = res;
+      s.onerror = () => rej(new Error('fontkit')); document.head.appendChild(s);
+    });
+    fontkitP.catch(() => { fontkitP = null; });
+  }
+  return fontkitP;
+}
+function prefetchFont() { loadFontBytes().catch(() => {}); ensureFontkit().catch(() => {}); loadHbWasm().catch(() => {}); }
+let hbWasmP = null;
+function loadHbWasm() {
+  if (!hbWasmP) {
+    hbWasmP = fetch(HB_WASM_URL).then(r => { if (!r.ok) throw new Error('wasm'); return r.arrayBuffer(); });
+    hbWasmP.catch(() => { hbWasmP = null; });
+  }
+  return hbWasmP;
+}
+// 使う文字だけを残した小さなフォント(TTF)を作る。cmapは残るので、そのままpdf-libに埋め込める
+async function subsetFont(fontBytes, text) {
+  const { instance } = await WebAssembly.instantiate(await loadHbWasm(), {});
+  const x = instance.exports;
+  const fp = x.malloc(fontBytes.length);
+  new Uint8Array(x.memory.buffer).set(fontBytes, fp);
+  const blob = x.hb_blob_create(fp, fontBytes.length, 1, 0, 0);       // 1 = 読み取り専用
+  const face = x.hb_face_create(blob, 0);
+  const input = x.hb_subset_input_create_or_fail();
+  const uset = x.hb_subset_input_unicode_set(input);
+  [...new Set([...text])].forEach(c => x.hb_set_add(uset, c.codePointAt(0)));
+  const sub = x.hb_subset_or_fail(face, input);
+  if (!sub) throw new Error('subset');
+  const rb = x.hb_face_reference_blob(sub);
+  const len = x.hb_blob_get_length(rb), ptr = x.hb_blob_get_data(rb, 0);
+  const out = new Uint8Array(x.memory.buffer.slice(ptr, ptr + len));
+  x.hb_blob_destroy(rb); x.hb_face_destroy(sub); x.hb_subset_input_destroy(input); x.hb_face_destroy(face); x.hb_blob_destroy(blob); x.free(fp);
+  return out;
+}
+// 保存するPDFに使う文字（英数記号＋文字注釈＋フォーム入力値・選択肢）
+function collectChars() {
+  let s = ''; for (let i = 0x20; i < 0x7f; i++) s += String.fromCharCode(i);
+  annots.forEach(a => { if (a.text) s += a.text; });
+  Object.values(formValues).forEach(v => { if (typeof v === 'string') s += v; });
+  formFields.forEach(f => (f.options || []).forEach(o => { s += o; }));
+  return s.replace(/[\r\n]/g, '');
+}
+
 /* ---------- 文字注釈の寸法計算（表示・保存で同じ計算を使う） ---------- */
 const _mc = document.createElement('canvas').getContext('2d');
 const fontStr = s => `${s}px "BIZ UDPGothic", sans-serif`;
@@ -343,19 +446,45 @@ function textBox(a) {
   let w = 0; lines.forEach(l => { w = Math.max(w, _mc.measureText(l).width); });
   return { lines, lh, w: w + PAD * 2, h: lines.length * lh + a.size * 0.25 };
 }
+// 吹き出しの形：箱＋先端に向かう三角形（先端に最も近い辺から出す）
+function calloutGeom(a) {
+  const tb = textBox(a), bw = tb.w + CPX * 2, bh = tb.h + CPY * 2;
+  const dx = a.tx - (a.x + bw / 2), dy = a.ty - (a.y + bh / 2);
+  const hw = Math.min(7, bw / 4), hh = Math.min(7, bh / 4);
+  let poly;
+  if (Math.abs(dx) / bw > Math.abs(dy) / bh) {
+    const sx = dx > 0 ? a.x + bw : a.x, yy = Math.min(Math.max(a.ty, a.y + hh + 2), a.y + bh - hh - 2);
+    poly = [[sx, yy - hh], [a.tx, a.ty], [sx, yy + hh]];
+  } else {
+    const sy = dy > 0 ? a.y + bh : a.y, xx = Math.min(Math.max(a.tx, a.x + hw + 2), a.x + bw - hw - 2);
+    poly = [[xx - hw, sy], [a.tx, a.ty], [xx + hw, sy]];
+  }
+  return { tb, box: [a.x, a.y, bw, bh], poly };
+}
+function arrowHead(a) {
+  const ang = Math.atan2(a.y2 - a.y1, a.x2 - a.x1), L = Math.max(10, a.width * 4), A = Math.PI / 7;
+  return [[a.x2 - L * Math.cos(ang - A), a.y2 - L * Math.sin(ang - A)], [a.x2, a.y2], [a.x2 - L * Math.cos(ang + A), a.y2 - L * Math.sin(ang + A)]];
+}
 // 注釈の外接矩形 [x,y,w,h]
+function bboxOfPts(pts, m) {
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const x1 = Math.min(...xs) - m, y1 = Math.min(...ys) - m;
+  return [x1, y1, Math.max(...xs) + m - x1, Math.max(...ys) + m - y1];
+}
 function bboxOf(a) {
   if (a.type === 'highlight') {
     const x1 = Math.min(...a.rects.map(r => r[0])), y1 = Math.min(...a.rects.map(r => r[1]));
     const x2 = Math.max(...a.rects.map(r => r[0] + r[2])), y2 = Math.max(...a.rects.map(r => r[1] + r[3]));
     return [x1, y1, x2 - x1, y2 - y1];
   }
-  if (a.type === 'pen') {
-    const xs = a.pts.map(p => p[0]), ys = a.pts.map(p => p[1]);
-    return [Math.min(...xs) - a.width, Math.min(...ys) - a.width,
-            Math.max(...xs) - Math.min(...xs) + a.width * 2, Math.max(...ys) - Math.min(...ys) + a.width * 2];
+  if (a.type === 'pen') return bboxOfPts(a.pts, a.width);
+  if (a.type === 'shape') {
+    const pts = [[a.x1, a.y1], [a.x2, a.y2]];
+    if (a.shape === 'arrow') pts.push(...arrowHead(a));
+    return bboxOfPts(pts, a.width / 2 + 1);
   }
   if (a.type === 'text') { const b = textBox(a); return [a.x, a.y, b.w, b.h]; }
+  if (a.type === 'callout') { const g = calloutGeom(a); return bboxOfPts([[g.box[0], g.box[1]], [g.box[0] + g.box[2], g.box[1] + g.box[3]], ...g.poly], 1); }
   return [a.x, a.y, NOTE, NOTE];
 }
 
@@ -402,6 +531,46 @@ async function importOwn(buf) {
     return { bytes: buf, list: [] };   // 暗号化など：そのままpdf.jsに任せる
   }
 }
+// PDFの入力欄（テキスト・チェック・ラジオ・選択リスト）を読み取る
+async function loadForms(bytes) {
+  try {
+    const { PDFDocument, PDFTextField, PDFCheckBox, PDFRadioGroup, PDFDropdown, PDFOptionList, PDFDict } = PDFLib;
+    const doc = await PDFDocument.load(bytes, { updateMetadata: false });
+    const form = doc.getForm(), ctx = doc.context, pageOf = new Map(), out = [], vals = {};
+    doc.getPages().forEach((pg, i) => {                  // 入力欄（ウィジェット）がどのページにあるか
+      const arr = pg.node.Annots(); if (!arr) return;
+      for (let k = 0; k < arr.size(); k++) { const d = ctx.lookup(arr.get(k), PDFDict); if (d) pageOf.set(d, i + 1); }
+    });
+    form.getFields().forEach(fld => {
+      try {
+        let kind = null;
+        if (fld instanceof PDFTextField) kind = 'text';
+        else if (fld instanceof PDFCheckBox) kind = 'check';
+        else if (fld instanceof PDFRadioGroup) kind = 'radio';
+        else if (fld instanceof PDFDropdown || fld instanceof PDFOptionList) kind = 'select';
+        else return;
+        const name = fld.getName();
+        let val;
+        if (kind === 'text') val = fld.getText() || '';
+        else if (kind === 'check') val = fld.isChecked();
+        else if (kind === 'radio') val = fld.getSelected() || '';
+        else val = (fld.getSelected() || [])[0] || '';
+        vals[name] = val;
+        const options = kind === 'select' ? fld.getOptions() : [];
+        const radioOpts = kind === 'radio' ? fld.getOptions() : [];   // select()に渡せる選択肢名（ウィジェットと同じ順）
+        fld.acroField.getWidgets().forEach((w, wi) => {
+          const page = pageOf.get(w.dict); if (!page) return;
+          const r = w.getRectangle(), onV = kind === 'radio' ? w.getOnValue() : null;
+          const on = kind === 'radio' ? (radioOpts.length === fld.acroField.getWidgets().length ? radioOpts[wi] : (onV ? onV.decodeText() : '')) : '';
+          out.push({ name, kind, page, rect: [r.x, r.y, r.width, r.height], options,
+            on, multiline: kind === 'text' && fld.isMultiline(),
+            max: kind === 'text' ? fld.getMaxLength() : undefined, ro: fld.isReadOnly() });
+        });
+      } catch (e) { /* 読めない入力欄は飛ばす */ }
+    });
+    return { fields: out, values: vals };
+  } catch (e) { return { fields: [], values: {} }; }
+}
 
 async function openFile(file) {
   if (!file) return;
@@ -418,10 +587,12 @@ async function openFile(file) {
     const task = pdfjsLib.getDocument({ data: imp.bytes.slice() }); // pdf.jsに渡すとバッファが消費されるのでコピー
     task.onProgress = p => { if (p.total) setStatus('読み込み中… ' + Math.floor(p.loaded / p.total * 100) + '%'); };
     const doc = await task.promise;
+    const fm = await loadForms(imp.bytes);
     pdfDoc = doc; pdfBytes = imp.bytes; fileName = file.name;
+    formFields = fm.fields; formValues = Object.assign({}, fm.values); formInit = Object.assign({}, fm.values);
     nextId = 1; annots = imp.list.map(a => Object.assign(a, { id: nextId++ }));
     hadImported = annots.length > 0;
-    undoStack = []; redoStack = []; selectedId = null; dirty = false; pageNum = 1;
+    undoStack = []; redoStack = []; selIds = []; dirty = false; pageNum = 1; clip = [];
     $('emptyMsg').style.display = 'none'; $('pageWrap').style.display = 'inline-block';
     $('pageTotal').textContent = '/ ' + doc.numPages;
     $('pageInput').max = doc.numPages;
@@ -429,7 +600,10 @@ async function openFile(file) {
     buildThumbs();
     fitMode = 'page'; layoutViewer();
     await applyFit();
-    setStatus(file.name + '（' + doc.numPages + 'ページ）' + (hadImported ? '｜このツールで付けた注釈 ' + annots.length + '件を編集できます' : ''));
+    setStatus(file.name + '（' + doc.numPages + 'ページ）' +
+      (hadImported ? '｜このツールで付けた注釈 ' + annots.length + '件を編集できます' : '') +
+      (formFields.length ? '｜入力欄あり（📋フォーム入力で記入できます）' : ''));
+    if (formFields.length) { prefetchFont(); setTool('form'); } else if (tool === 'form') setTool('select');
   } catch (e) {
     console.error(e);
     if (e && e.name === 'PasswordException') showError('パスワード付きPDFには対応していません。');
@@ -441,7 +615,7 @@ async function openFile(file) {
 }
 
 /* =====================================================
-   ページ描画（canvas）＋注釈の重ね描き（SVG）＋文字レイヤー
+   ページ描画（canvas）＋注釈の重ね描き（SVG）＋文字レイヤー＋入力欄
    ===================================================== */
 async function renderPage() {
   if (!pdfDoc) return;
@@ -450,7 +624,7 @@ async function renderPage() {
   if (seq !== renderSeq) return;                       // 連打時は最後の1回だけ描く
   const page = await pdfDoc.getPage(pageNum);
   const v1 = page.getViewport({ scale: 1 });
-  pageW = v1.width; pageH = v1.height;
+  pageW = v1.width; pageH = v1.height; curV1 = v1;
   $('paperLabel').textContent = paperName(pageW, pageH);
   const vp = page.getViewport({ scale });
   const dpr = window.devicePixelRatio || 1;
@@ -460,7 +634,7 @@ async function renderPage() {
   const svg = $('pdfOverlay');
   svg.setAttribute('viewBox', `0 0 ${pageW} ${pageH}`);
   svg.style.width = vp.width + 'px'; svg.style.height = vp.height + 'px';
-  drawOverlay();
+  drawOverlay(); drawForms();
   renderTask = page.render({
     canvasContext: cv.getContext('2d'), viewport: vp,
     transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : null
@@ -471,86 +645,159 @@ async function renderPage() {
   updateUi();
 }
 
-// 文字ハイライトツールの時だけ、選択できる透明テキストを重ねる
+// 文字選択系ツールの時だけ、選択できる透明テキストを重ねる
 async function buildTextLayer() {
   const tl = $('textLayer'); tl.innerHTML = '';
-  if (tool !== 'texthl' || !pdfDoc) return;
+  if (!TEXTSEL.includes(tool) || !pdfDoc) return;
   const seq = renderSeq;
   try {
     const page = await pdfDoc.getPage(pageNum);
     const vp = page.getViewport({ scale });
     const content = await page.getTextContent();
-    if (seq !== renderSeq || tool !== 'texthl') return;
+    if (seq !== renderSeq || !TEXTSEL.includes(tool)) return;
     tl.style.width = vp.width + 'px'; tl.style.height = vp.height + 'px';
     tl.style.setProperty('--scale-factor', scale);
     pdfjsLib.renderTextLayer({ textContent: content, textContentSource: content, container: tl, viewport: vp, textDivs: [] });
   } catch (e) { console.error(e); }
 }
 
+// 図形のSVG要素（本描画とドラッグ中のプレビューで共用）
+function shapeEls(a) {
+  const st = { fill: 'none', stroke: a.color, 'stroke-width': a.width, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' };
+  const x = Math.min(a.x1, a.x2), y = Math.min(a.y1, a.y2), w = Math.abs(a.x2 - a.x1), h = Math.abs(a.y2 - a.y1);
+  if (a.shape === 'rect') return [mk('rect', Object.assign({ x, y, width: w, height: h }, st))];
+  if (a.shape === 'ellipse') return [mk('ellipse', Object.assign({ cx: x + w / 2, cy: y + h / 2, rx: w / 2, ry: h / 2 }, st))];
+  const els = [mk('line', Object.assign({ x1: a.x1, y1: a.y1, x2: a.x2, y2: a.y2 }, st))];
+  if (a.shape === 'arrow') els.push(mk('polyline', Object.assign({ points: arrowHead(a).map(p => p.join(',')).join(' ') }, st)));
+  return els;
+}
+function addTextLines(g, a, x0, y0, tb) {
+  tb.lines.forEach((ln, i) => {
+    const t = mk('text', { x: x0 + PAD, y: y0 + i * tb.lh + a.size, fill: a.color });
+    t.style.fontFamily = '"BIZ UDPGothic", sans-serif'; t.style.fontSize = a.size + 'px';
+    t.style.whiteSpace = 'pre'; t.style.pointerEvents = 'none'; t.textContent = ln; g.appendChild(t);
+  });
+}
+// 細い線でもタップしやすいよう、透明の太い当たり判定を重ねる
+function thickHit(g, el, w) {
+  const h = el.cloneNode(true);
+  h.setAttribute('stroke', 'transparent'); h.setAttribute('stroke-width', Math.max(w, 18));
+  h.style.pointerEvents = 'stroke'; g.appendChild(h);
+}
+
 function drawOverlay() {
   const svg = $('pdfOverlay'); svg.innerHTML = '';
+  const single = getSel();
   annots.filter(a => a.page === pageNum).forEach(a => {
+    const g = mk('g', {}); g.dataset.id = a.id;
     if (a.type === 'highlight') {
-      const g = mk('g', {});
+      const st = a.style || 'hl';
       a.rects.forEach(r => {
-        const el = mk('rect', { x: r[0], y: r[1], width: r[2], height: r[3], fill: a.color, 'fill-opacity': a.opacity });
-        el.style.mixBlendMode = 'multiply'; g.appendChild(el);
+        if (st === 'hl') {
+          const el = mk('rect', { x: r[0], y: r[1], width: r[2], height: r[3], fill: a.color, 'fill-opacity': a.opacity });
+          el.style.mixBlendMode = 'multiply'; g.appendChild(el);
+        } else {                                          // 下線・取り消し線
+          g.appendChild(mk('rect', { x: r[0], y: r[1], width: r[2], height: r[3], fill: 'transparent' }));
+          const yy = r[1] + r[3] * (st === 'ul' ? 0.92 : 0.52);
+          g.appendChild(mk('line', { x1: r[0], x2: r[0] + r[2], y1: yy, y2: yy, stroke: a.color, 'stroke-width': Math.max(0.8, r[3] * 0.07) }));
+        }
       });
-      g.dataset.id = a.id; svg.appendChild(g);
     } else if (a.type === 'pen') {
       const el = mk('polyline', { points: a.pts.map(p => p.join(',')).join(' '), fill: 'none', stroke: a.color,
         'stroke-width': a.width, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
-      el.dataset.id = a.id; svg.appendChild(el);
-      if (tool === 'select') {                           // 細い線でもタップしやすいよう透明の太い当たり判定
-        const hit = el.cloneNode(); hit.setAttribute('stroke', 'transparent');
-        hit.setAttribute('stroke-width', Math.max(a.width, 18)); hit.dataset.id = a.id; svg.appendChild(hit);
-      }
+      g.appendChild(el); if (tool === 'select') thickHit(g, el, a.width);
+    } else if (a.type === 'shape') {
+      shapeEls(a).forEach(el => { g.appendChild(el); if (tool === 'select') thickHit(g, el, a.width); });
     } else if (a.type === 'text') {
-      const b = textBox(a), g = mk('g', {});
+      const b = textBox(a);
       g.appendChild(mk('rect', { x: a.x, y: a.y, width: b.w, height: b.h, fill: 'transparent' }));
-      b.lines.forEach((ln, i) => {
-        const t = mk('text', { x: a.x + PAD, y: a.y + i * b.lh + a.size, fill: a.color });
-        t.style.fontFamily = '"BIZ UDPGothic", sans-serif'; t.style.fontSize = a.size + 'px';
-        t.style.whiteSpace = 'pre'; t.style.pointerEvents = 'none'; t.textContent = ln; g.appendChild(t);
-      });
-      g.dataset.id = a.id; svg.appendChild(g);
+      addTextLines(g, a, a.x, a.y, b);
+    } else if (a.type === 'callout') {
+      const G = calloutGeom(a);
+      g.appendChild(mk('polygon', { points: G.poly.map(p => p.join(',')).join(' '), fill: '#fff', stroke: a.color, 'stroke-width': 1.2, 'stroke-linejoin': 'round' }));
+      g.appendChild(mk('rect', { x: G.box[0], y: G.box[1], width: G.box[2], height: G.box[3], rx: 3, fill: '#fff', stroke: a.color, 'stroke-width': 1.2 }));
+      addTextLines(g, a, a.x + CPX, a.y + CPY, G.tb);
     } else {                                              // comment：付箋アイコン
-      const g = mk('g', {});
       g.appendChild(mk('rect', { x: a.x, y: a.y, width: NOTE, height: NOTE, rx: 2, fill: '#ffe066', stroke: '#b38f00', 'stroke-width': 1 }));
       [0.3, 0.52, 0.74].forEach(k => g.appendChild(mk('line', { x1: a.x + 3.5, x2: a.x + NOTE - 3.5, y1: a.y + NOTE * k, y2: a.y + NOTE * k, stroke: '#7a5f00', 'stroke-width': 1 })));
-      g.dataset.id = a.id; svg.appendChild(g);
     }
-    if (a.id === selectedId) {                           // 選択中は枠線で表示
+    svg.appendChild(g);
+    if (isSel(a.id)) {                                    // 選択中は枠線で表示
       const bb = bboxOf(a);
-      const f = mk('rect', { x: bb[0], y: bb[1], width: bb[2], height: bb[3], fill: 'none',
-        stroke: '#1a56db', 'stroke-width': 1.5, 'stroke-dasharray': '4 3' });
+      const f = mk('rect', { x: bb[0], y: bb[1], width: bb[2], height: bb[3], fill: 'none', stroke: '#1a56db', 'stroke-width': 1.5, 'stroke-dasharray': '4 3' });
       f.style.pointerEvents = 'none'; svg.appendChild(f);
-      if (a.type !== 'comment') {                        // 右下のハンドルをドラッグでリサイズ
-        const hx = bb[0] + bb[2], hy = bb[1] + bb[3];
-        const vis = mk('circle', { cx: hx, cy: hy, r: 6 / scale, fill: '#fff', stroke: '#1a56db', 'stroke-width': 2 / scale });
-        vis.style.pointerEvents = 'none'; svg.appendChild(vis);
-        const hit = mk('circle', { cx: hx, cy: hy, r: 16 / scale, fill: 'transparent' });   // 指でも掴みやすい大きめの当たり判定
-        hit.dataset.handle = '1'; hit.dataset.id = a.id; hit.style.cursor = 'nwse-resize'; svg.appendChild(hit);
-      }
     }
+  });
+  if (single && single.page === pageNum && single.type !== 'comment') {   // 単一選択：ハンドル（右下＝リサイズ／吹き出しは先端も）
+    const bb = bboxOf(single);
+    const addHandle = (cx, cy, kind) => {
+      const vis = mk('circle', { cx, cy, r: 6 / scale, fill: '#fff', stroke: '#1a56db', 'stroke-width': 2 / scale });
+      vis.style.pointerEvents = 'none'; svg.appendChild(vis);
+      const hit = mk('circle', { cx, cy, r: 16 / scale, fill: 'transparent' });   // 指でも掴みやすい大きめの当たり判定
+      hit.dataset.handle = kind; hit.dataset.id = single.id; hit.style.cursor = 'nwse-resize'; svg.appendChild(hit);
+    };
+    addHandle(bb[0] + bb[2], bb[1] + bb[3], 'resize');
+    if (single.type === 'callout') addHandle(single.tx, single.ty, 'tip');
+  }
+}
+
+/* =====================================================
+   フォーム入力欄（PDF上に重ねる。「📋フォーム入力」ツールで操作）
+   ===================================================== */
+function drawForms() {
+  const L = $('formLayer'); L.innerHTML = '';
+  if (!pdfDoc || !curV1 || !formFields.length) return;
+  L.style.width = curV1.width * scale + 'px'; L.style.height = curV1.height * scale + 'px';
+  const coarse = window.matchMedia && matchMedia('(pointer:coarse)').matches;   // iPad等：16px未満だとフォーカス時にズームされる
+  formFields.filter(f => f.page === pageNum).forEach(f => {
+    const r = curV1.convertToViewportRectangle([f.rect[0], f.rect[1], f.rect[0] + f.rect[2], f.rect[1] + f.rect[3]]);
+    const x = Math.min(r[0], r[2]) * scale, y = Math.min(r[1], r[3]) * scale;
+    const w = Math.abs(r[2] - r[0]) * scale, h = Math.abs(r[3] - r[1]) * scale;
+    let el;
+    if (f.kind === 'text') {
+      el = document.createElement(f.multiline ? 'textarea' : 'input');
+      if (!f.multiline) el.type = 'text';
+      el.value = formValues[f.name] || '';
+      if (f.max) el.maxLength = f.max;
+      el.oninput = () => { formValues[f.name] = el.value; dirty = true; };
+    } else if (f.kind === 'select') {
+      el = document.createElement('select');
+      ['', ...f.options].forEach(o => { const op = document.createElement('option'); op.value = o; op.textContent = o; el.appendChild(op); });
+      el.value = formValues[f.name] || '';
+      el.onchange = () => { formValues[f.name] = el.value; dirty = true; };
+    } else {                                              // check / radio
+      el = document.createElement('button'); el.type = 'button';
+      const on = f.kind === 'check' ? !!formValues[f.name] : formValues[f.name] === f.on;
+      el.textContent = on ? (f.kind === 'check' ? '✔' : '●') : '';
+      el.onclick = () => {
+        if (f.kind === 'check') formValues[f.name] = !formValues[f.name]; else formValues[f.name] = f.on;
+        dirty = true; drawForms();
+      };
+    }
+    el.classList.add('pe-ff');
+    if (f.ro) el.disabled = true;
+    Object.assign(el.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px',
+      fontSize: (coarse ? Math.max(16, h * 0.6) : Math.max(8, h * 0.62)) + 'px' });
+    L.appendChild(el);
   });
 }
 
 /* =====================================================
-   文字・コメントの入力欄（PDF上にtextareaを重ねる。日本語入力・改行OK）
+   文字・コメント・吹き出しの入力欄（PDF上にtextareaを重ねる。日本語入力・改行OK）
    ===================================================== */
-function openEditor(type, x, y, id, initial) {
+function openEditor(type, x, y, id, initial, extra) {
   commitEditor();
   const ta = $('textEditor');
   const a = id ? annots.find(q => q.id === id) : null;
-  const size = type === 'text' ? (a ? a.size : +$('textSize').value) : 14;
+  const size = type === 'comment' ? 14 : (a ? a.size : +$('textSize').value);
   ta.value = initial || '';
   ta.style.left = Math.max(0, Math.min(x * scale, pageW * scale - 210)) + 'px';
   ta.style.top = Math.max(0, Math.min(y * scale, pageH * scale - 80)) + 'px';
-  ta.style.fontSize = Math.max(16, size * scale) + 'px';    // 16px未満だとiPhoneがズームする
+  ta.style.fontSize = Math.max(16, size * scale) + 'px';    // 16px未満だとiPhone/iPadがズームする
   ta.style.display = 'block';
-  editor = { type, x, y, id };
+  editor = { type, x, y, id, extra };
   ta.focus();
+  if (type !== 'comment') prefetchFont();                    // 保存時のためにフォントを先読み
 }
 function commitEditor() {
   if (!editor) return;
@@ -563,6 +810,12 @@ function commitEditor() {
     if (a && a.text !== v) { pushUndo(); a.text = v; dirty = true; }
   } else if (e.type === 'text') {
     addAnnot({ type: 'text', x: Math.min(e.x, pageW - 10), y: e.y, text: v, size: +$('textSize').value, color: colorByTool.text });
+  } else if (e.type === 'callout') {
+    const a = { type: 'callout', x: Math.min(e.x, pageW - 40), y: e.y, text: v, size: +$('textSize').value, color: colorByTool.callout };
+    if (e.extra) { a.tx = e.extra.tx; a.ty = e.extra.ty; }
+    else { a.tx = a.x - 18; a.ty = a.y + calloutGeom(Object.assign({ tx: 0, ty: 0 }, a)).box[3] + 26; }   // ドラッグなしの時の既定の先端位置
+    a.tx = Math.min(Math.max(a.tx, 0), pageW); a.ty = Math.min(Math.max(a.ty, 0), pageH);
+    addAnnot(a);
   } else {
     addAnnot({ type: 'comment', x: Math.min(e.x, pageW - NOTE), y: e.y, text: v });
   }
@@ -571,7 +824,7 @@ function commitEditor() {
 function cancelEditor() { editor = null; $('textEditor').style.display = 'none'; }
 function editSelected() {
   const a = getSel();
-  if (a && (a.type === 'text' || a.type === 'comment')) openEditor(a.type, a.x, a.y, a.id, a.text);
+  if (a && (a.type === 'text' || a.type === 'callout' || a.type === 'comment')) openEditor(a.type, a.x, a.y, a.id, a.text);
 }
 $('textEditor').addEventListener('blur', commitEditor);
 $('textEditor').addEventListener('keydown', e => {
@@ -580,7 +833,7 @@ $('textEditor').addEventListener('keydown', e => {
 });
 
 /* =====================================================
-   操作（ポインタ）：選択・移動／範囲ハイライト／ペン／文字・コメント配置
+   操作（ポインタ）：選択・移動・リサイズ・範囲選択／ハイライト／ペン／図形／吹き出し／文字・コメント配置
    ===================================================== */
 function toPt(e) {
   const r = $('pdfOverlay').getBoundingClientRect();
@@ -591,33 +844,50 @@ function toPt(e) {
 function applyMove(a, o, dx, dy) {
   if (a.type === 'highlight') a.rects = o.rects.map(r => [r[0] + dx, r[1] + dy, r[2], r[3]]);
   else if (a.type === 'pen') a.pts = o.pts.map(p => [p[0] + dx, p[1] + dy]);
-  else { a.x = o.x + dx; a.y = o.y + dy; }
+  else if (a.type === 'shape') { a.x1 = o.x1 + dx; a.y1 = o.y1 + dy; a.x2 = o.x2 + dx; a.y2 = o.y2 + dy; }
+  else { a.x = o.x + dx; a.y = o.y + dy; if (a.type === 'callout') { a.tx = o.tx + dx; a.ty = o.ty + dy; } }
 }
-// リサイズ：外接矩形の左上を基準に拡大縮小（文字は文字サイズを変える）
+// リサイズ：外接矩形の左上を基準に拡大縮小（文字・吹き出しは文字サイズを変える）
 function applyResize(a, o, bb, sx, sy) {
   const X = v => bb[0] + (v - bb[0]) * sx, Y = v => bb[1] + (v - bb[1]) * sy;
   if (a.type === 'highlight') a.rects = o.rects.map(r => [X(r[0]), Y(r[1]), r[2] * sx, r[3] * sy]);
   else if (a.type === 'pen') a.pts = o.pts.map(p => [X(p[0]), Y(p[1])]);
-  else if (a.type === 'text') a.size = Math.min(120, Math.max(6, Math.round(o.size * sx * 10) / 10));
+  else if (a.type === 'shape') { a.x1 = X(o.x1); a.y1 = Y(o.y1); a.x2 = X(o.x2); a.y2 = Y(o.y2); }
+  else if (a.type === 'text' || a.type === 'callout') {
+    a.size = Math.min(120, Math.max(6, Math.round(o.size * sx * 10) / 10));
+    if (a.type === 'callout') { a.tx = X(o.tx); a.ty = Y(o.ty); }
+  }
 }
 const svgEl = $('pdfOverlay');
 svgEl.addEventListener('pointerdown', e => {
-  if (!pdfDoc) return;
+  if (!pdfDoc || tool === 'form') return;
   if (editor) { commitEditor(); return; }               // 入力中のタップ＝まず確定
-  if ($('penOnly').checked && e.pointerType === 'touch' && (tool === 'pen' || tool === 'highlight')) return;  // 指ではスクロール優先
+  if ($('penOnly').checked && e.pointerType === 'touch' && (tool === 'pen' || tool === 'highlight' || tool === 'shape')) return;  // 指ではスクロール優先
   const p = toPt(e);
   if (tool === 'select') {
-    if (e.target.dataset && e.target.dataset.handle && getSel()) {   // リサイズハンドルを掴んだ
-      drag = { t: 'r', orig: JSON.parse(JSON.stringify(getSel())), bb: bboxOf(getSel()), snap: JSON.stringify(annots), moved: false };
+    const hd = e.target.dataset && e.target.dataset.handle;
+    if (hd && getSel()) {                                // リサイズ／吹き出し先端のハンドルを掴んだ
+      drag = { t: hd === 'tip' ? 'tip' : 'r', orig: clone(getSel()), bb: bboxOf(getSel()), snap: JSON.stringify(annots), moved: false };
       svgEl.setPointerCapture(e.pointerId); e.preventDefault(); return;
     }
     const t = e.target.closest && e.target.closest('[data-id]');
-    selectedId = t ? +t.dataset.id : null; drawOverlay(); updateUi();
-    if (t) {                                             // そのままドラッグで移動
-      drag = { t: 'm', p0: p, orig: JSON.parse(JSON.stringify(getSel())), snap: JSON.stringify(annots), moved: false };
-      svgEl.setPointerCapture(e.pointerId);
+    const additive = e.shiftKey || e.ctrlKey || e.metaKey || multiMode;
+    if (t) {
+      const id = +t.dataset.id;
+      if (additive) { selIds = isSel(id) ? selIds.filter(x => x !== id) : [...selIds, id]; drawOverlay(); updateUi(); return; }
+      if (!isSel(id)) selIds = [id];
+      drawOverlay(); updateUi(); syncOpts();
+      drag = { t: 'm', p0: p, origs: selAnnots().map(clone), snap: JSON.stringify(annots), moved: false };   // そのままドラッグで（まとめて）移動
+      svgEl.setPointerCapture(e.pointerId); return;
     }
-    return;
+    if (e.pointerType === 'mouse' || multiMode) {         // 空白をドラッグ＝範囲選択（指の時は複数選択モードのみ。通常はスクロール優先）
+      if (!additive) selIds = [];
+      drawOverlay(); updateUi();
+      const el = mk('rect', { fill: 'rgba(26,86,219,0.12)', stroke: '#1a56db', 'stroke-width': 1 / scale, 'stroke-dasharray': `${4 / scale} ${3 / scale}` });
+      drag = { t: 'q', p0: p, base: [...selIds], el };
+      svgEl.appendChild(el); svgEl.setPointerCapture(e.pointerId); return;
+    }
+    selIds = []; drawOverlay(); updateUi(); return;
   }
   e.preventDefault();
   if (tool === 'text' || tool === 'comment') { openEditor(tool, p[0], p[1]); return; }
@@ -627,36 +897,51 @@ svgEl.addEventListener('pointerdown', e => {
     const op = +$('hlOpacity').value;
     drag = { t: 'h', x0: p[0], y0: p[1], op, color: c, el: mk('rect', { fill: c, 'fill-opacity': op }) };
     drag.el.style.mixBlendMode = 'multiply';
-  } else {
+  } else if (tool === 'pen') {
     const w = +$('penWidth').value;
-    drag = { t: 'p', pts: [p], w, color: c, el: mk('polyline', { fill: 'none', stroke: c, 'stroke-width': w,
-      'stroke-linecap': 'round', 'stroke-linejoin': 'round' }) };
-  }
+    drag = { t: 'p', pts: [p], w, color: c, el: mk('polyline', { fill: 'none', stroke: c, 'stroke-width': w, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }) };
+  } else if (tool === 'shape') {
+    drag = { t: 's', p0: p, shape: $('shapeKind').value, color: c, w: +$('penWidth').value, el: mk('g', {}) };
+  } else if (tool === 'callout') {
+    drag = { t: 'c', p0: p, p1: p, el: mk('line', { x1: p[0], y1: p[1], x2: p[0], y2: p[1], stroke: c, 'stroke-width': 1.5, 'stroke-dasharray': '4 3' }) };
+  } else return;
   svgEl.appendChild(drag.el);
 });
 svgEl.addEventListener('pointermove', e => {
   if (!drag) return;
   const p = toPt(e);
-  if (drag.t === 'r') {
-    const bb = drag.bb;
-    const sx = Math.max((p[0] - bb[0]) / bb[2], 0.1), sy = Math.max((p[1] - bb[1]) / bb[3], 0.1);
-    if (!drag.moved) {
-      if (Math.hypot(p[0] - (bb[0] + bb[2]), p[1] - (bb[1] + bb[3])) * scale < 3) return;
+  if (drag.t === 'r' || drag.t === 'tip' || drag.t === 'm') {
+    if (!drag.moved) {                                    // 4px以上動いたら操作開始（Undo用に開始前の状態を保存）
+      const q = drag.t === 'm' ? drag.p0 : (drag.t === 'r' ? [drag.bb[0] + drag.bb[2], drag.bb[1] + drag.bb[3]] : [drag.orig.tx, drag.orig.ty]);
+      if (Math.hypot(p[0] - q[0], p[1] - q[1]) * scale < (drag.t === 'm' ? 4 : 3)) return;
       drag.moved = true; undoStack.push(drag.snap); redoStack = []; dirty = true;
     }
-    const a = getSel(); if (a) { applyResize(a, drag.orig, bb, sx, sy); drawOverlay(); }
-  } else if (drag.t === 'm') {
-    const dx = p[0] - drag.p0[0], dy = p[1] - drag.p0[1];
-    if (!drag.moved) {
-      if (Math.hypot(dx, dy) * scale < 4) return;        // 誤タップでは動かさない
-      drag.moved = true; undoStack.push(drag.snap); redoStack = []; dirty = true;
+    if (drag.t === 'm') {
+      const dx = p[0] - drag.p0[0], dy = p[1] - drag.p0[1];
+      drag.origs.forEach(o => { const a = annots.find(q => q.id === o.id); if (a) applyMove(a, o, dx, dy); });
+    } else {
+      const a = getSel(); if (!a) return;
+      if (drag.t === 'tip') { a.tx = p[0]; a.ty = p[1]; }
+      else {
+        const bb = drag.bb;
+        applyResize(a, drag.orig, bb, Math.max((p[0] - bb[0]) / bb[2], 0.1), Math.max((p[1] - bb[1]) / bb[3], 0.1));
+      }
     }
-    const a = getSel(); if (a) { applyMove(a, drag.orig, dx, dy); drawOverlay(); }
+    drawOverlay();
+  } else if (drag.t === 'q') {                            // 範囲選択の矩形
+    const x = Math.min(drag.p0[0], p[0]), y = Math.min(drag.p0[1], p[1]);
+    drag.rect = [x, y, Math.abs(p[0] - drag.p0[0]), Math.abs(p[1] - drag.p0[1])];
+    ['x', 'y', 'width', 'height'].forEach((k, i) => drag.el.setAttribute(k, drag.rect[i]));
   } else if (drag.t === 'h') {
     drag.x = Math.min(drag.x0, p[0]); drag.y = Math.min(drag.y0, p[1]);
     drag.w = Math.abs(p[0] - drag.x0); drag.h = Math.abs(p[1] - drag.y0);
     drag.el.setAttribute('x', drag.x); drag.el.setAttribute('y', drag.y);
     drag.el.setAttribute('width', drag.w); drag.el.setAttribute('height', drag.h);
+  } else if (drag.t === 's') {
+    drag.p1 = p; drag.el.innerHTML = '';
+    shapeEls({ shape: drag.shape, x1: drag.p0[0], y1: drag.p0[1], x2: p[0], y2: p[1], color: drag.color, width: drag.w }).forEach(el => drag.el.appendChild(el));
+  } else if (drag.t === 'c') {
+    drag.p1 = p; drag.el.setAttribute('x2', p[0]); drag.el.setAttribute('y2', p[1]);
   } else {
     const l = drag.pts[drag.pts.length - 1];
     if (Math.hypot(p[0] - l[0], p[1] - l[1]) * scale < 2) return;   // 細かすぎる点は間引く
@@ -673,8 +958,23 @@ function endDrag() {
   } else if (d.t === 'p') {
     if (d.pts.length === 1) d.pts.push([d.pts[0][0], d.pts[0][1]]);  // 1点タップは点として残す
     addAnnot({ type: 'pen', pts: d.pts, color: d.color, width: d.w });
+  } else if (d.t === 's') {
+    if (Math.hypot(d.p1[0] - d.p0[0], d.p1[1] - d.p0[1]) * scale >= 4)
+      addAnnot({ type: 'shape', shape: d.shape, x1: d.p0[0], y1: d.p0[1], x2: d.p1[0], y2: d.p1[1], color: d.color, width: d.w });
+  } else if (d.t === 'c') {                               // 吹き出し：ドラッグ＝先端(開始点)→箱(終了点)。クリックだけ＝その場に箱
+    const far = Math.hypot(d.p1[0] - d.p0[0], d.p1[1] - d.p0[1]) * scale >= 12;
+    if (far) openEditor('callout', d.p1[0], d.p1[1], null, '', { tx: d.p0[0], ty: d.p0[1] });
+    else openEditor('callout', d.p0[0], d.p0[1], null, '');
+    return;
+  } else if (d.t === 'q') {                               // 範囲選択：矩形と重なる注釈を選ぶ
+    if (d.rect && (d.rect[2] + d.rect[3]) * scale > 4) {
+      const R = d.rect, ids = annots.filter(a => a.page === pageNum).filter(a => {
+        const b = bboxOf(a); return b[0] < R[0] + R[2] && b[0] + b[2] > R[0] && b[1] < R[1] + R[3] && b[1] + b[3] > R[1];
+      }).map(a => a.id);
+      selIds = [...new Set([...d.base, ...ids])];
+    }
   }
-  drawOverlay(); updateUi();
+  drawOverlay(); updateUi(); syncOpts();
 }
 svgEl.addEventListener('pointerup', () => {
   endDrag();
@@ -684,7 +984,7 @@ svgEl.addEventListener('pointercancel', endDrag);
 svgEl.addEventListener('dblclick', editSelected);        // PC：ダブルクリックで文字編集
 
 /* =====================================================
-   文字ハイライト：ブラウザの文字選択範囲を行ごとの矩形に変換
+   文字選択ツール（ハイライト／下線／取り消し線）：ブラウザの文字選択範囲を行ごとの矩形に変換
    ===================================================== */
 function mergeRects(rs) {                                // 同じ行で隣り合う矩形を結合
   rs.sort((a, b) => Math.round(a[1] / 4) - Math.round(b[1] / 4) || a[0] - b[0]);
@@ -711,84 +1011,102 @@ function applyTextSelection() {
     }
   }
   if (!rects.length) { setStatus('このページの文字が選択されていません（スキャンPDFは文字を選べません）'); return; }
-  addAnnot({ type: 'highlight', rects: mergeRects(rects), color: colorByTool.highlight, opacity: +$('hlOpacity').value });
+  const style = tool === 'underline' ? 'ul' : tool === 'strike' ? 'st' : 'hl';
+  addAnnot({ type: 'highlight', style, rects: mergeRects(rects), color: colorByTool[colorKey()], opacity: style === 'hl' ? +$('hlOpacity').value : 1 });
   sel.removeAllRanges(); setStatus(''); drawOverlay(); updateUi();
 }
 $('textLayer').addEventListener('pointerup', e => { if (e.pointerType === 'mouse') setTimeout(applyTextSelection, 0); });
 $('btnApplyHl').onclick = applyTextSelection;
 
 /* =====================================================
-   注釈の追加・削除・Undo/Redo
+   注釈の追加・削除・コピー＆貼り付け・Undo/Redo
    ===================================================== */
 function pushUndo() { undoStack.push(JSON.stringify(annots)); redoStack = []; if (undoStack.length > 100) undoStack.shift(); }
 function addAnnot(a) { pushUndo(); a.id = nextId++; a.page = pageNum; annots.push(a); dirty = true; }
 function deleteSelected() {
-  if (selectedId == null) return;
-  pushUndo(); annots = annots.filter(a => a.id !== selectedId); selectedId = null; dirty = true;
+  if (!selIds.length) return;
+  pushUndo(); annots = annots.filter(a => !isSel(a.id)); selIds = []; dirty = true;
   drawOverlay(); updateUi();
 }
+function copySel() {
+  const s = selAnnots(); if (!s.length) return;
+  clip = s.map(clone); pasteN = 0; setStatus(s.length + '件をコピーしました（📥貼り付け／Ctrl+V）'); updateUi();
+}
+function pasteClip() {                                   // 現在のページに、少しずらして貼り付け（ページをまたいでもOK）
+  if (!clip.length || !pdfDoc) return;
+  pushUndo(); pasteN++;
+  const off = 14 * pasteN, ids = [];
+  clip.forEach(c => { const a = clone(c); applyMove(a, c, off, off); a.id = nextId++; a.page = pageNum; annots.push(a); ids.push(a.id); });
+  selIds = ids; dirty = true; drawOverlay(); updateUi();
+}
+function dupSel() { copySel(); pasteClip(); }
 function undo() {
   if (!undoStack.length) return;
   redoStack.push(JSON.stringify(annots)); annots = JSON.parse(undoStack.pop());
-  selectedId = null; dirty = true; drawOverlay(); updateUi();
+  selIds = []; dirty = true; drawOverlay(); updateUi();
 }
 function redo() {
   if (!redoStack.length) return;
   undoStack.push(JSON.stringify(annots)); annots = JSON.parse(redoStack.pop());
-  selectedId = null; dirty = true; drawOverlay(); updateUi();
+  selIds = []; dirty = true; drawOverlay(); updateUi();
 }
 
 /* =====================================================
-   ツール・色・ページ・ズーム
+   ツール・色・オプション・ページ・ズーム
    ===================================================== */
 function setTool(t) {
-  commitEditor(); tool = t; selectedId = null;
+  commitEditor(); tool = t; selIds = [];
   document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === t));
-  if (t !== 'texthl') window.getSelection().removeAllRanges();
+  if (!TEXTSEL.includes(t)) window.getSelection().removeAllRanges();
+  if (t === 'text' || t === 'callout' || t === 'form') prefetchFont();
+  if (t === 'form' && pdfDoc && !formFields.length) setStatus('このPDFには入力欄がありません');
   drawOverlay(); buildTextLayer(); updateUi();
 }
 // 色パレット：描画ツール中は新規用、選択中は選んだ注釈の色を変更
 function buildSwatches() {
-  const box = $('swatches'), sel = getSel();
+  const box = $('swatches'), sel = tool === 'select' ? selAnnots().filter(a => a.type !== 'comment') : [];
   box.innerHTML = '';
-  const forSel = tool === 'select' && sel && sel.type !== 'comment';
-  const forNew = ['texthl', 'highlight', 'pen', 'text'].includes(tool);
-  if (!forSel && !forNew) { box.textContent = '（ハイライト・ペン・文字ツール、または注釈の選択中に使えます）'; box.className = 'pe-label'; return; }
+  const forNew = ['texthl', 'underline', 'strike', 'highlight', 'pen', 'shape', 'text', 'callout'].includes(tool);
+  if (!sel.length && !forNew) { box.textContent = '（描画ツールの選択中、または注釈の選択中に使えます）'; box.className = 'pe-label'; return; }
   box.className = 'pe-bar'; box.style.margin = '0';
-  const cur = forSel ? sel.color : colorByTool[colorKey()];
+  const cur = sel.length ? sel[0].color : colorByTool[colorKey()];
   SWATCHES.forEach(c => {
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'pe-swatch' + (cur === c ? ' active' : '');
     b.style.background = c; b.setAttribute('aria-label', '色 ' + c);
     b.onclick = () => {
-      if (forSel) { pushUndo(); sel.color = c; dirty = true; drawOverlay(); }
+      if (sel.length) { pushUndo(); sel.forEach(a => { a.color = c; }); dirty = true; drawOverlay(); }
       else colorByTool[colorKey()] = c;
       buildSwatches();
     };
     box.appendChild(b);
   });
 }
-// 太さ・濃さ・文字サイズを変えた時、選択中の注釈にも反映
-function bindOption(id, type, key) {
-  $(id).addEventListener('change', e => {
-    const a = getSel();
-    if (tool === 'select' && a && a.type === type) { pushUndo(); a[key] = +e.target.value; dirty = true; drawOverlay(); updateUi(); }
-  });
+// 太さ・濃さ・文字サイズを変えた時、選択中の（同じ種類の）注釈にも反映
+function applyOpt(match, key, val) {
+  if (tool !== 'select') return;
+  const t = selAnnots().filter(match); if (!t.length) return;
+  pushUndo(); t.forEach(a => { a[key] = val; }); dirty = true; drawOverlay(); updateUi();
 }
-bindOption('penWidth', 'pen', 'width');
-bindOption('textSize', 'text', 'size');
-$('hlOpacity').addEventListener('change', e => {
-  const a = getSel();
-  if (tool === 'select' && a && a.type === 'highlight') { pushUndo(); a.opacity = +e.target.value; dirty = true; drawOverlay(); updateUi(); }
-});
+$('penWidth').addEventListener('change', e => applyOpt(a => a.type === 'pen' || a.type === 'shape', 'width', +e.target.value));
+$('textSize').addEventListener('change', e => applyOpt(a => a.type === 'text' || a.type === 'callout', 'size', +e.target.value));
+$('hlOpacity').addEventListener('change', e => applyOpt(a => a.type === 'highlight' && !a.style, 'opacity', +e.target.value));
+// 単一選択した時、その注釈の太さ・文字サイズをセレクトに表示（選択肢にある値のみ）
+function syncOpts() {
+  const a = getSel(); if (!a) return;
+  const set = (id, v) => { const el = $(id); if ([...el.options].some(o => +o.value === v)) el.value = String(v); };
+  if (a.type === 'pen' || a.type === 'shape') set('penWidth', a.width);
+  if (a.type === 'text' || a.type === 'callout') set('textSize', a.size);
+}
 function goPage(n) {
   if (!pdfDoc) return;
   commitEditor();
   n = Math.min(Math.max(n, 1), pdfDoc.numPages);
   if (n === pageNum) { updateUi(); return; }
-  pageNum = n; selectedId = null; showPage();
+  pageNum = n; selIds = []; showPage();
 }
 function setScale(s) { fitMode = null; commitEditor(); scale = Math.min(Math.max(s, 0.2), 5); renderPage(); }
+
 // 用紙サイズ名（A3/A4など。縦横どちらでも判定）
 function paperName(w, h) {
   const L = Math.max(w, h), S = Math.min(w, h);
@@ -835,12 +1153,13 @@ function renderCommentList() {
     b.type = 'button'; b.className = 'pe-btn pe-item';
     b.textContent = 'p.' + a.page + '｜' + a.text.replace(/\s+/g, ' ').slice(0, 40);
     b.onclick = () => {                                  // クリックで該当ページへ移動して選択
-      setTool('select'); selectedId = a.id;
+      setTool('select'); selIds = [a.id];
       if (a.page !== pageNum) { pageNum = a.page; showPage(); } else { drawOverlay(); updateUi(); }
     };
     box.appendChild(b);
   });
 }
+
 /* ===== サムネイル（左サイドバー。画面に入ったものだけ描画して軽くする） ===== */
 let thumbObserver = null, lastThumbPage = 0;
 function buildThumbs() {
@@ -877,17 +1196,23 @@ function updateUi() {
   $('btnSave').disabled = !has;
   $('btnUndo').disabled = !undoStack.length;
   $('btnRedo').disabled = !redoStack.length;
-  $('btnDelete').disabled = selectedId == null;
-  $('btnEdit').disabled = !(sel && (sel.type === 'text' || sel.type === 'comment'));
-  $('btnApplyHl').style.display = tool === 'texthl' ? 'inline-flex' : 'none';
+  $('btnDelete').disabled = !selIds.length;
+  $('btnCopy').disabled = !selIds.length;
+  $('btnDup').disabled = !selIds.length;
+  $('btnPaste').disabled = !(has && clip.length);
+  $('btnEdit').disabled = !(sel && (sel.type === 'text' || sel.type === 'callout' || sel.type === 'comment'));
+  $('btnApplyHl').style.display = TEXTSEL.includes(tool) ? 'inline-flex' : 'none';
+  $('btnMulti').classList.toggle('active', multiMode);
   $('pageInput').value = pageNum;
   $('zoomLabel').textContent = Math.round(scale * 100) + '%';
   const w = $('pageWrap');
-  w.classList.toggle('drawing', ['highlight', 'pen', 'text', 'comment'].includes(tool));
-  w.classList.toggle('texthl', tool === 'texthl');
-  w.classList.toggle('hassel', selectedId != null);
+  w.classList.toggle('drawing', ['highlight', 'pen', 'shape', 'text', 'callout', 'comment'].includes(tool));
+  w.classList.toggle('texthl', TEXTSEL.includes(tool));
+  w.classList.toggle('formtool', tool === 'form');
+  w.classList.toggle('hassel', selIds.length > 0);
+  w.classList.toggle('multi', multiMode && tool === 'select');
+  w.classList.toggle('fingerscroll', $('penOnly').checked && (tool === 'pen' || tool === 'highlight' || tool === 'shape'));
   buildSwatches(); renderCommentList();
-  w.classList.toggle('fingerscroll', $('penOnly').checked && (tool === 'pen' || tool === 'highlight'));
   // サムネ：現在ページ・注釈ありページの目印
   const pages = new Set(annots.map(a => a.page));
   document.querySelectorAll('.pe-thumb').forEach(t => {
@@ -903,12 +1228,14 @@ function updateUi() {
 
 /* =====================================================
    保存：pdf-libでPDF標準の注釈を追記
-   ・Highlight / Ink / FreeText（文字）/ Text（コメント）
+   ・Highlight / Underline / StrikeOut / Ink / Square / Circle / Line / FreeText（文字・吹き出し）/ Text（コメント）
    ・どの注釈にも外観ストリーム(/AP)を付けて、他ソフトでも見えるようにする
    ・再編集用データを独自キー(/ArigatoData)に入れる
-   ・文字注釈は日本語フォント埋め込みを避けるため、画像(PNG)の外観で保持
+   ・文字・吹き出しは日本語フォント（BIZ UDPGothic）から使う文字だけ抜き出して埋め込み、本物の文字として描く。
+     フォントを読み込めなかった時だけ、文字を画像(PNG)にして保存する（見た目は同じ）
+   ・フォームの入力値は、PDF本来の入力欄に書き込む
    ===================================================== */
-async function renderTextPng(a) {
+async function renderTextPng(a) {                        // フォールバック：文字を画像化
   const b = textBox(a);
   await document.fonts.load(fontStr(a.size), a.text).catch(() => {});
   const S = Math.min(4, 8000 / Math.max(b.w, b.h));      // 高解像度で描く（上限あり）
@@ -920,10 +1247,44 @@ async function renderTextPng(a) {
   const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
   return new Uint8Array(await blob.arrayBuffer());
 }
+// 日本語フォントをAcroFormの既定リソース(/DR)に登録（文字注釈のDAが参照する名前 PEJP）
+function registerDR(doc, font) {
+  const { PDFName, PDFDict } = PDFLib, ctx = doc.context;
+  let af = doc.catalog.lookup(PDFName.of('AcroForm'));
+  if (!(af instanceof PDFDict)) { af = ctx.obj({ Fields: [] }); doc.catalog.set(PDFName.of('AcroForm'), ctx.register(af)); }
+  let dr = af.lookup(PDFName.of('DR'));
+  if (!(dr instanceof PDFDict)) { dr = ctx.obj({}); af.set(PDFName.of('DR'), dr); }
+  let fd = dr.lookup(PDFName.of('Font'));
+  if (!(fd instanceof PDFDict)) { fd = ctx.obj({}); dr.set(PDFName.of('Font'), fd); }
+  fd.set(PDFName.of('PEJP'), font.ref);
+}
 
-async function buildAnnot(doc, vp, a) {
+const fmt = n => (Math.round(n * 1000) / 1000).toString();
+const bbPts = pts => { const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
+const growR = (r, m) => [r[0] - m, r[1] - m, r[2] + m, r[3] + m];
+const pathOf = (pts, op) => pts.map((p, i) => `${fmt(p[0])} ${fmt(p[1])} ${i ? 'l' : 'm'}`).join(' ') + ' ' + op;   // PDF座標の点列→パス命令
+
+// 文字(複数行)を描くPDF命令。font有り＝本物の文字／無し＝画像
+async function textOps(doc, font, cp, a, ox, oy, tb) {
+  const [r, g, b] = hex2rgb(a.color), rgb = `${fmt(r)} ${fmt(g)} ${fmt(b)}`;
+  const rect = bbPts([cp(ox, oy), cp(ox + tb.w, oy), cp(ox, oy + tb.h), cp(ox + tb.w, oy + tb.h)]);
+  if (font) {
+    let ops = `${rgb} rg `;
+    tb.lines.forEach((ln, i) => {                        // 行ごとに文字行列を作る（ページ回転にも対応）
+      if (!ln) return;
+      const vx = ox + PAD, vy = oy + i * tb.lh + a.size;
+      const p = cp(vx, vy), px = cp(vx + 1, vy), py = cp(vx, vy - 1);
+      ops += `BT /F1 ${fmt(a.size)} Tf ${fmt(px[0] - p[0])} ${fmt(px[1] - p[1])} ${fmt(py[0] - p[0])} ${fmt(py[1] - p[1])} ${fmt(p[0])} ${fmt(p[1])} Tm ${font.encodeText(ln).toString()} Tj ET `;
+    });
+    return { ops, res: { Font: { F1: font.ref } }, rect };
+  }
+  const img = await doc.embedPng(await renderTextPng(a));
+  const o = cp(ox, oy + tb.h), px = cp(ox + tb.w, oy + tb.h), py = cp(ox, oy);   // 画像の単位正方形を「表示上の右・上」に合わせる行列
+  return { ops: `q ${fmt(px[0] - o[0])} ${fmt(px[1] - o[1])} ${fmt(py[0] - o[0])} ${fmt(py[1] - o[1])} ${fmt(o[0])} ${fmt(o[1])} cm /Im0 Do Q`, res: { XObject: { Im0: img.ref } }, rect };
+}
+
+async function buildAnnot(doc, vp, a, font) {
   const ctx = doc.context, { PDFString, PDFHexString } = PDFLib;
-  const f = n => (Math.round(n * 1000) / 1000).toString();
   const cp = (x, y) => vp.convertToPdfPoint(x, y);
   const meta = Object.assign({}, a); delete meta.id;
   const n = new Date(), z = v => String(v).padStart(2, '0');
@@ -931,50 +1292,84 @@ async function buildAnnot(doc, vp, a) {
   const base = { Type: 'Annot', F: 4, NM: PDFString.of('arigato-' + a.id + '-' + Date.now()),
                  M: stamp, CreationDate: stamp, T: PDFHexString.fromText('アリガイツ'),
                  ArigatoData: PDFHexString.fromText(JSON.stringify(meta)) };
+  const [r, g, b] = a.color ? hex2rgb(a.color) : [0, 0, 0], rgb = `${fmt(r)} ${fmt(g)} ${fmt(b)}`;
   let rect, content, res = {}, extra;
 
-  if (a.type === 'highlight') {
-    const [r, g, b] = hex2rgb(a.color), quad = [], xs = [], ys = [];
-    let path = '';
-    a.rects.forEach(q => {                               // 1行＝1つのQuad
+  if (a.type === 'highlight') {                          // ハイライト／下線／取り消し線（行ごとのQuad）
+    const st = a.style || 'hl', quad = [], all = [];
+    let ops = '';
+    a.rects.forEach(q => {
       const p1 = cp(q[0], q[1]), p2 = cp(q[0] + q[2], q[1]), p3 = cp(q[0], q[1] + q[3]), p4 = cp(q[0] + q[2], q[1] + q[3]);
-      quad.push(p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], p4[0], p4[1]);
-      path += `${f(p1[0])} ${f(p1[1])} m ${f(p2[0])} ${f(p2[1])} l ${f(p4[0])} ${f(p4[1])} l ${f(p3[0])} ${f(p3[1])} l h `;
-      [p1, p2, p3, p4].forEach(p => { xs.push(p[0]); ys.push(p[1]); });
+      quad.push(...p1, ...p2, ...p3, ...p4); all.push(p1, p2, p3, p4);
+      if (st === 'hl') ops += pathOf([p1, p2, p4, p3], 'h') + ' ';
+      else {
+        const k = st === 'ul' ? 0.92 : 0.52;
+        ops += `${fmt(Math.max(0.8, q[3] * 0.07))} w ` + pathOf([cp(q[0], q[1] + q[3] * k), cp(q[0] + q[2], q[1] + q[3] * k)], 'S') + ' ';
+      }
     });
-    rect = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
-    content = `/GS gs ${f(r)} ${f(g)} ${f(b)} rg ${path}f`;
-    res = { ExtGState: { GS: { Type: 'ExtGState', BM: 'Multiply', ca: a.opacity, CA: a.opacity } } };
-    extra = { Subtype: 'Highlight', QuadPoints: quad, CA: a.opacity, C: [r, g, b] };
+    rect = bbPts(all);
+    if (st === 'hl') {
+      content = `/GS gs ${rgb} rg ${ops}f`;
+      res = { ExtGState: { GS: { Type: 'ExtGState', BM: 'Multiply', ca: a.opacity, CA: a.opacity } } };
+      extra = { Subtype: 'Highlight', QuadPoints: quad, CA: a.opacity, C: [r, g, b] };
+    } else {
+      content = `${rgb} RG 1 J ${ops}`; rect = growR(rect, 2);
+      extra = { Subtype: st === 'ul' ? 'Underline' : 'StrikeOut', QuadPoints: quad, CA: 1, C: [r, g, b] };
+    }
 
   } else if (a.type === 'pen') {
-    const [r, g, b] = hex2rgb(a.color), pts = a.pts.map(p => cp(p[0], p[1]));
-    const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), m = a.width;
-    rect = [Math.min(...xs) - m, Math.min(...ys) - m, Math.max(...xs) + m, Math.max(...ys) + m];
-    content = `/GS gs ${f(r)} ${f(g)} ${f(b)} RG ${f(a.width)} w 1 J 1 j ` +
-      pts.map((p, i) => `${f(p[0])} ${f(p[1])} ${i ? 'l' : 'm'}`).join(' ') + ' S';
+    const pts = a.pts.map(p => cp(p[0], p[1]));
+    rect = growR(bbPts(pts), a.width);
+    content = `/GS gs ${rgb} RG ${fmt(a.width)} w 1 J 1 j ` + pathOf(pts, 'S');
     res = { ExtGState: { GS: { Type: 'ExtGState', ca: 1, CA: 1 } } };
     extra = { Subtype: 'Ink', InkList: [pts.flatMap(p => [p[0], p[1]])], BS: { W: a.width }, CA: 1, C: [r, g, b] };
 
-  } else if (a.type === 'text') {
-    const b = textBox(a), [r, g, bl] = hex2rgb(a.color);
-    const img = await doc.embedPng(await renderTextPng(a));
-    // 画像の単位正方形を「表示上の右方向・上方向」に合わせる行列（ページ回転にも対応）
-    const o = cp(a.x, a.y + b.h), px = cp(a.x + b.w, a.y + b.h), py = cp(a.x, a.y), pz = cp(a.x + b.w, a.y);
-    const xs = [o[0], px[0], py[0], pz[0]], ys = [o[1], px[1], py[1], pz[1]];
-    rect = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
-    content = `q ${f(px[0] - o[0])} ${f(px[1] - o[1])} ${f(py[0] - o[0])} ${f(py[1] - o[1])} ${f(o[0])} ${f(o[1])} cm /Im0 Do Q`;
-    res = { XObject: { Im0: img.ref } };
+  } else if (a.type === 'shape') {                       // 四角(Square)／丸(Circle)／直線・矢印(Line)
+    const lw = a.width, x = Math.min(a.x1, a.x2), y = Math.min(a.y1, a.y2), w = Math.abs(a.x2 - a.x1), h = Math.abs(a.y2 - a.y1);
+    const head = `${fmt(lw)} w ${rgb} RG 1 J 1 j `;
+    if (a.shape === 'rect') {
+      const P = [cp(x, y), cp(x + w, y), cp(x + w, y + h), cp(x, y + h)];
+      content = head + pathOf(P, 'h S'); rect = growR(bbPts(P), lw / 2);
+      extra = { Subtype: 'Square' };
+    } else if (a.shape === 'ellipse') {
+      const k = 0.5523, cx = x + w / 2, cy = y + h / 2, rx = w / 2, ry = h / 2;
+      const P = [[cx + rx, cy], [cx + rx, cy + k * ry], [cx + k * rx, cy + ry], [cx, cy + ry], [cx - k * rx, cy + ry], [cx - rx, cy + k * ry], [cx - rx, cy],
+                 [cx - rx, cy - k * ry], [cx - k * rx, cy - ry], [cx, cy - ry], [cx + k * rx, cy - ry], [cx + rx, cy - k * ry], [cx + rx, cy]].map(p => cp(p[0], p[1]));
+      content = head + `${fmt(P[0][0])} ${fmt(P[0][1])} m ` +
+        [1, 4, 7, 10].map(i => `${fmt(P[i][0])} ${fmt(P[i][1])} ${fmt(P[i + 1][0])} ${fmt(P[i + 1][1])} ${fmt(P[i + 2][0])} ${fmt(P[i + 2][1])} c`).join(' ') + ' h S';
+      rect = growR(bbPts(P), lw / 2);
+      extra = { Subtype: 'Circle' };
+    } else {
+      const P = [cp(a.x1, a.y1), cp(a.x2, a.y2)], all = [...P];
+      let ops = pathOf(P, 'S');
+      if (a.shape === 'arrow') { const hp = arrowHead(a).map(p => cp(p[0], p[1])); ops += ' ' + pathOf(hp, 'S'); all.push(...hp); }
+      content = head + ops; rect = growR(bbPts(all), lw);
+      extra = { Subtype: 'Line', L: [...P[0], ...P[1]], LE: ['None', a.shape === 'arrow' ? 'OpenArrow' : 'None'] };
+    }
+    Object.assign(extra, { C: [r, g, b], BS: { W: lw, S: 'S' }, CA: 1 });
+
+  } else if (a.type === 'text' || a.type === 'callout') { // FreeText（本物の文字＋外観）
+    const isC = a.type === 'callout', tb = textBox(a);
+    let ox = a.x, oy = a.y, parts = '', box = null;
+    if (isC) {
+      const G = calloutGeom(a); ox = a.x + CPX; oy = a.y + CPY;
+      const [x, y, w, h] = G.box, B = [cp(x, y), cp(x + w, y), cp(x + w, y + h), cp(x, y + h)], T = G.poly.map(p => cp(p[0], p[1]));
+      box = growR(bbPts([...B, ...T]), 1.2);
+      parts = `1.2 w ${rgb} RG 1 1 1 rg 1 j ` + pathOf(T, 'h B') + ' ' + pathOf(B, 'h B') + ' ';   // 先端の三角形→箱の順（継ぎ目が隠れる）
+    }
+    const tx = await textOps(doc, font, cp, a, ox, oy, tb);
+    rect = box || tx.rect; content = parts + tx.ops; res = tx.res;
     extra = { Subtype: 'FreeText', Contents: PDFHexString.fromText(a.text), Q: 0,
-              DA: PDFString.of(`/Helv ${f(a.size)} Tf ${f(r)} ${f(g)} ${f(bl)} rg`) };
+              DA: PDFString.of(font ? `/PEJP ${fmt(a.size)} Tf ${rgb} rg` : `/Helv ${fmt(a.size)} Tf ${rgb} rg`) };
+    if (isC) extra.BS = { W: 1.2, S: 'S' }; else extra.Border = [0, 0, 0];
 
   } else {                                               // comment：Text注釈（付箋）
     const p1 = cp(a.x, a.y), p2 = cp(a.x + NOTE, a.y + NOTE);
     const x1 = Math.min(p1[0], p2[0]), y1 = Math.min(p1[1], p2[1]), x2 = Math.max(p1[0], p2[0]), y2 = Math.max(p1[1], p2[1]);
     const w = x2 - x1, h = y2 - y1;
     rect = [x1, y1, x2, y2];
-    content = `1 0.88 0.4 rg 0.7 0.56 0 RG 1 w ${f(x1)} ${f(y1)} ${f(w)} ${f(h)} re B 0.48 0.37 0 RG ` +
-      [0.3, 0.52, 0.74].map(k => `${f(x1 + w * 0.2)} ${f(y1 + h * k)} m ${f(x2 - w * 0.2)} ${f(y1 + h * k)} l S`).join(' ');
+    content = `1 0.88 0.4 rg 0.7 0.56 0 RG 1 w ${fmt(x1)} ${fmt(y1)} ${fmt(w)} ${fmt(h)} re B 0.48 0.37 0 RG ` +
+      [0.3, 0.52, 0.74].map(k => `${fmt(x1 + w * 0.2)} ${fmt(y1 + h * k)} m ${fmt(x2 - w * 0.2)} ${fmt(y1 + h * k)} l S`).join(' ');
     extra = { Subtype: 'Text', Name: 'Comment', Contents: PDFHexString.fromText(a.text), C: [1, 0.88, 0.4], F: 28 };
   }
 
@@ -989,30 +1384,65 @@ async function buildAnnot(doc, vp, a) {
   return [ref, pop];
 }
 
+// 入力欄の値をPDFのフォームに書き込む（変更した欄だけ）
+function applyForms(doc, font) {
+  const { PDFTextField, PDFCheckBox, PDFRadioGroup, PDFDropdown, PDFOptionList } = PDFLib;
+  const form = doc.getForm();
+  Object.keys(formValues).forEach(name => {
+    const v = formValues[name];
+    if (v === formInit[name]) return;
+    const f = form.getField(name);
+    if (f instanceof PDFTextField) f.setText(v || undefined);
+    else if (f instanceof PDFCheckBox) { if (v) f.check(); else f.uncheck(); }
+    else if (f instanceof PDFRadioGroup) { if (v) f.select(v); }
+    else if (f instanceof PDFDropdown || f instanceof PDFOptionList) { if (v) f.select(v); else f.clear(); }
+  });
+  form.updateFieldAppearances(font || undefined);        // 日本語を表示できるよう、埋め込んだフォントで外観を作る
+}
+
 async function savePdf() {
   if (!pdfDoc || !pdfBytes) return;
   commitEditor();
-  if (!annots.length && !hadImported) { setStatus('追加した注釈がありません。何か書き込んでから保存してね。'); return; }
+  const formChanged = Object.keys(formValues).some(n => formValues[n] !== formInit[n]);
+  if (!annots.length && !hadImported && !formChanged) { setStatus('追加した注釈・入力がありません。何か書き込んでから保存してね。'); return; }
   setStatus('保存中…'); $('errorMsg').classList.remove('show');
+  let note = '';
   try {
     const doc = await PDFLib.PDFDocument.load(pdfBytes, { updateMetadata: false });
+    let font = null;
+    if (annots.some(a => a.type === 'text' || a.type === 'callout') || formChanged) {
+      try {
+        setStatus('日本語フォントを準備中…（初回のみ約5MB読み込み）');
+        const [bytes] = await Promise.all([loadFontBytes(), ensureFontkit()]);
+        const small = await subsetFont(bytes, collectChars());   // 使う文字だけのフォントを作る（数十KB）
+        doc.registerFontkit(window.fontkit);
+        font = await doc.embedFont(small, { subset: false });
+        registerDR(doc, font);
+      } catch (e) { console.error(e); font = null; note = '（日本語フォントを読み込めなかったため、文字は画像として保存しました）'; }
+    }
+    setStatus('保存中…');
+    if (formChanged) {
+      try { applyForms(doc, font); }
+      catch (e) { console.error(e); throw Object.assign(new Error('form'), { formErr: true }); }
+    }
     const byPage = {};
     annots.forEach(a => (byPage[a.page] = byPage[a.page] || []).push(a));
     for (const pn of Object.keys(byPage)) {
       const vp = (await pdfDoc.getPage(+pn)).getViewport({ scale: 1 });
       const page = doc.getPage(+pn - 1);
-      for (const a of byPage[pn]) for (const r of await buildAnnot(doc, vp, a)) page.node.addAnnot(r);
+      for (const a of byPage[pn]) for (const r of await buildAnnot(doc, vp, a, font)) page.node.addAnnot(r);
     }
-    const out = await doc.save();
+    const out = await doc.save({ updateFieldAppearances: false });
     const url = URL.createObjectURL(new Blob([out], { type: 'application/pdf' }));
     const link = document.createElement('a');
     link.href = url; link.download = fileName.replace(/\.pdf$/i, '').replace(/-edited$/, '') + '-edited.pdf';
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
     setTimeout(() => URL.revokeObjectURL(url), 10000);
-    dirty = false; setStatus('✅ 保存しました（' + link.download + '）');
+    dirty = false; setStatus('✅ 保存しました（' + link.download + '）' + note);
   } catch (e) {
     console.error(e);
-    showError('保存に失敗しました。PDFの構造が特殊な可能性があります。');
+    showError(e && e.formErr ? '入力欄への書き込みに失敗しました。日本語を含む場合は、日本語フォントの読み込みができているか通信状況を確認してください。'
+                             : '保存に失敗しました。PDFの構造が特殊な可能性があります。');
     setStatus('');
   }
 }
@@ -1026,6 +1456,10 @@ $('btnUndo').onclick = undo;
 $('btnRedo').onclick = redo;
 $('btnDelete').onclick = deleteSelected;
 $('btnEdit').onclick = editSelected;
+$('btnCopy').onclick = copySel;
+$('btnPaste').onclick = pasteClip;
+$('btnDup').onclick = dupSel;
+$('btnMulti').onclick = () => { multiMode = !multiMode; if (multiMode && tool !== 'select') setTool('select'); else updateUi(); };
 $('btnPrev').onclick = () => goPage(pageNum - 1);
 $('btnNext').onclick = () => goPage(pageNum + 1);
 $('pageInput').addEventListener('change', e => goPage(parseInt(e.target.value, 10) || 1));
@@ -1045,7 +1479,7 @@ document.querySelectorAll('[data-side]').forEach(b => b.onclick = () => {
 });
 $('btnSide').onclick = () => {
   $('peMain').classList.toggle('noside');
-  setTimeout(relayout, 0);      // 表示幅が変わるので幅に合わせ直す
+  setTimeout(relayout, 0);                               // 表示幅が変わるので合わせ直す
 };
 
 // ドラッグ&ドロップで開く
@@ -1064,20 +1498,24 @@ viewer.addEventListener('wheel', e => {
 }, { passive: false });
 
 // キーボードショートカット（Ctrl+S以外は入力中は無効）
+const TOOL_KEYS = { v: 'select', h: 'texthl', u: 'underline', s: 'strike', r: 'highlight', p: 'pen', g: 'shape', t: 'text', b: 'callout', c: 'comment', f: 'form' };
 document.addEventListener('keydown', e => {
   const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
   if (mod && k === 's') { e.preventDefault(); savePdf(); return; }          // Ctrl+Sで保存（入力中でも有効）
   if (/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
   if (mod && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
   else if (mod && k === 'y') { e.preventDefault(); redo(); }
+  else if (mod && k === 'c') { if (selIds.length) { e.preventDefault(); copySel(); } }
+  else if (mod && k === 'v') { if (clip.length) { e.preventDefault(); pasteClip(); } }
+  else if (mod && k === 'a') { if (tool === 'select' && pdfDoc) { e.preventDefault(); selIds = annots.filter(a => a.page === pageNum).map(a => a.id); drawOverlay(); updateUi(); } }
   else if (mod || e.altKey) return;
   else if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
-  else if (e.key === 'Escape') { selectedId = null; drawOverlay(); updateUi(); }
+  else if (e.key === 'Escape') { selIds = []; drawOverlay(); updateUi(); }
   else if (e.key === 'ArrowLeft') goPage(pageNum - 1);
   else if (e.key === 'ArrowRight') goPage(pageNum + 1);
   else if (e.key === '+' || e.key === '=') setScale(scale + 0.25);
   else if (e.key === '-') setScale(scale - 0.25);
-  else { const t = { v: 'select', h: 'texthl', r: 'highlight', p: 'pen', t: 'text', c: 'comment' }[k]; if (t) setTool(t); }
+  else if (TOOL_KEYS[k]) setTool(TOOL_KEYS[k]);
 });
 
 // 未保存のままページを閉じる／更新する時の警告
