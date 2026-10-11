@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="/common.css">
 <style>
 /* ===== このツール専用CSS（色は全てCSS変数。注釈の色データだけは固定色） ===== */
-.container { max-width: 960px; }  /* PDF表示のため共通の600pxより広げる */
+.container { max-width: 1280px; }  /* PC・iPad横向き想定。共通の600pxより大きく広げる */
 
 .pe-bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px; }
 .pe-btn {
@@ -52,7 +52,7 @@
 
 /* PDF表示エリア：縦に長くなりすぎないよう高さ制限してスクロール */
 .pe-viewer {
-  position:relative; overflow:auto; max-height:68vh; min-height:240px;
+  position:relative; overflow:auto; height:75vh; height:75dvh; min-height:420px;
   background:var(--color-input-bg); border:1px solid var(--color-border);
   border-radius:var(--radius-card); padding:10px; text-align:center;
 }
@@ -60,10 +60,12 @@
 .pe-empty { color:var(--color-text-muted); font-size:13px; line-height:1.9; padding:60px 10px; }
 .pe-page { position:relative; display:inline-block; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.25); text-align:left; }
 .pe-page canvas { display:block; }
-.pe-page svg { position:absolute; left:0; top:0; }
+.pe-page svg { position:absolute; left:0; top:0; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
 /* 描画系ツール中はスクロールより描画を優先。選択中の注釈があれば移動ドラッグ優先 */
 .pe-page.drawing svg, .pe-page.hassel svg { touch-action:none; }
 .pe-page.drawing svg { cursor:crosshair; }
+/* 「指では描かない」ON時：指の操作はスクロール優先（Apple Pencil・マウスで描く） */
+.pe-page.fingerscroll svg { touch-action:pan-x pan-y; }
 
 /* 文字ハイライト用の透明テキストレイヤー（文字ハイライトツール中だけ操作可能） */
 .pe-page .textLayer { position:absolute; left:0; top:0; overflow:hidden; line-height:1; pointer-events:none; }
@@ -80,9 +82,40 @@
   border:2px solid var(--color-primary); border-radius:4px;
 }
 
-.pe-comments { margin-top:12px; }
-.pe-comments .pe-list { display:flex; flex-direction:column; gap:6px; font-size:12px; color:var(--color-text-muted); }
+/* ===== 左サイドバー（サムネイル／コメント一覧）＋右に大きなPDF表示 ===== */
+.pe-main { display:grid; grid-template-columns:190px minmax(0,1fr); gap:10px; align-items:start; }
+.pe-main.noside { grid-template-columns:minmax(0,1fr); }
+.pe-main.noside .pe-side { display:none; }
+.pe-side {
+  display:flex; flex-direction:column; overflow:hidden;
+  height:75vh; height:75dvh; min-height:420px;
+  background:var(--color-card); border:1px solid var(--color-border); border-radius:var(--radius-card);
+}
+.pe-tabs { display:flex; gap:4px; padding:6px; border-bottom:1px solid var(--color-border); }
+.pe-tabs .pe-btn { flex:1; padding:0 4px; font-size:12px; }
+.pe-sidebody { position:relative; flex:1; overflow:auto; padding:8px; }
+.pe-thumbs { display:flex; flex-direction:column; gap:10px; }
+.pe-thumb {
+  position:relative; display:block; width:100%; min-height:170px; padding:4px; cursor:pointer;
+  background:var(--color-input-bg); border:2px solid var(--color-border); border-radius:var(--radius-input);
+  text-align:center; font-family:inherit; font-size:11px; color:var(--color-text-muted);
+}
+.pe-thumb.cur { border-color:var(--color-primary); }
+.pe-thumb canvas { display:block; width:100%; height:auto; margin-bottom:3px; background:#fff; }
+.pe-thumb.has::after {   /* 注釈のあるページの目印 */
+  content:"● 注釈"; position:absolute; top:7px; right:9px; padding:0 5px; border-radius:4px;
+  font-size:10px; font-weight:700; color:var(--color-primary); background:var(--color-card);
+}
+.pe-list { display:flex; flex-direction:column; gap:6px; font-size:12px; color:var(--color-text-muted); }
 .pe-item { justify-content:flex-start; white-space:normal; text-align:left; font-weight:400; }
+.pe-check { display:inline-flex; align-items:center; gap:6px; min-height:44px; font-size:12px; color:var(--color-text-sub); cursor:pointer; }
+.pe-check input { width:20px; height:20px; accent-color:var(--color-primary); }
+.pe-help { font-size:12px; color:var(--color-text-sub); margin-bottom:8px; line-height:1.8; }
+.pe-help summary { cursor:pointer; min-height:32px; font-weight:700; }
+@media (max-width:760px) {   /* 狭い画面では縦並び（スマホは非推奨だが崩れない程度に） */
+  .pe-main { grid-template-columns:minmax(0,1fr); }
+  .pe-side { order:2; height:240px; min-height:0; }
+}
 
 .tool-desc {
   background:var(--color-card); border:1px solid var(--color-border);
@@ -105,16 +138,25 @@
 
 <!-- ===== ツール本体 ===== -->
 <div class="card">
-  <!-- 行1：ファイル操作 -->
+  <!-- 行1：ファイル・ページ・ズーム -->
   <div class="pe-bar">
     <label class="pe-btn primary" for="fileInput">📂 PDFを開く</label>
     <input type="file" id="fileInput" accept="application/pdf,.pdf" hidden>
     <button class="pe-btn" id="btnSave" disabled>💾 保存（ダウンロード）</button>
     <button class="pe-btn" id="btnUndo" disabled>↩ 戻す</button>
     <button class="pe-btn" id="btnRedo" disabled>↪ やり直す</button>
+    <button class="pe-btn need-pdf" id="btnPrev" disabled>◀</button>
+    <input class="pe-sel pe-pageinput need-pdf" id="pageInput" type="number" min="1" value="1" disabled inputmode="numeric">
+    <span class="pe-label" id="pageTotal">/ -</span>
+    <button class="pe-btn need-pdf" id="btnNext" disabled>▶</button>
+    <button class="pe-btn need-pdf" id="btnZoomOut" disabled>－</button>
+    <span class="pe-label" id="zoomLabel" style="min-width:40px;text-align:center">100%</span>
+    <button class="pe-btn need-pdf" id="btnZoomIn" disabled>＋</button>
+    <button class="pe-btn need-pdf" id="btnFit" disabled>幅に合わせる</button>
+    <button class="pe-btn" id="btnSide">🗂 サイドバー</button>
   </div>
 
-  <!-- 行2：ツール選択 -->
+  <!-- 行2：ツール選択＋選択中の操作 -->
   <div class="pe-bar">
     <button class="pe-btn active" data-tool="select">👆 選択・移動</button>
     <button class="pe-btn" data-tool="texthl">🖍 文字ハイライト</button>
@@ -122,16 +164,12 @@
     <button class="pe-btn" data-tool="pen">✏️ ペン</button>
     <button class="pe-btn" data-tool="text">🔤 文字</button>
     <button class="pe-btn" data-tool="comment">💬 コメント</button>
-  </div>
-
-  <!-- 行3：選択中の操作 -->
-  <div class="pe-bar">
     <button class="pe-btn" id="btnApplyHl" style="display:none">✔ 選択した文字をハイライト</button>
     <button class="pe-btn" id="btnEdit" disabled>✎ 文字を編集</button>
     <button class="pe-btn" id="btnDelete" disabled>🗑 選択を削除</button>
   </div>
 
-  <!-- 行4：色・太さ・濃さ・文字サイズ -->
+  <!-- 行3：色・太さ・濃さ・文字サイズ・Apple Pencil設定 -->
   <div class="pe-bar">
     <span class="pe-label">色</span>
     <span id="swatches" class="pe-bar" style="margin:0"></span>
@@ -147,48 +185,51 @@
     <select class="pe-sel" id="textSize">
       <option value="12">小</option><option value="16" selected>中</option><option value="24">大</option><option value="32">特大</option>
     </select>
+    <label class="pe-check"><input type="checkbox" id="penOnly"> 指では描かない（Apple Pencil・マウス用）</label>
   </div>
 
-  <!-- 行5：ページ・ズーム -->
-  <div class="pe-bar">
-    <button class="pe-btn need-pdf" id="btnPrev" disabled>◀</button>
-    <input class="pe-sel pe-pageinput need-pdf" id="pageInput" type="number" min="1" value="1" disabled inputmode="numeric">
-    <span class="pe-label" id="pageTotal">/ -</span>
-    <button class="pe-btn need-pdf" id="btnNext" disabled>▶</button>
-    <button class="pe-btn need-pdf" id="btnZoomOut" disabled>－</button>
-    <span class="pe-label" id="zoomLabel" style="min-width:40px;text-align:center">100%</span>
-    <button class="pe-btn need-pdf" id="btnZoomIn" disabled>＋</button>
-    <button class="pe-btn need-pdf" id="btnFit" disabled>幅に合わせる</button>
-  </div>
+  <details class="pe-help">
+    <summary>操作方法・ショートカット</summary>
+    <div>・文字ハイライト：ツールを選んで文字をなぞる（マウスは離すと確定／iPadは「選択した文字をハイライト」ボタン）<br>
+    ・選択・移動：注釈をタップ→ドラッグで移動、右下の○をドラッグでリサイズ、文字はダブルクリックで編集<br>
+    ・ショートカット：Ctrl+S 保存／Ctrl+Z 戻す／Ctrl+Y やり直す／V 選択・H 文字ハイライト・R 範囲・P ペン・T 文字・C コメント／＋－ ズーム／Ctrl+ホイール ズーム／←→ ページ移動／Esc 選択解除</div>
+  </details>
 
   <div class="pe-status" id="peStatus"></div>
   <div class="error-msg" id="errorMsg"></div>
 
-  <div class="pe-viewer" id="viewer">
-    <div class="pe-empty" id="emptyMsg">「📂 PDFを開く」からファイルを選ぶか、ここにPDFをドラッグしてね。<br>※ファイルは端末内だけで処理され、外部には送信されません。</div>
-    <div class="pe-page" id="pageWrap" style="display:none">
-      <canvas id="pdfCanvas"></canvas>
-      <svg id="pdfOverlay" xmlns="http://www.w3.org/2000/svg"></svg>
-      <div class="textLayer" id="textLayer"></div>
-      <textarea class="pe-editor" id="textEditor" placeholder="ここに入力（Ctrl+Enterで確定）"></textarea>
-    </div>
-  </div>
+  <div class="pe-main" id="peMain">
+    <aside class="pe-side">
+      <div class="pe-tabs">
+        <button class="pe-btn active" data-side="thumbs">🗂 ページ</button>
+        <button class="pe-btn" data-side="comments" id="tabComments">💬 コメント(0)</button>
+      </div>
+      <div class="pe-sidebody" id="sideBody">
+        <div class="pe-thumbs" id="thumbList"></div>
+        <div class="pe-list" id="commentList" style="display:none">コメントはまだありません</div>
+      </div>
+    </aside>
 
-  <!-- コメント一覧（クリックで該当ページへ移動） -->
-  <div class="pe-comments">
-    <div class="section-title">▶ コメント一覧</div>
-    <div class="pe-list" id="commentList">コメントはまだありません</div>
+    <div class="pe-viewer" id="viewer">
+      <div class="pe-empty" id="emptyMsg">「📂 PDFを開く」からファイルを選ぶか、ここにPDFをドラッグしてね。<br>※ファイルは端末内だけで処理され、外部には送信されません。</div>
+      <div class="pe-page" id="pageWrap" style="display:none">
+        <canvas id="pdfCanvas"></canvas>
+        <svg id="pdfOverlay" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="textLayer" id="textLayer"></div>
+        <textarea class="pe-editor" id="textEditor" placeholder="ここに入力（Ctrl+Enterで確定）"></textarea>
+      </div>
+    </div>
   </div>
 </div>
 
 <!-- ===== 解説文 ===== -->
 <section class="tool-desc">
   <h2>PDF編集ツールの使い方</h2>
-  <p>「PDFを開く」でファイルを選び、ツールを選んでページ上を操作します。文字ハイライトは文字をなぞって「選択した文字をハイライト」、文字・コメントは置きたい場所をタップして入力。選択・移動ツールで注釈をタップすると、移動・色変更・削除ができ、「戻す」「やり直す」も使えます。終わったら「保存」で編集済みPDFをダウンロードします。</p>
+  <p>「PDFを開く」でファイルを選び、ツールを選んでページ上を操作します。文字ハイライトは文字をなぞって「選択した文字をハイライト」、文字・コメントは置きたい場所をタップして入力。選択・移動ツールで注釈をタップすると、移動・リサイズ・色変更・削除ができ、「戻す」「やり直す」も使えます。終わったら「保存」で編集済みPDFをダウンロードします。</p>
   <h3>こんな場面に</h3>
   <p>回覧資料の確認箇所に蛍光ペンで印をつける、申込書に文字や手書きのチェックを入れる、レビュー用にコメントを残す、といった使い方を想定しています。インストール不要で、パソコンでもスマホでも使えます。</p>
   <h3>仕様と注意</h3>
-  <p>PDFは端末のブラウザ内だけで処理し、サーバーへは送信しません。追加した内容はPDF標準の注釈（ハイライト・文字・テキスト・インク）として書き込み、元のページ内容は書き換えません。このツールで保存したPDFは、開き直すと注釈をそのまま再編集できます。他のソフトで作った注釈は表示のみで、編集できません。文字注釈は見た目を画像として保持するため、Adobe Acrobat Readerなど他のソフトで文字内容を書き換えると見た目が変わる場合があります。パスワード付きPDFには対応していません。</p>
+  <p>PDFは端末のブラウザ内だけで処理し、サーバーへは送信しません。追加した内容はPDF標準の注釈（ハイライト・文字・テキスト・インク）として書き込み、元のページ内容は書き換えません。このツールで保存したPDFは、開き直すと注釈をそのまま再編集できます。他のソフトで作った注釈は表示のみで、編集できません。文字注釈は見た目を画像として保持するため、Adobe Acrobat Readerなど他のソフトで文字内容を書き換えると見た目が変わる場合があります。パスワード付きPDFには対応していません。パソコンのブラウザとiPad（Apple Pencil対応）での利用を想定しており、スマホでは画面が狭く操作しにくい場合があります。</p>
   <h3>よくある質問</h3>
   <p>Q. 保存したPDFを他の人に渡しても注釈は見えますか？ A. 一般的なPDFビューアで表示できますが、ソフトによって見え方や編集のしかたが異なる場合があります。</p>
 </section>
@@ -333,7 +374,9 @@ async function importOwn(buf) {
       for (let i = arr.size() - 1; i >= 0; i--) {
         const ref = arr.get(i), d = ctx.lookup(ref, PDFDict); if (!d) continue;
         const nm = d.get(PDFName.of('NM')), data = d.get(PDFName.of('ArigatoData'));
-        if (!nm || !data || !/^arigato-/.test(nm.decodeText())) continue;
+        const nmText = nm && nm.decodeText ? nm.decodeText() : '';
+        if (/^arigato-popup-/.test(nmText)) { removeAnnotObjects(ctx, d, ref); arr.remove(i); found = true; continue; }  // コメントのPopupも一緒に取り除く
+        if (!data || !/^arigato-/.test(nmText)) continue;
         try { const m = JSON.parse(data.decodeText()); m.page = pi + 1; list.unshift(m); } catch (e) { continue; }
         removeAnnotObjects(ctx, d, ref); arr.remove(i); found = true;
       }
@@ -351,7 +394,8 @@ async function openFile(file) {
   if (dirty && !confirm('未保存の編集があります。破棄して別のPDFを開きますか？')) return;
   $('errorMsg').classList.remove('show');
   if (!/pdf$/i.test(file.name) && file.type !== 'application/pdf') { showError('PDFファイルを選んでください'); return; }
-  setStatus('読み込み中…');
+  if (file.size > 200 * 1024 * 1024) { showError('200MBを超えるPDFは対応していません（メモリ不足になるため）'); return; }
+  setStatus(file.size > 50 * 1024 * 1024 ? '読み込み中…（大きいファイルなので時間がかかります）' : '読み込み中…');
   try {
     await setupWorker();
     const raw = new Uint8Array(await file.arrayBuffer());
@@ -367,6 +411,7 @@ async function openFile(file) {
     $('pageTotal').textContent = '/ ' + doc.numPages;
     $('pageInput').max = doc.numPages;
     await document.fonts.load(fontStr(16), 'あ').catch(() => {});
+    buildThumbs();
     await fitWidth();
     setStatus(file.name + '（' + doc.numPages + 'ページ）' + (hadImported ? '｜このツールで付けた注釈 ' + annots.length + '件を編集できます' : ''));
   } catch (e) {
@@ -463,6 +508,13 @@ function drawOverlay() {
       const f = mk('rect', { x: bb[0], y: bb[1], width: bb[2], height: bb[3], fill: 'none',
         stroke: '#1a56db', 'stroke-width': 1.5, 'stroke-dasharray': '4 3' });
       f.style.pointerEvents = 'none'; svg.appendChild(f);
+      if (a.type !== 'comment') {                        // 右下のハンドルをドラッグでリサイズ
+        const hx = bb[0] + bb[2], hy = bb[1] + bb[3];
+        const vis = mk('circle', { cx: hx, cy: hy, r: 6 / scale, fill: '#fff', stroke: '#1a56db', 'stroke-width': 2 / scale });
+        vis.style.pointerEvents = 'none'; svg.appendChild(vis);
+        const hit = mk('circle', { cx: hx, cy: hy, r: 16 / scale, fill: 'transparent' });   // 指でも掴みやすい大きめの当たり判定
+        hit.dataset.handle = '1'; hit.dataset.id = a.id; hit.style.cursor = 'nwse-resize'; svg.appendChild(hit);
+      }
     }
   });
 }
@@ -524,12 +576,24 @@ function applyMove(a, o, dx, dy) {
   else if (a.type === 'pen') a.pts = o.pts.map(p => [p[0] + dx, p[1] + dy]);
   else { a.x = o.x + dx; a.y = o.y + dy; }
 }
+// リサイズ：外接矩形の左上を基準に拡大縮小（文字は文字サイズを変える）
+function applyResize(a, o, bb, sx, sy) {
+  const X = v => bb[0] + (v - bb[0]) * sx, Y = v => bb[1] + (v - bb[1]) * sy;
+  if (a.type === 'highlight') a.rects = o.rects.map(r => [X(r[0]), Y(r[1]), r[2] * sx, r[3] * sy]);
+  else if (a.type === 'pen') a.pts = o.pts.map(p => [X(p[0]), Y(p[1])]);
+  else if (a.type === 'text') a.size = Math.min(120, Math.max(6, Math.round(o.size * sx * 10) / 10));
+}
 const svgEl = $('pdfOverlay');
 svgEl.addEventListener('pointerdown', e => {
   if (!pdfDoc) return;
   if (editor) { commitEditor(); return; }               // 入力中のタップ＝まず確定
+  if ($('penOnly').checked && e.pointerType === 'touch' && (tool === 'pen' || tool === 'highlight')) return;  // 指ではスクロール優先
   const p = toPt(e);
   if (tool === 'select') {
+    if (e.target.dataset && e.target.dataset.handle && getSel()) {   // リサイズハンドルを掴んだ
+      drag = { t: 'r', orig: JSON.parse(JSON.stringify(getSel())), bb: bboxOf(getSel()), snap: JSON.stringify(annots), moved: false };
+      svgEl.setPointerCapture(e.pointerId); e.preventDefault(); return;
+    }
     const t = e.target.closest && e.target.closest('[data-id]');
     selectedId = t ? +t.dataset.id : null; drawOverlay(); updateUi();
     if (t) {                                             // そのままドラッグで移動
@@ -556,7 +620,15 @@ svgEl.addEventListener('pointerdown', e => {
 svgEl.addEventListener('pointermove', e => {
   if (!drag) return;
   const p = toPt(e);
-  if (drag.t === 'm') {
+  if (drag.t === 'r') {
+    const bb = drag.bb;
+    const sx = Math.max((p[0] - bb[0]) / bb[2], 0.1), sy = Math.max((p[1] - bb[1]) / bb[3], 0.1);
+    if (!drag.moved) {
+      if (Math.hypot(p[0] - (bb[0] + bb[2]), p[1] - (bb[1] + bb[3])) * scale < 3) return;
+      drag.moved = true; undoStack.push(drag.snap); redoStack = []; dirty = true;
+    }
+    const a = getSel(); if (a) { applyResize(a, drag.orig, bb, sx, sy); drawOverlay(); }
+  } else if (drag.t === 'm') {
     const dx = p[0] - drag.p0[0], dy = p[1] - drag.p0[1];
     if (!drag.moved) {
       if (Math.hypot(dx, dy) * scale < 4) return;        // 誤タップでは動かさない
@@ -710,6 +782,7 @@ async function fitWidth() {
 function renderCommentList() {
   const box = $('commentList');
   const cs = annots.filter(a => a.type === 'comment').sort((a, b) => a.page - b.page || a.y - b.y);
+  $('tabComments').textContent = '💬 コメント(' + cs.length + ')';
   box.innerHTML = '';
   if (!cs.length) { box.textContent = 'コメントはまだありません'; return; }
   cs.forEach(a => {
@@ -723,6 +796,36 @@ function renderCommentList() {
     box.appendChild(b);
   });
 }
+/* ===== サムネイル（左サイドバー。画面に入ったものだけ描画して軽くする） ===== */
+let thumbObserver = null, lastThumbPage = 0;
+function buildThumbs() {
+  const box = $('thumbList'); box.innerHTML = '';
+  if (thumbObserver) thumbObserver.disconnect();
+  thumbObserver = new IntersectionObserver(es => es.forEach(en => {
+    if (en.isIntersecting) { thumbObserver.unobserve(en.target); renderThumb(en.target); }
+  }), { root: $('sideBody'), rootMargin: '300px' });
+  for (let i = 1; i <= pdfDoc.numPages; i++) {
+    const d = document.createElement('button');
+    d.type = 'button'; d.className = 'pe-thumb'; d.dataset.page = i;
+    const n = document.createElement('span'); n.textContent = 'p.' + i; d.appendChild(n);
+    d.onclick = () => goPage(i);
+    box.appendChild(d); thumbObserver.observe(d);
+  }
+  lastThumbPage = 0;
+}
+async function renderThumb(d) {
+  const doc = pdfDoc;
+  try {
+    const page = await doc.getPage(+d.dataset.page);
+    const vp = page.getViewport({ scale: 150 / page.getViewport({ scale: 1 }).width }), dpr = window.devicePixelRatio || 1;
+    const cv = document.createElement('canvas');
+    cv.width = Math.floor(vp.width * dpr); cv.height = Math.floor(vp.height * dpr);
+    await page.render({ canvasContext: cv.getContext('2d'), viewport: vp, transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : null }).promise;
+    if (doc !== pdfDoc) return;                          // 別のPDFに切り替わっていたら捨てる
+    d.insertBefore(cv, d.firstChild); d.style.minHeight = '0';
+  } catch (e) { /* サムネが出ないだけなので無視 */ }
+}
+
 function updateUi() {
   const has = !!pdfDoc, sel = getSel();
   document.querySelectorAll('.need-pdf').forEach(b => b.disabled = !has);
@@ -739,6 +842,18 @@ function updateUi() {
   w.classList.toggle('texthl', tool === 'texthl');
   w.classList.toggle('hassel', selectedId != null);
   buildSwatches(); renderCommentList();
+  w.classList.toggle('fingerscroll', $('penOnly').checked && (tool === 'pen' || tool === 'highlight'));
+  // サムネ：現在ページ・注釈ありページの目印
+  const pages = new Set(annots.map(a => a.page));
+  document.querySelectorAll('.pe-thumb').forEach(t => {
+    const n = +t.dataset.page;
+    t.classList.toggle('cur', n === pageNum); t.classList.toggle('has', pages.has(n));
+  });
+  if (lastThumbPage !== pageNum) {                       // ページが変わったらサイドバー内だけスクロール
+    lastThumbPage = pageNum;
+    const c = document.querySelector('.pe-thumb.cur'), sb = $('sideBody');
+    if (c && (c.offsetTop < sb.scrollTop || c.offsetTop + c.offsetHeight > sb.scrollTop + sb.clientHeight)) sb.scrollTop = c.offsetTop - 8;
+  }
 }
 
 /* =====================================================
@@ -766,7 +881,10 @@ async function buildAnnot(doc, vp, a) {
   const f = n => (Math.round(n * 1000) / 1000).toString();
   const cp = (x, y) => vp.convertToPdfPoint(x, y);
   const meta = Object.assign({}, a); delete meta.id;
+  const n = new Date(), z = v => String(v).padStart(2, '0');
+  const stamp = PDFString.of('D:' + n.getFullYear() + z(n.getMonth() + 1) + z(n.getDate()) + z(n.getHours()) + z(n.getMinutes()) + z(n.getSeconds()));
   const base = { Type: 'Annot', F: 4, NM: PDFString.of('arigato-' + a.id + '-' + Date.now()),
+                 M: stamp, CreationDate: stamp, T: PDFHexString.fromText('アリガイツ'),
                  ArigatoData: PDFHexString.fromText(JSON.stringify(meta)) };
   let rect, content, res = {}, extra;
 
@@ -816,7 +934,14 @@ async function buildAnnot(doc, vp, a) {
   }
 
   const ap = ctx.register(ctx.stream(content, { Type: 'XObject', Subtype: 'Form', BBox: rect, Resources: res }));
-  return ctx.register(ctx.obj(Object.assign(base, { Rect: rect, AP: { N: ap } }, extra)));
+  const dict = Object.assign(base, { Rect: rect, AP: { N: ap } }, extra);
+  if (a.type !== 'comment') return [ctx.register(ctx.obj(dict))];
+  // コメントはPopup注釈（開いた時の吹き出し）も付ける
+  const ref = ctx.nextRef();
+  const pop = ctx.register(ctx.obj({ Type: 'Annot', Subtype: 'Popup', Rect: [rect[2], rect[3] - 110, rect[2] + 220, rect[3]],
+    Parent: ref, Open: false, F: 28, NM: PDFString.of('arigato-popup-' + a.id + '-' + Date.now()) }));
+  dict.Popup = pop; ctx.assign(ref, ctx.obj(dict));
+  return [ref, pop];
 }
 
 async function savePdf() {
@@ -831,7 +956,7 @@ async function savePdf() {
     for (const pn of Object.keys(byPage)) {
       const vp = (await pdfDoc.getPage(+pn)).getViewport({ scale: 1 });
       const page = doc.getPage(+pn - 1);
-      for (const a of byPage[pn]) page.node.addAnnot(await buildAnnot(doc, vp, a));
+      for (const a of byPage[pn]) for (const r of await buildAnnot(doc, vp, a)) page.node.addAnnot(r);
     }
     const out = await doc.save();
     const url = URL.createObjectURL(new Blob([out], { type: 'application/pdf' }));
@@ -863,6 +988,17 @@ $('btnZoomIn').onclick = () => setScale(scale + 0.25);
 $('btnZoomOut').onclick = () => setScale(scale - 0.25);
 $('btnFit').onclick = fitWidth;
 document.querySelectorAll('[data-tool]').forEach(b => b.onclick = () => setTool(b.dataset.tool));
+$('penOnly').addEventListener('change', updateUi);
+// サイドバー：タブ切替（ページ／コメント）と表示・非表示
+document.querySelectorAll('[data-side]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('[data-side]').forEach(x => x.classList.toggle('active', x === b));
+  $('thumbList').style.display = b.dataset.side === 'thumbs' ? '' : 'none';
+  $('commentList').style.display = b.dataset.side === 'comments' ? 'flex' : 'none';
+});
+$('btnSide').onclick = () => {
+  $('peMain').classList.toggle('noside');
+  setTimeout(() => { if (pdfDoc) fitWidth(); }, 0);      // 表示幅が変わるので幅に合わせ直す
+};
 
 // ドラッグ&ドロップで開く
 const viewer = $('viewer');
@@ -870,14 +1006,30 @@ const viewer = $('viewer');
 ['dragleave', 'drop'].forEach(ev => viewer.addEventListener(ev, e => { e.preventDefault(); viewer.classList.remove('dragover'); }));
 viewer.addEventListener('drop', e => openFile(e.dataTransfer.files[0]));
 
-// キーボード：Ctrl+Z / Ctrl+Y / Delete / ←→（入力中は無効）
+// Ctrl（Mac:⌘）+ホイールでズーム（連続回転は0.12秒まとめて1回だけ再描画）
+let wheelT = null, wheelScale = null;
+viewer.addEventListener('wheel', e => {
+  if (!(e.ctrlKey || e.metaKey) || !pdfDoc) return;
+  e.preventDefault();
+  wheelScale = (wheelScale || scale) * (e.deltaY < 0 ? 1.1 : 1 / 1.1);
+  clearTimeout(wheelT); wheelT = setTimeout(() => { setScale(wheelScale); wheelScale = null; }, 120);
+}, { passive: false });
+
+// キーボードショートカット（Ctrl+S以外は入力中は無効）
 document.addEventListener('keydown', e => {
+  const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
+  if (mod && k === 's') { e.preventDefault(); savePdf(); return; }          // Ctrl+Sで保存（入力中でも有効）
   if (/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
-  else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); }
+  if (mod && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
+  else if (mod && k === 'y') { e.preventDefault(); redo(); }
+  else if (mod || e.altKey) return;
   else if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
+  else if (e.key === 'Escape') { selectedId = null; drawOverlay(); updateUi(); }
   else if (e.key === 'ArrowLeft') goPage(pageNum - 1);
   else if (e.key === 'ArrowRight') goPage(pageNum + 1);
+  else if (e.key === '+' || e.key === '=') setScale(scale + 0.25);
+  else if (e.key === '-') setScale(scale - 0.25);
+  else { const t = { v: 'select', h: 'texthl', r: 'highlight', p: 'pen', t: 'text', c: 'comment' }[k]; if (t) setTool(t); }
 });
 
 // 未保存のままページを閉じる／更新する時の警告
