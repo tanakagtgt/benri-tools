@@ -21,9 +21,9 @@
 <link rel="stylesheet" href="/common.css">
 <style>
 /* ===== このツール専用CSS（色は全てCSS変数。注釈の色データだけは固定色） ===== */
-.container { max-width: 1280px; }  /* PC・iPad横向き想定。共通の600pxより大きく広げる */
+.container { max-width: 1920px; }  /* PC・iPad横向き想定。共通の600pxより大きく広げる */
 
-.pe-bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px; }
+.pe-bar { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:6px; }
 .pe-btn {
   display:inline-flex; align-items:center; justify-content:center; gap:4px;
   min-height:44px; padding:0 12px; cursor:pointer; white-space:nowrap;
@@ -48,13 +48,13 @@
 }
 .pe-swatch.active { border:3px solid var(--color-primary); box-shadow:0 0 0 2px var(--color-primary-bg); }
 .pe-pageinput { width:64px; text-align:center; }
-.pe-status { font-size:12px; color:var(--color-text-muted); min-height:18px; margin-bottom:8px; }
+.pe-status { font-size:12px; color:var(--color-text-muted); min-height:16px; margin-bottom:4px; }
 
 /* PDF表示エリア：縦に長くなりすぎないよう高さ制限してスクロール */
 .pe-viewer {
   position:relative; overflow:auto; height:75vh; height:75dvh; min-height:420px;
   background:var(--color-input-bg); border:1px solid var(--color-border);
-  border-radius:var(--radius-card); padding:10px; text-align:center;
+  border-radius:var(--radius-card); padding:6px; text-align:center;
 }
 .pe-viewer.dragover { border-color:var(--color-primary); background:var(--color-primary-bg); }
 .pe-empty { color:var(--color-text-muted); font-size:13px; line-height:1.9; padding:60px 10px; }
@@ -83,7 +83,7 @@
 }
 
 /* ===== 左サイドバー（サムネイル／コメント一覧）＋右に大きなPDF表示 ===== */
-.pe-main { display:grid; grid-template-columns:190px minmax(0,1fr); gap:10px; align-items:start; }
+.pe-main { display:grid; grid-template-columns:170px minmax(0,1fr); gap:6px; align-items:start; }
 .pe-main.noside { grid-template-columns:minmax(0,1fr); }
 .pe-main.noside .pe-side { display:none; }
 .pe-side {
@@ -117,6 +117,16 @@
   .pe-side { order:2; height:240px; min-height:0; }
 }
 
+/* ===== 余白を詰めてPDF表示を広く（このページだけ共通CSSを上書き） ===== */
+body { padding:6px 6px 40px; }
+.back-to-index { margin-bottom:6px; }
+header { margin-bottom:6px; }
+h1 { font-size:17px; margin-bottom:0; }
+.subtitle { font-size:10px; line-height:1.4; }
+.pe-card { padding:8px; margin-bottom:10px; }
+/* 集中表示：上のナビと見出しを隠して画面を広く使う */
+body.pe-focus .back-to-index, body.pe-focus header { display:none; }
+
 .tool-desc {
   background:var(--color-card); border:1px solid var(--color-border);
   border-radius:var(--radius-card); padding:18px 20px; margin:14px 0;
@@ -137,7 +147,7 @@
 </header>
 
 <!-- ===== ツール本体 ===== -->
-<div class="card">
+<div class="card pe-card">
   <!-- 行1：ファイル・ページ・ズーム -->
   <div class="pe-bar">
     <label class="pe-btn primary" for="fileInput">📂 PDFを開く</label>
@@ -152,8 +162,12 @@
     <button class="pe-btn need-pdf" id="btnZoomOut" disabled>－</button>
     <span class="pe-label" id="zoomLabel" style="min-width:40px;text-align:center">100%</span>
     <button class="pe-btn need-pdf" id="btnZoomIn" disabled>＋</button>
+    <span class="pe-label" id="paperLabel"></span>
+    <button class="pe-btn need-pdf" id="btnFitPage" disabled>全体表示</button>
     <button class="pe-btn need-pdf" id="btnFit" disabled>幅に合わせる</button>
+    <button class="pe-btn need-pdf" id="btnActual" disabled>実寸</button>
     <button class="pe-btn" id="btnSide">🗂 サイドバー</button>
+    <button class="pe-btn" id="btnFocus">⛶ 集中表示</button>
   </div>
 
   <!-- 行2：ツール選択＋選択中の操作 -->
@@ -173,9 +187,9 @@
   <div class="pe-bar">
     <span class="pe-label">色</span>
     <span id="swatches" class="pe-bar" style="margin:0"></span>
-    <span class="pe-label">ペン</span>
+    <span class="pe-label">線の太さ</span>
     <select class="pe-sel" id="penWidth">
-      <option value="1.5">細い</option><option value="3" selected>普通</option><option value="6">太い</option>
+      <option value="1">1pt</option><option value="2">2pt</option><option value="3" selected>3pt</option><option value="4">4pt</option><option value="5">5pt</option><option value="6">6pt</option><option value="7">7pt</option><option value="8">8pt</option><option value="9">9pt</option><option value="10">10pt</option><option value="11">11pt</option><option value="12">12pt</option>
     </select>
     <span class="pe-label">蛍光ペン</span>
     <select class="pe-sel" id="hlOpacity">
@@ -192,7 +206,7 @@
     <summary>操作方法・ショートカット</summary>
     <div>・文字ハイライト：ツールを選んで文字をなぞる（マウスは離すと確定／iPadは「選択した文字をハイライト」ボタン）<br>
     ・選択・移動：注釈をタップ→ドラッグで移動、右下の○をドラッグでリサイズ、文字はダブルクリックで編集<br>
-    ・ショートカット：Ctrl+S 保存／Ctrl+Z 戻す／Ctrl+Y やり直す／V 選択・H 文字ハイライト・R 範囲・P ペン・T 文字・C コメント／＋－ ズーム／Ctrl+ホイール ズーム／←→ ページ移動／Esc 選択解除</div>
+    ・ショートカット：Ctrl+S 保存／Ctrl+Z 戻す／Ctrl+Y やり直す／V 選択・H 文字ハイライト・R 範囲・P ペン・T 文字・C コメント／＋－ ズーム／Ctrl+ホイール ズーム／「全体表示」でA4・A3が枠にぴったり、「実寸」で原寸サイズ／←→ ページ移動／Esc 選択解除</div>
   </details>
 
   <div class="pe-status" id="peStatus"></div>
@@ -297,6 +311,7 @@ let annots = [], undoStack = [], redoStack = [];
 let selectedId = null, nextId = 1, dirty = false;
 let colorByTool = { highlight: '#ffeb3b', pen: '#ff5252', text: '#111111' };
 let renderTask = null, renderSeq = 0, workerReady = null, drag = null, editor = null;
+let fitMode = 'page';   // 'page'=全体表示 / 'width'=幅に合わせる / null=手動ズーム・実寸
 
 /* ---------- ユーティリティ ---------- */
 function setStatus(t) { $('peStatus').textContent = t || ''; }
@@ -412,7 +427,8 @@ async function openFile(file) {
     $('pageInput').max = doc.numPages;
     await document.fonts.load(fontStr(16), 'あ').catch(() => {});
     buildThumbs();
-    await fitWidth();
+    fitMode = 'page'; layoutViewer();
+    await applyFit();
     setStatus(file.name + '（' + doc.numPages + 'ページ）' + (hadImported ? '｜このツールで付けた注釈 ' + annots.length + '件を編集できます' : ''));
   } catch (e) {
     console.error(e);
@@ -435,6 +451,7 @@ async function renderPage() {
   const page = await pdfDoc.getPage(pageNum);
   const v1 = page.getViewport({ scale: 1 });
   pageW = v1.width; pageH = v1.height;
+  $('paperLabel').textContent = paperName(pageW, pageH);
   const vp = page.getViewport({ scale });
   const dpr = window.devicePixelRatio || 1;
   const cv = $('pdfCanvas');
@@ -769,15 +786,43 @@ function goPage(n) {
   commitEditor();
   n = Math.min(Math.max(n, 1), pdfDoc.numPages);
   if (n === pageNum) { updateUi(); return; }
-  pageNum = n; selectedId = null; renderPage();
+  pageNum = n; selectedId = null; showPage();
 }
-function setScale(s) { commitEditor(); scale = Math.min(Math.max(s, 0.4), 4); renderPage(); }
-async function fitWidth() {
+function setScale(s) { fitMode = null; commitEditor(); scale = Math.min(Math.max(s, 0.2), 5); renderPage(); }
+// 用紙サイズ名（A3/A4など。縦横どちらでも判定）
+function paperName(w, h) {
+  const L = Math.max(w, h), S = Math.min(w, h);
+  const T = [['A3', 841.9, 1190.6], ['A4', 595.3, 841.9], ['A5', 419.5, 595.3], ['B4', 728.5, 1031.8], ['B5', 515.9, 728.5], ['Letter', 612, 792]];
+  const t = T.find(q => Math.abs(S - q[1]) <= 6 && Math.abs(L - q[2]) <= 6);
+  return t ? t[0] + (w > h ? ' 横' : ' 縦') : Math.round(w * 25.4 / 72) + '×' + Math.round(h * 25.4 / 72) + 'mm';
+}
+// 表示枠にぴったり合わせる（ページ毎にサイズが違うPDFでも、ページ移動の度に合わせ直す）
+async function applyFit() {
+  if (!pdfDoc || !fitMode) return;
   commitEditor();
-  const page = await pdfDoc.getPage(pageNum);
-  const w = $('viewer').clientWidth - 24;
-  scale = Math.min(Math.max(w / page.getViewport({ scale: 1 }).width, 0.4), 4);
+  const page = await pdfDoc.getPage(pageNum), v1 = page.getViewport({ scale: 1 }), v = $('viewer');
+  const aw = v.clientWidth - 14 - (fitMode === 'width' ? 16 : 0);   // 幅合わせは縦スクロールバー分(16px)を見込む
+  const ah = v.clientHeight - 14;
+  const sc = fitMode === 'width' ? aw / v1.width : Math.min(aw / v1.width, ah / v1.height);
+  scale = Math.min(Math.max(Math.floor(sc * 1000) / 1000, 0.2), 5);
   await renderPage();
+}
+async function fitWidth() { fitMode = 'width'; await applyFit(); }
+async function fitPage()  { fitMode = 'page';  await applyFit(); }
+function actualSize()     { setScale(96 / 72); }          // 画面上の実寸（96dpi換算。A4＝約794px幅）
+function showPage()       { if (fitMode) applyFit(); else renderPage(); }
+// PDF表示枠の高さ＝画面の残り全部（画面下端までぴったり）
+function layoutViewer() {
+  const top = $('peMain').getBoundingClientRect().top + window.scrollY;
+  const h = Math.max(420, Math.floor(window.innerHeight - top - 8));
+  $('viewer').style.height = h + 'px';
+  document.querySelector('.pe-side').style.height = window.innerWidth <= 760 ? '' : h + 'px';
+}
+function relayout() { layoutViewer(); if (fitMode && pdfDoc) applyFit(); }
+function toggleFocus() {
+  const on = document.body.classList.toggle('pe-focus');
+  $('btnFocus').textContent = on ? '⛶ 通常表示' : '⛶ 集中表示';
+  window.scrollTo(0, 0); relayout();
 }
 function renderCommentList() {
   const box = $('commentList');
@@ -791,7 +836,7 @@ function renderCommentList() {
     b.textContent = 'p.' + a.page + '｜' + a.text.replace(/\s+/g, ' ').slice(0, 40);
     b.onclick = () => {                                  // クリックで該当ページへ移動して選択
       setTool('select'); selectedId = a.id;
-      if (a.page !== pageNum) { pageNum = a.page; renderPage(); } else { drawOverlay(); updateUi(); }
+      if (a.page !== pageNum) { pageNum = a.page; showPage(); } else { drawOverlay(); updateUi(); }
     };
     box.appendChild(b);
   });
@@ -987,6 +1032,9 @@ $('pageInput').addEventListener('change', e => goPage(parseInt(e.target.value, 1
 $('btnZoomIn').onclick = () => setScale(scale + 0.25);
 $('btnZoomOut').onclick = () => setScale(scale - 0.25);
 $('btnFit').onclick = fitWidth;
+$('btnFitPage').onclick = fitPage;
+$('btnActual').onclick = actualSize;
+$('btnFocus').onclick = toggleFocus;
 document.querySelectorAll('[data-tool]').forEach(b => b.onclick = () => setTool(b.dataset.tool));
 $('penOnly').addEventListener('change', updateUi);
 // サイドバー：タブ切替（ページ／コメント）と表示・非表示
@@ -997,7 +1045,7 @@ document.querySelectorAll('[data-side]').forEach(b => b.onclick = () => {
 });
 $('btnSide').onclick = () => {
   $('peMain').classList.toggle('noside');
-  setTimeout(() => { if (pdfDoc) fitWidth(); }, 0);      // 表示幅が変わるので幅に合わせ直す
+  setTimeout(relayout, 0);      // 表示幅が変わるので幅に合わせ直す
 };
 
 // ドラッグ&ドロップで開く
@@ -1035,7 +1083,12 @@ document.addEventListener('keydown', e => {
 // 未保存のままページを閉じる／更新する時の警告
 window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
 
-updateUi();
+// 画面サイズ変更（iPad回転・ウィンドウ変更）や説明の開閉でも枠を合わせ直す
+let relayoutT = null;
+window.addEventListener('resize', () => { clearTimeout(relayoutT); relayoutT = setTimeout(relayout, 150); });
+document.querySelector('.pe-help').addEventListener('toggle', relayout);
+
+layoutViewer(); updateUi();
 </script>
 </body>
 </html>
