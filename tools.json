@@ -27,5 +27,5 @@
 { "id": "fin-shift-pay", "name": "シフト給料カレンダー", "url": "https://arigato-tools.com/fin-shift-pay", "file": "fin-shift-pay.html", "emoji": "🗓️", "category": "fin", "desc": "バイト・パートのシフトから給料を自動計算。深夜・休日・残業・交通費・締日と給料日に対応" },
 { "id": "conv-bunsho-henkan", "name": "文章変換ツール", "url": "https://arigato-tools.com/conv-bunsho-henkan", "file": "conv-bunsho-henkan.html", "emoji": "🔧", "category": "conv", "desc": "文字数カウント・全角半角変換・置換・改行をまとめて処理" },
 { "id":"util-order-decider", "name":"順番決めツール", "url":"[https://arigato-tools.com/util-order-decider](https://arigato-tools.com/util-order-decider)", "file":"util-order-decider.html", "emoji":"🎲", "category":"util", "desc":"サイコロ・コイントス・くじ引き・じゃんけんで順番決め" },
-  { "id":util-pdf-editor", "name":"PDF編集ツール", "url":"[https://arigato-tools.com/util-pdf-editor](https://arigato-tools.com/util-pdf-editor)", "file":"util-pdf-editor.html", "emoji":"📝", "category":"util", "desc":"Adobe Readerより使いやすいのを目指しました" }
+  { "id":"util-pdf-editor", "name":"PDF編集ツール", "url":"[https://arigato-tools.com/util-pdf-editor](https://arigato-tools.com/util-pdf-editor)", "file":"util-pdf-editor.html", "emoji":"📝", "category":"util", "desc":"Adobe Readerより使いやすいのを目指しました" }
 ]
