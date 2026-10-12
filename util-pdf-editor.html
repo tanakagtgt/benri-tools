@@ -48,7 +48,8 @@
 }
 .pe-swatch.active { border:3px solid var(--color-primary); box-shadow:0 0 0 2px var(--color-primary-bg); }
 .pe-pageinput { width:64px; text-align:center; }
-.pe-status { font-size:12px; color:var(--color-text-muted); min-height:16px; margin-bottom:4px; }
+.pe-status { font-size:12px; color:var(--color-text-muted); margin:0 0 4px; }
+.pe-status:empty { display:none; }   /* 何も表示しない時は場所をとらない */
 
 /* PDF表示エリア：高さはJSで「画面の残り全部」に合わせる（初期値はCSS） */
 .pe-viewer {
@@ -139,8 +140,9 @@ button.pe-ff { display:flex; align-items:center; justify-content:center; cursor:
 .pe-item { justify-content:flex-start; white-space:normal; text-align:left; font-weight:400; }
 .pe-check { display:inline-flex; align-items:center; gap:6px; min-height:44px; font-size:12px; color:var(--color-text-sub); cursor:pointer; }
 .pe-check input { width:20px; height:20px; accent-color:var(--color-primary); }
-.pe-help { font-size:12px; color:var(--color-text-sub); margin-bottom:8px; line-height:1.8; }
-.pe-help summary { cursor:pointer; min-height:32px; font-weight:700; }
+.pe-help { font-size:12px; color:var(--color-text-sub); margin:0 0 4px; line-height:1.8; }
+.pe-help summary { cursor:pointer; min-height:28px; display:flex; align-items:center; font-weight:700; }
+.pe-help:not([open]) { margin-bottom:0; }
 @media (max-width:760px) {   /* 狭い画面では縦並び（スマホは非推奨だが崩れない程度に） */
   .pe-main { grid-template-columns:minmax(0,1fr); }
   .pe-side { order:2; height:240px; min-height:0; }
@@ -639,15 +641,49 @@ async function convertForeign(bytes) {
     const rw = Math.abs(rp[0][0] - rp[1][0]), rh = Math.abs(rp[0][1] - rp[1][1]);
     let ok = true;
     if (st === 'FreeText') {
-      const da = (d.lookup(PDFName.of('DA')) || {}).decodeText ? d.lookup(PDFName.of('DA')).decodeText() : '';
-      const ds = (d.lookup(PDFName.of('DS')) || {}).decodeText ? d.lookup(PDFName.of('DS')).decodeText() : '';
-      let size = 12, col = '#111111', m;
-      if ((m = /([\d.]+)\s+Tf/.exec(da))) size = +m[1];
-      if ((m = /([\d.]+)\s*pt/.exec(ds))) size = +m[1];
-      if ((m = /([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+rg/.exec(da))) col = hex([+m[1], +m[2], +m[3]], col);
-      else if ((m = /([\d.]+)\s+g\b/.exec(da))) col = hex([+m[1]], col);
-      if ((m = /color:\s*(#[0-9a-fA-F]{6})/.exec(ds))) col = m[1];
-      size = Math.min(120, Math.max(6, size || 12));
+      // 文字色・サイズは、書式データ(RC)→スタイル(DS)→外観ストリーム(AP)→既定の書式(DA)の順に探す（Readerは色をRC/DS/APにだけ書くことがある）
+      const strOf = k => {
+        const o = d.lookup(PDFName.of(k)); if (!o) return '';
+        if (o.decodeText) { try { return o.decodeText(); } catch (e) {} }
+        if (o.getContents) { try { return new TextDecoder('utf-8').decode(PDFLib.decodePDFRawStream(o).decode()); } catch (e) {} }
+        return '';
+      };
+      const toHex = (r, g, b) => '#' + [r, g, b].map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
+      const cssColor = t => {
+        let m = /color:\s*(#[0-9a-fA-F]{6})/.exec(t); if (m) return m[1].toLowerCase();
+        m = /color:\s*rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/.exec(t); return m ? toHex(+m[1], +m[2], +m[3]) : null;
+      };
+      const cssSize = t => { const m = /font-size:\s*([\d.]+)pt/.exec(t) || /([\d.]+)pt/.exec(t); return m ? +m[1] : 0; };
+      const lastFill = t => {                              // PDF命令の中から、最後の塗り色(rg/g/k)を取り出す
+        let col = null, m; const re = /([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+rg|([\d.]+)\s+g(?![a-zA-Z])|([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+k(?![a-zA-Z])/g;
+        while ((m = re.exec(t))) {
+          if (m[1] !== undefined) col = hex([+m[1], +m[2], +m[3]], col);
+          else if (m[4] !== undefined) col = hex([+m[4]], col);
+          else col = hex([+m[5], +m[6], +m[7], +m[8]], col);
+        }
+        return col;
+      };
+      const da = strOf('DA'), ds = strOf('DS'), rc = strOf('RC');
+      let ap = '';
+      try {
+        const apd = d.lookupMaybe(PDFName.of('AP'), PDFDict), nobj = apd && apd.lookup(PDFName.of('N'));
+        if (nobj && nobj.getContents) ap = Array.from(PDFLib.decodePDFRawStream(nobj).decode()).map(c => String.fromCharCode(c)).join('');
+      } catch (e) { /* 外観が読めなければDA等で判断 */ }
+      let apCol = null, apSize = 0;
+      if (ap) {
+        const sm = /([\d.]+)\s+Tf/.exec(ap); if (sm) apSize = +sm[1];
+        const show = ap.search(/\)\s*Tj|\]\s*TJ|>\s*Tj/), seg = show >= 0 ? ap.slice(0, show) : ap, bt = seg.lastIndexOf('BT');
+        if (bt >= 0) {
+          apCol = lastFill(seg.slice(bt));
+          if (!apCol && !/\bre\b|\bf\*?\b|\bB\b/.test(seg.slice(0, bt))) apCol = lastFill(seg.slice(0, bt));   // 背景の塗りを文字色と間違えない
+        }
+      }
+      let daSize = 0, daCol = null, m;
+      if ((m = /([\d.]+)\s+Tf/.exec(da))) daSize = +m[1];
+      if ((m = /([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+rg/.exec(da))) daCol = hex([+m[1], +m[2], +m[3]], null);
+      else if ((m = /([\d.]+)\s+g(?![a-zA-Z])/.exec(da))) daCol = hex([+m[1]], null);
+      const size = Math.min(120, Math.max(6, cssSize(rc) || cssSize(ds) || apSize || daSize || 12));
+      const col = cssColor(rc) || cssColor(ds) || apCol || daCol || '#111111';
       const it = d.lookup(PDFName.of('IT')), cl = nums(d, 'CL');
       const a = { type: 'text', page, x: rx, y: ry, text, size, color: col };
       if (it && it.decodeText && it.decodeText() === 'FreeTextCallout' && cl && cl.length >= 4) {
