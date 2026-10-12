@@ -85,6 +85,18 @@ button.pe-ff { display:flex; align-items:center; justify-content:center; cursor:
 .pe-page.formtool .pe-ff { pointer-events:auto; background:#eef4ff; border:2px solid #1a56db; }
 .pe-page.formtool .pe-ff:disabled { background:#eee; border-color:#999; }
 
+/* 検索ヒットの表示（PDF面の上に載せる黄色。固定色） */
+.pe-search-layer { position:absolute; left:0; top:0; pointer-events:none; }
+.pe-search-layer div { position:absolute; background:rgba(255,235,59,.55); mix-blend-mode:multiply; border-radius:2px; }
+.pe-search-layer div.cur { background:rgba(255,152,0,.65); outline:2px solid #f57c00; }
+
+/* 手書き署名の入力ダイアログ */
+.pe-modal { position:fixed; inset:0; z-index:1000; display:none; align-items:center; justify-content:center; padding:12px; background:rgba(0,0,0,.55); }
+.pe-modal-box { width:min(640px,100%); padding:12px; background:var(--color-card); border:1px solid var(--color-border); border-radius:var(--radius-card); }
+#signCanvas { display:block; width:100%; height:auto; aspect-ratio:1000/360; background:#fff; border:1px dashed var(--color-border-input); border-radius:var(--radius-input); touch-action:none; }
+.pe-imgthumb { height:44px; padding:0 6px; }
+.pe-imgthumb img { height:32px; max-width:100px; background:#fff; border-radius:3px; }
+
 /* 文字・コメント・吹き出しの入力欄（PDF上に重ねる） */
 .pe-editor {
   position:absolute; display:none; z-index:5; width:200px; height:76px; resize:both;
@@ -179,6 +191,8 @@ body.pe-focus .back-to-index, body.pe-focus header { display:none; }
     <button class="pe-btn need-pdf" id="btnActual" disabled>実寸</button>
     <button class="pe-btn" id="btnSide">🗂 サイドバー</button>
     <button class="pe-btn" id="btnFocus">⛶ 集中表示</button>
+    <button class="pe-btn need-pdf" id="btnSearch" disabled>🔍 検索</button>
+    <button class="pe-btn need-pdf" id="btnPrint" disabled>🖨 印刷・プレビュー</button>
   </div>
 
   <!-- 行2：ツール選択 -->
@@ -193,6 +207,7 @@ body.pe-focus .back-to-index, body.pe-focus header { display:none; }
     <button class="pe-btn" data-tool="shape">⬜ 図形</button>
     <button class="pe-btn" data-tool="text">🔤 文字</button>
     <button class="pe-btn" data-tool="callout">🗨 吹き出し</button>
+    <button class="pe-btn" data-tool="image">🖋 署名・画像</button>
     <button class="pe-btn" data-tool="comment">💬 コメント</button>
     <button class="pe-btn" data-tool="form">📋 フォーム入力</button>
   </div>
@@ -227,6 +242,10 @@ body.pe-focus .back-to-index, body.pe-focus header { display:none; }
     <select class="pe-sel" id="textSize">
       <option value="6">6pt</option><option value="7">7pt</option><option value="8">8pt</option><option value="9">9pt</option><option value="10">10pt</option><option value="11">11pt</option><option value="12">12pt</option><option value="14">14pt</option><option value="16" selected>16pt</option><option value="18">18pt</option><option value="20">20pt</option><option value="22">22pt</option><option value="24">24pt</option><option value="28">28pt</option><option value="32">32pt</option><option value="36">36pt</option><option value="40">40pt</option><option value="48">48pt</option><option value="56">56pt</option><option value="64">64pt</option><option value="72">72pt</option>
     </select>
+    <span class="pe-label">文字の保存形式</span>
+    <select class="pe-sel" id="textFmt">
+      <option value="stamp" selected>見た目固定（Reader互換優先）</option><option value="freetext">FreeText（Readerで文字編集可）</option>
+    </select>
     <label class="pe-check"><input type="checkbox" id="penOnly"> 指では描かない（Apple Pencil・マウス用）</label>
   </div>
 
@@ -236,9 +255,28 @@ body.pe-focus .back-to-index, body.pe-focus header { display:none; }
     ・図形：ドラッグで描く（種類は「図形」で選択）。吹き出し：先端にしたい点から、箱を置きたい場所までドラッグ→文字を入力<br>
     ・選択・移動：注釈をタップ→ドラッグで移動、右下の○でリサイズ、吹き出しの先端の○で向きを変更、文字はダブルクリックで編集<br>
     ・複数選択：Shift（またはCtrl/⌘）+クリック、空白をドラッグして囲む、Ctrl+A（このページ全部）。iPadは「☑ 複数選択」をONにしてタップ。コピー／貼り付け／複製／削除もまとめて可能<br>
+    ・署名・画像：「🖋 署名・画像」で手書き署名を作るか画像を選び、PDF上をタップして配置（署名はこの端末に最大6個保存）。文字検索：🔍またはCtrl+F。印刷：「🖨 印刷・プレビュー」で編集後のPDFを新しいタブで開く<br>
     ・フォーム入力：入力欄のあるPDFは自動で「📋 フォーム入力」になります。入力欄をタップして記入<br>
-    ・ショートカット：Ctrl+S 保存／Ctrl+Z 戻す／Ctrl+Y やり直す／Ctrl+C コピー／Ctrl+V 貼り付け／V 選択・H 文字ハイライト・U 下線・S 取り消し線・R 範囲・P ペン・G 図形・T 文字・B 吹き出し・C コメント・F フォーム／＋－ ズーム／Ctrl+ホイール ズーム／←→ ページ移動／Esc 選択解除</div>
+    ・ショートカット：Ctrl+S 保存／Ctrl+Z 戻す／Ctrl+Y やり直す／Ctrl+C コピー／Ctrl+V 貼り付け／V 選択・H 文字ハイライト・U 下線・S 取り消し線・R 範囲・P ペン・G 図形・T 文字・B 吹き出し・I 署名・画像・C コメント・F フォーム／Ctrl+F 検索／＋－ ズーム／Ctrl+ホイール ズーム／←→ ページ移動／Esc 選択解除</div>
   </details>
+
+  <!-- 検索バー（Ctrl+Fでも開く） -->
+  <div class="pe-bar" id="searchBar" style="display:none">
+    <input class="pe-sel" id="searchInput" type="search" placeholder="PDF内の文字を検索（Enterで次へ）" style="min-width:200px;flex:1;max-width:380px">
+    <button class="pe-btn" id="btnSearchPrev">▲ 前</button>
+    <button class="pe-btn" id="btnSearchNext">▼ 次</button>
+    <span class="pe-label" id="searchCount"></span>
+    <button class="pe-btn" id="btnSearchClose">✕ 閉じる</button>
+  </div>
+  <!-- 署名・画像（「🖋 署名・画像」ツール選択中だけ表示） -->
+  <div class="pe-bar" id="imgPanel" style="display:none">
+    <button class="pe-btn primary" id="btnSignNew">✍ 手書き署名を作る</button>
+    <label class="pe-btn" for="imgInput">🖼 画像を選ぶ（印鑑・ロゴなど）</label>
+    <input type="file" id="imgInput" accept="image/*" hidden>
+    <span class="pe-label">使うものを選んでから、PDF上の置きたい場所をタップ：</span>
+    <span id="imgList" class="pe-bar" style="margin:0"></span>
+    <button class="pe-btn" id="btnImgClear">🗑 保存した署名を全削除</button>
+  </div>
 
   <div class="pe-status" id="peStatus"></div>
   <div class="error-msg" id="errorMsg"></div>
@@ -259,6 +297,7 @@ body.pe-focus .back-to-index, body.pe-focus header { display:none; }
       <div class="pe-empty" id="emptyMsg">「📂 PDFを開く」からファイルを選ぶか、ここにPDFをドラッグしてね。<br>※ファイルは端末内だけで処理され、外部には送信されません。</div>
       <div class="pe-page" id="pageWrap" style="display:none">
         <canvas id="pdfCanvas"></canvas>
+        <div class="pe-search-layer" id="searchLayer"></div>
         <svg id="pdfOverlay" xmlns="http://www.w3.org/2000/svg"></svg>
         <div class="textLayer" id="textLayer"></div>
         <div class="pe-form-layer" id="formLayer"></div>
@@ -271,7 +310,7 @@ body.pe-focus .back-to-index, body.pe-focus header { display:none; }
 <!-- ===== 解説文 ===== -->
 <section class="tool-desc">
   <h2>PDF編集ツールの使い方</h2>
-  <p>「PDFを開く」でファイルを選び、ツールを選んで操作します。文字ハイライト・下線・取り消し線は文字をなぞって適用、図形（四角・丸・直線・矢印）はドラッグ、吹き出し・文字・コメントは置きたい場所で入力。入力欄のあるPDFは「フォーム入力」で記入できます。選択ツールで注釈を移動・リサイズ・色変更・削除でき、複数選択してコピー＆貼り付けも可能です。終わったら「保存」でダウンロードします。</p>
+  <p>「PDFを開く」でファイルを選び、ツールを選んで操作します。文字ハイライト・下線・取り消し線は文字をなぞって適用、図形（四角・丸・直線・矢印）はドラッグ、吹き出し・文字・コメントは置きたい場所で入力。入力欄のあるPDFは「フォーム入力」で記入でき、手書き署名や印鑑画像の配置、文字検索、印刷プレビューも使えます。選択ツールで注釈を移動・リサイズ・色変更・削除でき、複数選択してコピー＆貼り付けも可能です。終わったら「保存」でダウンロードします。</p>
   <h3>こんな場面に</h3>
   <p>回覧資料への蛍光ペンや赤枠・矢印、申込書への記入、レビュー用のコメント、図面や契約書への吹き出しメモといった使い方を想定しています。インストール不要で、パソコンでもiPadでも使えます。</p>
   <h3>仕様と注意</h3>
@@ -279,6 +318,19 @@ body.pe-focus .back-to-index, body.pe-focus header { display:none; }
   <h3>よくある質問</h3>
   <p>Q. 保存したPDFを他の人に渡しても見えますか？ A. 一般的なPDFビューアで表示できます。Q. 入力欄の内容も保存されますか？ A. はい、保存したPDFの入力欄に書き込まれます。</p>
 </section>
+
+<!-- 手書き署名ダイアログ -->
+<div class="pe-modal" id="signModal">
+  <div class="pe-modal-box">
+    <div class="section-title">▶ 手書き署名（指・Apple Pencil・マウスで書く）</div>
+    <canvas id="signCanvas" width="1000" height="360"></canvas>
+    <div class="pe-bar" style="margin:8px 0 0">
+      <button class="pe-btn" id="btnSignClear">クリア</button>
+      <button class="pe-btn primary" id="btnSignOk">この署名を使う</button>
+      <button class="pe-btn" id="btnSignCancel">キャンセル</button>
+    </div>
+  </div>
+</div>
 
 <div id="shareAreaSlot"></div>
 <div id="resetBtnSlot"></div>
@@ -355,6 +407,7 @@ let colorByTool = { highlight: '#ffeb3b', underline: '#ff5252', strike: '#ff5252
 let renderTask = null, renderSeq = 0, workerReady = null, drag = null, editor = null;
 let fitMode = 'page';   // 'page'=全体表示 / 'width'=幅に合わせる / null=手動ズーム・実寸
 let formFields = [], formValues = {}, formInit = {};   // PDFの入力欄（フォーム）
+let imgStore = {}, imgSeq = 1, pendingImg = null;       // 署名・画像（key→{url,w,h}）。注釈にはkeyだけ持たせて軽くする
 
 /* ---------- ユーティリティ ---------- */
 function setStatus(t) { $('peStatus').textContent = t || ''; }
@@ -485,6 +538,7 @@ function bboxOf(a) {
   }
   if (a.type === 'text') { const b = textBox(a); return [a.x, a.y, b.w, b.h]; }
   if (a.type === 'callout') { const g = calloutGeom(a); return bboxOfPts([[g.box[0], g.box[1]], [g.box[0] + g.box[2], g.box[1] + g.box[3]], ...g.poly], 1); }
+  if (a.type === 'image') return [a.x, a.y, a.w, a.h];
   return [a.x, a.y, NOTE, NOTE];
 }
 
@@ -521,7 +575,11 @@ async function importOwn(buf) {
         const nmText = nm && nm.decodeText ? nm.decodeText() : '';
         if (/^arigato-popup-/.test(nmText)) { removeAnnotObjects(ctx, d, ref); arr.remove(i); found = true; continue; }  // コメントのPopupも一緒に取り除く
         if (!data || !/^arigato-/.test(nmText)) continue;
-        try { const m = JSON.parse(data.decodeText()); m.page = pi + 1; list.unshift(m); } catch (e) { continue; }
+        try {
+          const m = JSON.parse(data.decodeText()); m.page = pi + 1;
+          if (m.type === 'image') { const iu = d.get(PDFName.of('ArigatoImg')); if (!iu) continue; m.imgUrl = iu.decodeText(); }
+          list.unshift(m);
+        } catch (e) { continue; }
         removeAnnotObjects(ctx, d, ref); arr.remove(i); found = true;
       }
     });
@@ -590,7 +648,11 @@ async function openFile(file) {
     const fm = await loadForms(imp.bytes);
     pdfDoc = doc; pdfBytes = imp.bytes; fileName = file.name;
     formFields = fm.fields; formValues = Object.assign({}, fm.values); formInit = Object.assign({}, fm.values);
-    nextId = 1; annots = imp.list.map(a => Object.assign(a, { id: nextId++ }));
+    nextId = 1; textCache = {}; searchRes = []; searchCur = -1;
+    annots = imp.list.map(a => {
+      if (a.type === 'image') { const k = 'i' + (imgSeq++); imgStore[k] = { url: a.imgUrl }; a.key = k; delete a.imgUrl; }
+      return Object.assign(a, { id: nextId++ });
+    });
     hadImported = annots.length > 0;
     undoStack = []; redoStack = []; selIds = []; dirty = false; pageNum = 1; clip = [];
     $('emptyMsg').style.display = 'none'; $('pageWrap').style.display = 'inline-block';
@@ -634,7 +696,7 @@ async function renderPage() {
   const svg = $('pdfOverlay');
   svg.setAttribute('viewBox', `0 0 ${pageW} ${pageH}`);
   svg.style.width = vp.width + 'px'; svg.style.height = vp.height + 'px';
-  drawOverlay(); drawForms();
+  drawOverlay(); drawForms(); drawSearch();
   renderTask = page.render({
     canvasContext: cv.getContext('2d'), viewport: vp,
     transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : null
@@ -717,6 +779,11 @@ function drawOverlay() {
       g.appendChild(mk('polygon', { points: G.poly.map(p => p.join(',')).join(' '), fill: '#fff', stroke: a.color, 'stroke-width': 1.2, 'stroke-linejoin': 'round' }));
       g.appendChild(mk('rect', { x: G.box[0], y: G.box[1], width: G.box[2], height: G.box[3], rx: 3, fill: '#fff', stroke: a.color, 'stroke-width': 1.2 }));
       addTextLines(g, a, a.x + CPX, a.y + CPY, G.tb);
+    } else if (a.type === 'image') {
+      const im = mk('image', { x: a.x, y: a.y, width: a.w, height: a.h, preserveAspectRatio: 'none' });
+      const u = imgStore[a.key] ? imgStore[a.key].url : '';
+      im.setAttribute('href', u); im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', u);
+      g.appendChild(im);
     } else {                                              // comment：付箋アイコン
       g.appendChild(mk('rect', { x: a.x, y: a.y, width: NOTE, height: NOTE, rx: 2, fill: '#ffe066', stroke: '#b38f00', 'stroke-width': 1 }));
       [0.3, 0.52, 0.74].forEach(k => g.appendChild(mk('line', { x1: a.x + 3.5, x2: a.x + NOTE - 3.5, y1: a.y + NOTE * k, y2: a.y + NOTE * k, stroke: '#7a5f00', 'stroke-width': 1 })));
@@ -853,6 +920,7 @@ function applyResize(a, o, bb, sx, sy) {
   if (a.type === 'highlight') a.rects = o.rects.map(r => [X(r[0]), Y(r[1]), r[2] * sx, r[3] * sy]);
   else if (a.type === 'pen') a.pts = o.pts.map(p => [X(p[0]), Y(p[1])]);
   else if (a.type === 'shape') { a.x1 = X(o.x1); a.y1 = Y(o.y1); a.x2 = X(o.x2); a.y2 = Y(o.y2); }
+  else if (a.type === 'image') { a.w = Math.max(8, o.w * sx); a.h = Math.max(8, o.h * sx); }   // 縦横比を保って拡大縮小
   else if (a.type === 'text' || a.type === 'callout') {
     a.size = Math.min(120, Math.max(6, Math.round(o.size * sx * 10) / 10));
     if (a.type === 'callout') { a.tx = X(o.tx); a.ty = Y(o.ty); }
@@ -864,6 +932,7 @@ svgEl.addEventListener('pointerdown', e => {
   if (editor) { commitEditor(); return; }               // 入力中のタップ＝まず確定
   if ($('penOnly').checked && e.pointerType === 'touch' && (tool === 'pen' || tool === 'highlight' || tool === 'shape')) return;  // 指ではスクロール優先
   const p = toPt(e);
+  if (tool === 'image') { e.preventDefault(); placeImage(p); return; }
   if (tool === 'select') {
     const hd = e.target.dataset && e.target.dataset.handle;
     if (hd && getSel()) {                                // リサイズ／吹き出し先端のハンドルを掴んだ
@@ -1059,6 +1128,7 @@ function setTool(t) {
   document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === t));
   if (!TEXTSEL.includes(t)) window.getSelection().removeAllRanges();
   if (t === 'text' || t === 'callout' || t === 'form') prefetchFont();
+  if (t === 'image') renderImgList();
   if (t === 'form' && pdfDoc && !formFields.length) setStatus('このPDFには入力欄がありません');
   drawOverlay(); buildTextLayer(); updateUi();
 }
@@ -1203,6 +1273,7 @@ function updateUi() {
   $('btnEdit').disabled = !(sel && (sel.type === 'text' || sel.type === 'callout' || sel.type === 'comment'));
   $('btnApplyHl').style.display = TEXTSEL.includes(tool) ? 'inline-flex' : 'none';
   $('btnMulti').classList.toggle('active', multiMode);
+  $('imgPanel').style.display = tool === 'image' ? 'flex' : 'none';
   $('pageInput').value = pageNum;
   $('zoomLabel').textContent = Math.round(scale * 100) + '%';
   const w = $('pageWrap');
@@ -1293,6 +1364,7 @@ async function buildAnnot(doc, vp, a, font) {
                  M: stamp, CreationDate: stamp, T: PDFHexString.fromText('アリガイツ'),
                  ArigatoData: PDFHexString.fromText(JSON.stringify(meta)) };
   const [r, g, b] = a.color ? hex2rgb(a.color) : [0, 0, 0], rgb = `${fmt(r)} ${fmt(g)} ${fmt(b)}`;
+  const stampFmt = $('textFmt').value === 'stamp';
   let rect, content, res = {}, extra;
 
   if (a.type === 'highlight') {                          // ハイライト／下線／取り消し線（行ごとのQuad）
@@ -1348,7 +1420,17 @@ async function buildAnnot(doc, vp, a, font) {
     }
     Object.assign(extra, { C: [r, g, b], BS: { W: lw, S: 'S' }, CA: 1 });
 
-  } else if (a.type === 'text' || a.type === 'callout') { // FreeText（本物の文字＋外観）
+  } else if (a.type === 'image') {                       // 署名・画像：Stamp注釈（外観＝画像）
+    const u = (imgStore[a.key] || {}).url || '';
+    const bytes = Uint8Array.from(atob(u.split(',')[1] || ''), c => c.charCodeAt(0));
+    const img = /^data:image\/png/.test(u) ? await doc.embedPng(bytes) : await doc.embedJpg(bytes);
+    const o = cp(a.x, a.y + a.h), px = cp(a.x + a.w, a.y + a.h), py = cp(a.x, a.y), pz = cp(a.x + a.w, a.y);
+    rect = bbPts([o, px, py, pz]);
+    content = `q ${fmt(px[0] - o[0])} ${fmt(px[1] - o[1])} ${fmt(py[0] - o[0])} ${fmt(py[1] - o[1])} ${fmt(o[0])} ${fmt(o[1])} cm /Im0 Do Q`;
+    res = { XObject: { Im0: img.ref } };
+    extra = { Subtype: 'Stamp' };
+    base.ArigatoImg = PDFString.of(u);                    // 再編集用に画像データも持たせる
+  } else if (a.type === 'text' || a.type === 'callout') { // 文字・吹き出し（本物の文字＋外観）
     const isC = a.type === 'callout', tb = textBox(a);
     let ox = a.x, oy = a.y, parts = '', box = null;
     if (isC) {
@@ -1359,9 +1441,13 @@ async function buildAnnot(doc, vp, a, font) {
     }
     const tx = await textOps(doc, font, cp, a, ox, oy, tb);
     rect = box || tx.rect; content = parts + tx.ops; res = tx.res;
-    extra = { Subtype: 'FreeText', Contents: PDFHexString.fromText(a.text), Q: 0,
-              DA: PDFString.of(font ? `/PEJP ${fmt(a.size)} Tf ${rgb} rg` : `/Helv ${fmt(a.size)} Tf ${rgb} rg`) };
-    if (isC) extra.BS = { W: 1.2, S: 'S' }; else extra.Border = [0, 0, 0];
+    if (stampFmt) {                                       // スタンプ形式：Readerは外観(AP)をそのまま表示する（再生成されないので確実に見える）
+      extra = { Subtype: 'Stamp', Contents: PDFHexString.fromText(a.text) };
+    } else {                                              // FreeText形式：Readerで文字を編集できる（見え方はReader側の描画に依存）
+      extra = { Subtype: 'FreeText', Contents: PDFHexString.fromText(a.text), Q: 0,
+                DA: PDFString.of(font ? `/PEJP ${fmt(a.size)} Tf ${rgb} rg` : `/Helv ${fmt(a.size)} Tf ${rgb} rg`) };
+      if (isC) extra.BS = { W: 1.2, S: 'S' }; else extra.Border = [0, 0, 0];
+    }
 
   } else {                                               // comment：Text注釈（付箋）
     const p1 = cp(a.x, a.y), p2 = cp(a.x + NOTE, a.y + NOTE);
@@ -1400,11 +1486,15 @@ function applyForms(doc, font) {
   form.updateFieldAppearances(font || undefined);        // 日本語を表示できるよう、埋め込んだフォントで外観を作る
 }
 
-async function savePdf() {
-  if (!pdfDoc || !pdfBytes) return;
+// 保存・印刷プレビュー共通：注釈・入力値を書き込んだPDFのバイト列を作る（失敗時はnull）
+async function buildPdfBytes(forPrint) {
+  if (!pdfDoc || !pdfBytes) return null;
   commitEditor();
   const formChanged = Object.keys(formValues).some(n => formValues[n] !== formInit[n]);
-  if (!annots.length && !hadImported && !formChanged) { setStatus('追加した注釈・入力がありません。何か書き込んでから保存してね。'); return; }
+  if (!annots.length && !hadImported && !formChanged) {
+    if (forPrint) return { bytes: pdfBytes, note: '' };   // 何も書き込んでなければ元のPDFをそのまま開く
+    setStatus('追加した注釈・入力がありません。何か書き込んでから保存してね。'); return null;
+  }
   setStatus('保存中…'); $('errorMsg').classList.remove('show');
   let note = '';
   try {
@@ -1432,26 +1522,215 @@ async function savePdf() {
       const page = doc.getPage(+pn - 1);
       for (const a of byPage[pn]) for (const r of await buildAnnot(doc, vp, a, font)) page.node.addAnnot(r);
     }
-    const out = await doc.save({ updateFieldAppearances: false });
-    const url = URL.createObjectURL(new Blob([out], { type: 'application/pdf' }));
-    const link = document.createElement('a');
-    link.href = url; link.download = fileName.replace(/\.pdf$/i, '').replace(/-edited$/, '') + '-edited.pdf';
-    document.body.appendChild(link); link.click(); document.body.removeChild(link);
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
-    dirty = false; setStatus('✅ 保存しました（' + link.download + '）' + note);
+    return { bytes: await doc.save({ updateFieldAppearances: false }), note };
   } catch (e) {
     console.error(e);
     showError(e && e.formErr ? '入力欄への書き込みに失敗しました。日本語を含む場合は、日本語フォントの読み込みができているか通信状況を確認してください。'
                              : '保存に失敗しました。PDFの構造が特殊な可能性があります。');
     setStatus('');
+    return null;
   }
 }
+async function savePdf() {
+  const r = await buildPdfBytes(false); if (!r) return;
+  const url = URL.createObjectURL(new Blob([r.bytes], { type: 'application/pdf' }));
+  const link = document.createElement('a');
+  link.href = url; link.download = fileName.replace(/\.pdf$/i, '').replace(/-edited$/, '') + '-edited.pdf';
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  dirty = false; setStatus('✅ 保存しました（' + link.download + '）' + r.note);
+}
+// 印刷・プレビュー：編集後のPDFを新しいタブで開く（印刷はそのタブのPDFビューアから）
+async function printPdf() {
+  const w = window.open('', '_blank');                    // クリック直後に開いてポップアップブロックを避ける
+  const r = await buildPdfBytes(true);
+  if (!r) { if (w) w.close(); return; }
+  const url = URL.createObjectURL(new Blob([r.bytes], { type: 'application/pdf' }));
+  if (w) { w.location.href = url; setStatus('新しいタブで開きました。印刷はそのタブのPDFビューアから行えます' + r.note); }
+  else setStatus('ポップアップがブロックされました。許可するか、「保存」してから印刷してください');
+  setTimeout(() => URL.revokeObjectURL(url), 600000);
+}
+
+/* =====================================================
+   署名・画像（手書き署名を作る／画像を選ぶ→PDF上をタップして配置）
+   ・署名は端末のlocalStorageに最大6個まで保存（この端末の中だけ。外部送信なし）
+   ===================================================== */
+const SIGN_KEY = 'arigato_pdf_signs';
+function loadSigns() { try { return JSON.parse(localStorage.getItem(SIGN_KEY) || '[]'); } catch (e) { return []; } }
+function saveSigns(list) { try { localStorage.setItem(SIGN_KEY, JSON.stringify(list.slice(-6))); } catch (e) { /* 保存できなくても今回は使える */ } }
+function keyForUrl(url, w, h, up) {
+  let k = Object.keys(imgStore).find(q => imgStore[q].url === url);
+  if (!k) { k = 'i' + (imgSeq++); imgStore[k] = { url, w, h, up }; }
+  return k;
+}
+function renderImgList() {
+  const box = $('imgList'); box.innerHTML = '';
+  const add = (url, key) => {
+    const b = document.createElement('button'); b.type = 'button';
+    b.className = 'pe-btn pe-imgthumb' + (pendingImg && imgStore[pendingImg] && imgStore[pendingImg].url === url ? ' active' : '');
+    const im = document.createElement('img'); im.src = url; b.appendChild(im);
+    b.onclick = () => { pendingImg = key || keyForUrl(url); renderImgList(); setStatus('置きたい場所をタップしてね'); };
+    box.appendChild(b);
+  };
+  loadSigns().forEach(u => add(u, null));
+  Object.keys(imgStore).filter(k => imgStore[k].up).forEach(k => add(imgStore[k].url, k));
+  if (!box.children.length) box.textContent = '（まだありません）';
+}
+function placeImage(p) {
+  const im = pendingImg && imgStore[pendingImg];
+  if (!im) { setStatus('先に「手書き署名を作る」か「画像を選ぶ」から使うものを選んでね'); return; }
+  const nat = new Image();
+  nat.onload = () => {
+    const w0 = im.w || nat.naturalWidth, h0 = im.h || nat.naturalHeight, w = Math.min(160, pageW * 0.4), h = w * h0 / w0;
+    addAnnot({ type: 'image', key: pendingImg, x: Math.min(Math.max(p[0] - w / 2, 0), pageW - w), y: Math.min(Math.max(p[1] - h / 2, 0), pageH - h), w, h });
+    const id = annots[annots.length - 1].id;
+    setTool('select'); selIds = [id]; drawOverlay(); updateUi(); setStatus('配置しました。ドラッグで移動、右下の○で大きさを変えられます');
+  };
+  nat.src = im.url;
+}
+function loadImageFile(file) {                            // 大きい画像は縮小して軽くする（最大900px）
+  if (!file) return;
+  const fr = new FileReader();
+  fr.onload = () => {
+    const im = new Image();
+    im.onload = () => {
+      const s = Math.min(1, 900 / Math.max(im.width, im.height)), cv = document.createElement('canvas');
+      cv.width = Math.round(im.width * s); cv.height = Math.round(im.height * s);
+      cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+      const png = /png|gif|webp|svg/.test(file.type);
+      pendingImg = keyForUrl(cv.toDataURL(png ? 'image/png' : 'image/jpeg', 0.88), cv.width, cv.height, true);
+      renderImgList(); setStatus('置きたい場所をタップしてね');
+    };
+    im.onerror = () => showError('画像を読み込めませんでした');
+    im.src = fr.result;
+  };
+  fr.readAsDataURL(file);
+}
+// 手書き署名パッド
+const signCv = $('signCanvas'), signCtx = signCv.getContext('2d');
+let signDown = false, signLast = null;
+function signPt(e) { const r = signCv.getBoundingClientRect(); return [(e.clientX - r.left) * signCv.width / r.width, (e.clientY - r.top) * signCv.height / r.height]; }
+function signClear() { signCtx.clearRect(0, 0, signCv.width, signCv.height); }
+signCv.addEventListener('pointerdown', e => {
+  e.preventDefault(); signCv.setPointerCapture(e.pointerId); signDown = true; signLast = signPt(e);
+  signCtx.fillStyle = '#111'; signCtx.beginPath(); signCtx.arc(signLast[0], signLast[1], 2.5, 0, Math.PI * 2); signCtx.fill();   // タップだけでも点が残る
+});
+signCv.addEventListener('pointermove', e => {
+  if (!signDown) return;
+  const p = signPt(e);
+  signCtx.strokeStyle = '#111'; signCtx.lineWidth = 5; signCtx.lineCap = 'round'; signCtx.lineJoin = 'round';
+  signCtx.beginPath(); signCtx.moveTo(signLast[0], signLast[1]); signCtx.lineTo(p[0], p[1]); signCtx.stroke(); signLast = p;
+});
+['pointerup', 'pointercancel'].forEach(ev => signCv.addEventListener(ev, () => { signDown = false; }));
+function openSign() { signClear(); $('signModal').style.display = 'flex'; }
+function closeSign() { $('signModal').style.display = 'none'; }
+function useSign() {
+  const d = signCtx.getImageData(0, 0, signCv.width, signCv.height).data, W = signCv.width, H = signCv.height;
+  let x0 = W, y0 = H, x1 = -1, y1 = -1;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (d[(y * W + x) * 4 + 3] > 8) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  if (x1 < 0) { setStatus('まだ何も書かれていません'); return; }
+  const m = 10, cx = Math.max(0, x0 - m), cy = Math.max(0, y0 - m), cw = Math.min(W, x1 + m) - cx, ch = Math.min(H, y1 + m) - cy;   // 余白を詰める
+  const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+  cv.getContext('2d').drawImage(signCv, cx, cy, cw, ch, 0, 0, cw, ch);
+  const url = cv.toDataURL('image/png');
+  saveSigns([...loadSigns().filter(u => u !== url), url]);
+  pendingImg = keyForUrl(url, cw, ch, false);
+  closeSign(); renderImgList(); setStatus('置きたい場所をタップしてね');
+}
+
+/* =====================================================
+   文字検索（PDF内のテキスト。スキャンPDFなど文字情報のないものは検索できない）
+   ===================================================== */
+let searchRes = [], searchCur = -1, textCache = {}, scrollToHit = false, searchT = null;
+async function pageTextStruct(n) {                        // ページの文字を連結し、文字位置→場所の対応表を作る
+  if (textCache[n]) return textCache[n];
+  const page = await pdfDoc.getPage(n), v1 = page.getViewport({ scale: 1 }), c = await page.getTextContent();
+  let full = ''; const items = [];
+  c.items.forEach(it => {
+    if (typeof it.str !== 'string') return;
+    const start = full.length; full += it.str;
+    items.push({ start, end: full.length, x: it.transform[4], y: it.transform[5], w: it.width, h: Math.abs(it.height) || Math.abs(it.transform[3]) });
+    if (it.hasEOL) full += '\n';
+  });
+  return (textCache[n] = { full, items, v1 });
+}
+function hitRects(T, s, e) {                              // 一致範囲→画面上の矩形（アイテムごとに按分）
+  const out = [];
+  T.items.forEach(it => {
+    const a = Math.max(s, it.start), b = Math.min(e, it.end);
+    if (a >= b || it.end === it.start) return;
+    const len = it.end - it.start, x0 = it.x + it.w * (a - it.start) / len, x1 = it.x + it.w * (b - it.start) / len;
+    const r = T.v1.convertToViewportRectangle([x0, it.y - it.h * 0.2, x1, it.y + it.h * 0.85]);
+    out.push([Math.min(r[0], r[2]), Math.min(r[1], r[3]), Math.abs(r[2] - r[0]), Math.abs(r[3] - r[1])]);
+  });
+  return out;
+}
+async function runSearch() {
+  const q = $('searchInput').value.trim();
+  searchRes = []; searchCur = -1; $('searchCount').textContent = '';
+  if (!q || !pdfDoc) { drawSearch(); return; }
+  const ql = q.toLowerCase(); let any = false;
+  for (let n = 1; n <= pdfDoc.numPages; n++) {
+    if (q !== $('searchInput').value.trim()) return;      // 入力が変わったら中断
+    if (pdfDoc.numPages > 20) $('searchCount').textContent = '検索中… ' + n + '/' + pdfDoc.numPages;
+    const T = await pageTextStruct(n); if (T.full.length) any = true;
+    const low = T.full.toLowerCase(); let i = low.indexOf(ql);
+    while (i >= 0) { searchRes.push({ page: n, rects: hitRects(T, i, i + ql.length) }); i = low.indexOf(ql, i + ql.length); }
+  }
+  if (!searchRes.length) { $('searchCount').textContent = any ? '見つかりません' : '文字情報がありません（スキャンPDFは検索できません）'; drawSearch(); return; }
+  const k = searchRes.findIndex(h => h.page >= pageNum);  // 現在ページ以降の最初のヒットへ
+  gotoHit(k < 0 ? 0 : k);
+}
+function gotoHit(k) {
+  if (!searchRes.length) return;
+  searchCur = (k + searchRes.length) % searchRes.length;
+  const h = searchRes[searchCur];
+  $('searchCount').textContent = (searchCur + 1) + ' / ' + searchRes.length;
+  scrollToHit = true;
+  if (h.page !== pageNum) { commitEditor(); pageNum = h.page; selIds = []; showPage(); } else drawSearch();
+}
+function drawSearch() {
+  const L = $('searchLayer'); L.innerHTML = '';
+  if (!pdfDoc || !searchRes.length) return;
+  L.style.width = pageW * scale + 'px'; L.style.height = pageH * scale + 'px';
+  searchRes.forEach((h, i) => {
+    if (h.page !== pageNum) return;
+    h.rects.forEach(r => {
+      const d = document.createElement('div'); if (i === searchCur) d.className = 'cur';
+      Object.assign(d.style, { left: r[0] * scale + 'px', top: r[1] * scale + 'px', width: r[2] * scale + 'px', height: r[3] * scale + 'px' });
+      L.appendChild(d);
+    });
+  });
+  if (scrollToHit && searchCur >= 0 && searchRes[searchCur].page === pageNum && searchRes[searchCur].rects[0]) {   // ヒット位置が見えるようスクロール
+    scrollToHit = false;
+    const r = searchRes[searchCur].rects[0], v = $('viewer'), pw = $('pageWrap');
+    v.scrollTo({ top: Math.max(0, pw.offsetTop + r[1] * scale - v.clientHeight / 2), left: Math.max(0, pw.offsetLeft + r[0] * scale - v.clientWidth / 2) });
+  }
+}
+function openSearch() { $('searchBar').style.display = 'flex'; $('searchInput').focus(); $('searchInput').select(); relayout(); }
+function closeSearch() { $('searchBar').style.display = 'none'; searchRes = []; searchCur = -1; drawSearch(); relayout(); }
 
 /* =====================================================
    イベント登録
    ===================================================== */
 $('fileInput').addEventListener('change', e => { openFile(e.target.files[0]); e.target.value = ''; });
 $('btnSave').onclick = savePdf;
+$('btnPrint').onclick = printPdf;
+$('btnSearch').onclick = openSearch;
+$('btnSearchClose').onclick = closeSearch;
+$('btnSearchNext').onclick = () => gotoHit(searchCur + 1);
+$('btnSearchPrev').onclick = () => gotoHit(searchCur - 1);
+$('searchInput').addEventListener('input', () => { clearTimeout(searchT); searchT = setTimeout(runSearch, 300); });
+$('searchInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); if (searchRes.length) gotoHit(searchCur + (e.shiftKey ? -1 : 1)); else runSearch(); }
+  else if (e.key === 'Escape') closeSearch();
+});
+$('btnSignNew').onclick = openSign;
+$('btnSignClear').onclick = signClear;
+$('btnSignOk').onclick = useSign;
+$('btnSignCancel').onclick = closeSign;
+$('imgInput').addEventListener('change', e => { loadImageFile(e.target.files[0]); e.target.value = ''; });
+$('btnImgClear').onclick = () => { try { localStorage.removeItem(SIGN_KEY); } catch (e) {} renderImgList(); };
 $('btnUndo').onclick = undo;
 $('btnRedo').onclick = redo;
 $('btnDelete').onclick = deleteSelected;
@@ -1498,10 +1777,11 @@ viewer.addEventListener('wheel', e => {
 }, { passive: false });
 
 // キーボードショートカット（Ctrl+S以外は入力中は無効）
-const TOOL_KEYS = { v: 'select', h: 'texthl', u: 'underline', s: 'strike', r: 'highlight', p: 'pen', g: 'shape', t: 'text', b: 'callout', c: 'comment', f: 'form' };
+const TOOL_KEYS = { v: 'select', h: 'texthl', u: 'underline', s: 'strike', r: 'highlight', p: 'pen', g: 'shape', t: 'text', b: 'callout', c: 'comment', f: 'form', i: 'image' };
 document.addEventListener('keydown', e => {
   const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
   if (mod && k === 's') { e.preventDefault(); savePdf(); return; }          // Ctrl+Sで保存（入力中でも有効）
+  if (mod && k === 'f' && pdfDoc) { e.preventDefault(); openSearch(); return; }   // Ctrl+Fで検索
   if (/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
   if (mod && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
   else if (mod && k === 'y') { e.preventDefault(); redo(); }
