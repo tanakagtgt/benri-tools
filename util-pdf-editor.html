@@ -121,8 +121,8 @@ button.pe-ff { display:flex; align-items:center; justify-content:center; cursor:
   height:75vh; height:75dvh; min-height:420px;
   background:var(--color-card); border:1px solid var(--color-border); border-radius:var(--radius-card);
 }
-.pe-tabs { display:flex; gap:4px; padding:6px; border-bottom:1px solid var(--color-border); }
-.pe-tabs .pe-btn { flex:1; padding:0 4px; font-size:12px; }
+.pe-tabs { display:flex; flex-wrap:wrap; gap:4px; padding:6px; border-bottom:1px solid var(--color-border); }
+.pe-tabs .pe-btn { flex:1 1 45%; padding:0 4px; font-size:12px; }   /* タブが3つになったので2段に折り返す */
 .pe-sidebody { position:relative; flex:1; overflow:auto; padding:8px; }
 .pe-thumbs { display:flex; flex-direction:column; gap:10px; }
 .pe-thumb {
@@ -138,6 +138,13 @@ button.pe-ff { display:flex; align-items:center; justify-content:center; cursor:
 }
 .pe-list { display:flex; flex-direction:column; gap:6px; font-size:12px; color:var(--color-text-muted); }
 .pe-item { justify-content:flex-start; white-space:normal; text-align:left; font-weight:400; }
+/* しおり（目次）ツリー：▸で子項目を開閉、タイトルを押すとそのページへ */
+.pe-ol-row { display:flex; align-items:flex-start; gap:2px; }
+.pe-ol-tg { flex:0 0 26px; min-height:44px; border:none; background:none; color:var(--color-text-muted); font-family:inherit; font-size:12px; cursor:pointer; }
+.pe-ol-tg:disabled { cursor:default; }
+.pe-ol-row .pe-item { flex:1; min-width:0; }
+.pe-ol-kids { display:none; }
+.pe-ol-kids.open { display:block; }
 .pe-check { display:inline-flex; align-items:center; gap:6px; min-height:44px; font-size:12px; color:var(--color-text-sub); cursor:pointer; }
 .pe-check input { width:20px; height:20px; accent-color:var(--color-primary); }
 .pe-help { font-size:12px; color:var(--color-text-sub); margin:0 0 4px; line-height:1.8; }
@@ -213,6 +220,7 @@ body.pe-focus .back-to-index, body.pe-focus header { display:none; }
     <button class="pe-btn" data-tool="texthl">🖍 文字ハイライト</button>
     <button class="pe-btn" data-tool="underline"><u>U</u>&nbsp;下線</button>
     <button class="pe-btn" data-tool="strike"><s>S</s>&nbsp;取り消し線</button>
+    <button class="pe-btn" data-tool="textcopy">📝 文字コピー</button>
     <button class="pe-btn" data-tool="highlight">▭ 範囲ハイライト</button>
     <button class="pe-btn" data-tool="pen">✏️ ペン</button>
     <button class="pe-btn" data-tool="shape">⬜ 図形</button>
@@ -226,6 +234,7 @@ body.pe-focus .back-to-index, body.pe-focus header { display:none; }
   <!-- 行3：選択中の操作 -->
   <div class="pe-bar">
     <button class="pe-btn" id="btnApplyHl" style="display:none">✔ 選択した文字に適用</button>
+    <button class="pe-btn primary" id="btnCopyBody" style="display:none">📄 選択した文字をコピー</button>
     <button class="pe-btn" id="btnEdit" disabled>✎ 文字を編集</button>
     <button class="pe-btn" id="btnCopy" disabled>📄 コピー</button>
     <button class="pe-btn" id="btnPaste" disabled>📥 貼り付け</button>
@@ -269,7 +278,8 @@ body.pe-focus .back-to-index, body.pe-focus header { display:none; }
     ・署名・画像：「🖋 署名・画像」で手書き署名を作るか画像を選び、PDF上をタップして配置（署名はこの端末に最大6個保存）。文字検索：🔍またはCtrl+F。印刷：「🖨 印刷・プレビュー」で編集後のPDFを新しいタブで開く<br>
     ・連続表示：全ページを縦に並べて閲覧（ページをクリックすると、そのページを編集モードで開く）。ページ回転：「↺ ↻」で表示中のページを回転して保存。他のソフトで付けた注釈：開く時に「取り込む」を選ぶと、このツールで編集できる<br>
     ・フォーム入力：入力欄のあるPDFは自動で「📋 フォーム入力」になります。入力欄をタップして記入<br>
-    ・ショートカット：Ctrl+S 保存／Ctrl+Z 戻す／Ctrl+Y やり直す／Ctrl+C コピー／Ctrl+V 貼り付け／V 選択・H 文字ハイライト・U 下線・S 取り消し線・R 範囲・P ペン・G 図形・T 文字・B 吹き出し・I 署名・画像・C コメント・F フォーム／Ctrl+F 検索／＋－ ズーム／Ctrl+ホイール ズーム／←→ ページ移動／Esc 選択解除</div>
+    ・文字コピー：「📝 文字コピー」を選んで本文の文字をなぞり、「選択した文字をコピー」を押す（Ctrl+Cでも可。スキャンPDFなど画像だけのページは文字を選べません）。しおり：左のサイドバー「📑 しおり」から目次のページへ移動<br>
+    ・ショートカット：Ctrl+S 保存／Ctrl+Z 戻す／Ctrl+Y やり直す／Ctrl+C コピー／Ctrl+V 貼り付け／V 選択・H 文字ハイライト・U 下線・S 取り消し線・R 範囲・P ペン・G 図形・T 文字・B 吹き出し・I 署名・画像・C コメント・F フォーム・X 文字コピー／Ctrl+F 検索／＋－ ズーム／Ctrl+ホイール ズーム／←→ ページ移動／Esc 選択解除</div>
   </details>
 
   <!-- 検索バー（Ctrl+Fでも開く） -->
@@ -297,10 +307,12 @@ body.pe-focus .back-to-index, body.pe-focus header { display:none; }
     <aside class="pe-side">
       <div class="pe-tabs">
         <button class="pe-btn active" data-side="thumbs">🗂 ページ</button>
+        <button class="pe-btn" data-side="outline" id="tabOutline">📑 しおり</button>
         <button class="pe-btn" data-side="comments" id="tabComments">💬 コメント(0)</button>
       </div>
       <div class="pe-sidebody" id="sideBody">
         <div class="pe-thumbs" id="thumbList"></div>
+        <div class="pe-list" id="outlineList" style="display:none">しおり（目次）はありません</div>
         <div class="pe-list" id="commentList" style="display:none">コメントはまだありません</div>
       </div>
     </aside>
@@ -327,7 +339,7 @@ body.pe-focus .back-to-index, body.pe-focus header { display:none; }
   <h3>こんな場面に</h3>
   <p>回覧資料への蛍光ペンや赤枠・矢印、申込書への記入、レビュー用のコメント、図面や契約書への吹き出しメモといった使い方を想定しています。インストール不要で、パソコンでもiPadでも使えます。</p>
   <h3>仕様と注意</h3>
-  <p>PDFは端末のブラウザ内だけで処理し、サーバーへは送信しません。追加した内容はPDF標準の注釈として書き込み、元のページ内容は書き換えません。このツールで保存したPDFは開き直すと注釈を再編集できます。Adobe Readerなど他のソフトで付けた注釈は、開く時に「取り込む」を選ぶと編集できます（細かい装飾は省略されます）。全ページを縦に並べる連続表示は閲覧用で、ページの回転にも対応しています。日本語の文字注釈・フォーム入力を保存する時は、日本語フォント（約5MB）を初回のみ読み込みます。パスワード付きPDFには対応していません。ソフトによって見え方・編集のしかたが異なる場合があります。</p>
+  <p>PDFは端末のブラウザ内だけで処理し、サーバーへは送信しません。追加した内容はPDF標準の注釈として書き込み、元のページ内容は書き換えません。このツールで保存したPDFは開き直すと注釈を再編集できます。Adobe Readerなど他のソフトで付けた注釈は、開く時に「取り込む」を選ぶと編集できます（細かい装飾は省略されます）。全ページを縦に並べる連続表示は閲覧用で、ページの回転にも対応しています。PDF本文の文字は「文字コピー」でなぞって選択してコピーでき、しおり（目次）の付いたPDFは左のサイドバーからページへ移動できます（スキャンした画像だけのPDFは文字を選べません）。日本語の文字注釈・フォーム入力を保存する時は、日本語フォント（約5MB）を初回のみ読み込みます。パスワード付きPDFには対応していません。ソフトによって見え方・編集のしかたが異なる場合があります。</p>
   <h3>よくある質問</h3>
   <p>Q. 保存したPDFを他の人に渡しても見えますか？ A. 一般的なPDFビューアで表示できます。Q. 入力欄の内容も保存されますか？ A. はい、保存したPDFの入力欄に書き込まれます。</p>
 </section>
@@ -411,7 +423,9 @@ const SWATCHES = ['#ffeb3b', '#69f0ae', '#40c4ff', '#ff5252', '#111111'];
 const NOTE = 18;      // コメント付箋アイコンの大きさ(pt)
 const PAD = 2;        // 文字注釈の内側余白(pt)
 const CPX = 4, CPY = 3; // 吹き出しの箱の内側余白(pt)
-const TEXTSEL = ['texthl', 'underline', 'strike'];   // 文字選択を使うツール
+const TEXTSEL = ['texthl', 'underline', 'strike'];   // 文字選択して「注釈にする」ツール
+const TEXTLAYER = TEXTSEL.concat('textcopy');        // 透明テキストレイヤーを出すツール（文字コピーは注釈を作らない）
+let lastSelText = '';                                 // 文字コピー用：直前に選択した文字（iPadはボタンを押すと選択が消えることがあるため控えておく）
 
 let pdfDoc = null, pdfBytes = null, fileName = 'document.pdf', hadImported = false;
 let pageNum = 1, scale = 1, tool = 'select';
@@ -848,6 +862,7 @@ async function openFile(file) {
     $('pageInput').max = doc.numPages;
     await document.fonts.load(fontStr(16), 'あ').catch(() => {});
     buildThumbs();
+    loadOutline(doc);                                    // しおりは待たずに裏で読む（失敗しても開く処理には影響しない）
     fitMode = 'page'; layoutViewer();
     await applyFit();
     setStatus(file.name + '（' + doc.numPages + 'ページ）' +
@@ -898,14 +913,14 @@ async function renderPage() {
 
 // 文字選択系ツールの時だけ、選択できる透明テキストを重ねる
 async function buildTextLayer() {
-  const tl = $('textLayer'); tl.innerHTML = '';
-  if (!TEXTSEL.includes(tool) || !pdfDoc) return;
+  const tl = $('textLayer'); tl.innerHTML = ''; lastSelText = '';
+  if (!TEXTLAYER.includes(tool) || !pdfDoc) return;
   const seq = renderSeq;
   try {
     const page = await pdfDoc.getPage(pageNum);
     const vp = vpOf(page, scale, pageNum);
     const content = await page.getTextContent();
-    if (seq !== renderSeq || !TEXTSEL.includes(tool)) return;
+    if (seq !== renderSeq || !TEXTLAYER.includes(tool)) return;
     tl.style.width = vp.width + 'px'; tl.style.height = vp.height + 'px';
     tl.style.setProperty('--scale-factor', scale);
     pdfjsLib.renderTextLayer({ textContent: content, textContentSource: content, container: tl, viewport: vp, textDivs: [] });
@@ -1280,8 +1295,92 @@ function applyTextSelection() {
   addAnnot({ type: 'highlight', style, rects: mergeRects(rects), color: colorByTool[colorKey()], opacity: style === 'hl' ? +$('hlOpacity').value : 1 });
   sel.removeAllRanges(); setStatus(''); drawOverlay(); updateUi();
 }
-$('textLayer').addEventListener('pointerup', e => { if (e.pointerType === 'mouse') setTimeout(applyTextSelection, 0); });
+$('textLayer').addEventListener('pointerup', e => { if (e.pointerType === 'mouse' && tool !== 'textcopy') setTimeout(applyTextSelection, 0); });
 $('btnApplyHl').onclick = applyTextSelection;
+
+/* =====================================================
+   本文テキストのコピー（📝 文字コピー）
+   ・注釈は作らず、選んだ文字をクリップボードへ送るだけ
+   ・iPadなどはボタンを押した瞬間に選択が解除されることがあるため、
+     選択中に selectionchange で文字を控えておき、空ならその控えを使う
+   ===================================================== */
+document.addEventListener('selectionchange', () => {
+  if (tool !== 'textcopy') return;
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed || !sel.rangeCount) return;          // 解除された時は直前の控えを残す
+  if ($('textLayer').contains(sel.getRangeAt(0).commonAncestorContainer)) lastSelText = sel.toString();
+});
+function fallbackCopy(text) {                                         // clipboard APIが使えない環境用
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.cssText = 'position:fixed;left:0;top:0;opacity:0';
+  document.body.appendChild(ta); ta.focus(); ta.select(); ta.setSelectionRange(0, text.length);
+  let ok = false; try { ok = document.execCommand('copy'); } catch (e) { /* 失敗時はfalse */ }
+  document.body.removeChild(ta); return ok;
+}
+async function copyBodyText() {
+  const sel = window.getSelection();
+  let text = '';
+  if (sel && !sel.isCollapsed && sel.rangeCount && $('textLayer').contains(sel.getRangeAt(0).commonAncestorContainer)) text = sel.toString();
+  if (!text) text = lastSelText;
+  text = text.replace(/\u00a0/g, ' ').trim();
+  if (!text) { setStatus('先にコピーしたい文字をなぞって選択してね（スキャンPDFは文字を選べません）'); return; }
+  let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; } catch (e) { ok = fallbackCopy(text); }
+  setStatus(ok ? '✅ ' + text.length + '文字をコピーしました' : 'コピーできませんでした。選択した文字を長押しして「コピー」を選んでください');
+}
+$('btnCopyBody').onclick = copyBodyText;
+
+/* =====================================================
+   しおり（目次）：pdf.jsのgetOutline()を、サイドバーのツリーに表示
+   ・タイトルを押すとそのページへ移動（ページ内の位置までは追わない）
+   ・URLだけのしおり（外部リンク）は移動しない
+   ===================================================== */
+async function outlinePage(doc, dest) {                               // 移動先 → ページ番号（1始まり）。不明ならnull
+  try {
+    let d = dest;
+    if (typeof d === 'string') d = await doc.getDestination(d);       // 名前付き移動先
+    if (!Array.isArray(d) || !d.length) return null;
+    const r = d[0];
+    if (r && typeof r === 'object') return (await doc.getPageIndex(r)) + 1;
+    if (Number.isInteger(r)) return r + 1;
+  } catch (e) { /* 壊れたしおりは移動なし扱い */ }
+  return null;
+}
+function jumpToPage(n) {                                              // 1ページ表示・連続表示のどちらでも移動
+  if (!pdfDoc) return;
+  commitEditor(); n = Math.min(Math.max(n, 1), pdfDoc.numPages);
+  if (viewMode === 'cont') { pageNum = n; scrollToCont(n); updateUi(); } else goPage(n);
+}
+function outlineNode(doc, it, depth) {
+  const wrap = document.createElement('div'), row = document.createElement('div');
+  row.className = 'pe-ol-row'; row.style.paddingLeft = Math.min(depth, 6) * 10 + 'px';
+  const kids = it.items && it.items.length ? it.items : null;
+  const tg = document.createElement('button'); tg.type = 'button'; tg.className = 'pe-ol-tg';
+  const box = document.createElement('div'); box.className = 'pe-ol-kids';
+  if (kids) {
+    tg.textContent = '▸'; tg.setAttribute('aria-label', '開閉');
+    tg.onclick = () => { const o = box.classList.toggle('open'); tg.textContent = o ? '▾' : '▸'; };
+    kids.forEach(k => box.appendChild(outlineNode(doc, k, depth + 1)));
+  } else tg.disabled = true;                                          // 子なし：幅だけ確保して字下げを揃える
+  const lb = document.createElement('button'); lb.type = 'button'; lb.className = 'pe-btn pe-item';
+  lb.textContent = (it.title || '').replace(/\s+/g, ' ').trim() || '(無題)';
+  lb.onclick = async () => {
+    const n = it.dest ? await outlinePage(doc, it.dest) : null;
+    if (doc !== pdfDoc) return;                                       // 別のPDFに切り替わっていたら何もしない
+    if (n) jumpToPage(n); else setStatus('このしおりは、ページ移動に対応していません（外部リンクなど）');
+  };
+  row.appendChild(tg); row.appendChild(lb); wrap.appendChild(row); if (kids) wrap.appendChild(box);
+  return wrap;
+}
+async function loadOutline(doc) {
+  const box = $('outlineList'); box.textContent = '読み込み中…';
+  let items = null;
+  try { items = await doc.getOutline(); } catch (e) { items = null; }   // 失敗しても「しおりなし」にするだけ
+  if (doc !== pdfDoc) return;
+  box.innerHTML = '';
+  if (!items || !items.length) { box.textContent = 'しおり（目次）はありません'; return; }
+  items.forEach(it => box.appendChild(outlineNode(doc, it, 0)));
+}
 
 /* =====================================================
    注釈の追加・削除・コピー＆貼り付け・Undo/Redo
@@ -1321,12 +1420,14 @@ function redo() {
    ===================================================== */
 function setTool(t) {
   if (viewMode === 'cont' && t !== 'select') setViewMode('single');   // 編集系ツールは1ページ表示で使う
-  commitEditor(); tool = t; selIds = [];
+  commitEditor(); const prevTool = tool; tool = t; selIds = [];
   document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === t));
-  if (!TEXTSEL.includes(t)) window.getSelection().removeAllRanges();
+  if (!TEXTLAYER.includes(t)) window.getSelection().removeAllRanges();
   if (t === 'text' || t === 'callout' || t === 'form') prefetchFont();
   if (t === 'image') renderImgList();
   if (t === 'form' && pdfDoc && !formFields.length) setStatus('このPDFには入力欄がありません');
+  if (t === 'textcopy' && pdfDoc) setStatus('コピーしたい文字をなぞって選択 → 「選択した文字をコピー」を押す（Ctrl+Cでも可）');
+  else if (prevTool === 'textcopy') setStatus('');
   drawOverlay(); buildTextLayer(); updateUi();
 }
 // 色パレット：描画ツール中は新規用、選択中は選んだ注釈の色を変更
@@ -1592,7 +1693,8 @@ function updateUi() {
   $('zoomLabel').textContent = Math.round(scale * 100) + '%';
   const w = $('pageWrap');
   w.classList.toggle('drawing', ['highlight', 'pen', 'shape', 'text', 'callout', 'comment'].includes(tool));
-  w.classList.toggle('texthl', TEXTSEL.includes(tool));
+  w.classList.toggle('texthl', TEXTLAYER.includes(tool));
+  $('btnCopyBody').style.display = tool === 'textcopy' ? 'inline-flex' : 'none';
   w.classList.toggle('formtool', tool === 'form');
   w.classList.toggle('hassel', selIds.length > 0);
   w.classList.toggle('multi', multiMode && tool === 'select');
@@ -2072,11 +2174,13 @@ $('btnFocus').onclick = toggleFocus;
 document.querySelectorAll('[data-tool]').forEach(b => b.onclick = () => setTool(b.dataset.tool));
 $('penOnly').addEventListener('change', updateUi);
 // サイドバー：タブ切替（ページ／コメント）と表示・非表示
-document.querySelectorAll('[data-side]').forEach(b => b.onclick = () => {
-  document.querySelectorAll('[data-side]').forEach(x => x.classList.toggle('active', x === b));
-  $('thumbList').style.display = b.dataset.side === 'thumbs' ? '' : 'none';
-  $('commentList').style.display = b.dataset.side === 'comments' ? 'flex' : 'none';
-});
+function showSideTab(name) {
+  document.querySelectorAll('[data-side]').forEach(x => x.classList.toggle('active', x.dataset.side === name));
+  $('thumbList').style.display = name === 'thumbs' ? '' : 'none';
+  $('outlineList').style.display = name === 'outline' ? 'flex' : 'none';
+  $('commentList').style.display = name === 'comments' ? 'flex' : 'none';
+}
+document.querySelectorAll('[data-side]').forEach(b => b.onclick = () => showSideTab(b.dataset.side));
 $('btnSide').onclick = () => {
   $('peMain').classList.toggle('noside');
   setTimeout(relayout, 0);                               // 表示幅が変わるので合わせ直す
@@ -2098,7 +2202,7 @@ viewer.addEventListener('wheel', e => {
 }, { passive: false });
 
 // キーボードショートカット（Ctrl+S以外は入力中は無効）
-const TOOL_KEYS = { v: 'select', h: 'texthl', u: 'underline', s: 'strike', r: 'highlight', p: 'pen', g: 'shape', t: 'text', b: 'callout', c: 'comment', f: 'form', i: 'image' };
+const TOOL_KEYS = { v: 'select', x: 'textcopy', h: 'texthl', u: 'underline', s: 'strike', r: 'highlight', p: 'pen', g: 'shape', t: 'text', b: 'callout', c: 'comment', f: 'form', i: 'image' };
 document.addEventListener('keydown', e => {
   const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
   if (mod && k === 's') { e.preventDefault(); savePdf(); return; }          // Ctrl+Sで保存（入力中でも有効）
