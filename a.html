@@ -996,6 +996,149 @@ footer{
   text-overflow:ellipsis;
   white-space:nowrap;
 }
+/* =====================================================
+   【カレンダータブ】月表示（Googleカレンダー風）／日表示
+   ・色はCSS変数のみ（ダークモード対応）。タスクの色は所属ボードの色（--board-color）
+   ===================================================== */
+.cal-head{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+.cal-title{flex:1;text-align:center;font-size:16px;font-weight:700;color:var(--color-text);}
+.cal-nav-btn{
+  flex-shrink:0;
+  min-width:44px;
+  min-height:44px;
+  border:1px solid var(--color-primary-border);
+  border-radius:var(--radius-input);
+  background:var(--color-chip-bg);
+  color:var(--color-primary);
+  font-family:inherit;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+}
+.cal-dow,.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));}
+.cal-dow{margin-bottom:2px;}
+.cal-dow span{text-align:center;font-size:11px;font-weight:700;color:var(--color-text-muted);padding:3px 0;}
+.cal-dow span.sun,.cal-daynum.sun{color:var(--color-error-text);}
+.cal-dow span.sat,.cal-daynum.sat{color:var(--color-primary);}
+.cal-grid{
+  gap:1px;
+  background:var(--color-border);
+  border:1px solid var(--color-border);
+  border-radius:var(--radius-card);
+  overflow:hidden;
+  margin-bottom:10px;
+}
+.cal-cell{
+  background:var(--color-card);
+  min-height:78px;
+  padding:3px 2px;
+  cursor:pointer;
+  overflow:hidden;
+  min-width:0;
+}
+.cal-cell.other{background:var(--color-input-bg);}
+.cal-cell.other .cal-daynum{opacity:0.45;}
+.cal-cell.selected{outline:2px solid var(--color-primary);outline-offset:-2px;}
+.cal-daynum{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:20px;
+  height:20px;
+  border-radius:10px;
+  font-size:11px;
+  font-weight:700;
+  color:var(--color-text);
+  margin-bottom:2px;
+}
+.cal-cell.today .cal-daynum{background:var(--color-primary);color:#fff;}
+.cal-chip{
+  background:color-mix(in srgb,var(--board-color,#8a8f98) 20%,var(--color-card));
+  border-left:3px solid var(--board-color,#8a8f98);
+  border-radius:3px;
+  color:var(--color-text);
+  font-size:9.5px;
+  font-weight:700;
+  line-height:1.4;
+  padding:1px 3px;
+  margin-bottom:2px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.cal-chip.done{opacity:0.5;text-decoration:line-through;}
+.cal-more{font-size:9.5px;color:var(--color-text-muted);padding-left:2px;}
+@media (min-width:600px){
+  .cal-cell{min-height:104px;}
+  .cal-chip{font-size:11px;padding:2px 4px;}
+}
+.cal-day-panel{
+  background:var(--color-card);
+  border:1px solid var(--color-border);
+  border-radius:var(--radius-card);
+  padding:10px;
+  margin-bottom:14px;
+}
+.cal-day-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.cal-day-label{flex:1;font-size:14px;font-weight:700;color:var(--color-text);}
+.cal-add-btn{
+  flex-shrink:0;
+  min-height:44px;
+  padding:0 12px;
+  border:1px solid var(--color-primary-border);
+  border-radius:var(--radius-input);
+  background:var(--color-chip-bg);
+  color:var(--color-primary);
+  font-family:inherit;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+}
+.cal-task{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-height:48px;
+  border-top:1px solid var(--color-border);
+  border-left:4px solid var(--board-color,#8a8f98);
+  padding:4px 6px;
+  cursor:pointer;
+}
+.cal-task.done .cal-task-title{opacity:0.5;text-decoration:line-through;}
+.cal-check{
+  flex-shrink:0;
+  width:44px;
+  height:44px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.cal-check input{width:20px;height:20px;accent-color:var(--color-primary);}
+.cal-task-main{flex:1;min-width:0;}
+.cal-task-title{font-size:14px;font-weight:700;color:var(--color-text);word-break:break-word;}
+.cal-task-meta{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;}
+.cal-task-tag{font-size:10.5px;color:var(--color-text-muted);}
+.cal-empty{text-align:center;font-size:13px;color:var(--color-text-label);padding:16px 8px;}
+.cal-note{font-size:11px;color:var(--color-text-muted);line-height:1.7;margin-bottom:14px;}
+
+.set-seg{display:flex;gap:8px;margin-bottom:6px;}
+.set-seg-btn{
+  flex:1;
+  min-height:44px;
+  border:2px solid var(--color-border-input);
+  border-radius:var(--radius-input);
+  background:var(--color-input-bg);
+  color:var(--color-text-sub);
+  font-family:inherit;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+}
+.set-seg-btn.active{
+  border-color:var(--color-primary);
+  background:var(--color-primary-bg);
+  color:var(--color-primary);
+}
 .settings-title{
   font-size:11px;
   font-weight:700;
@@ -1069,9 +1212,9 @@ footer{
 
   </div><!-- /#tabPanel-board -->
 
-  <!-- ================= タブ②：カレンダー（ステップ④で実装） ================= -->
+  <!-- ================= タブ②：カレンダー（締切日のタスクを表示） ================= -->
   <div class="tab-panel" id="tabPanel-calendar">
-    <div class="tab-placeholder">📅 カレンダーは準備中です</div>
+    <div id="calendarRoot"></div><!-- ★中身は renderCalendarTab() が生成（月表示／日表示は設定タブで切替） -->
   </div>
 
   <!-- ================= タブ③：リスト（検索・絞り込み・一覧） ================= -->
@@ -1123,6 +1266,9 @@ footer{
 
   <button type="button" class="set-reset-btn" onclick="resetSettings()">🔄 ボード設定を初期状態に戻す</button>
 
+  <div class="settings-title">カレンダー表示</div>
+  <div class="set-card" id="settingsCalendar"></div>
+
   <div class="settings-title">データ管理</div>
 
   <!-- データ管理：JSONエクスポート／読込 -->
@@ -1162,6 +1308,7 @@ footer{
       <li>タブ切替でボード・リスト・設定を使い分け（前回開いていたタブを記憶）</li>
       <li>リストタブで締切日・追加日・完了日・タグ・曜日・件名の昇順／降順に並び替え（選んだ並び順も記憶）</li>
       <li>設定タブでボードの追加・削除・名称・色・並べ方（行ごとの列数）を自由に変更でき、「重要×緊急」型に限らず自分の使い方に合わせた分類ができる</li>
+      <li>カレンダータブで、締切日のタスクを月表示（Googleカレンダー風）または日表示で確認。日付をタップするとその日の一覧が開き、チェックや追加もできる</li>
       <li>件名のほかメモ・タスク追加日・締切日・タグを記録</li>
       <li>「今日／明日／今週／予定なし／完了済み／すべて」の絞り込み表示</li>
       <li>ドラッグ＆ドロップでの並び替え・象限移動（スマホのタッチ操作にも対応）</li>
@@ -1183,6 +1330,7 @@ footer{
       <li>データはこの端末のブラウザ内にのみ保存される。ブラウザのキャッシュ・データを削除すると消えるので注意</li>
       <li>他端末との自動同期機能はない。機種変更時や複数端末での利用には、設定タブのJSONエクスポート／インポートが必要</li>
       <li>定期的なJSONエクスポートでのバックアップを推奨</li>
+      <li>締切日が未設定のタスクはカレンダーには表示されない（リストタブで確認）</li>
       <li>並び替えで、締切日・完了日などが未設定のタスクは昇順・降順どちらでも末尾に並ぶ。タグ順は先頭のタグ、曜日順は締切日の曜日（月曜始まり）で判定</li>
       <li>ICS一括出力は期間・ゾーン・タグで対象を絞り込んでから書き出す仕様</li>
     </ul>
@@ -1783,6 +1931,7 @@ function renderAll() {
   renderTagFilters();
   renderDashboard();
   renderListView();
+  if (activeTab === 'calendar') renderCalendarTab(); // ★カレンダー表示中はタスク変更に追従
 }
 
 /* =====================================================
@@ -1993,7 +2142,8 @@ function openModal(id) {
     document.getElementById('fieldTitle').value = '';
     document.getElementById('fieldNote').value = '';
     document.getElementById('fieldAdded').value = todayStr(); // 追加日の初期値は今日
-    document.getElementById('fieldDue').value = todayStr(); // ★締切日（任意）の初期値も今日にする（②対応）
+    // ★締切日（任意）の初期値は今日（②対応）。カレンダータブ表示中は、選択中の日付にする
+    document.getElementById('fieldDue').value = (activeTab === 'calendar') ? calEnsureState().selected : todayStr();
     document.getElementById('fieldTags').value = '';
     initQuadrant(null);
     deleteBtn.style.display = 'none';
@@ -2370,7 +2520,187 @@ function showTab(tabId, save = true) {
 }
 
 // ↓ 以降のステップで中身を実装する（今は何もしない）。設定タブは上の「ボード設定」ブロックに実装済み
-function renderCalendarTab() {}
+/* =====================================================
+   【カレンダータブ】締切日（due）のタスクを表示
+   ・月表示：Googleカレンダー風のマス目（日曜始まり）。日付タップ→下にその日の一覧
+   ・日表示：選んだ1日のタスク一覧（締切が日付のみで時刻が無いため、時間軸の枠は無し）
+   ・表示の切替は設定タブ（settings.calendarView）
+   ・締切日が未設定のタスクは表示されない（リストタブで確認）
+   ・日付は必ず calKey()（ローカル日付のYYYY-MM-DD）で扱う。toISOString()はUTCでずれるため使わない
+   ===================================================== */
+let calState = null; // { year, month(0-11), selected:'YYYY-MM-DD' }（保存はしない＝開くたびに今日）
+
+function calPad(n) { return String(n).padStart(2, '0'); }
+function calKey(y, m, d) { return `${y}-${calPad(m + 1)}-${calPad(d)}`; }
+function calParse(s) { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
+function calKeyOf(dt) { return calKey(dt.getFullYear(), dt.getMonth(), dt.getDate()); }
+
+function calEnsureState() {
+  if (!calState) {
+    const t = todayStr();
+    const dt = calParse(t);
+    calState = { year: dt.getFullYear(), month: dt.getMonth(), selected: t };
+  }
+  return calState;
+}
+
+// 締切日ごとにタスクをまとめる（未完了を先、同じ中では手動順）
+function calGroupByDue() {
+  const map = {};
+  tasks.forEach(t => {
+    if (!t.due) return;
+    (map[t.due] = map[t.due] || []).push(t);
+  });
+  Object.values(map).forEach(arr => arr.sort((a, b) => (a.completed - b.completed) || (a.order - b.order)));
+  return map;
+}
+
+function renderCalendarTab() {
+  const root = document.getElementById('calendarRoot');
+  if (!root) return;
+  const s = calEnsureState();
+  const isDay = settings.calendarView === 'day';
+  const byDue = calGroupByDue();
+
+  let title, body;
+  if (isDay) {
+    const dt = calParse(s.selected);
+    title = `${dt.getFullYear()}年${dt.getMonth() + 1}月${dt.getDate()}日（${WEEKDAY_LABEL[dt.getDay()]}）`;
+    body = buildCalDayPanel(s.selected, byDue, true);
+  } else {
+    title = `${s.year}年${s.month + 1}月`;
+    body = buildCalMonthGrid(s, byDue) + buildCalDayPanel(s.selected, byDue, false);
+  }
+
+  root.innerHTML = `
+    <div class="cal-head">
+      <button type="button" class="cal-nav-btn" onclick="calShift(-1)" aria-label="前へ">◀</button>
+      <div class="cal-title">${title}</div>
+      <button type="button" class="cal-nav-btn" onclick="calGoToday()">今日</button>
+      <button type="button" class="cal-nav-btn" onclick="calShift(1)" aria-label="次へ">▶</button>
+    </div>
+    ${body}
+    <div class="cal-note">表示の切替（月／日）は設定タブにあります。締切日が未設定のタスクはここには出ません。</div>`;
+}
+
+// 月のマス目（日曜始まり。前後の月の日も薄く表示して週を埋める）
+function buildCalMonthGrid(s, byDue) {
+  const first = new Date(s.year, s.month, 1);
+  const daysInMonth = new Date(s.year, s.month + 1, 0).getDate();
+  const offset = first.getDay();
+  const total = Math.ceil((offset + daysInMonth) / 7) * 7;
+  const today = todayStr();
+  const MAX_CHIPS = 3;
+
+  const dow = WEEKDAY_LABEL.map((w, i) => `<span class="${i === 0 ? 'sun' : i === 6 ? 'sat' : ''}">${w}</span>`).join('');
+  let cells = '';
+  for (let i = 0; i < total; i++) {
+    const dt = new Date(s.year, s.month, 1 - offset + i);
+    const key = calKeyOf(dt);
+    const day = dt.getDay();
+    const list = byDue[key] || [];
+    const chips = list.slice(0, MAX_CHIPS).map(t => {
+      const b = getBoard(t.quadrant);
+      const color = b ? b.color : '#8a8f98';
+      return `<div class="cal-chip ${t.completed ? 'done' : ''}" style="--board-color:${color}" onclick="event.stopPropagation();openModal('${t.id}')">${escapeHtml(t.title)}</div>`;
+    }).join('');
+    const more = list.length > MAX_CHIPS ? `<div class="cal-more">他${list.length - MAX_CHIPS}件</div>` : '';
+    const cls = ['cal-cell',
+      dt.getMonth() !== s.month ? 'other' : '',
+      key === today ? 'today' : '',
+      key === s.selected ? 'selected' : ''].join(' ');
+    cells += `<div class="${cls}" onclick="calSelectDate('${key}')">
+      <div class="cal-daynum ${day === 0 ? 'sun' : day === 6 ? 'sat' : ''}">${dt.getDate()}</div>${chips}${more}</div>`;
+  }
+  return `<div class="cal-dow">${dow}</div><div class="cal-grid">${cells}</div>`;
+}
+
+// 選択日のタスク一覧（月表示では下に、日表示ではそれだけを表示）
+function buildCalDayPanel(key, byDue, isDayView) {
+  const dt = calParse(key);
+  const label = `${dt.getMonth() + 1}月${dt.getDate()}日（${WEEKDAY_LABEL[dt.getDay()]}）`;
+  const list = byDue[key] || [];
+  const rows = list.map(t => {
+    const b = getBoard(t.quadrant);
+    const color = b ? b.color : '#8a8f98';
+    const badge = b ? `<span class="meta-badge badge-q" style="--board-color:${b.color}">${escapeHtml(boardName(b))}</span>` : '';
+    const tags = t.tags.map(tag => `<span class="cal-task-tag">#${escapeHtml(tag)}</span>`).join('');
+    return `<div class="cal-task ${t.completed ? 'done' : ''}" style="--board-color:${color}" onclick="openModal('${t.id}')">
+      <span class="cal-check" onclick="event.stopPropagation()"><input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleComplete('${t.id}')" aria-label="完了"></span>
+      <div class="cal-task-main">
+        <div class="cal-task-title">${escapeHtml(t.title)}</div>
+        ${(badge || tags) ? `<div class="cal-task-meta">${badge}${tags}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="cal-day-panel">
+    <div class="cal-day-head">
+      <div class="cal-day-label">${isDayView ? `${list.length}件のタスク` : `${label}　${list.length}件`}</div>
+      <button type="button" class="cal-add-btn" onclick="calAddTask()">＋ この日に追加</button>
+    </div>
+    ${rows || '<div class="cal-empty">この日のタスクはありません</div>'}
+  </div>`;
+}
+
+// 前へ／次へ：月表示は月単位、日表示は1日単位
+function calShift(dir) {
+  const s = calEnsureState();
+  if (settings.calendarView === 'day') {
+    const dt = calParse(s.selected);
+    dt.setDate(dt.getDate() + dir);
+    s.selected = calKeyOf(dt);
+    s.year = dt.getFullYear();
+    s.month = dt.getMonth();
+  } else {
+    const dt = new Date(s.year, s.month + dir, 1);
+    s.year = dt.getFullYear();
+    s.month = dt.getMonth();
+    const t = calParse(todayStr());
+    // 今日を含む月なら今日、それ以外はその月の1日を選択状態にする
+    s.selected = (t.getFullYear() === s.year && t.getMonth() === s.month) ? todayStr() : calKey(s.year, s.month, 1);
+  }
+  renderCalendarTab();
+}
+
+function calGoToday() {
+  calState = null;
+  renderCalendarTab();
+}
+
+function calSelectDate(key) {
+  const s = calEnsureState();
+  s.selected = key;
+  const dt = calParse(key);
+  s.year = dt.getFullYear(); // 前後の月の薄いマスをタップした時は、その月へ移動
+  s.month = dt.getMonth();
+  renderCalendarTab();
+}
+
+// 選択中の日付を締切日にして新規追加（openModal側で、カレンダータブ表示中は締切日の初期値＝選択日になる）
+function calAddTask() {
+  openModal(null);
+}
+
+// ---------- 設定タブ：カレンダー表示の切替 ----------
+function renderSettingsCalendar() {
+  const el = document.getElementById('settingsCalendar');
+  if (!el) return;
+  const v = settings.calendarView;
+  el.innerHTML = `
+    <div class="set-sub-label">カレンダータブの表示</div>
+    <div class="set-seg">
+      <button type="button" class="set-seg-btn ${v === 'month' ? 'active' : ''}" onclick="setCalendarView('month')">📅 月表示</button>
+      <button type="button" class="set-seg-btn ${v === 'day' ? 'active' : ''}" onclick="setCalendarView('day')">🗓 日表示</button>
+    </div>
+    <div class="set-note">月表示：1か月のマス目にタスクが並び、日付をタップすると下にその日の一覧が出ます。日表示：選んだ1日のタスク一覧だけを表示します（前へ／次へで1日ずつ移動）。</div>`;
+}
+
+function setCalendarView(v) {
+  settings.calendarView = (v === 'day') ? 'day' : 'month';
+  saveSettings();
+  renderSettingsCalendar();
+}
+
 function renderGraphTab() {}
 /* =====================================================
    【ボード設定】名称・色・順番・行ごとの列数・特別枠
@@ -2397,6 +2727,7 @@ function getDefaultSettings() {
     nextBoardId: 5,
     nowDoing:  { name: '★今からやること', color: '#d4a017' },
     completed: { name: '✅完了済み',       color: '#3a9a5c' },
+    calendarView: 'month', // カレンダータブの表示：'month'（月）／'day'（日）
   };
 }
 
@@ -2425,6 +2756,7 @@ function normalizeSettings(raw) {
     nextBoardId: Math.max(Number(raw.nextBoardId) || 0, maxId + 1),
     nowDoing: special(raw.nowDoing, def.nowDoing),
     completed: special(raw.completed, def.completed),
+    calendarView: raw.calendarView === 'day' ? 'day' : 'month',
   };
 }
 
@@ -2539,6 +2871,7 @@ function renderSettingsTab() {
   renderSettingsBoards();
   renderSettingsLayout();
   renderSettingsSpecial();
+  renderSettingsCalendar();
 }
 
 function renderSettingsBoards() {
@@ -2683,7 +3016,9 @@ function updateSpecial(key, field, value) {
 
 function resetSettings() {
   if (!confirm('ボードの名称・色・並べ方を初期状態に戻す？\n追加したボードのタスクは「未分類」になる（タスク自体は消えない）')) return;
+  const keepCalendarView = settings.calendarView; // カレンダー表示の選択はボード設定のリセット対象外
   settings = getDefaultSettings();
+  settings.calendarView = keepCalendarView;
   detachTasksFromMissingBoards();
   commitSettings();
   renderSettingsTab();
