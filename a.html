@@ -26,6 +26,8 @@
 
 <!-- ドラッグ＆ドロップ用ライブラリ（スマホのタッチ操作にも対応） -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+<!-- グラフタブ用：Chart.js（cdnjs・バージョン固定） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
 <style>
 /* =====================================================
@@ -1139,6 +1141,55 @@ footer{
   background:var(--color-primary-bg);
   color:var(--color-primary);
 }
+/* =====================================================
+   【グラフタブ】Chart.js＋絞り込みUI（色はCSS変数のみ）
+   ===================================================== */
+.gr-seg{margin-bottom:8px;}
+.gr-seg .set-seg-btn{font-size:13px;padding:0 2px;}
+.gr-card{
+  background:var(--color-card);
+  border:1px solid var(--color-border);
+  border-radius:var(--radius-card);
+  padding:10px;
+  margin-bottom:10px;
+}
+.gr-dow{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin-bottom:8px;}
+.gr-dow-btn{
+  min-height:44px;
+  border:2px solid var(--color-border-input);
+  border-radius:var(--radius-input);
+  background:var(--color-input-bg);
+  color:var(--color-text-sub);
+  font-family:inherit;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+}
+.gr-dow-btn.active{
+  border-color:var(--color-primary);
+  background:var(--color-primary-bg);
+  color:var(--color-primary);
+}
+.gr-clear-btn{
+  width:100%;
+  min-height:44px;
+  border:1px solid var(--color-border-input);
+  border-radius:var(--radius-input);
+  background:var(--color-input-bg);
+  color:var(--color-text-sub);
+  font-family:inherit;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+}
+.gr-chart-wrap{position:relative;height:260px;}
+.gr-summary{
+  text-align:center;
+  font-size:13px;
+  font-weight:700;
+  color:var(--color-text);
+  margin-top:8px;
+}
 .settings-title{
   font-size:11px;
   font-weight:700;
@@ -1247,9 +1298,9 @@ footer{
 
   </div><!-- /#tabPanel-list -->
 
-  <!-- ================= タブ④：グラフ（ステップ⑤で実装） ================= -->
+  <!-- ================= タブ④：グラフ（作成数・完了数の推移） ================= -->
   <div class="tab-panel" id="tabPanel-graph">
-    <div class="tab-placeholder">📊 グラフは準備中です</div>
+    <div id="graphRoot"></div><!-- ★中身は renderGraphTab() が生成（Chart.jsで棒グラフ） -->
   </div>
 
   <!-- ================= タブ⑤：設定（ステップ③で本実装。今はデータ管理のみ） ================= -->
@@ -1308,6 +1359,7 @@ footer{
       <li>タブ切替でボード・リスト・設定を使い分け（前回開いていたタブを記憶）</li>
       <li>リストタブで締切日・追加日・完了日・タグ・曜日・件名の昇順／降順に並び替え（選んだ並び順も記憶）</li>
       <li>設定タブでボードの追加・削除・名称・色・並べ方（行ごとの列数）を自由に変更でき、「重要×緊急」型に限らず自分の使い方に合わせた分類ができる</li>
+      <li>グラフタブで、タスクの作成数と完了数の推移を棒グラフで確認。週（日ごと）・月（日ごと）・年（月ごと）・全期間（年ごと）に切り替え、タグや曜日で絞り込める</li>
       <li>カレンダータブで、締切日のタスクを月表示（Googleカレンダー風）または日表示で確認。日付をタップするとその日の一覧が開き、チェックや追加もできる</li>
       <li>件名のほかメモ・タスク追加日・締切日・タグを記録</li>
       <li>「今日／明日／今週／予定なし／完了済み／すべて」の絞り込み表示</li>
@@ -1331,6 +1383,7 @@ footer{
       <li>他端末との自動同期機能はない。機種変更時や複数端末での利用には、設定タブのJSONエクスポート／インポートが必要</li>
       <li>定期的なJSONエクスポートでのバックアップを推奨</li>
       <li>締切日が未設定のタスクはカレンダーには表示されない（リストタブで確認）</li>
+      <li>グラフの完了数は、完了枠に入れた日／チェックを付けた日で集計する。この機能の追加前から完了済みだったタスクは、締切日などで仮置きした日付が混ざる</li>
       <li>並び替えで、締切日・完了日などが未設定のタスクは昇順・降順どちらでも末尾に並ぶ。タグ順は先頭のタグ、曜日順は締切日の曜日（月曜始まり）で判定</li>
       <li>ICS一括出力は期間・ゾーン・タグで対象を絞り込んでから書き出す仕様</li>
     </ul>
@@ -1538,6 +1591,7 @@ document.addEventListener('DOMContentLoaded', () => {
   applyListSortMode(); // ★手動以外の並び順ではドラッグ並び替えを無効化
   initKeyboardShortcuts(); // ★モーダル内Ctrl+S保存（③対応）
   initTabs(); // ★前回開いていたタブを復元
+  initGraphThemeWatch(); // ★ライト／ダーク切替時にグラフの色を取り直す
   renderNowClock();
   setInterval(renderNowClock, 30 * 1000); // 30秒ごとに時刻を更新
 });
@@ -1932,6 +1986,7 @@ function renderAll() {
   renderDashboard();
   renderListView();
   if (activeTab === 'calendar') renderCalendarTab(); // ★カレンダー表示中はタスク変更に追従
+  if (activeTab === 'graph') renderGraphTab();       // ★グラフ表示中も追従
 }
 
 /* =====================================================
@@ -2519,7 +2574,7 @@ function showTab(tabId, save = true) {
   }
 }
 
-// ↓ 以降のステップで中身を実装する（今は何もしない）。設定タブは上の「ボード設定」ブロックに実装済み
+// ↓ 設定タブ・カレンダータブ・グラフタブは、それぞれ上の専用ブロックに実装済み
 /* =====================================================
    【カレンダータブ】締切日（due）のタスクを表示
    ・月表示：Googleカレンダー風のマス目（日曜始まり）。日付タップ→下にその日の一覧
@@ -2701,7 +2756,224 @@ function setCalendarView(v) {
   renderSettingsCalendar();
 }
 
-function renderGraphTab() {}
+/* =====================================================
+   【グラフタブ】作成数・完了数の推移（Chart.js 棒グラフ）
+   ・期間：週（7日・日ごと）／月（1か月・日ごと）／年（12か月・月ごと）／全期間（年ごと）
+   ・系列：作成数（追加日 addedDate）／完了数（完了日 completedAt）。「両方／作成のみ／完了のみ」を切替
+   ・絞り込み：タグ（1つ）／曜日（複数）。曜日は「作成数は作成日、完了数は完了日」の曜日で判定
+       - 日ごとの棒（週・月）では、選んでいない曜日の棒は表示しない
+       - 月ごと・年ごとの棒では、選んだ曜日の件数だけを数える
+   ・週は日曜始まり（カレンダータブと同じ）
+   ・日付は calParse()/calKeyOf()（ローカル日付）で扱う。旧データの完了日（仮置き）も区別せず集計する
+   ・★系列を増やす時：graphBuildData()のdatasetsに足す
+   ===================================================== */
+let graphState = null; // { period, metric, tag, weekdays[], anchor:'YYYY-MM-DD' }（保存はしない）
+let graphChart = null;
+
+function graphEnsureState() {
+  if (!graphState) {
+    graphState = { period: 'week', metric: 'both', tag: '', weekdays: [], anchor: todayStr() };
+  }
+  return graphState;
+}
+
+function graphWeekdayOk(g, dateStr) {
+  return g.weekdays.length === 0 || g.weekdays.includes(calParse(dateStr).getDay());
+}
+
+// 表示する棒の一覧 {key,label} と、日付→棒キーの変換、見出しを返す
+function graphBuckets(g) {
+  const a = calParse(g.anchor);
+  const buckets = [];
+  let title = '';
+  let bucketOf = ds => ds;
+
+  if (g.period === 'week') {
+    const start = new Date(a.getFullYear(), a.getMonth(), a.getDate() - a.getDay());
+    const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
+    for (let i = 0; i < 7; i++) {
+      const dt = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+      if (g.weekdays.length && !g.weekdays.includes(dt.getDay())) continue;
+      buckets.push({ key: calKeyOf(dt), label: [`${dt.getMonth() + 1}/${dt.getDate()}`, WEEKDAY_LABEL[dt.getDay()]] });
+    }
+    title = `${start.getMonth() + 1}/${start.getDate()}〜${end.getMonth() + 1}/${end.getDate()}`;
+  } else if (g.period === 'month') {
+    const days = new Date(a.getFullYear(), a.getMonth() + 1, 0).getDate();
+    for (let d = 1; d <= days; d++) {
+      const dt = new Date(a.getFullYear(), a.getMonth(), d);
+      if (g.weekdays.length && !g.weekdays.includes(dt.getDay())) continue;
+      buckets.push({ key: calKeyOf(dt), label: [`${d}`, WEEKDAY_LABEL[dt.getDay()]] });
+    }
+    title = `${a.getFullYear()}年${a.getMonth() + 1}月`;
+  } else if (g.period === 'year') {
+    for (let m = 1; m <= 12; m++) {
+      buckets.push({ key: `${a.getFullYear()}-${calPad(m)}`, label: `${m}月` });
+    }
+    bucketOf = ds => ds.slice(0, 7);
+    title = `${a.getFullYear()}年`;
+  } else { // all：データのある最初の年〜今年（年ごと）
+    const thisYear = calParse(todayStr()).getFullYear();
+    let minY = thisYear, maxY = thisYear;
+    tasks.forEach(t => {
+      [t.addedDate, t.completed ? t.completedAt : null].forEach(ds => {
+        if (!ds) return;
+        const y = Number(ds.slice(0, 4));
+        if (y && y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      });
+    });
+    for (let y = minY; y <= maxY; y++) buckets.push({ key: String(y), label: `${y}年` });
+    bucketOf = ds => ds.slice(0, 4);
+    title = `全期間（${minY}年〜${maxY}年）`;
+  }
+  return { buckets, bucketOf, title };
+}
+
+// 棒グラフ用データを作る（絞り込み反映）
+function graphBuildData(g) {
+  const { buckets, bucketOf, title } = graphBuckets(g);
+  const created = {}, done = {};
+  const inc = (map, k) => { map[k] = (map[k] || 0) + 1; };
+  tasks.forEach(t => {
+    if (g.tag && !(t.tags || []).includes(g.tag)) return;
+    if (t.addedDate && graphWeekdayOk(g, t.addedDate)) inc(created, bucketOf(t.addedDate));
+    if (t.completed && t.completedAt && graphWeekdayOk(g, t.completedAt)) inc(done, bucketOf(t.completedAt));
+  });
+  const createdData = buckets.map(b => created[b.key] || 0);
+  const doneData = buckets.map(b => done[b.key] || 0);
+  return { buckets, title, createdData, doneData };
+}
+
+// グラフの色をCSS変数から取る（ダークモード切替に追従するため、描画のたびに読む）
+function graphColors() {
+  const cs = getComputedStyle(document.documentElement);
+  const v = (name, fb) => cs.getPropertyValue(name).trim() || fb;
+  return {
+    text: v('--color-text-sub', '#555'),
+    grid: v('--color-border', '#dde3ee'),
+    created: v('--color-primary', '#1a56db'),
+    done: settings.completed.color, // 完了数は「完了済み枠」の色
+  };
+}
+
+function renderGraphTab() {
+  const root = document.getElementById('graphRoot');
+  if (!root) return;
+  const g = graphEnsureState();
+  const data = graphBuildData(g);
+  const showCreated = g.metric !== 'done';
+  const showDone = g.metric !== 'created';
+  const sumC = data.createdData.reduce((s, n) => s + n, 0);
+  const sumD = data.doneData.reduce((s, n) => s + n, 0);
+
+  const allTags = [...new Set(tasks.flatMap(t => t.tags || []))].sort((a, b) => a.localeCompare(b, 'ja'));
+  const seg = (items, cur, fn) => items.map(([id, label]) =>
+    `<button type="button" class="set-seg-btn ${cur === id ? 'active' : ''}" onclick="${fn}('${id}')">${label}</button>`).join('');
+  const hasFilter = g.tag || g.weekdays.length;
+
+  const summaryParts = [];
+  if (showCreated) summaryParts.push(`作成 ${sumC}件`);
+  if (showDone) summaryParts.push(`完了 ${sumD}件`);
+
+  root.innerHTML = `
+    <div class="set-seg gr-seg">${seg([['week', '週'], ['month', '月'], ['year', '年'], ['all', '全期間']], g.period, 'setGraphPeriod')}</div>
+    <div class="set-seg gr-seg">${seg([['both', '作成と完了'], ['created', '作成のみ'], ['done', '完了のみ']], g.metric, 'setGraphMetric')}</div>
+    <div class="cal-head">
+      ${g.period === 'all' ? '' : '<button type="button" class="cal-nav-btn" onclick="graphShift(-1)" aria-label="前へ">◀</button>'}
+      <div class="cal-title">${data.title}</div>
+      ${g.period === 'all' ? '' : '<button type="button" class="cal-nav-btn" onclick="graphToday()">今日</button><button type="button" class="cal-nav-btn" onclick="graphShift(1)" aria-label="次へ">▶</button>'}
+    </div>
+    <div class="gr-card">
+      <div class="gr-chart-wrap"><canvas id="graphCanvas" role="img" aria-label="作成数と完了数の棒グラフ"></canvas></div>
+      <div class="gr-summary">${summaryParts.join('　／　')}${(sumC + sumD === 0) ? '<br><span class="cal-note">この期間・条件のデータはありません</span>' : ''}</div>
+    </div>
+    <div class="gr-card">
+      <div class="set-sub-label">タグで絞り込み</div>
+      <select class="sort-select" style="width:100%;margin-bottom:8px" aria-label="タグ" onchange="setGraphTag(this.value)">
+        <option value="">すべてのタグ</option>
+        ${allTags.map(tag => `<option value="${escapeAttr(tag)}" ${g.tag === tag ? 'selected' : ''}>#${escapeHtml(tag)}</option>`).join('')}
+      </select>
+      <div class="set-sub-label">曜日で絞り込み（複数選択可・未選択＝全曜日）</div>
+      <div class="gr-dow">${WEEKDAY_LABEL.map((w, i) =>
+        `<button type="button" class="gr-dow-btn ${g.weekdays.includes(i) ? 'active' : ''}" onclick="toggleGraphWeekday(${i})">${w}</button>`).join('')}</div>
+      ${hasFilter ? '<button type="button" class="gr-clear-btn" onclick="clearGraphFilters()">絞り込みを解除</button>' : ''}
+      <div class="set-note">曜日は、作成数は「作成日」、完了数は「完了日」の曜日で判定します。週・月の表示では選んでいない曜日の棒は出しません。</div>
+    </div>`;
+
+  drawGraph(data, showCreated, showDone);
+}
+
+function drawGraph(data, showCreated, showDone) {
+  if (graphChart) { graphChart.destroy(); graphChart = null; }
+  const canvas = document.getElementById('graphCanvas');
+  if (!canvas) return;
+  if (typeof Chart === 'undefined') {
+    // CDNの読込失敗・オフライン時
+    canvas.parentElement.innerHTML = '<div class="cal-empty">グラフ用ライブラリを読み込めませんでした。通信状況を確認して再読み込みしてください</div>';
+    return;
+  }
+  const c = graphColors();
+  const font = { family: "'BIZ UDPGothic', sans-serif" };
+  const datasets = [];
+  if (showCreated) datasets.push({ label: '作成', data: data.createdData, backgroundColor: c.created, borderRadius: 3, maxBarThickness: 28 });
+  if (showDone)    datasets.push({ label: '完了', data: data.doneData,    backgroundColor: c.done,    borderRadius: 3, maxBarThickness: 28 });
+
+  graphChart = new Chart(canvas, {
+    type: 'bar',
+    data: { labels: data.buckets.map(b => b.label), datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: datasets.length > 1, labels: { color: c.text, font } },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: c.text, font: { ...font, size: 10 }, maxRotation: 0, autoSkip: true } },
+        y: { beginAtZero: true, grid: { color: c.grid }, ticks: { color: c.text, font, precision: 0 } },
+      },
+    },
+  });
+}
+
+// ライト／ダーク切替（data-theme属性の変更）を監視して、グラフ表示中なら色を取り直す
+function initGraphThemeWatch() {
+  new MutationObserver(() => {
+    if (activeTab === 'graph') renderGraphTab();
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+}
+
+function setGraphPeriod(p) { graphEnsureState().period = p; renderGraphTab(); }
+function setGraphMetric(m) { graphEnsureState().metric = m; renderGraphTab(); }
+function setGraphTag(tag) { graphEnsureState().tag = tag; renderGraphTab(); }
+function toggleGraphWeekday(i) {
+  const g = graphEnsureState();
+  g.weekdays = g.weekdays.includes(i) ? g.weekdays.filter(x => x !== i) : [...g.weekdays, i].sort();
+  renderGraphTab();
+}
+function clearGraphFilters() {
+  const g = graphEnsureState();
+  g.tag = '';
+  g.weekdays = [];
+  renderGraphTab();
+}
+
+// 前へ／次へ：週＝7日、月＝1か月、年＝1年（全期間では使わない）
+function graphShift(dir) {
+  const g = graphEnsureState();
+  const a = calParse(g.anchor);
+  let next;
+  if (g.period === 'week') next = new Date(a.getFullYear(), a.getMonth(), a.getDate() + 7 * dir);
+  else if (g.period === 'month') next = new Date(a.getFullYear(), a.getMonth() + dir, 1);
+  else next = new Date(a.getFullYear() + dir, 0, 1);
+  g.anchor = calKeyOf(next);
+  renderGraphTab();
+}
+function graphToday() {
+  graphEnsureState().anchor = todayStr();
+  renderGraphTab();
+}
+
 /* =====================================================
    【ボード設定】名称・色・順番・行ごとの列数・特別枠
    ・保存先：SETTINGS_STORAGE_KEY（タスク本体・タブ・並び順とは別キー）
