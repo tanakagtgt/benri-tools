@@ -152,8 +152,8 @@ h1{
   margin-bottom:10px;
 }
 .now-action-zone{
-  background:#fff9e6;
-  border:2px dashed #e8c869;
+  background:color-mix(in srgb,var(--board-color,#d4a017) 12%,var(--color-card));
+  border:2px dashed color-mix(in srgb,var(--board-color,#d4a017) 55%,var(--color-card));
   border-radius:var(--radius-card);
   padding:10px;
   min-height:100px;
@@ -161,7 +161,7 @@ h1{
   flex-direction:column;
   cursor:pointer; /* ★空欄タップで新規タスク追加できるようにするための手がかり */
 }
-.now-action-zone .zone-title{color:#a67c00;}
+.now-action-zone .zone-title{color:var(--board-text);}
 .now-action-list{
   flex:1;
   display:flex;
@@ -195,15 +195,15 @@ h1{
    完了済みドロップゾーン
    ===================================================== */
 .completed-zone{
-  background:#f0f7f2;
-  border:2px dashed #9bc9a8;
+  background:color-mix(in srgb,var(--board-color,#3a9a5c) 12%,var(--color-card));
+  border:2px dashed color-mix(in srgb,var(--board-color,#3a9a5c) 55%,var(--color-card));
   border-radius:var(--radius-card);
   padding:10px;
   margin-bottom:14px;
   min-height:70px;
   cursor:pointer; /* ★空欄タップで新規タスク追加できるようにするための手がかり */
 }
-.completed-zone .zone-title{color:#2f7a4a;}
+.completed-zone .zone-title{color:var(--board-text);}
 .completed-drop-list{
   display:flex;
   flex-direction:column;
@@ -382,10 +382,7 @@ h1{
 .badge-due.overdue{background:#fdeceb;color:var(--pri-high);}
 .badge-tag{background:#f0f1f3;color:var(--color-text-sub);}
 .badge-q{font-weight:700;}
-.badge-q1{background:var(--q1-bg);color:var(--q1-color);}
-.badge-q2{background:var(--q2-bg);color:var(--q2-color);}
-.badge-q3{background:var(--q3-bg);color:var(--q3-color);}
-.badge-q4{background:var(--q4-bg);color:var(--q4-color);}
+.badge-q{background:color-mix(in srgb,var(--board-color,#8a8f98) 16%,var(--color-card));color:var(--board-text);}
 
 .task-edit-btn{
   flex-shrink:0;
@@ -424,10 +421,11 @@ h1{
   flex-direction:column;
   cursor:pointer; /* ★空欄タップで新規タスク追加できるようにするための手がかり */
 }
-.matrix-quadrant.q1{background:var(--q1-bg);}
-.matrix-quadrant.q2{background:var(--q2-bg);}
-.matrix-quadrant.q3{background:var(--q3-bg);}
-.matrix-quadrant.q4{background:var(--q4-bg);}
+/* ★ボードの色は style="--board-color:#xxxxxx" で渡す。背景はカード色と混ぜるのでダークモードでも自動で暗くなる */
+.matrix-quadrant{
+  background:color-mix(in srgb,var(--board-color,#8a8f98) 13%,var(--color-card));
+  min-width:0;
+}
 
 .matrix-title{
   font-size:11px;
@@ -436,10 +434,8 @@ h1{
   display:flex;
   justify-content:space-between;
 }
-.matrix-quadrant.q1 .matrix-title{color:var(--q1-color);}
-.matrix-quadrant.q2 .matrix-title{color:var(--q2-color);}
-.matrix-quadrant.q3 .matrix-title{color:var(--q3-color);}
-.matrix-quadrant.q4 .matrix-title{color:var(--q4-color);}
+.matrix-title{color:var(--board-text);gap:4px;flex-wrap:wrap;}
+.matrix-title span:last-child{font-weight:400;font-size:10px;opacity:0.85;}
 
 .matrix-list{
   flex:1;
@@ -663,10 +659,11 @@ h1{
   color:var(--color-text-sub);
   line-height:1.3;
 }
-.q-btn.active[data-q="1"]{border-color:var(--q1-color);background:var(--q1-bg);color:var(--q1-color);}
-.q-btn.active[data-q="2"]{border-color:var(--q2-color);background:var(--q2-bg);color:var(--q2-color);}
-.q-btn.active[data-q="3"]{border-color:var(--q3-color);background:var(--q3-bg);color:var(--q3-color);}
-.q-btn.active[data-q="4"]{border-color:var(--q4-color);background:var(--q4-bg);color:var(--q4-color);}
+.q-btn.active{
+  border-color:var(--board-color);
+  background:color-mix(in srgb,var(--board-color) 14%,var(--color-card));
+  color:var(--board-text);
+}
 
 .modal-btns{display:flex;gap:8px;margin-top:18px;}
 .btn-save{
@@ -890,6 +887,115 @@ footer{
   background:var(--color-primary-bg);
   color:var(--color-primary);
 }
+/* =====================================================
+   【ボード可変レイアウト／設定画面】
+   ・色は全て var(--board-color) とCSS変数から作る（固定色なし＝ダークモード対応）
+   ・--board-text：ボード色を文字色(--color-text)に寄せて、明暗どちらのテーマでも読みやすくする
+   ===================================================== */
+.matrix-quadrant,.now-action-zone,.completed-zone,.q-btn,.badge-q{
+  --board-text:color-mix(in srgb,var(--board-color,#8a8f98) 70%,var(--color-text));
+}
+#matrixView{display:flex;flex-direction:column;gap:8px;}
+.matrix-row{display:grid;gap:8px;}
+.matrix-item{word-break:break-word;}
+
+.set-card{
+  background:var(--color-card);
+  border:1px solid var(--color-border);
+  border-radius:var(--radius-card);
+  padding:10px;
+  margin-bottom:10px;
+}
+.set-board{border-bottom:1px solid var(--color-border);padding-bottom:8px;margin-bottom:8px;}
+.set-board:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+.set-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+.set-input{
+  flex:1;
+  min-width:0;
+  border:1px solid var(--color-border-input);
+  border-radius:var(--radius-input);
+  background:var(--color-input-bg);
+  color:var(--color-text);
+  font-family:inherit;
+  font-size:16px; /* iPhoneの自動ズーム防止 */
+  padding:10px;
+  min-height:44px;
+}
+.set-color{
+  flex-shrink:0;
+  width:48px;
+  height:44px;
+  padding:2px;
+  border:1px solid var(--color-border-input);
+  border-radius:var(--radius-input);
+  background:var(--color-input-bg);
+  cursor:pointer;
+}
+.set-icon-btn{
+  flex-shrink:0;
+  min-width:44px;
+  min-height:44px;
+  border:1px solid var(--color-primary-border);
+  border-radius:var(--radius-input);
+  background:var(--color-chip-bg);
+  color:var(--color-primary);
+  font-family:inherit;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+}
+.set-icon-btn:disabled{opacity:0.35;cursor:not-allowed;}
+.set-icon-btn.danger{
+  color:var(--color-error-text);
+  border-color:var(--color-error-border);
+  background:var(--color-error-bg);
+}
+.set-add-btn{
+  width:100%;
+  min-height:44px;
+  border:1px solid var(--color-primary-border);
+  border-radius:var(--radius-input);
+  background:var(--color-chip-bg);
+  color:var(--color-primary);
+  font-family:inherit;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+  margin-bottom:10px;
+}
+.set-reset-btn{
+  width:100%;
+  min-height:44px;
+  border:1px solid var(--color-error-border);
+  border-radius:var(--radius-input);
+  background:var(--color-error-bg);
+  color:var(--color-error-text);
+  font-family:inherit;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+  margin:6px 0 10px;
+}
+.set-row-label{flex:1;font-size:13px;font-weight:700;color:var(--color-text);}
+.set-col-num{min-width:44px;text-align:center;font-weight:700;font-size:14px;color:var(--color-text);}
+.set-note{font-size:11px;color:var(--color-text-muted);line-height:1.7;margin:4px 0 6px;}
+.set-sub-label{font-size:11px;font-weight:700;color:var(--color-text-sub);margin:4px 0 4px;}
+.set-empty{font-size:13px;color:var(--color-text-label);text-align:center;padding:10px;}
+.layout-preview{display:flex;flex-direction:column;gap:4px;margin-top:8px;}
+.lp-row{display:grid;gap:4px;}
+.lp-cell{
+  background:color-mix(in srgb,var(--board-color) 20%,var(--color-card));
+  border:1px solid color-mix(in srgb,var(--board-color) 55%,var(--color-card));
+  border-radius:6px;
+  padding:6px 4px;
+  font-size:10.5px;
+  font-weight:700;
+  color:var(--color-text);
+  text-align:center;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
 .settings-title{
   font-size:11px;
   font-weight:700;
@@ -937,8 +1043,8 @@ footer{
        ・右：将来のタイマー／ストップウォッチ／ポモドーロ機能用に空けておく
        ===================================================== -->
   <div class="now-action-row">
-    <div class="now-action-zone" onclick="handleZoneBlankClick(event, 'nowDoing')">
-      <div class="zone-title">★今からやること</div>
+    <div class="now-action-zone" id="nowZone" onclick="handleZoneBlankClick(event, 'nowDoing')">
+      <div class="zone-title" id="nowZoneTitle">★今からやること</div>
       <div class="now-action-list" id="nowDoingList"></div>
       <div class="zone-empty-hint" id="nowDoingEmptyHint">タスクをドラッグ、または空欄タップで追加</div>
     </div>
@@ -949,33 +1055,14 @@ footer{
        マトリクス（重要度×緊急度）
        ・常時表示のダッシュボードとして機能する
        ===================================================== -->
-  <div id="matrixView">
-    <div class="matrix-grid">
-      <div class="matrix-quadrant q2" onclick="handleZoneBlankClick(event, 'quadrant', 2)">
-        <div class="matrix-title"><span>②計画してやる</span><span>重要×非緊急</span></div>
-        <div class="matrix-list" id="matrixList2" data-q="2"></div>
-      </div>
-      <div class="matrix-quadrant q1" onclick="handleZoneBlankClick(event, 'quadrant', 1)">
-        <div class="matrix-title"><span>①すぐやる</span><span>重要×緊急</span></div>
-        <div class="matrix-list" id="matrixList1" data-q="1"></div>
-      </div>
-      <div class="matrix-quadrant q4" onclick="handleZoneBlankClick(event, 'quadrant', 4)">
-        <div class="matrix-title"><span>④後回し</span><span>非重要×非緊急</span></div>
-        <div class="matrix-list" id="matrixList4" data-q="4"></div>
-      </div>
-      <div class="matrix-quadrant q3" onclick="handleZoneBlankClick(event, 'quadrant', 3)">
-        <div class="matrix-title"><span>③サクッとやる</span><span>非重要×緊急</span></div>
-        <div class="matrix-list" id="matrixList3" data-q="3"></div>
-      </div>
-    </div>
-  </div>
+  <div id="matrixView"></div><!-- ★中身は renderBoardGrid()（設定のボード・列数）が生成する -->
 
   <!-- =====================================================
        完了済みドロップゾーン
        ・タスクをここにドラッグすると完了扱いになる（チェックと同じ効果）
        ===================================================== -->
-  <div class="completed-zone" onclick="handleZoneBlankClick(event, 'completed')">
-    <div class="zone-title">✅完了済み</div>
+  <div class="completed-zone" id="completedZone" onclick="handleZoneBlankClick(event, 'completed')">
+    <div class="zone-title" id="completedZoneTitle">✅完了済み</div>
     <div class="completed-drop-list" id="completedDropList"></div>
     <div class="zone-empty-hint" id="completedEmptyHint">タスクをドラッグ、または空欄タップで完了タスクとして追加</div>
   </div>
@@ -1024,6 +1111,18 @@ footer{
 
   <!-- ================= タブ⑤：設定（ステップ③で本実装。今はデータ管理のみ） ================= -->
   <div class="tab-panel" id="tabPanel-settings">
+  <div class="settings-title">ボード（名称・色・順番）</div>
+  <div class="set-card" id="settingsBoards"></div>
+  <button type="button" class="set-add-btn" onclick="addBoard()">＋ ボードを追加</button>
+
+  <div class="settings-title">ボードの並べ方（行ごとの列数）</div>
+  <div class="set-card" id="settingsLayout"></div>
+
+  <div class="settings-title">特別枠（名称・色）</div>
+  <div class="set-card" id="settingsSpecial"></div>
+
+  <button type="button" class="set-reset-btn" onclick="resetSettings()">🔄 ボード設定を初期状態に戻す</button>
+
   <div class="settings-title">データ管理</div>
 
   <!-- データ管理：JSONエクスポート／読込 -->
@@ -1062,6 +1161,7 @@ footer{
       <li>タスクの追加・編集・削除・完了チェック（完了した日も自動で記録）</li>
       <li>タブ切替でボード・リスト・設定を使い分け（前回開いていたタブを記憶）</li>
       <li>リストタブで締切日・追加日・完了日・タグ・曜日・件名の昇順／降順に並び替え（選んだ並び順も記憶）</li>
+      <li>設定タブでボードの追加・削除・名称・色・並べ方（行ごとの列数）を自由に変更でき、「重要×緊急」型に限らず自分の使い方に合わせた分類ができる</li>
       <li>件名のほかメモ・タスク追加日・締切日・タグを記録</li>
       <li>「今日／明日／今週／予定なし／完了済み／すべて」の絞り込み表示</li>
       <li>ドラッグ＆ドロップでの並び替え・象限移動（スマホのタッチ操作にも対応）</li>
@@ -1153,12 +1253,7 @@ footer{
 
     <div class="field-group">
       <label>重要度×緊急度（任意）</label>
-      <div class="q-select-wrap">
-        <button type="button" class="q-btn" data-q="2" onclick="setQuadrant(2)">②計画してやる</button>
-        <button type="button" class="q-btn" data-q="1" onclick="setQuadrant(1)">①今すぐやる</button>
-        <button type="button" class="q-btn" data-q="4" onclick="setQuadrant(4)">④後回し</button>
-        <button type="button" class="q-btn" data-q="3" onclick="setQuadrant(3)">③サクッとやる</button>
-      </div>
+      <div class="q-select-wrap" id="qSelectWrap"></div><!-- ★ボードボタンは renderQuadrantButtons() が生成 -->
     </div>
 
     <div class="field-group">
@@ -1276,15 +1371,19 @@ let editingTaskId = null;    // モーダルで編集中のタスクid（nullな
 let selectedQuadrant = null;
 let pendingZonePreset = null; // ★ゾーン空欄タップで新規作成する時の初期状態（{isNowDoing, completed}）。openModalForZoneでのみセットする
 let listSortable = null;      // ★リストのSortableインスタンス（並び替え中はdisabledにするため保持）
-let listSort = loadListSort(); // ★リストの並び順 {key, dir}。localStorageに保存
+let listSort = { key: 'manual', dir: 'asc' }; // ★リストの並び順。DOMContentLoadedでloadListSort()して上書き（constより前に呼ぶとTDZで復元に失敗するため）
+let settings = null;           // ★ボード設定（DOMContentLoadedでloadSettings()して代入）。構造はgetDefaultSettings()参照
 let icsSelectedTags = [];     // ★ICS一括出力モーダルで選択中のタグ（複数可・OR条件）
 
 /* =====================================================
    初期化
    ===================================================== */
 document.addEventListener('DOMContentLoaded', () => {
+  settings = loadSettings(); // ★ボード設定を最初に読み込む（以降の描画で使う）
+  listSort = loadListSort();
   loadTasks();
   initListSortUI(); // ★並び替えバーの選択肢生成＋前回の並び順を反映
+  applySettingsToUI(); // ★ボード枠・特別枠・モーダルのボタンを設定から生成
   renderFilterTabs();
   renderAll();
   initSortable();
@@ -1709,7 +1808,8 @@ function renderTaskCard(t) {
   const isOverdue = t.due && t.due < today && !t.completed;
   const dueLabel = t.due ? formatDueLabel(t.due) : '';
   const sortBadge = buildSortBadge(t);
-  const qBadge = t.quadrant ? `<span class="meta-badge badge-q badge-q${t.quadrant}">${quadrantShortLabel(t.quadrant)}</span>` : '';
+  const qBoard = getBoard(t.quadrant);
+  const qBadge = qBoard ? `<span class="meta-badge badge-q" style="--board-color:${qBoard.color}">${escapeHtml(boardName(qBoard))}</span>` : '';
   const tagBadges = t.tags.map(tag => `<span class="meta-badge badge-tag">#${escapeHtml(tag)}</span>`).join('');
 
   return `
@@ -1740,8 +1840,10 @@ function formatDueLabel(dueStr) {
   return `${m}/${d}`;
 }
 
+// ボードIDから名称を返す（ボードが無ければ空文字）
 function quadrantShortLabel(q) {
-  return { 1: '①今すぐ', 2: '②計画', 3: '③サクッと', 4: '④後回し' }[q] || '';
+  const b = getBoard(q);
+  return b ? boardName(b) : '';
 }
 
 /* =====================================================
@@ -1757,11 +1859,11 @@ function renderDashboard() {
   renderDropList('nowDoingList', nowDoingItems);
   toggleEmptyHint('nowDoingList', 'nowDoingEmptyHint', nowDoingItems.length, 'now-action-zone');
 
-  // マトリクス4象限：今からやること欄／完了済みに入っていないタスクのみ
-  for (let q = 1; q <= 4; q++) {
-    const items = base.filter(t => t.quadrant === q && !t.isNowDoing && !t.completed).sort((a, b) => a.order - b.order);
-    renderDropList('matrixList' + q, items);
-  }
+  // 各ボード：今からやること欄／完了済みに入っていないタスクのみ
+  settings.boards.forEach(b => {
+    const items = base.filter(t => t.quadrant === b.id && !t.isNowDoing && !t.completed).sort((a, c) => a.order - c.order);
+    renderDropList('matrixList' + b.id, items);
+  });
 
   // ✅完了済み欄：completed＝true のタスク
   const completedItems = base.filter(t => t.completed).sort((a, b) => a.order - b.order);
@@ -1804,14 +1906,24 @@ function initSortable() {
     }
   });
 
-  // ドラッグで移動できるゾーン一覧（今からやること／マトリクス4象限／完了済み）
-  const dropZoneIds = ['nowDoingList', 'matrixList1', 'matrixList2', 'matrixList3', 'matrixList4', 'completedDropList'];
-  dropZoneIds.forEach(id => {
-    new Sortable(document.getElementById(id), {
+  // ボード枠のドラッグ設定は、ボードの増減・並べ替えのたびに作り直すため initZoneSortables() に分離
+}
+
+// ドラッグで移動できるゾーン（今からやること／各ボード／完了済み）のSortableを作り直す
+// ・renderBoardGrid()の最後に毎回呼ぶ（ボードのDOMを作り直すので）
+let zoneSortables = [];
+function initZoneSortables() {
+  zoneSortables.forEach(s => s.destroy());
+  zoneSortables = [];
+  const ids = ['nowDoingList', 'completedDropList', ...settings.boards.map(b => 'matrixList' + b.id)];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    zoneSortables.push(new Sortable(el, {
       group: 'taskZones', // 全ゾーン間でドラッグ移動可能にする
       animation: 150,
       onEnd: handleZoneDrop,
-    });
+    }));
   });
 }
 
@@ -1927,7 +2039,7 @@ function closeModalOnOverlay(e) {
 
 // モーダルを開いた時の初期表示用（トグルせず直接値をセットする）
 function initQuadrant(q) {
-  selectedQuadrant = q || null;
+  selectedQuadrant = (q && getBoard(q)) ? q : null; // ★削除済みボードのIDは未分類扱い
   document.querySelectorAll('.q-btn').forEach(btn => {
     btn.classList.toggle('active', Number(btn.dataset.q) === selectedQuadrant);
   });
@@ -2257,10 +2369,326 @@ function showTab(tabId, save = true) {
   }
 }
 
-// ↓ 以降のステップで中身を実装する（今は何もしない）
+// ↓ 以降のステップで中身を実装する（今は何もしない）。設定タブは上の「ボード設定」ブロックに実装済み
 function renderCalendarTab() {}
 function renderGraphTab() {}
-function renderSettingsTab() {}
+/* =====================================================
+   【ボード設定】名称・色・順番・行ごとの列数・特別枠
+   ・保存先：SETTINGS_STORAGE_KEY（タスク本体・タブ・並び順とは別キー）
+   ・タスクの quadrant は「ボードID」として使う（既定の①〜④はid=1〜4のまま＝既存データは移行不要）
+   ・ボードを削除したら、そのタスクの quadrant を null（未分類）にする（リストタブには残る）
+   ・★新しい設定項目を足す時：getDefaultSettings()とnormalizeSettings()に項目を足す
+   ・ボードIDは再利用しない（nextBoardId）
+   ===================================================== */
+const SETTINGS_STORAGE_KEY = 'task_manager_settings_v1';
+const NEW_BOARD_COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#84cc16', '#06b6d4', '#a16207'];
+
+// ★関数にしているのは、呼び出しごとに新しいオブジェクトを返してコピー事故を防ぐため
+function getDefaultSettings() {
+  return {
+    // 配列の順＝画面に並ぶ順（従来の見た目＝②①／④③）
+    boards: [
+      { id: 2, name: '②計画してやる', sub: '重要×非緊急',   color: '#1a7a5e' },
+      { id: 1, name: '①すぐやる',     sub: '重要×緊急',     color: '#d64545' },
+      { id: 4, name: '④後回し',       sub: '非重要×非緊急', color: '#8a8f98' },
+      { id: 3, name: '③サクッとやる', sub: '非重要×緊急',   color: '#d98c1f' },
+    ],
+    rowCols: [2, 2],   // 行ごとの列数（1行目2列・2行目2列）
+    nextBoardId: 5,
+    nowDoing:  { name: '★今からやること', color: '#d4a017' },
+    completed: { name: '✅完了済み',       color: '#3a9a5c' },
+  };
+}
+
+function normalizeSettings(raw) {
+  const def = getDefaultSettings();
+  if (!raw || typeof raw !== 'object') return def;
+  const isColor = c => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c);
+  const str = (v, fallback) => (typeof v === 'string' ? v : fallback).slice(0, 40);
+
+  let boards = def.boards;
+  if (Array.isArray(raw.boards)) {
+    const seen = new Set();
+    boards = raw.boards
+      .filter(b => b && Number.isInteger(b.id) && b.id > 0 && !seen.has(b.id) && seen.add(b.id))
+      .map(b => ({ id: b.id, name: str(b.name, ''), sub: str(b.sub, ''), color: isColor(b.color) ? b.color : '#8a8f98' }));
+  }
+  let rowCols = def.rowCols;
+  if (Array.isArray(raw.rowCols) && raw.rowCols.length > 0) {
+    rowCols = raw.rowCols.map(n => Math.max(1, Math.floor(Number(n)) || 1));
+  }
+  const maxId = boards.reduce((m, b) => Math.max(m, b.id), 0);
+  const special = (r, d) => ({ name: str(r && r.name, d.name), color: isColor(r && r.color) ? r.color : d.color });
+  return {
+    boards,
+    rowCols,
+    nextBoardId: Math.max(Number(raw.nextBoardId) || 0, maxId + 1),
+    nowDoing: special(raw.nowDoing, def.nowDoing),
+    completed: special(raw.completed, def.completed),
+  };
+}
+
+function loadSettings() {
+  try {
+    return normalizeSettings(JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY)));
+  } catch (e) {
+    return getDefaultSettings();
+  }
+}
+
+function saveSettings() {
+  try { localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings)); } catch (e) {}
+}
+
+function getBoard(id) {
+  if (id === null || id === undefined) return null;
+  return settings.boards.find(b => b.id === Number(id)) || null;
+}
+function boardName(b) { return b.name || '（名称なし）'; }
+
+// ボードを「行」に割り当てる：ボードの並び順に1行目から埋める
+// ・行の定義（rowCols）を使い切ったら、最後の行の列数を繰り返す
+// ・最後の行でボードが足りない時は、あるだけで横いっぱいに広げる
+function computeBoardRows() {
+  const rows = [];
+  const rc = settings.rowCols.length ? settings.rowCols : [2];
+  let i = 0, r = 0;
+  while (i < settings.boards.length) {
+    const cols = Math.max(1, rc[Math.min(r, rc.length - 1)]);
+    rows.push(settings.boards.slice(i, i + cols));
+    i += cols;
+    r++;
+  }
+  return rows;
+}
+
+// ---------- 画面への反映 ----------
+// ボード枠を作り直す（描画後に renderAll() でタスクを流し込むこと）
+function renderBoardGrid() {
+  const wrap = document.getElementById('matrixView');
+  if (!wrap) return;
+  const rows = computeBoardRows();
+  if (rows.length === 0) {
+    wrap.innerHTML = '<div class="empty-msg">ボードがありません。設定タブから追加できます</div>';
+  } else {
+    wrap.innerHTML = rows.map(row => `
+      <div class="matrix-row" style="grid-template-columns:repeat(${row.length},minmax(0,1fr))">
+        ${row.map(b => `
+        <div class="matrix-quadrant" style="--board-color:${b.color}" onclick="handleZoneBlankClick(event, 'quadrant', ${b.id})">
+          <div class="matrix-title"><span>${escapeHtml(boardName(b))}</span>${b.sub ? `<span>${escapeHtml(b.sub)}</span>` : ''}</div>
+          <div class="matrix-list" id="matrixList${b.id}" data-q="${b.id}"></div>
+        </div>`).join('')}
+      </div>`).join('');
+  }
+  initZoneSortables();
+}
+
+// 「今からやること」「完了済み」の名称・色を反映
+function applySpecialZones() {
+  const apply = (zoneId, titleId, s) => {
+    const z = document.getElementById(zoneId);
+    const t = document.getElementById(titleId);
+    if (z) z.style.setProperty('--board-color', s.color);
+    if (t) t.textContent = s.name || '（名称なし）';
+  };
+  apply('nowZone', 'nowZoneTitle', settings.nowDoing);
+  apply('completedZone', 'completedZoneTitle', settings.completed);
+}
+
+// タスク追加モーダルのボード選択ボタンを作り直す
+function renderQuadrantButtons() {
+  const wrap = document.getElementById('qSelectWrap');
+  if (!wrap) return;
+  wrap.innerHTML = settings.boards.length
+    ? settings.boards.map(b =>
+        `<button type="button" class="q-btn" data-q="${b.id}" style="--board-color:${b.color}" onclick="setQuadrant(${b.id})">${escapeHtml(boardName(b))}</button>`
+      ).join('')
+    : '<div class="set-empty">ボードが未設定です（設定タブで追加）</div>';
+  initQuadrant(selectedQuadrant);
+}
+
+// 設定を画面全体へ反映（呼んだ後に renderAll() でタスクを流し込む）
+function applySettingsToUI() {
+  renderBoardGrid();
+  applySpecialZones();
+  renderQuadrantButtons();
+}
+
+// 設定変更後の共通処理：保存→画面反映→タスク再描画
+function commitSettings() {
+  saveSettings();
+  applySettingsToUI();
+  renderAll();
+}
+
+// ボードに存在しないquadrantを持つタスクを未分類（null）にする。変更件数を返す
+function detachTasksFromMissingBoards() {
+  let n = 0;
+  tasks.forEach(t => {
+    if (t.quadrant !== null && t.quadrant !== undefined && !getBoard(t.quadrant)) {
+      t.quadrant = null;
+      n++;
+    }
+  });
+  if (n > 0) saveTasks();
+  return n;
+}
+
+// ---------- 設定タブ：ボード編集 ----------
+function renderSettingsTab() {
+  renderSettingsBoards();
+  renderSettingsLayout();
+  renderSettingsSpecial();
+}
+
+function renderSettingsBoards() {
+  const el = document.getElementById('settingsBoards');
+  if (!el) return;
+  const last = settings.boards.length - 1;
+  el.innerHTML = settings.boards.length ? settings.boards.map((b, i) => `
+    <div class="set-board">
+      <div class="set-row">
+        <input type="color" class="set-color" value="${b.color}" aria-label="色" oninput="updateBoardField(${b.id}, 'color', this.value)">
+        <input type="text" class="set-input" value="${escapeAttr(b.name)}" maxlength="40" placeholder="ボード名" aria-label="ボード名" oninput="updateBoardField(${b.id}, 'name', this.value)">
+      </div>
+      <div class="set-row">
+        <input type="text" class="set-input" value="${escapeAttr(b.sub)}" maxlength="40" placeholder="補足（任意）例：重要×緊急" aria-label="補足" oninput="updateBoardField(${b.id}, 'sub', this.value)">
+        <button type="button" class="set-icon-btn" ${i === 0 ? 'disabled' : ''} onclick="moveBoard(${b.id}, -1)" aria-label="上へ">▲</button>
+        <button type="button" class="set-icon-btn" ${i === last ? 'disabled' : ''} onclick="moveBoard(${b.id}, 1)" aria-label="下へ">▼</button>
+        <button type="button" class="set-icon-btn danger" onclick="deleteBoard(${b.id})" aria-label="削除">🗑</button>
+      </div>
+    </div>`).join('') : '<div class="set-empty">ボードがありません。「＋ ボードを追加」から作れます</div>';
+}
+
+// 名称・補足・色の変更（入力中に呼ばれるため、設定タブ自身は再描画しない＝フォーカスを失わない）
+function updateBoardField(id, field, value) {
+  const b = getBoard(id);
+  if (!b) return;
+  if (field === 'color') {
+    if (!/^#[0-9a-fA-F]{6}$/.test(value)) return;
+    b.color = value;
+  } else {
+    b[field] = String(value).slice(0, 40);
+  }
+  commitSettings();
+  renderLayoutPreview();
+}
+
+function moveBoard(id, dir) {
+  const i = settings.boards.findIndex(b => b.id === id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= settings.boards.length) return;
+  [settings.boards[i], settings.boards[j]] = [settings.boards[j], settings.boards[i]];
+  commitSettings();
+  renderSettingsBoards();
+  renderLayoutPreview();
+}
+
+function addBoard() {
+  const color = NEW_BOARD_COLORS[(settings.nextBoardId - 1) % NEW_BOARD_COLORS.length];
+  settings.boards.push({ id: settings.nextBoardId, name: '新しいボード', sub: '', color });
+  settings.nextBoardId++;
+  commitSettings();
+  renderSettingsBoards();
+  renderLayoutPreview();
+}
+
+function deleteBoard(id) {
+  const b = getBoard(id);
+  if (!b) return;
+  const count = tasks.filter(t => t.quadrant === id).length;
+  if (!confirm(`「${boardName(b)}」を削除する？\nこのボードのタスク${count}件は「未分類」になる（リストタブには残る）`)) return;
+  tasks.forEach(t => { if (t.quadrant === id) t.quadrant = null; });
+  saveTasks();
+  settings.boards = settings.boards.filter(x => x.id !== id);
+  commitSettings();
+  renderSettingsBoards();
+  renderLayoutPreview();
+}
+
+// ---------- 設定タブ：行ごとの列数 ----------
+function renderSettingsLayout() {
+  const el = document.getElementById('settingsLayout');
+  if (!el) return;
+  const onlyOne = settings.rowCols.length <= 1;
+  el.innerHTML = settings.rowCols.map((c, i) => `
+    <div class="set-row">
+      <span class="set-row-label">${i + 1}行目</span>
+      <button type="button" class="set-icon-btn" ${c <= 1 ? 'disabled' : ''} onclick="changeRowCols(${i}, -1)" aria-label="列を減らす">−</button>
+      <span class="set-col-num">${c}列</span>
+      <button type="button" class="set-icon-btn" onclick="changeRowCols(${i}, 1)" aria-label="列を増やす">＋</button>
+      <button type="button" class="set-icon-btn danger" ${onlyOne ? 'disabled' : ''} onclick="deleteRow(${i})" aria-label="行を削除">🗑</button>
+    </div>`).join('') + `
+    <button type="button" class="set-add-btn" onclick="addRow()">＋ 行を追加</button>
+    <div class="set-note">ボードは上のリストの順に、1行目から埋まります。行の合計よりボードが多い時は最後の行の列数を繰り返し、最後の行でボードが足りない時はあるだけ横いっぱいに広げます。</div>
+    <div class="layout-preview" id="layoutPreview"></div>`;
+  renderLayoutPreview();
+}
+
+// 配置プレビュー（ボードの名称・色を反映した縮小図）
+function renderLayoutPreview() {
+  const el = document.getElementById('layoutPreview');
+  if (!el) return;
+  const rows = computeBoardRows();
+  el.innerHTML = rows.map(row =>
+    `<div class="lp-row" style="grid-template-columns:repeat(${row.length},minmax(0,1fr))">` +
+    row.map(b => `<div class="lp-cell" style="--board-color:${b.color}">${escapeHtml(boardName(b))}</div>`).join('') +
+    '</div>'
+  ).join('');
+}
+
+function changeRowCols(i, d) {
+  if (i < 0 || i >= settings.rowCols.length) return;
+  settings.rowCols[i] = Math.max(1, settings.rowCols[i] + d);
+  commitSettings();
+  renderSettingsLayout();
+}
+function addRow() {
+  settings.rowCols.push(settings.rowCols[settings.rowCols.length - 1] || 2);
+  commitSettings();
+  renderSettingsLayout();
+}
+function deleteRow(i) {
+  if (settings.rowCols.length <= 1) return;
+  settings.rowCols.splice(i, 1);
+  commitSettings();
+  renderSettingsLayout();
+}
+
+// ---------- 設定タブ：特別枠（今からやること／完了済み） ----------
+function renderSettingsSpecial() {
+  const el = document.getElementById('settingsSpecial');
+  if (!el) return;
+  const block = (key, label) => `
+    <div class="set-sub-label">${label}</div>
+    <div class="set-row">
+      <input type="color" class="set-color" value="${settings[key].color}" aria-label="色" oninput="updateSpecial('${key}', 'color', this.value)">
+      <input type="text" class="set-input" value="${escapeAttr(settings[key].name)}" maxlength="40" placeholder="名称" aria-label="${label}の名称" oninput="updateSpecial('${key}', 'name', this.value)">
+    </div>`;
+  el.innerHTML = block('nowDoing', '今からやること枠') + block('completed', '完了済み枠') +
+    '<div class="set-note">この2つは削除できません（完了済み枠はグラフの完了日の記録に使います）。</div>';
+}
+
+function updateSpecial(key, field, value) {
+  if (!settings[key]) return;
+  if (field === 'color') {
+    if (!/^#[0-9a-fA-F]{6}$/.test(value)) return;
+    settings[key].color = value;
+  } else {
+    settings[key].name = String(value).slice(0, 40);
+  }
+  saveSettings();
+  applySpecialZones();
+}
+
+function resetSettings() {
+  if (!confirm('ボードの名称・色・並べ方を初期状態に戻す？\n追加したボードのタスクは「未分類」になる（タスク自体は消えない）')) return;
+  settings = getDefaultSettings();
+  detachTasksFromMissingBoards();
+  commitSettings();
+  renderSettingsTab();
+}
+
 </script>
 </body>
 </html>
