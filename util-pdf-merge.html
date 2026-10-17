@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<!-- AdSense（静的配置） -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2195458991382480" crossorigin="anonymous"></script>
+<link rel="canonical" href="https://arigato-tools.com/util-pdf-merge">
+<!-- gtag：★測定IDを既存ツールと同じものに差し替えてね -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XXXXXXXXXX');</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PDF結合・ページ整理ツール｜並べ替え・削除・抽出をブラウザで（無料）</title>
+<meta name="description" content="複数のPDFを1つに結合し、ページの並べ替え・削除・回転・白紙挿入・抽出（分割）ができる無料ツール。ドラッグでもボタンでも移動でき、iPadでも使えます。ファイルは外部に送信されず端末内で処理。">
+<meta property="og:title" content="PDF結合・ページ整理ツール｜並べ替え・削除・抽出をブラウザで">
+<meta property="og:description" content="PDFの結合・ページの並べ替え・削除・抽出。ファイルは外部送信なし。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://arigato-tools.com/util-pdf-merge">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/common.css">
+<style>
+/* ===== このツール専用CSS（色は全てCSS変数。PDFのページ面＝サムネ背景の白だけは固定色） ===== */
+.container { max-width: 1100px; }  /* サムネを何列か並べるので、共通の600pxより広げる */
+
+/* ---------- ボタン・入力部品（PDF編集ツールと同じ見た目） ---------- */
+.mg-bar { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:8px; }
+.mg-spacer { flex:1; }
+.mg-btn {
+  display:inline-flex; align-items:center; justify-content:center; gap:4px;
+  min-height:44px; padding:0 12px; cursor:pointer; white-space:nowrap; text-decoration:none;
+  background:var(--color-chip-bg); border:1px solid var(--color-primary-border);
+  border-radius:var(--radius-input); color:var(--color-primary);
+  font-family:inherit; font-size:13px; font-weight:700; transition:background .15s;
+}
+.mg-btn:hover { background:var(--color-chip-hover); }
+.mg-btn:disabled { opacity:.4; cursor:not-allowed; }
+.mg-btn.primary { background:var(--color-primary); border-color:var(--color-primary); color:#fff; }
+.mg-btn.primary:hover { background:var(--color-primary-hover); }
+.mg-label { font-size:11px; font-weight:700; color:var(--color-text-sub); }
+.mg-select {
+  min-height:44px; font-size:16px; font-family:inherit; padding:0 6px;   /* 16px以上：iPhone/iPadのズーム防止 */
+  background:var(--color-input-bg); color:var(--color-text);
+  border:1px solid var(--color-border-input); border-radius:var(--radius-input);
+}
+.mg-status { font-size:12px; color:var(--color-text-muted); margin:0 0 6px; line-height:1.6; }
+.mg-status:empty { display:none; }
+.mg-warn { font-size:12px; color:var(--color-error-text); background:var(--color-error-bg); border:1px solid var(--color-error-border);
+  border-radius:var(--radius-input); padding:7px 11px; margin:0 0 8px; line-height:1.7; display:none; }
+.mg-warn.show { display:block; }
+/* 保存後に出す「書き込みたいなら編集ツールへ」の案内 */
+.mg-next { display:none; align-items:center; gap:8px; flex-wrap:wrap; margin:0 0 8px; padding:8px 12px; font-size:12px;
+  color:var(--color-text-sub); background:var(--color-primary-bg); border:1px solid var(--color-primary-border); border-radius:var(--radius-input); }
+.mg-next.show { display:flex; }
+
+/* ---------- 読み込み済みファイルのチップ ---------- */
+.mg-files { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+.mg-files:empty { display:none; }
+.mg-chip { display:inline-flex; align-items:center; max-width:100%; padding-left:10px; font-size:12px; color:var(--color-text-sub);
+  background:var(--color-primary-bg); border:1px solid var(--color-primary-border); border-radius:var(--radius-input); }
+.mg-chip-t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:260px; }
+.mg-chip-x { min-width:44px; min-height:44px; border:none; background:none; color:var(--color-text-muted); font-size:14px; cursor:pointer; }
+
+/* ---------- ページ一覧（サムネのグリッド。この枠の中だけスクロール） ---------- */
+.mg-list-wrap { position:relative; }
+.mg-list {
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(196px, 1fr)); gap:8px; align-content:start;
+  max-height:70vh; max-height:70dvh; min-height:220px; overflow:auto; padding:8px;
+  background:var(--color-input-bg); border:1px solid var(--color-border); border-radius:var(--radius-card);
+}
+.mg-list.dragover { border-color:var(--color-primary); background:var(--color-primary-bg); }
+.mg-empty {
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; padding:16px;
+  font-size:13px; line-height:1.9; color:var(--color-text-muted); pointer-events:none;
+}
+
+/* ---------- ページカード ---------- */
+.mg-card { display:flex; flex-direction:column; min-width:0; padding:4px; background:var(--color-card);
+  border:2px solid var(--color-border); border-radius:var(--radius-card); }
+.mg-card.sel { border-color:var(--color-primary); background:var(--color-primary-bg); }
+.mg-card.dragging { opacity:.35; }
+.mg-top { display:flex; align-items:center; gap:4px; }
+/* ☰ドラッグ用のつまみ。ここだけ touch-action:none（他の場所は指でスクロールできる） */
+.mg-grip {
+  min-width:44px; min-height:44px; padding:0; cursor:grab; touch-action:none;
+  -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
+  font-size:18px; color:var(--color-text-sub); background:var(--color-chip-bg);
+  border:1px solid var(--color-border-input); border-radius:var(--radius-input);
+}
+.mg-no { flex:1; text-align:center; font-size:13px; font-weight:700; color:var(--color-text); }
+.mg-chk { display:flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; cursor:pointer; }
+.mg-chk input { width:22px; height:22px; accent-color:var(--color-primary); }
+/* サムネ枠：PDFのページ面なのでダークでも白固定。縦横比は --ar で指定（読み込み前のガタつき防止） */
+.mg-thumb {
+  position:relative; width:100%; aspect-ratio:var(--ar, 0.707); overflow:hidden; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  background:#fff; border:1px solid var(--color-border-input);
+}
+.mg-thumb img { display:block; width:100%; height:100%; object-fit:contain; -webkit-user-drag:none; user-select:none; }
+.mg-blank { font-size:12px; color:#999; }
+.mg-name { margin:3px 0; font-size:11px; color:var(--color-text-muted); text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mg-acts { display:grid; grid-template-columns:repeat(4, 1fr); gap:2px; }
+.mg-btn.mg-sm { padding:0; min-width:0; }
+
+/* ---------- ドラッグ中の表示（浮かせたサムネ＋挿入位置の青い線） ---------- */
+.mg-ghost { position:fixed; z-index:2000; pointer-events:none; opacity:.9; background:#fff; border-radius:4px;
+  border:2px solid var(--color-primary); box-shadow:0 6px 18px rgba(0,0,0,.35); }
+.mg-ghost img { display:block; width:110px; height:auto; }
+.mg-ghost-blank { width:110px; height:150px; display:flex; align-items:center; justify-content:center; font-size:12px; color:#999; }
+.mg-ghost-n { position:absolute; right:-8px; top:-10px; padding:1px 8px; border-radius:10px;
+  font-size:11px; font-weight:700; color:#fff; background:var(--color-primary); }
+.mg-drop { position:fixed; display:none; z-index:1999; width:4px; border-radius:2px; pointer-events:none;
+  background:var(--color-primary); box-shadow:0 0 0 2px var(--color-card); }
+body.mg-dragging { -webkit-user-select:none; user-select:none; cursor:grabbing; }
+
+/* ---------- 解説文（将来common.cssへ移動可） ---------- */
+.tool-desc {
+  background:var(--color-card); border:1px solid var(--color-border);
+  border-radius:var(--radius-card); padding:18px 20px; margin:14px 0;
+  font-size:13px; line-height:1.9; color:var(--color-text-sub);
+}
+.tool-desc h2 { font-size:15px; color:var(--color-text); margin-bottom:8px; }
+.tool-desc h3 { font-size:13px; color:var(--color-text); margin:12px 0 4px; }
+.tool-desc a { color:var(--color-primary); font-weight:700; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div id="topNavSlot"></div>
+
+<header>
+  <h1>PDF結合・ページ整理</h1>
+  <p class="subtitle">複数PDFをまとめる・並べ替え・削除・抽出｜ファイルは外部に送信されません</p>
+</header>
+
+<!-- ===== ツール本体 ===== -->
+<div class="card">
+  <!-- 行1：ファイルの追加・保存・戻す／進む・編集ツールへの導線 -->
+  <div class="mg-bar">
+    <label class="mg-btn primary" for="fileInput" id="lblAdd">📂 PDFを追加</label>
+    <input type="file" id="fileInput" accept="application/pdf,.pdf" multiple hidden>
+    <span class="mg-label">追加位置</span>
+    <select class="mg-select" id="addPos" aria-label="追加位置">
+      <option value="end">末尾に追加</option>
+      <option value="after">選んだページの後ろに追加</option>
+    </select>
+    <button class="mg-btn primary" id="btnSave" disabled>💾 全ページを保存</button>
+    <button class="mg-btn" id="btnExtract" disabled>✂ 選択を抽出して保存</button>
+    <button class="mg-btn" id="btnUndo" disabled>↩ 戻す</button>
+    <button class="mg-btn" id="btnRedo" disabled>↪ やり直す</button>
+    <span class="mg-spacer"></span>
+    <!-- 最初に作ったPDF編集ツールへの誘導ボタン -->
+    <a class="mg-btn" href="/util-pdf-editor" id="linkEditor">🖊 文字・図形を書き込む → PDF編集ツール</a>
+  </div>
+  <!-- 行2：ページの一括操作（選択したページが対象） -->
+  <div class="mg-bar">
+    <button class="mg-btn" id="btnSelAll" disabled>☑ 全選択</button>
+    <button class="mg-btn" id="btnSelNone" disabled>☐ 選択解除</button>
+    <button class="mg-btn" id="btnMvL" disabled>◀ 選択を前へ</button>
+    <button class="mg-btn" id="btnMvR" disabled>▶ 選択を後ろへ</button>
+    <button class="mg-btn" id="btnRotSel" disabled>↻ 選択を回転</button>
+    <button class="mg-btn" id="btnBlank">＋ 白紙を挿入</button>
+    <button class="mg-btn" id="btnDelSel" disabled>🗑 選択を削除</button>
+  </div>
+
+  <div class="mg-status" id="mgStatus"></div>
+  <div class="mg-warn" id="mgWarn"></div>
+  <div class="error-msg" id="errorMsg"></div>
+  <div class="mg-next" id="mgNext">
+    <span>✅ 保存できたら、文字・ハイライト・署名などを書き込みたい時はこちら →</span>
+    <a class="mg-btn" href="/util-pdf-editor">🖊 PDF編集ツールを開く</a>
+  </div>
+  <div class="mg-files" id="mgFiles"></div>
+
+  <!-- ページ一覧。PDFファイルをここへドラッグ&ドロップして追加もできる -->
+  <div class="mg-list-wrap">
+    <div class="mg-list" id="mgList"></div>
+    <div class="mg-empty" id="mgEmpty">「📂 PDFを追加」から複数のPDFを選ぶか、<br>ここにPDFファイルをドラッグ&ドロップしてください。<br>ページが一覧に並びます。</div>
+  </div>
+  <div class="mg-status" id="mgCount" style="margin:6px 0 0"></div>
+</div>
+<div class="mg-drop" id="mgDrop"></div>
+
+<!-- ===== 解説文（AdSense有用性対策：このツール独自の説明） ===== -->
+<section class="tool-desc">
+  <h2>PDF結合・ページ整理ツールの使い方</h2>
+  <p>「PDFを追加」で1つ以上のPDFを選ぶと、全ページがサムネイルで並びます。ページ左上の「☰」をドラッグすると順番を入れ替えられ、◀▶ボタンでも1枚ずつ動かせます。不要なページは🗑で削除、向きの違うページは↻で回転、「＋白紙を挿入」で選んだページの後ろに白紙ページも足せます。整えたら「全ページを保存」で1つのPDFにまとめてダウンロード。「選択を抽出して保存」なら、選んだページだけを別のPDFとして取り出せます（PDFの分割にも使えます）。</p>
+  <h3>こんな場面に</h3>
+  <p>複数の申込書や添付資料を1つのPDFにまとめて提出したい時、スキャンして上下逆になったページを直したい時、契約書から必要な数ページだけを切り出したい時、白紙ページを取り除きたい時などを想定しています。インストール不要で、パソコンでもiPadでも使えます。</p>
+  <h3>仕様と注意</h3>
+  <p>PDFは端末のブラウザ内だけで処理し、サーバーへは送信しません。元のファイルは変更されず、保存すると新しいPDFがダウンロードされます。ページ内リンクとしおり（目次）は引き継がれません。入力欄（フォーム）付きのPDFは、結合後に入力欄として使えなくなる場合があるため、先に入力して保存してから結合するのがおすすめです。パスワード付き・コピー制限付きのPDFには対応していません。ページ数の多いPDFは処理に時間がかかることがあります。文字・図形・署名などを書き込みたい時は<a href="/util-pdf-editor">PDF編集ツール</a>をご利用ください。</p>
+  <h3>よくある質問</h3>
+  <p>Q. 結合の順番はどう決まりますか？ A. 追加した順に末尾へ並びます。「追加位置」を切り替えると、選んだページの後ろへ入れられ、あとからドラッグでも変更できます。Q. 間違えて削除した時は？ A. 「戻す」で元に戻せます。</p>
+</section>
+
+<div id="shareAreaSlot"></div>
+<div id="resetBtnSlot"></div>
+<div id="bottomNavSlot"></div>
+<div id="adAreaSlot"></div>
+<div id="qrModalSlot"></div>
+<div id="footerSlot"></div>
+
+</div>
+
+<!-- 外部ライブラリ（cdnjs）：pdf.js＝サムネ表示、pdf-lib＝結合・保存、qrcode.js＝シェア用QR -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="/common.js"></script>
+<script>
+/* =====================================================
+   common.js が要求する定義（このツールは入力→計算型ではないのでダミー）
+   ・calculateResultはnullを返すとshareX/shareLineが動かない落とし穴があるため
+     常に非nullを返す
+   ===================================================== */
+const CURRENT_TOOL_ID = 'util-pdf-merge';
+const STORAGE_KEY     = 'arigato_util-pdf-merge';
+const STORAGE_FIELDS  = [];                 // 保存対象の入力なし（PDFは保存しない）
+const INPUT_LABELS    = {};
+const RESULT_LABELS   = { main: 'PDF結合・ページ整理' };
+function calculateInputs()  { return {}; }  // alertは出さない
+function calculateResult()  { return { main: 0 }; }
+function displayResult()    { /* 表示するものなし */ }
+function buildShareText()   { return '📄 PDFの結合・ページの並べ替え・削除・抽出ができる無料ツール。ファイルは外部送信なし！'; }
+function buildShareUrl()    { return 'https://arigato-tools.com/util-pdf-merge'; }
+
+// 「入力値をリセット」＝読み込んだPDFとページ一覧をすべてクリア
+function onResetExtra() { clearAll(); }
+
+/* =====================================================
+   定数・状態
+   ・pages（ページ一覧）が「今の並び順」そのもの。画面はここから作り直す
+   ・各ページ p = { uid, src(元PDFのid), idx(元PDFの何ページ目か 0始まり), blank(白紙か), bw/bh(白紙の大きさpt),
+                    rot(追加の回転 0/90/180/270), sel(選択中), w/h(表示上の大きさpt), url(サムネ画像), done, ver }
+   ・元PDFは sources[id] = { name, lib(pdf-libの文書), pdf(pdf.jsの文書), w/h/ar(1ページ目の大きさ) }
+   ===================================================== */
+const PDFJS_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+// 日本語PDFの表示に必要な文字コード表(cMap)と標準フォント（無いと、フォント非埋め込みの日本語がサムネに出ないことがある）
+const PDFJS_DATA = { cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/', cMapPacked: true,
+                     standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/' };
+const $ = id => document.getElementById(id);
+const list = $('mgList');
+const THUMB_W = 170;                        // サムネの表示幅(px)
+const MAX_FILE = 200 * 1024 * 1024;         // 1ファイルの上限（メモリ不足防止）
+const A4 = [595.28, 841.89];                // 白紙ページの既定サイズ(pt)
+
+let sources = {}, srcSeq = 0, pages = [], registry = new Map(), uidSeq = 0;
+let undoStack = [], redoStack = [], dirty = false, busy = false, workerReady = null, lastClickUid = null;
+
+// 小さなDOM作成ヘルパー（ファイル名などは必ずtextContentで入れる＝HTMLとして解釈させない）
+function el(tag, cls, txt) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (txt != null) e.textContent = txt;
+  return e;
+}
+function setStatus(t) { $('mgStatus').textContent = t || ''; }
+function clearMsg() { $('errorMsg').classList.remove('show'); $('mgWarn').classList.remove('show'); }
+function fmtSize(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(n / 1024)) + 'KB'; }
+function baseName(n) { return String(n || 'document').replace(/\.pdf$/i, ''); }
+
+// pdf.jsのworkerはクロスオリジンで直接読めないため、Blob化して読み込む
+function setupWorker() {
+  if (!workerReady) {
+    workerReady = fetch(PDFJS_BASE + 'pdf.worker.min.js')
+      .then(r => { if (!r.ok) throw new Error('worker'); return r.blob(); })
+      .then(b => { pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(b); });
+  }
+  return workerReady;
+}
+function isEncrypted(e) {                   // パスワード・コピー制限付きPDFのエラーか
+  return !!e && (e.name === 'PasswordException' || (PDFLib.EncryptedPDFError && e instanceof PDFLib.EncryptedPDFError) || /encrypt/i.test(e.message || ''));
+}
+
+/* =====================================================
+   ページ情報の補助
+   ===================================================== */
+function makePage(o) {
+  const p = Object.assign({ uid: ++uidSeq, src: 0, idx: 0, blank: false, bw: 0, bh: 0, rot: 0, sel: false,
+                            w: 0, h: 0, url: '', done: false, queued: false, ver: 0 }, o);
+  registry.set(p.uid, p);
+  return p;
+}
+function dispDims(p) {                      // 表示上の大きさ(pt)。サムネ未描画なら元PDFの1ページ目から推定
+  if (p.blank) return (p.rot % 180) ? [p.bh, p.bw] : [p.bw, p.bh];
+  if (p.w && p.h) return [p.w, p.h];
+  const s = sources[p.src];
+  return s ? ((p.rot % 180) ? [s.h, s.w] : [s.w, s.h]) : A4.slice();
+}
+function pageAR(p) { const d = dispDims(p); return d[0] / d[1]; }
+function setRot(p, rot) {                   // 回転の変更（サムネの再描画と、縦横の入れ替えも面倒を見る）
+  const d = (((rot - p.rot) % 360) + 360) % 360;
+  p.rot = rot;
+  if (d % 180 && p.w && p.h) { const t = p.w; p.w = p.h; p.h = t; }
+  p.ver++; p.done = false;
+}
+
+/* =====================================================
+   Undo / Redo（並び・回転・追加・削除を戻せる。選択状態は戻さない）
+   ===================================================== */
+function snapshot() { return pages.map(p => ({ uid: p.uid, rot: p.rot })); }
+function pushUndo() { undoStack.push(snapshot()); redoStack = []; if (undoStack.length > 60) undoStack.shift(); dirty = true; }
+function restore(snap) {
+  pages = snap.map(s => { const p = registry.get(s.uid); if (p.rot !== s.rot) setRot(p, s.rot); return p; });
+  dirty = true; renderList();
+}
+function undo() { if (!undoStack.length || busy) return; redoStack.push(snapshot()); restore(undoStack.pop()); }
+function redo() { if (!redoStack.length || busy) return; undoStack.push(snapshot()); restore(redoStack.pop()); }
+
+/* =====================================================
+   サムネイル描画（画面に入ったものだけ、1枚ずつ順番に）
+   ・canvasで描いたあとJPEG画像にして持つ（canvasのまま持つとページが多い時にメモリを食うため）
+   ===================================================== */
+let thumbQ = [], thumbBusy = false;
+function queueThumb(p) {
+  if (p.blank || p.done || p.queued) return;
+  p.queued = true; thumbQ.push(p); runThumbQ();
+}
+async function runThumbQ() {
+  if (thumbBusy) return;
+  thumbBusy = true;
+  while (thumbQ.length) {
+    const p = thumbQ.shift(); p.queued = false;
+    if (!pages.includes(p)) continue;       // 削除済み（Undoで戻れば、その時にまた描く）
+    try { await renderThumb(p); } catch (e) { console.error(e); p.done = true; }
+  }
+  thumbBusy = false;
+}
+async function renderThumb(p) {
+  const s = sources[p.src], ver = p.ver;
+  const page = await s.pdf.getPage(p.idx + 1);
+  const rot = ((page.rotate || 0) + p.rot) % 360;
+  const v1 = page.getViewport({ scale: 1, rotation: rot });
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const vp = page.getViewport({ scale: (THUMB_W * dpr) / v1.width, rotation: rot });
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);   // 透明のままだとJPEGで黒くなる
+  await page.render({ canvasContext: ctx, viewport: vp }).promise;
+  const blob = await new Promise(res => cv.toBlob(res, 'image/jpeg', 0.8));
+  cv.width = cv.height = 0;                 // canvasのメモリを解放
+  if (!blob) return;
+  if (p.url) URL.revokeObjectURL(p.url);
+  p.url = URL.createObjectURL(blob);
+  p.w = v1.width; p.h = v1.height;
+  p.done = (ver === p.ver);                 // 描いている間に回転されたら、もう一度描き直す
+  if (!p.done) queueThumb(p);
+  const card = list.querySelector('.mg-card[data-uid="' + p.uid + '"]');
+  if (card) {
+    const th = card.querySelector('.mg-thumb');
+    th.style.setProperty('--ar', pageAR(p));
+    th.textContent = ''; th.appendChild(makeImg(p));
+  }
+}
+function makeImg(p) { const im = new Image(); im.src = p.url; im.alt = ''; im.draggable = false; return im; }
+
+// 画面に入ったカードだけ描画（IntersectionObserverが無い環境は全部描く）
+const thumbObs = ('IntersectionObserver' in window)
+  ? new IntersectionObserver(entries => entries.forEach(en => {
+      if (!en.isIntersecting) return;
+      thumbObs.unobserve(en.target);
+      const p = registry.get(+en.target.dataset.uid); if (p) queueThumb(p);
+    }), { root: list, rootMargin: '400px' })
+  : null;
+
+/* =====================================================
+   ページ一覧の描画（pagesから画面を作り直す）
+   ===================================================== */
+function createCard(p, i) {
+  const c = el('div', 'mg-card' + (p.sel ? ' sel' : '')); c.dataset.uid = p.uid;
+  const top = el('div', 'mg-top');
+  const grip = el('button', 'mg-grip', '☰'); grip.type = 'button';
+  grip.title = 'ドラッグで移動'; grip.setAttribute('aria-label', 'ドラッグで移動');
+  const lab = el('label', 'mg-chk'), cb = document.createElement('input');
+  cb.type = 'checkbox'; cb.checked = p.sel; cb.dataset.act = 'sel'; cb.setAttribute('aria-label', 'ページを選択');
+  lab.appendChild(cb);
+  top.appendChild(grip); top.appendChild(el('span', 'mg-no', String(i + 1))); top.appendChild(lab);
+
+  const th = el('div', 'mg-thumb'); th.dataset.act = 'toggle'; th.style.setProperty('--ar', pageAR(p));
+  if (p.blank) th.appendChild(el('span', 'mg-blank', '白紙'));
+  else if (p.url) th.appendChild(makeImg(p));
+
+  const label = p.blank ? '白紙ページ' : sources[p.src].name + ' / p.' + (p.idx + 1);
+  const nm = el('div', 'mg-name', label); nm.title = label;
+
+  const acts = el('div', 'mg-acts');
+  [['left', '◀', '前へ'], ['right', '▶', '後ろへ'], ['rot', '↻', '回転'], ['del', '🗑', '削除']].forEach(a => {
+    const b = el('button', 'mg-btn mg-sm', a[1]); b.type = 'button'; b.dataset.act = a[0]; b.title = a[2]; b.setAttribute('aria-label', a[2]);
+    acts.appendChild(b);
+  });
+  c.appendChild(top); c.appendChild(th); c.appendChild(nm); c.appendChild(acts);
+  return c;
+}
+function renderList() {
+  const keep = list.scrollTop;
+  if (thumbObs) thumbObs.disconnect();
+  list.textContent = '';
+  const frag = document.createDocumentFragment();
+  pages.forEach((p, i) => frag.appendChild(createCard(p, i)));
+  list.appendChild(frag);
+  list.scrollTop = keep;
+  list.querySelectorAll('.mg-card').forEach(c => {
+    if (thumbObs) thumbObs.observe(c); else { const p = registry.get(+c.dataset.uid); if (p) queueThumb(p); }
+  });
+  updateUi();
+}
+function ensureVisible(uid) {               // 動かしたカードが枠の外に出ないよう、一覧の中だけスクロール
+  const c = list.querySelector('.mg-card[data-uid="' + uid + '"]'); if (!c) return;
+  const cr = c.getBoundingClientRect(), lr = list.getBoundingClientRect();
+  if (cr.top < lr.top) list.scrollTop -= (lr.top - cr.top) + 8;
+  else if (cr.bottom > lr.bottom) list.scrollTop += (cr.bottom - lr.bottom) + 8;
+}
+function renderChips() {                    // 読み込み済みファイルの一覧（✕でそのファイルのページをまとめて外す）
+  const box = $('mgFiles'); box.textContent = '';
+  const cnt = new Map();
+  pages.forEach(p => { if (!p.blank) cnt.set(p.src, (cnt.get(p.src) || 0) + 1); });
+  cnt.forEach((n, sid) => {
+    const chip = el('span', 'mg-chip');
+    chip.appendChild(el('span', 'mg-chip-t', '📄 ' + sources[sid].name + '（' + n + '枚）'));
+    const x = el('button', 'mg-chip-x', '✕'); x.type = 'button'; x.dataset.rm = sid;
+    x.title = 'このファイルのページをすべて外す'; x.setAttribute('aria-label', 'このファイルのページをすべて外す');
+    chip.appendChild(x); box.appendChild(chip);
+  });
+}
+function updateUi() {
+  const n = pages.length, sel = pages.filter(p => p.sel).length, has = n > 0, hs = sel > 0;
+  $('btnSave').disabled = !has || busy;
+  $('btnExtract').disabled = !hs || busy;
+  $('btnUndo').disabled = !undoStack.length || busy;
+  $('btnRedo').disabled = !redoStack.length || busy;
+  $('btnSelAll').disabled = !has;
+  $('btnSelNone').disabled = !hs;
+  ['btnMvL', 'btnMvR', 'btnRotSel', 'btnDelSel'].forEach(id => { $(id).disabled = !hs || busy; });
+  $('btnBlank').disabled = busy;
+  $('lblAdd').style.opacity = busy ? '.5' : ''; $('lblAdd').style.pointerEvents = busy ? 'none' : '';
+  $('mgEmpty').style.display = has ? 'none' : 'flex';
+  $('mgCount').textContent = has ? '全' + n + 'ページ｜選択 ' + sel + 'ページ' : '';
+  renderChips();
+}
+function setBusy(b) { busy = b; updateUi(); }
+
+/* =====================================================
+   ファイルの追加
+   ===================================================== */
+function insertIndex() {                    // 「選んだページの後ろ」を選んでいて選択があれば、その直後。無ければ末尾
+  if ($('addPos').value === 'after') {
+    for (let i = pages.length - 1; i >= 0; i--) if (pages[i].sel) return i + 1;
+  }
+  return pages.length;
+}
+async function addFiles(fileList) {
+  const files = Array.from(fileList || []);
+  if (!files.length || busy) return;
+  clearMsg(); setBusy(true);
+  try { await setupWorker(); }
+  catch (e) { showError('表示エンジンの読み込みに失敗しました。通信状況を確認して再読込してください。'); setStatus(''); setBusy(false); return; }
+  const errs = [], warns = [], fresh = [];
+  for (const f of files) {
+    if (!/\.pdf$/i.test(f.name) && f.type !== 'application/pdf') { errs.push(f.name + '：PDFではありません'); continue; }
+    if (f.size > MAX_FILE) { errs.push(f.name + '：200MBを超えています'); continue; }
+    setStatus('読み込み中… ' + f.name + '（' + fmtSize(f.size) + '）');
+    try {
+      const bytes = new Uint8Array(await f.arrayBuffer());
+      const lib = await PDFLib.PDFDocument.load(bytes, { updateMetadata: false });   // 暗号化PDFはここで例外になる
+      const pdf = await pdfjsLib.getDocument(Object.assign({ data: bytes.slice() }, PDFJS_DATA)).promise;
+      const v = (await pdf.getPage(1)).getViewport({ scale: 1 });
+      const id = ++srcSeq;
+      sources[id] = { id, name: f.name, lib, pdf, w: v.width, h: v.height, ar: v.width / v.height };
+      for (let i = 0; i < pdf.numPages; i++) fresh.push(makePage({ src: id, idx: i }));
+      let hasForm = false;
+      try { hasForm = lib.getForm().getFields().length > 0; } catch (e) { /* フォームなし扱い */ }
+      if (hasForm) warns.push(f.name + '：入力欄付きPDFです。結合すると入力欄として使えなくなる場合があります（入力済みの文字は残ります）');
+    } catch (e) {
+      console.error(e);
+      errs.push(f.name + '：' + (isEncrypted(e) ? 'パスワード・コピー制限付きPDFには対応していません' : '読み込めませんでした（壊れているか、対応していない形式です）'));
+    }
+  }
+  if (fresh.length) {
+    pushUndo();
+    pages.splice(insertIndex(), 0, ...fresh);
+    renderList();
+    ensureVisible(fresh[0].uid);
+  }
+  if (errs.length) showError(errs.join('／'));
+  if (warns.length) { $('mgWarn').textContent = '⚠ ' + warns.join('／'); $('mgWarn').classList.add('show'); }
+  setStatus(fresh.length ? fresh.length + 'ページを追加しました' : '');
+  setBusy(false);
+}
+
+/* =====================================================
+   ページ操作（削除・移動・回転・選択・白紙挿入）
+   ===================================================== */
+function setSel(p, v) {
+  p.sel = v;
+  const c = list.querySelector('.mg-card[data-uid="' + p.uid + '"]');
+  if (c) { c.classList.toggle('sel', v); c.querySelector('input').checked = v; }
+}
+function selectAll(v) { pages.forEach(p => setSel(p, v)); updateUi(); }
+function deletePages(arr) {
+  if (!arr.length) return;
+  pushUndo();
+  const set = new Set(arr);
+  arr.forEach(p => { p.sel = false; });
+  pages = pages.filter(p => !set.has(p));
+  renderList();
+}
+function removeSource(sid) { deletePages(pages.filter(p => p.src === sid)); }
+function movePage(p, dir) {                 // カード単体の ◀ ▶
+  const i = pages.indexOf(p), j = i + dir;
+  if (i < 0 || j < 0 || j >= pages.length) return;
+  pushUndo();
+  const t = pages[i]; pages[i] = pages[j]; pages[j] = t;
+  renderList(); ensureVisible(p.uid);
+}
+function moveSelected(dir) {                // 選択ページをまとめて1つ前／後ろへ（端で止まる）
+  const next = pages.slice(), n = next.length;
+  if (dir < 0) { for (let i = 1; i < n; i++) if (next[i].sel && !next[i - 1].sel) { const t = next[i]; next[i] = next[i - 1]; next[i - 1] = t; } }
+  else { for (let i = n - 2; i >= 0; i--) if (next[i].sel && !next[i + 1].sel) { const t = next[i]; next[i] = next[i + 1]; next[i + 1] = t; } }
+  if (next.every((p, i) => p === pages[i])) return;
+  pushUndo(); pages = next; renderList();
+  const first = pages.find(p => p.sel); if (first) ensureVisible(first.uid);
+}
+function rotatePages(arr) {
+  if (!arr.length) return;
+  pushUndo();
+  arr.forEach(p => setRot(p, (p.rot + 90) % 360));
+  renderList();
+}
+function insertBlank() {                    // 最後に選んだページの後ろ（選択が無ければ末尾）へ。大きさはそのページに合わせる
+  let at = pages.length;
+  for (let i = pages.length - 1; i >= 0; i--) if (pages[i].sel) { at = i + 1; break; }
+  const ref = pages[at - 1];
+  const d = ref ? dispDims(ref) : A4.slice();
+  pushUndo();
+  const p = makePage({ blank: true, bw: d[0], bh: d[1], done: true });
+  pages.splice(at, 0, p);
+  renderList(); ensureVisible(p.uid);
+}
+function clearAll() {
+  if (!pages.length) return;
+  if (!confirm('読み込んだPDFとページ一覧をすべてクリアします。よろしいですか？（「戻す」で元に戻せます）')) return;
+  pushUndo(); pages.forEach(p => { p.sel = false; }); pages = [];
+  clearMsg(); $('mgNext').classList.remove('show'); setStatus('');
+  renderList();
+}
+
+/* =====================================================
+   イベント：カード内のクリック（選択・◀▶・回転・削除）／ボタン／ファイル選択
+   ===================================================== */
+list.addEventListener('click', e => {
+  const t = e.target.closest('[data-act]'); if (!t) return;
+  const card = t.closest('.mg-card'); if (!card) return;
+  const p = registry.get(+card.dataset.uid); if (!p) return;
+  const act = t.dataset.act;
+  if (act === 'sel' || act === 'toggle') {
+    const v = act === 'sel' ? t.checked : !p.sel;       // チェックボックスは、押した時点で状態が変わっている
+    if (e.shiftKey && lastClickUid != null) {            // Shift+クリックで範囲選択
+      const a = pages.findIndex(q => q.uid === lastClickUid), b = pages.indexOf(p);
+      if (a >= 0 && b >= 0) { for (let i = Math.min(a, b); i <= Math.max(a, b); i++) setSel(pages[i], v); }
+      else setSel(p, v);
+    } else setSel(p, v);
+    lastClickUid = p.uid; updateUi();
+  }
+  else if (act === 'left') movePage(p, -1);
+  else if (act === 'right') movePage(p, 1);
+  else if (act === 'rot') rotatePages([p]);
+  else if (act === 'del') deletePages([p]);
+});
+$('mgFiles').addEventListener('click', e => { const b = e.target.closest('[data-rm]'); if (b) removeSource(+b.dataset.rm); });
+$('fileInput').addEventListener('change', e => { addFiles(e.target.files); e.target.value = ''; });
+$('btnUndo').onclick = undo;
+$('btnRedo').onclick = redo;
+$('btnSelAll').onclick = () => selectAll(true);
+$('btnSelNone').onclick = () => selectAll(false);
+$('btnMvL').onclick = () => moveSelected(-1);
+$('btnMvR').onclick = () => moveSelected(1);
+$('btnRotSel').onclick = () => rotatePages(pages.filter(p => p.sel));
+$('btnDelSel').onclick = () => deletePages(pages.filter(p => p.sel));
+$('btnBlank').onclick = insertBlank;
+$('btnSave').onclick = () => savePdf(false);
+$('btnExtract').onclick = () => savePdf(true);
+
+// PDFファイルのドラッグ&ドロップで追加（ページのドラッグ移動とは別物。Filesを含む時だけ反応）
+const wrap = list.parentNode;
+const hasFiles = e => e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
+['dragenter', 'dragover'].forEach(ev => wrap.addEventListener(ev, e => { if (!hasFiles(e)) return; e.preventDefault(); list.classList.add('dragover'); }));
+['dragleave', 'drop'].forEach(ev => wrap.addEventListener(ev, e => { if (!hasFiles(e)) return; e.preventDefault(); list.classList.remove('dragover'); }));
+wrap.addEventListener('drop', e => { if (hasFiles(e)) addFiles(e.dataTransfer.files); });
+
+/* =====================================================
+   ☰ドラッグでページを移動（ポインタイベントで自前実装。マウス・指・Apple Pencil共通）
+   ・つまみ(☰)だけが touch-action:none なので、サムネ部分の指スクロールとは喧嘩しない
+   ・選択ページを掴んで動かすと、選択中のページをまとめて移動
+   ・枠の上下端に近づくと自動スクロール。青い縦線が挿入位置
+   ===================================================== */
+let dragS = null;
+list.addEventListener('pointerdown', e => {
+  const grip = e.target.closest('.mg-grip'); if (!grip || busy) return;
+  const uid = +grip.closest('.mg-card').dataset.uid, p = registry.get(uid); if (!p) return;
+  e.preventDefault();
+  const selected = pages.filter(q => q.sel);
+  const group = (p.sel && selected.length > 1) ? selected.map(q => q.uid) : [uid];
+  dragS = { id: e.pointerId, uid, group, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY,
+            moved: false, tgt: null, before: true, ghost: null, raf: 0 };
+  try { grip.setPointerCapture(e.pointerId); } catch (err) { /* 捕捉できなくても動く */ }
+});
+list.addEventListener('pointermove', e => {
+  if (!dragS || e.pointerId !== dragS.id) return;
+  dragS.x = e.clientX; dragS.y = e.clientY;
+  if (!dragS.moved) {
+    if (Math.hypot(dragS.x - dragS.x0, dragS.y - dragS.y0) < 6) return;   // 誤タップ防止：6px以上動いたら開始
+    dragS.moved = true; startGhost();
+    dragS.raf = requestAnimationFrame(dragTick);
+  }
+  moveGhost(); updateDropTarget();
+});
+list.addEventListener('pointerup', e => { if (dragS && e.pointerId === dragS.id) endDrag(true); });
+list.addEventListener('pointercancel', e => { if (dragS && e.pointerId === dragS.id) endDrag(false); });
+
+function startGhost() {
+  document.body.classList.add('mg-dragging');
+  const p = registry.get(dragS.uid), g = el('div', 'mg-ghost');
+  if (p.url) g.appendChild(makeImg(p)); else g.appendChild(el('div', 'mg-ghost-blank', p.blank ? '白紙' : '…'));
+  if (dragS.group.length > 1) g.appendChild(el('span', 'mg-ghost-n', dragS.group.length + '枚'));
+  document.body.appendChild(g); dragS.ghost = g;
+  dragS.group.forEach(id => { const c = list.querySelector('.mg-card[data-uid="' + id + '"]'); if (c) c.classList.add('dragging'); });
+}
+function moveGhost() { dragS.ghost.style.left = (dragS.x - 55) + 'px'; dragS.ghost.style.top = (dragS.y - 30) + 'px'; }
+function updateDropTarget() {               // ポインタの位置から「どのカードの前／後ろに入れるか」を決める
+  const lr = list.getBoundingClientRect(), x = dragS.x, y = dragS.y;
+  let best = null, bd = Infinity, hit = null;
+  list.querySelectorAll('.mg-card').forEach(c => {
+    if (dragS.group.includes(+c.dataset.uid)) return;     // 自分自身（掴んでいるページ）は候補にしない
+    const r = c.getBoundingClientRect();
+    if (r.bottom < lr.top || r.top > lr.bottom) return;   // 枠の外にスクロールで隠れているものは除外
+    if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) { hit = { c, r }; return; }
+    const d = Math.hypot(x - (r.left + r.right) / 2, y - (r.top + r.bottom) / 2);
+    if (d < bd) { bd = d; best = { c, r }; }
+  });
+  const t = hit || best, mk = $('mgDrop');
+  if (!t) { dragS.tgt = null; mk.style.display = 'none'; return; }
+  const before = x < (t.r.left + t.r.right) / 2;
+  dragS.tgt = +t.c.dataset.uid; dragS.before = before;
+  mk.style.display = 'block';
+  mk.style.left = (before ? t.r.left - 3 : t.r.right - 1) + 'px';
+  mk.style.top = t.r.top + 'px'; mk.style.height = t.r.height + 'px';
+}
+function dragTick() {                       // 枠の上下端に近い間、自動スクロール
+  if (!dragS || !dragS.moved) return;
+  const lr = list.getBoundingClientRect(), edge = 56;
+  let v = 0;
+  if (dragS.y < lr.top + edge) v = -Math.ceil((lr.top + edge - dragS.y) / 4);
+  else if (dragS.y > lr.bottom - edge) v = Math.ceil((dragS.y - (lr.bottom - edge)) / 4);
+  v = Math.max(-22, Math.min(22, v));
+  if (v) { list.scrollTop += v; updateDropTarget(); }
+  dragS.raf = requestAnimationFrame(dragTick);
+}
+function endDrag(commit) {
+  const d = dragS; dragS = null;
+  cancelAnimationFrame(d.raf);
+  document.body.classList.remove('mg-dragging');
+  $('mgDrop').style.display = 'none';
+  if (d.ghost) d.ghost.remove();
+  list.querySelectorAll('.mg-card.dragging').forEach(c => c.classList.remove('dragging'));
+  if (commit && d.moved && d.tgt != null) movePagesTo(d.group, d.tgt, d.before);
+}
+function movePagesTo(group, targetUid, before) {   // groupのページを、targetの前／後ろへまとめて移動（元の並び順は保つ）
+  const set = new Set(group);
+  const moving = pages.filter(p => set.has(p.uid)), rest = pages.filter(p => !set.has(p.uid));
+  let ti = rest.findIndex(p => p.uid === targetUid); if (ti < 0) return;
+  if (!before) ti++;
+  const next = rest.slice(0, ti).concat(moving, rest.slice(ti));
+  if (next.every((p, i) => p === pages[i])) return;         // 位置が変わらないなら何もしない
+  pushUndo(); pages = next; renderList(); ensureVisible(moving[0].uid);
+}
+
+/* =====================================================
+   保存（pdf-libで新しいPDFを作る）
+   ・元PDFごとに、使うページをまとめて1回でコピーする（フォント等の共有リソースが重複して肥大化するのを避ける）
+   ・ページ内リンク(Dest/GoTo)は、リンク先のページまで連れてきてしまうため、コピー前に外す（URLリンクは残す）
+   ・しおり・入力欄(AcroForm)は引き継がれない（入力欄の見た目だけ残る）
+   ===================================================== */
+function stripInternalLinks(lib, idxs) {
+  const { PDFName, PDFDict } = PDFLib, ctx = lib.context;
+  idxs.forEach(i => {
+    try {
+      const arr = lib.getPage(i).node.Annots(); if (!arr) return;
+      for (let k = arr.size() - 1; k >= 0; k--) {
+        const d = ctx.lookup(arr.get(k), PDFDict); if (!d) continue;
+        const sub = d.lookup(PDFName.of('Subtype'));
+        if (!sub || !sub.decodeText || sub.decodeText() !== 'Link') continue;
+        const A = d.lookupMaybe(PDFName.of('A'), PDFDict), S = A && A.lookup(PDFName.of('S'));
+        const isUri = !!(S && S.decodeText && S.decodeText() === 'URI');
+        if (d.has(PDFName.of('Dest')) || (A && !isUri)) arr.remove(k);
+      }
+    } catch (e) { /* 外せなくても保存は続ける */ }
+  });
+}
+function download(bytes, name) {
+  const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 15000);
+}
+async function savePdf(onlySel) {
+  const target = onlySel ? pages.filter(p => p.sel) : pages.slice();
+  if (!target.length || busy) { setStatus(onlySel ? '先に抽出したいページを選んでね' : ''); return; }
+  clearMsg(); setBusy(true); setStatus('PDFを作成中…');
+  try {
+    const { PDFDocument, degrees } = PDFLib;
+    const out = await PDFDocument.create();
+    const bySrc = {}, copied = {};
+    target.forEach(p => { if (!p.blank) (bySrc[p.src] = bySrc[p.src] || new Set()).add(p.idx); });
+    for (const sid of Object.keys(bySrc)) {
+      const s = sources[sid], idxs = Array.from(bySrc[sid]).sort((a, b) => a - b);
+      stripInternalLinks(s.lib, idxs);
+      const cps = await out.copyPages(s.lib, idxs);
+      idxs.forEach((ix, k) => { copied[sid + ':' + ix] = cps[k]; });
+    }
+    for (const p of target) {
+      if (p.blank) {
+        const pg = out.addPage([p.bw, p.bh]);
+        if (p.rot) pg.setRotation(degrees(p.rot));
+      } else {
+        const pg = copied[p.src + ':' + p.idx];
+        if (p.rot) pg.setRotation(degrees((((pg.getRotation().angle || 0) + p.rot) % 360 + 360) % 360));
+        out.addPage(pg);
+      }
+    }
+    out.setProducer('arigato-tools.com PDF結合・ページ整理'); out.setCreator('arigato-tools.com');
+    const bytes = await out.save();
+    const used = Array.from(new Set(target.filter(p => !p.blank).map(p => p.src)));
+    const base = used.length ? baseName(sources[Math.min(...used)].name) : 'blank';   // 最初に追加したファイル名をベースにする
+    const name = base + (onlySel ? '-extract' : (used.length > 1 ? '-merged' : '-edited')) + '.pdf';
+    download(bytes, name);
+    if (!onlySel) dirty = false;
+    setStatus('✅ 保存しました：' + name + '（' + target.length + 'ページ・' + fmtSize(bytes.length) + '）');
+    $('mgNext').classList.add('show');
+  } catch (e) {
+    console.error(e);
+    showError('保存に失敗しました。PDFの構造が特殊で、結合に対応できない可能性があります。');
+    setStatus('');
+  }
+  setBusy(false);
+}
+
+// 未保存のままページを閉じる／更新する時の警告
+window.addEventListener('beforeunload', e => { if (dirty && pages.length) { e.preventDefault(); e.returnValue = ''; } });
+
+updateUi();
+</script>
+</body>
+</html>
