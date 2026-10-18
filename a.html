@@ -1190,6 +1190,31 @@ footer{
   color:var(--color-text);
   margin-top:8px;
 }
+/* =====================================================
+   【タグ：ボタン選択UI】タスク作成モーダル／設定タブ
+   ===================================================== */
+.tag-btn-wrap{display:flex;flex-wrap:wrap;gap:6px;}
+.tag-btn{
+  min-height:44px;
+  padding:0 14px;
+  border:2px solid var(--color-border-input);
+  border-radius:22px;
+  background:var(--color-input-bg);
+  color:var(--color-text-sub);
+  font-family:inherit;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+}
+.tag-btn.active{
+  border-color:var(--color-primary);
+  background:var(--color-primary-bg);
+  color:var(--color-primary);
+}
+.tag-btn-new{border-style:dashed;color:var(--color-primary);}
+.tag-add-row{display:flex;gap:6px;margin-top:6px;}
+.tag-sub-row{padding-left:6px;}
+.tag-sub-mark{flex-shrink:0;color:var(--color-text-label);font-size:14px;width:16px;}
 .settings-title{
   font-size:11px;
   font-weight:700;
@@ -1317,6 +1342,9 @@ footer{
 
   <button type="button" class="set-reset-btn" onclick="resetSettings()">🔄 ボード設定を初期状態に戻す</button>
 
+  <div class="settings-title">タグ（大タグ・小タグ）</div>
+  <div class="set-card" id="settingsTags"></div>
+
   <div class="settings-title">カレンダー表示</div>
   <div class="set-card" id="settingsCalendar"></div>
 
@@ -1359,6 +1387,7 @@ footer{
       <li>タブ切替でボード・リスト・設定を使い分け（前回開いていたタブを記憶）</li>
       <li>リストタブで締切日・追加日・完了日・タグ・曜日・件名の昇順／降順に並び替え（選んだ並び順も記憶）</li>
       <li>設定タブでボードの追加・削除・名称・色・並べ方（行ごとの列数）を自由に変更でき、「重要×緊急」型に限らず自分の使い方に合わせた分類ができる</li>
+      <li>タグは「大タグ→小タグ」の2階層。タスク作成時はボタンで選び、設定タブでタグの追加・改名・削除・並び替えができる（改名すると既存タスクも自動で書き換わる）</li>
       <li>グラフタブで、タスクの作成数と完了数の推移を棒グラフで確認。週（日ごと）・月（日ごと）・年（月ごと）・全期間（年ごと）に切り替え、タグや曜日で絞り込める</li>
       <li>カレンダータブで、締切日のタスクを月表示（Googleカレンダー風）または日表示で確認。日付をタップするとその日の一覧が開き、チェックや追加もできる</li>
       <li>件名のほかメモ・タスク追加日・締切日・タグを記録</li>
@@ -1453,13 +1482,26 @@ footer{
     </button>
 
     <div class="field-group">
-      <label>重要度×緊急度（任意）</label>
+      <label>優先度（任意）</label>
       <div class="q-select-wrap" id="qSelectWrap"></div><!-- ★ボードボタンは renderQuadrantButtons() が生成 -->
     </div>
 
     <div class="field-group">
-      <label for="fieldTags">タグ（カンマ区切りで複数可）</label>
-      <input type="text" id="fieldTags" placeholder="例：仕事, 現場, 急ぎ">
+      <label>大タグ（1つ選択・もう一度押すと解除）</label>
+      <div class="tag-btn-wrap" id="tagMainWrap"></div><!-- ★ボタンは renderTagButtons() が生成 -->
+      <div class="tag-add-row" id="tagMainAddRow" style="display:none;">
+        <input type="text" class="set-input" id="tagMainNewInput" maxlength="20" placeholder="新しい大タグ名" onkeydown="tagAddKey(event, 'main')">
+        <button type="button" class="set-icon-btn" onclick="submitTagAdd('main')">追加</button>
+      </div>
+    </div>
+
+    <div class="field-group" id="tagSubBlock" style="display:none;">
+      <label>小タグ（選んだ大タグの配下から1つ選択）</label>
+      <div class="tag-btn-wrap" id="tagSubWrap"></div>
+      <div class="tag-add-row" id="tagSubAddRow" style="display:none;">
+        <input type="text" class="set-input" id="tagSubNewInput" maxlength="20" placeholder="新しい小タグ名" onkeydown="tagAddKey(event, 'sub')">
+        <button type="button" class="set-icon-btn" onclick="submitTagAdd('sub')">追加</button>
+      </div>
     </div>
 
     <div class="modal-btns">
@@ -1615,6 +1657,7 @@ function loadTasks() {
     tasks = [];
   }
   migrateCompletedAt(); // ★旧データ（完了日なし）を補完
+  migrateTagFields(true); // ★旧データ（タグ複数）を 大タグ／小タグ に移行
 }
 
 /* =====================================================
@@ -1714,7 +1757,9 @@ function addTask(taskData) {
     due: taskData.due || null,
     priority: 'mid', // ★優先度はUIから削除済み（象限で代替）。内部的にはmid固定
     quadrant: taskData.quadrant || null, // 1〜4 or null（未分類）
-    tags: taskData.tags || [],
+    tags: taskData.tags || [],              // ★互換用：大タグ名だけの配列（[tagMain]）。リスト絞り込み・グラフが使う
+    tagMain: taskData.tagMain || null,      // 大タグ（1つ）
+    tagSub: taskData.tagSub || null,        // 小タグ（1つ。大タグの配下）
     // ★ゾーン空欄タップ経由の新規作成時はtaskData.isNowDoing/completedが入る（openModalForZone参照）
     completed: taskData.completed || false,
     completedAt: taskData.completed ? todayStr() : null, // ★完了日（完了ゾーンに入れた日／チェックした日）。グラフ用
@@ -1790,7 +1835,7 @@ function getFilteredTasks() {
       // 検索（タイトル＋タグ）
       if (!kw) return true;
       const inTitle = t.title.toLowerCase().includes(kw);
-      const inTags = t.tags.some(tag => tag.toLowerCase().includes(kw));
+      const inTags = t.tags.some(tag => tag.toLowerCase().includes(kw)) || (t.tagSub || '').toLowerCase().includes(kw);
       return inTitle || inTags;
     })
     .filter(t => {
@@ -1875,7 +1920,7 @@ function sortValue(t, key) {
     case 'due':       return t.due || null;
     case 'added':     return t.addedDate || null;
     case 'completed': return (t.completed && t.completedAt) ? t.completedAt : null;
-    case 'tag':       return (t.tags && t.tags.length) ? t.tags[0] : null;
+    case 'tag':       return t.tagMain ? t.tagMain + '\u0001' + (t.tagSub || '') : null; // 大タグ→小タグの順
     case 'weekday':   return t.due ? (new Date(t.due + 'T00:00:00').getDay() + 6) % 7 : null; // 月0〜日6
     case 'title':     return t.title || '';
     default:          return null;
@@ -2014,7 +2059,7 @@ function renderTaskCard(t) {
   const sortBadge = buildSortBadge(t);
   const qBoard = getBoard(t.quadrant);
   const qBadge = qBoard ? `<span class="meta-badge badge-q" style="--board-color:${qBoard.color}">${escapeHtml(boardName(qBoard))}</span>` : '';
-  const tagBadges = t.tags.map(tag => `<span class="meta-badge badge-tag">#${escapeHtml(tag)}</span>`).join('');
+  const tagBadges = buildTagBadge(t);
 
   return `
     <div class="task-card pri-${t.priority} ${t.completed ? 'done' : ''}" data-id="${t.id}">
@@ -2188,7 +2233,8 @@ function openModal(id) {
     document.getElementById('fieldNote').value = t.note || '';
     document.getElementById('fieldAdded').value = t.addedDate || todayStr();
     document.getElementById('fieldDue').value = t.due || '';
-    document.getElementById('fieldTags').value = t.tags.join(', ');
+    selectedTagMain = t.tagMain || null;
+    selectedTagSub = t.tagSub || null;
     initQuadrant(t.quadrant);
     deleteBtn.style.display = 'inline-block';
     syncCalendarBtnState();
@@ -2199,12 +2245,14 @@ function openModal(id) {
     document.getElementById('fieldAdded').value = todayStr(); // 追加日の初期値は今日
     // ★締切日（任意）の初期値は今日（②対応）。カレンダータブ表示中は、選択中の日付にする
     document.getElementById('fieldDue').value = (activeTab === 'calendar') ? calEnsureState().selected : todayStr();
-    document.getElementById('fieldTags').value = '';
+    selectedTagMain = null;
+    selectedTagSub = null;
     initQuadrant(null);
     deleteBtn.style.display = 'none';
     syncCalendarBtnState();
   }
 
+  renderTagButtons(); // ★タグのボタン（選択状態込み）を作り直す
   overlay.classList.add('show');
   document.getElementById('fieldTitle').focus();
 }
@@ -2265,12 +2313,14 @@ function collectModalTaskData() {
     rawNote: document.getElementById('fieldNote').value.trim(),
     addedDate: document.getElementById('fieldAdded').value || todayStr(),
     due: document.getElementById('fieldDue').value || null,
-    tags: document.getElementById('fieldTags').value.split(',').map(s => s.trim()).filter(Boolean),
+    tagMain: selectedTagMain,
+    tagSub: selectedTagMain ? selectedTagSub : null, // 小タグは大タグが選ばれている時だけ有効
+    tags: selectedTagMain ? [selectedTagMain] : [],
   };
 }
 
 function saveTaskFromModal() {
-  const { title, rawNote, addedDate, due, tags } = collectModalTaskData();
+  const { title, rawNote, addedDate, due, tags, tagMain, tagSub } = collectModalTaskData();
   if (!title) {
     alert('タスク件名を入力してください');
     return null;
@@ -2282,7 +2332,7 @@ function saveTaskFromModal() {
   const existingUid = isEditing ? tasks.find(t => t.id === editingTaskId)?.icsUid : null;
   const note = buildNoteWithTrailers(rawNote, { addUpdateLine: isEditing, icsUid: existingUid });
 
-  const taskData = { title, note, addedDate, due, quadrant: selectedQuadrant, tags };
+  const taskData = { title, note, addedDate, due, quadrant: selectedQuadrant, tags, tagMain, tagSub };
 
   // ★ゾーン空欄タップ経由の新規作成時は、タップした欄の状態を初期値として反映する
   if (!isEditing && pendingZonePreset) {
@@ -2498,6 +2548,7 @@ function importJson(event) {
 
       tasks = tasks.concat(withNewIds);
       migrateCompletedAt(); // ★完了日の無い旧形式データを補完（内部でsaveTasksも実行）
+      migrateTagFields(false); // ★旧形式のタグ（複数）を 大タグ／小タグ に移行
       saveTasks();
       renderFilterTabs();
       renderAll();
@@ -2679,7 +2730,7 @@ function buildCalDayPanel(key, byDue, isDayView) {
     const b = getBoard(t.quadrant);
     const color = b ? b.color : '#8a8f98';
     const badge = b ? `<span class="meta-badge badge-q" style="--board-color:${b.color}">${escapeHtml(boardName(b))}</span>` : '';
-    const tags = t.tags.map(tag => `<span class="cal-task-tag">#${escapeHtml(tag)}</span>`).join('');
+    const tags = t.tagMain ? `<span class="cal-task-tag">${escapeHtml(tagText(t))}</span>` : '';
     return `<div class="cal-task ${t.completed ? 'done' : ''}" style="--board-color:${color}" onclick="openModal('${t.id}')">
       <span class="cal-check" onclick="event.stopPropagation()"><input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleComplete('${t.id}')" aria-label="完了"></span>
       <div class="cal-task-main">
@@ -2975,6 +3026,301 @@ function graphToday() {
 }
 
 /* =====================================================
+   【タグ：大タグ・小タグ】
+   ・1タスクに 大タグ（tagMain）1つ＋小タグ（tagSub）1つ。優先度（quadrant＝ボード）とは独立した情報
+   ・小タグは必ず大タグの配下。大タグが無いタスクは小タグも無し
+   ・タグ辞書は設定（settings.tagMaster）に保存。タスク作成時はここからボタンで選ぶ（文字入力は廃止）
+   ・互換のため t.tags は [tagMain] を保持（リスト絞り込み・グラフ・検索が使う）
+   ・タグはどちらも「名前」で管理（改名時は辞書とタスクを同時に書き換える）
+   ・★旧データ（tagsが複数）の移行：先頭を大タグにし、2個目以降はメモに「旧タグ：…」で残す。
+     移行前のタスクデータは TAG_BACKUP_KEY に1回だけ自動退避する
+   ===================================================== */
+const TAG_NAME_MAX = 20;
+const TAG_BACKUP_KEY = 'task_manager_backup_before_tags_v1'; // 移行前データの退避先（1回だけ作る）
+let selectedTagMain = null; // モーダルで選択中の大タグ名
+let selectedTagSub = null;  // モーダルで選択中の小タグ名
+
+function cleanTagName(s) { return String(s || '').trim().slice(0, TAG_NAME_MAX); }
+function getMainTag(name) { return settings.tagMaster.find(m => m.name === name) || null; }
+
+// 表示用：「#仕事 › 会議」
+function tagText(t) {
+  if (!t.tagMain) return '';
+  return '#' + t.tagMain + (t.tagSub ? ' › ' + t.tagSub : '');
+}
+function buildTagBadge(t) {
+  const x = tagText(t);
+  return x ? `<span class="meta-badge badge-tag">${escapeHtml(x)}</span>` : '';
+}
+
+// ---------- データ移行 ----------
+function migrateTagFields(fromLoad) {
+  let changed = false;
+  tasks.forEach(t => {
+    if (t.tagMain !== undefined) return; // 移行済み
+    const old = Array.isArray(t.tags) ? t.tags.map(x => cleanTagName(x)).filter(Boolean) : [];
+    t.tagMain = old[0] || null;
+    t.tagSub = null;
+    if (old.length > 1) {
+      // 失われないよう、2個目以降のタグはメモに残す
+      t.note = (t.note ? t.note + '\n' : '') + `旧タグ：${old.slice(1).join(', ')}`;
+    }
+    t.tags = t.tagMain ? [t.tagMain] : [];
+    changed = true;
+  });
+  if (changed) {
+    if (fromLoad) {
+      // 移行前のデータ（まだ上書きされていないlocalStorageの中身）を1回だけ退避
+      try {
+        if (!localStorage.getItem(TAG_BACKUP_KEY)) {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) localStorage.setItem(TAG_BACKUP_KEY, raw);
+        }
+      } catch (e) {}
+    }
+    saveTasks();
+  }
+  syncTagMasterFromTasks();
+}
+
+// タスクで使われているタグのうち、辞書に無いものを辞書へ追加する（移行・読込時用）
+function syncTagMasterFromTasks() {
+  let changed = false;
+  tasks.forEach(t => {
+    if (!t.tagMain) return;
+    let m = getMainTag(t.tagMain);
+    if (!m) { m = { name: t.tagMain, subs: [] }; settings.tagMaster.push(m); changed = true; }
+    if (t.tagSub && !m.subs.includes(t.tagSub)) { m.subs.push(t.tagSub); changed = true; }
+  });
+  if (changed) saveSettings();
+}
+
+// ---------- タスク作成モーダル：タグのボタン選択 ----------
+function renderTagButtons() {
+  const mainWrap = document.getElementById('tagMainWrap');
+  const subBlock = document.getElementById('tagSubBlock');
+  const subWrap = document.getElementById('tagSubWrap');
+  if (!mainWrap || !subBlock || !subWrap) return;
+
+  mainWrap.innerHTML = settings.tagMaster.map((m, i) =>
+    `<button type="button" class="tag-btn ${selectedTagMain === m.name ? 'active' : ''}" onclick="pickTagMain(${i})">${escapeHtml(m.name)}</button>`
+  ).join('') + `<button type="button" class="tag-btn tag-btn-new" onclick="toggleTagAdd('main')">＋新規</button>`;
+
+  const main = selectedTagMain ? getMainTag(selectedTagMain) : null;
+  subBlock.style.display = main ? '' : 'none'; // 小タグは大タグを選んだ時だけ表示
+  if (main) {
+    subWrap.innerHTML = main.subs.map((s, j) =>
+      `<button type="button" class="tag-btn ${selectedTagSub === s ? 'active' : ''}" onclick="pickTagSub(${j})">${escapeHtml(s)}</button>`
+    ).join('') + `<button type="button" class="tag-btn tag-btn-new" onclick="toggleTagAdd('sub')">＋新規</button>`;
+  }
+}
+
+function pickTagMain(i) {
+  const m = settings.tagMaster[i];
+  if (!m) return;
+  if (selectedTagMain === m.name) {
+    selectedTagMain = null; // もう一度押すと解除（小タグも外す）
+    selectedTagSub = null;
+  } else {
+    selectedTagMain = m.name;
+    selectedTagSub = null;  // 大タグが変わったら小タグは選び直し
+  }
+  renderTagButtons();
+}
+
+function pickTagSub(j) {
+  const main = selectedTagMain ? getMainTag(selectedTagMain) : null;
+  if (!main || !main.subs[j]) return;
+  selectedTagSub = (selectedTagSub === main.subs[j]) ? null : main.subs[j];
+  renderTagButtons();
+}
+
+// 「＋新規」：入力欄を開閉
+function toggleTagAdd(kind) {
+  const row = document.getElementById(kind === 'main' ? 'tagMainAddRow' : 'tagSubAddRow');
+  const input = document.getElementById(kind === 'main' ? 'tagMainNewInput' : 'tagSubNewInput');
+  if (!row || !input) return;
+  const open = row.style.display === 'none';
+  row.style.display = open ? 'flex' : 'none';
+  if (open) input.focus();
+}
+
+function tagAddKey(e, kind) {
+  if (e.key === 'Enter') { e.preventDefault(); submitTagAdd(kind); }
+}
+
+// モーダルからその場でタグを追加（既にあれば選択するだけ）
+function submitTagAdd(kind) {
+  const input = document.getElementById(kind === 'main' ? 'tagMainNewInput' : 'tagSubNewInput');
+  const row = document.getElementById(kind === 'main' ? 'tagMainAddRow' : 'tagSubAddRow');
+  const name = cleanTagName(input.value);
+  if (!name) return;
+
+  if (kind === 'main') {
+    if (!getMainTag(name)) settings.tagMaster.push({ name, subs: [] });
+    if (selectedTagMain !== name) selectedTagSub = null;
+    selectedTagMain = name;
+  } else {
+    const main = selectedTagMain ? getMainTag(selectedTagMain) : null;
+    if (!main) return;
+    if (!main.subs.includes(name)) main.subs.push(name);
+    selectedTagSub = name;
+  }
+  saveSettings();
+  input.value = '';
+  row.style.display = 'none';
+  renderTagButtons();
+}
+
+// ---------- 設定タブ：タグ管理 ----------
+function renderSettingsTags() {
+  const el = document.getElementById('settingsTags');
+  if (!el) return;
+  const mm = settings.tagMaster;
+  const last = mm.length - 1;
+  const mainRows = mm.map((m, i) => {
+    const subRows = m.subs.map((s, j) => `
+      <div class="set-row tag-sub-row">
+        <span class="tag-sub-mark">↳</span>
+        <input type="text" class="set-input" value="${escapeAttr(s)}" maxlength="${TAG_NAME_MAX}" aria-label="小タグ名" onchange="renameSubTag(${i}, ${j}, this.value)">
+        <button type="button" class="set-icon-btn" ${j === 0 ? 'disabled' : ''} onclick="moveSubTag(${i}, ${j}, -1)" aria-label="上へ">▲</button>
+        <button type="button" class="set-icon-btn" ${j === m.subs.length - 1 ? 'disabled' : ''} onclick="moveSubTag(${i}, ${j}, 1)" aria-label="下へ">▼</button>
+        <button type="button" class="set-icon-btn danger" onclick="deleteSubTag(${i}, ${j})" aria-label="削除">🗑</button>
+      </div>`).join('');
+    return `
+    <div class="set-board">
+      <div class="set-row">
+        <input type="text" class="set-input" value="${escapeAttr(m.name)}" maxlength="${TAG_NAME_MAX}" aria-label="大タグ名" onchange="renameMainTag(${i}, this.value)">
+        <button type="button" class="set-icon-btn" ${i === 0 ? 'disabled' : ''} onclick="moveMainTag(${i}, -1)" aria-label="上へ">▲</button>
+        <button type="button" class="set-icon-btn" ${i === last ? 'disabled' : ''} onclick="moveMainTag(${i}, 1)" aria-label="下へ">▼</button>
+        <button type="button" class="set-icon-btn danger" onclick="deleteMainTag(${i})" aria-label="削除">🗑</button>
+      </div>
+      ${subRows}
+      <div class="set-row tag-sub-row">
+        <span class="tag-sub-mark">↳</span>
+        <input type="text" class="set-input" id="setNewSub${i}" maxlength="${TAG_NAME_MAX}" placeholder="小タグを追加" onkeydown="if(event.key==='Enter'){addSubTagFromSettings(${i});}">
+        <button type="button" class="set-icon-btn" onclick="addSubTagFromSettings(${i})" aria-label="小タグを追加">＋</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = (mainRows || '<div class="set-empty">大タグがありません</div>') + `
+    <div class="set-row">
+      <input type="text" class="set-input" id="setNewMain" maxlength="${TAG_NAME_MAX}" placeholder="大タグを追加（例：仕事）" onkeydown="if(event.key==='Enter'){addMainTagFromSettings();}">
+      <button type="button" class="set-icon-btn" onclick="addMainTagFromSettings()" aria-label="大タグを追加">＋</button>
+    </div>
+    <div class="set-note">名前を書き換えると、付いているタスクのタグも一括で変わります。小タグは大タグの配下に作ります。タスク作成画面でも「＋新規」で追加できます。</div>`;
+}
+
+function addMainTagFromSettings() {
+  const input = document.getElementById('setNewMain');
+  const name = cleanTagName(input.value);
+  if (!name) return;
+  if (getMainTag(name)) { alert('同じ名前の大タグがあります'); return; }
+  settings.tagMaster.push({ name, subs: [] });
+  saveSettings();
+  renderSettingsTags();
+}
+
+function addSubTagFromSettings(i) {
+  const m = settings.tagMaster[i];
+  const input = document.getElementById('setNewSub' + i);
+  if (!m || !input) return;
+  const name = cleanTagName(input.value);
+  if (!name) return;
+  if (m.subs.includes(name)) { alert('同じ名前の小タグがあります'); return; }
+  m.subs.push(name);
+  saveSettings();
+  renderSettingsTags();
+}
+
+// 改名：辞書と、そのタグが付いたタスクを同時に書き換える（入力欄のchange＝確定時に呼ぶ）
+function renameMainTag(i, value) {
+  const m = settings.tagMaster[i];
+  if (!m) return;
+  const nv = cleanTagName(value);
+  if (!nv || nv === m.name) { renderSettingsTags(); return; }
+  if (settings.tagMaster.some((x, k) => k !== i && x.name === nv)) {
+    alert('同じ名前の大タグがあります');
+    renderSettingsTags();
+    return;
+  }
+  const old = m.name;
+  m.name = nv;
+  tasks.forEach(t => { if (t.tagMain === old) { t.tagMain = nv; t.tags = [nv]; } });
+  if (activeTagFilter === old) activeTagFilter = nv;
+  saveTasks();
+  saveSettings();
+  renderAll();
+  renderSettingsTags();
+}
+
+function renameSubTag(i, j, value) {
+  const m = settings.tagMaster[i];
+  if (!m || m.subs[j] === undefined) return;
+  const nv = cleanTagName(value);
+  if (!nv || nv === m.subs[j]) { renderSettingsTags(); return; }
+  if (m.subs.some((x, k) => k !== j && x === nv)) {
+    alert('同じ名前の小タグがあります');
+    renderSettingsTags();
+    return;
+  }
+  const old = m.subs[j];
+  m.subs[j] = nv;
+  tasks.forEach(t => { if (t.tagMain === m.name && t.tagSub === old) t.tagSub = nv; });
+  saveTasks();
+  saveSettings();
+  renderAll();
+  renderSettingsTags();
+}
+
+function moveMainTag(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= settings.tagMaster.length) return;
+  [settings.tagMaster[i], settings.tagMaster[j]] = [settings.tagMaster[j], settings.tagMaster[i]];
+  saveSettings();
+  renderSettingsTags();
+}
+
+function moveSubTag(i, j, dir) {
+  const m = settings.tagMaster[i];
+  const k = j + dir;
+  if (!m || k < 0 || k >= m.subs.length) return;
+  [m.subs[j], m.subs[k]] = [m.subs[k], m.subs[j]];
+  saveSettings();
+  renderSettingsTags();
+}
+
+// 削除：タグだけ外す（タスク自体は消さない）
+function deleteMainTag(i) {
+  const m = settings.tagMaster[i];
+  if (!m) return;
+  const count = tasks.filter(t => t.tagMain === m.name).length;
+  if (!confirm(`大タグ「${m.name}」を削除する？\nこの大タグ（配下の小タグ含む）が付いたタスク${count}件は、タグなしになる（タスクは消えない）`)) return;
+  tasks.forEach(t => { if (t.tagMain === m.name) { t.tagMain = null; t.tagSub = null; t.tags = []; } });
+  if (activeTagFilter === m.name) activeTagFilter = null;
+  settings.tagMaster.splice(i, 1);
+  saveTasks();
+  saveSettings();
+  renderAll();
+  renderSettingsTags();
+}
+
+function deleteSubTag(i, j) {
+  const m = settings.tagMaster[i];
+  if (!m || m.subs[j] === undefined) return;
+  const name = m.subs[j];
+  const count = tasks.filter(t => t.tagMain === m.name && t.tagSub === name).length;
+  if (!confirm(`小タグ「${name}」を削除する？\nこの小タグが付いたタスク${count}件は、大タグだけ残る（タスクは消えない）`)) return;
+  tasks.forEach(t => { if (t.tagMain === m.name && t.tagSub === name) t.tagSub = null; });
+  m.subs.splice(j, 1);
+  saveTasks();
+  saveSettings();
+  renderAll();
+  renderSettingsTags();
+}
+
+/* =====================================================
    【ボード設定】名称・色・順番・行ごとの列数・特別枠
    ・保存先：SETTINGS_STORAGE_KEY（タスク本体・タブ・並び順とは別キー）
    ・タスクの quadrant は「ボードID」として使う（既定の①〜④はid=1〜4のまま＝既存データは移行不要）
@@ -3000,6 +3346,7 @@ function getDefaultSettings() {
     nowDoing:  { name: '★今からやること', color: '#d4a017' },
     completed: { name: '✅完了済み',       color: '#3a9a5c' },
     calendarView: 'month', // カレンダータブの表示：'month'（月）／'day'（日）
+    tagMaster: [],         // タグ辞書：[{ name:'仕事', subs:['会議','資料'] }]。配列の順＝ボタンの並び順
   };
 }
 
@@ -3029,7 +3376,30 @@ function normalizeSettings(raw) {
     nowDoing: special(raw.nowDoing, def.nowDoing),
     completed: special(raw.completed, def.completed),
     calendarView: raw.calendarView === 'day' ? 'day' : 'month',
+    tagMaster: normalizeTagMaster(raw.tagMaster),
   };
+}
+
+// タグ辞書の検証：空名・重複を除く（大タグ同士、小タグは同じ大タグの中で重複不可）
+function normalizeTagMaster(raw) {
+  const out = [];
+  if (!Array.isArray(raw)) return out;
+  const seen = new Set();
+  raw.forEach(m => {
+    if (!m || typeof m.name !== 'string') return;
+    const name = m.name.trim().slice(0, 20);
+    if (!name || seen.has(name)) return;
+    seen.add(name);
+    const subs = [];
+    const seenSub = new Set();
+    (Array.isArray(m.subs) ? m.subs : []).forEach(s => {
+      if (typeof s !== 'string') return;
+      const sn = s.trim().slice(0, 20);
+      if (sn && !seenSub.has(sn)) { seenSub.add(sn); subs.push(sn); }
+    });
+    out.push({ name, subs });
+  });
+  return out;
 }
 
 function loadSettings() {
@@ -3143,6 +3513,7 @@ function renderSettingsTab() {
   renderSettingsBoards();
   renderSettingsLayout();
   renderSettingsSpecial();
+  renderSettingsTags();
   renderSettingsCalendar();
 }
 
@@ -3288,9 +3659,11 @@ function updateSpecial(key, field, value) {
 
 function resetSettings() {
   if (!confirm('ボードの名称・色・並べ方を初期状態に戻す？\n追加したボードのタスクは「未分類」になる（タスク自体は消えない）')) return;
-  const keepCalendarView = settings.calendarView; // カレンダー表示の選択はボード設定のリセット対象外
+  const keepCalendarView = settings.calendarView; // カレンダー表示の選択・タグ辞書はボード設定のリセット対象外
+  const keepTagMaster = settings.tagMaster;
   settings = getDefaultSettings();
   settings.calendarView = keepCalendarView;
+  settings.tagMaster = keepTagMaster;
   detachTasksFromMissingBoards();
   commitSettings();
   renderSettingsTab();
