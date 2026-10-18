@@ -1285,6 +1285,52 @@ footer{
   color:var(--board-text);
 }
 .badge-tag-c{--board-text:color-mix(in srgb,var(--board-color,#8a8f98) 70%,var(--color-text));}
+/* =====================================================
+   【ボードのレイアウト編集】枠（スロット）＋ドラッグ配置
+   ===================================================== */
+.lay-row{margin-bottom:10px;}
+.lay-grid{display:grid;gap:6px;}
+.lay-slot{
+  min-height:56px;
+  border:2px dashed var(--color-border-input);
+  border-radius:var(--radius-input);
+  background:var(--color-input-bg);
+  padding:3px;
+  display:flex;
+  align-items:stretch;
+}
+.lay-chip{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  min-height:48px;
+  padding:4px 6px;
+  border-radius:6px;
+  background:color-mix(in srgb,var(--board-color) 22%,var(--color-card));
+  border:1px solid color-mix(in srgb,var(--board-color) 60%,var(--color-card));
+  font-size:12px;
+  font-weight:700;
+  line-height:1.3;
+  color:var(--color-text);
+  word-break:break-word;
+  cursor:grab;
+}
+.lay-tray{
+  min-height:60px;
+  border:2px dashed var(--color-border-input);
+  border-radius:var(--radius-input);
+  padding:6px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  align-items:flex-start;
+  margin-bottom:6px;
+}
+.lay-tray .lay-chip{flex:0 0 auto;min-width:96px;}
+.lay-ghost{opacity:0.4;}
+.matrix-spacer{min-height:20px;}
 .settings-title{
   font-size:11px;
   font-weight:700;
@@ -1411,12 +1457,12 @@ footer{
 
   <!-- ================= タブ⑤：設定（ステップ③で本実装。今はデータ管理のみ） ================= -->
   <div class="tab-panel" id="tabPanel-settings">
-  <div class="settings-title">ボード（名称・色・順番）</div>
+  <div class="settings-title">ボードのレイアウト（枠を作って、ボードをドラッグで配置）</div>
+  <div class="set-card" id="settingsLayout"></div>
+
+  <div class="settings-title">ボードの名称・色・補足</div>
   <div class="set-card" id="settingsBoards"></div>
   <button type="button" class="set-add-btn" onclick="addBoard()">＋ ボードを追加</button>
-
-  <div class="settings-title">ボードの並べ方（行ごとの列数）</div>
-  <div class="set-card" id="settingsLayout"></div>
 
   <div class="settings-title">特別枠（名称・色）</div>
   <div class="set-card" id="settingsSpecial"></div>
@@ -1500,7 +1546,7 @@ footer{
       <li>締切日が未設定のタスクはカレンダーには表示されない（リストタブで確認）</li>
       <li>グラフの完了数は、完了枠に入れた日／チェックを付けた日で集計する。この機能の追加前から完了済みだったタスクは、締切日などで仮置きした日付が混ざる</li>
       <li>並び替えで、締切日・完了日などが未設定のタスクは昇順・降順どちらでも末尾に並ぶ。タグ順は先頭のタグ、曜日順は締切日の曜日（月曜始まり）で判定</li>
-      <li>ICS一括出力は期間・ゾーン・タグで対象を絞り込んでから書き出す仕様</li>
+      <li>ICS一括出力は期間・ゾーン（各ボード／今からやること／完了済み／未分類）・大タグ／小タグで絞り込んでから書き出す。終日の予定として出力し、タスクごとに固定のUIDを付けるので、Googleカレンダーへ取り込み直しても同じ予定として扱われ、重複しにくい。メモ（ボード・大タグ・小タグ）は予定の説明欄に入る</li>
     </ul>
 
     <h3 class="tool-desc-subtitle">よくある質問</h3>
@@ -2225,9 +2271,12 @@ function renderDashboard() {
 
   // 各ボード：今からやること欄／完了済みに入っていないタスクのみ
   if (settings.boardMode === 'tag') {
+    // ★タグの構成が変わっていたら、先に枠（大ボード・小ボード）を作り直す
+    if (tagBoardSignature() !== lastTagBoardSig) renderBoardGrid();
     fillTagBoardLists(base); // ★タグボード：小ボードごとに流し込む
   } else {
     settings.boards.forEach(b => {
+      if (!document.getElementById('matrixList' + b.id)) return; // 未配置のボードは枠が無いので流し込まない
       const items = base.filter(t => t.quadrant === b.id && !t.isNowDoing && !t.completed).sort((a, c) => a.order - c.order);
       renderDropList('matrixList' + b.id, items);
     });
@@ -2243,6 +2292,7 @@ function renderDashboard() {
 // showPriority＝true（タグボード用）：優先度ボードの色を左端の線で示す（長押しで優先度名）
 function renderDropList(listId, items, showDone, showPriority) {
   const el = document.getElementById(listId);
+  if (!el) return;
   el.innerHTML = items.map(t => {
     const b = showPriority ? getBoard(t.quadrant) : null;
     const extra = b ? ` style="box-shadow:inset 3px 0 0 ${b.color}" title="${escapeAttr(boardName(b))}"` : '';
@@ -2761,7 +2811,7 @@ function escapeAttr(str) {
    ===================================================== */
 const TAB_STORAGE_KEY = 'task_manager_active_tab_v1'; // ※タスク本体のSTORAGE_KEYとは別キー
 const TABS = [
-  { id: 'board',    render: null },
+  { id: 'board',    render: () => renderAll() }, // ★設定タブで変えた内容（ボード・タグ）をボードタブを開いた時に必ず反映
   { id: 'calendar', render: renderCalendarTab },
   { id: 'list',     render: renderListView },
   { id: 'graph',    render: renderGraphTab },
@@ -3409,6 +3459,7 @@ function addMainTagFromSettings() {
   if (getMainTag(name)) { alert('同じ名前の大タグがあります'); return; }
   settings.tagMaster.push({ name, subs: [] });
   saveSettings();
+  renderAll(); // ★タグボードにも即反映（枠の変化はrenderAll内で検知して作り直す）
   renderSettingsTags();
 }
 
@@ -3421,6 +3472,7 @@ function addSubTagFromSettings(i) {
   if (m.subs.includes(name)) { alert('同じ名前の小タグがあります'); return; }
   m.subs.push(name);
   saveSettings();
+  renderAll();
   renderSettingsTags();
 }
 
@@ -3472,6 +3524,7 @@ function moveMainTag(i, dir) {
   if (j < 0 || j >= settings.tagMaster.length) return;
   [settings.tagMaster[i], settings.tagMaster[j]] = [settings.tagMaster[j], settings.tagMaster[i]];
   saveSettings();
+  renderAll();
   renderSettingsTags();
 }
 
@@ -3481,6 +3534,7 @@ function moveSubTag(i, j, dir) {
   if (!m || k < 0 || k >= m.subs.length) return;
   [m.subs[j], m.subs[k]] = [m.subs[k], m.subs[j]];
   saveSettings();
+  renderAll();
   renderSettingsTags();
 }
 
@@ -3538,7 +3592,20 @@ function setBoardMode(mode) {
   commitSettings(); // 保存→枠の作り直し→タスク再描画
 }
 
+// タグボードの「枠の構造」を決める情報（これが変わったら枠を作り直す）
+// ・設定タブでタグを追加／改名／削除／色変更した時、タスク作成画面で新しいタグを作った時、JSON読込で増えた時などに
+//   renderAll()の中で自動的に気づいて枠を作り直すための目印
+let lastTagBoardSig = '';
+function tagBoardSignature() {
+  return JSON.stringify([
+    settings.tagMaster.map(m => [m.name, m.subs, m.color, m.subColors]),
+    settings.tagCollapsed,
+    settings.tagBoardCols,
+  ]);
+}
+
 function renderTagBoard(wrap) {
+  lastTagBoardSig = tagBoardSignature();
   // 辞書の順に大ボード＋最後に「未分類」。idx=-1が未分類
   const bigs = settings.tagMaster.map((m, i) => ({ idx: i, name: m.name, subs: m.subs }));
   bigs.push({ idx: -1, name: null, subs: [] });
@@ -3581,6 +3648,12 @@ function fillTagBoardLists(base) {
       .filter(t => (t.tagMain || null) === main && (t.tagSub || null) === sub && !t.isNowDoing && !t.completed)
       .sort((a, b) => a.order - b.order);
     renderDropList(el.id, items, false, true);
+  });
+  // 大ボード見出しの件数は、表示中の小ボードのタスク数から数え直す（ドラッグ・追加・完了で変わるため）
+  document.querySelectorAll('#matrixView .tagboard-big').forEach(big => {
+    const n = big.querySelectorAll('.matrix-item').length;
+    const c = big.querySelector('.tagboard-count');
+    if (c) c.textContent = n + '件';
   });
 }
 
@@ -3667,6 +3740,200 @@ function setTagBoardColsAuto() {
 }
 
 /* =====================================================
+   【ICS一括出力】締切日のあるタスクを .ics ファイルに書き出す（Googleカレンダー等へ取り込める）
+   ・絞り込み：期間（締切日）／ゾーン／タグ（大タグ・小タグ。複数選択はOR条件）。締切日が無いタスクは対象外
+   ・ゾーン：各ボード（優先度）／今からやること／完了済み／未分類。初期状態は「完了済み」以外をON
+   ・出力：終日イベント（DTSTART/DTENDはVALUE=DATE）。TRANSP:TRANSPARENT＝予定が「ビジー」にならない
+   ・UID：タスクごとの固定ID（ensureIcsUid）。再出力・再取り込みしても重複せず、更新として扱われる
+   ・DESCRIPTION：メモ（【ボード】【大タグ】【小タグ】行を含む）。「更新:」「UID:」の行は除く
+   ・CATEGORIES：ボード名・大タグ・小タグ（Googleカレンダーは無視するが、他のアプリで使える）
+   ・RFC5545に合わせて、特殊文字のエスケープと75オクテットでの行折り返し（CRLF）をしている
+   ===================================================== */
+let icsZoneChoices = [];     // [{ key, label, color }]
+let icsSelectedZones = new Set();
+let icsTagChoices = [];      // [{ key, label }]（icsSelectedTagsには選択中のkeyが入る）
+
+function icsTaskZoneKey(t) {
+  if (t.completed) return 'done';
+  if (t.isNowDoing) return 'now';
+  const b = getBoard(t.quadrant);
+  return b ? 'b:' + b.id : 'none';
+}
+
+function icsTagMatches(key, t) {
+  if (key === 'n') return !t.tagMain;
+  if (key.startsWith('m:')) return t.tagMain === key.slice(2);
+  if (key.startsWith('s:')) {
+    const [main, sub] = key.slice(2).split('\u0001');
+    return t.tagMain === main && t.tagSub === sub;
+  }
+  return false;
+}
+
+function openIcsModal() {
+  icsZoneChoices = boardsInLayoutOrder().map(b => ({ key: 'b:' + b.id, label: boardName(b) + (b.sub ? `（${b.sub}）` : ''), color: b.color }));
+  icsZoneChoices.push({ key: 'now', label: settings.nowDoing.name, color: settings.nowDoing.color });
+  icsZoneChoices.push({ key: 'done', label: settings.completed.name, color: settings.completed.color });
+  icsZoneChoices.push({ key: 'none', label: '未分類（優先度なし）', color: '#8a8f98' });
+  icsSelectedZones = new Set(icsZoneChoices.map(z => z.key).filter(k => k !== 'done')); // 完了済みは初期OFF
+
+  icsTagChoices = [];
+  settings.tagMaster.forEach(m => {
+    icsTagChoices.push({ key: 'm:' + m.name, label: '#' + m.name });
+    m.subs.forEach(s => icsTagChoices.push({ key: 's:' + m.name + '\u0001' + s, label: `#${m.name} › ${s}` }));
+  });
+  icsTagChoices.push({ key: 'n', label: 'タグなし' });
+  icsSelectedTags = [];
+
+  document.getElementById('icsFromDate').value = '';
+  document.getElementById('icsToDate').value = '';
+  renderIcsChoices();
+  document.getElementById('icsModalOverlay').classList.add('show');
+}
+
+function renderIcsChoices() {
+  document.getElementById('icsZoneCheckList').innerHTML = icsZoneChoices.map((z, i) => `
+    <label class="zone-check-item">
+      <input type="checkbox" ${icsSelectedZones.has(z.key) ? 'checked' : ''} onchange="toggleIcsZone(${i})">
+      <span style="border-left:4px solid ${z.color};padding-left:6px;">${escapeHtml(z.label)}</span>
+    </label>`).join('');
+  document.getElementById('icsTagChipWrap').innerHTML = icsTagChoices.map((c, i) =>
+    `<button type="button" class="ics-tag-chip ${icsSelectedTags.includes(c.key) ? 'active' : ''}" onclick="toggleIcsTag(${i})">${escapeHtml(c.label)}</button>`
+  ).join('');
+  updateIcsMatchCount();
+}
+
+function toggleIcsZone(i) {
+  const k = icsZoneChoices[i] && icsZoneChoices[i].key;
+  if (!k) return;
+  if (icsSelectedZones.has(k)) icsSelectedZones.delete(k); else icsSelectedZones.add(k);
+  updateIcsMatchCount();
+}
+
+function toggleIcsTag(i) {
+  const k = icsTagChoices[i] && icsTagChoices[i].key;
+  if (!k) return;
+  icsSelectedTags = icsSelectedTags.includes(k) ? icsSelectedTags.filter(x => x !== k) : [...icsSelectedTags, k];
+  renderIcsChoices();
+}
+
+// 絞り込み条件に合うタスク（締切日順）
+function icsMatchedTasks() {
+  const from = document.getElementById('icsFromDate').value;
+  const to = document.getElementById('icsToDate').value;
+  return tasks.filter(t => {
+    if (!t.due) return false;                       // 締切日が無いタスクは終日イベントにできない
+    if (from && t.due < from) return false;
+    if (to && t.due > to) return false;
+    if (!icsSelectedZones.has(icsTaskZoneKey(t))) return false;
+    if (icsSelectedTags.length && !icsSelectedTags.some(k => icsTagMatches(k, t))) return false;
+    return true;
+  }).sort((a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : a.order - b.order));
+}
+
+function updateIcsMatchCount() {
+  const el = document.getElementById('icsMatchCount');
+  if (el) el.innerHTML = `対象タスク：<span class="count-num">${icsMatchedTasks().length}</span> 件`;
+}
+
+function closeIcsModal() {
+  document.getElementById('icsModalOverlay').classList.remove('show');
+}
+function closeIcsModalOnOverlay(e) {
+  if (e.target === document.getElementById('icsModalOverlay')) closeIcsModal();
+}
+
+// ---------- ICS文字列の組み立て ----------
+function icsEscape(s) {
+  return String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+}
+
+// UTF-8でのバイト数（行折り返しの75オクテット計算用）
+function icsUtf8Len(ch) {
+  const c = ch.codePointAt(0);
+  return c < 0x80 ? 1 : c < 0x800 ? 2 : c < 0x10000 ? 3 : 4;
+}
+
+// 75オクテットを超える行を折り返す（続きの行は先頭に半角スペース1つ）。文字の途中では切らない
+function icsFold(line) {
+  let out = '';
+  let cur = '';
+  let bytes = 0;
+  let first = true;
+  for (const ch of Array.from(line)) {
+    const b = icsUtf8Len(ch);
+    const max = first ? 75 : 74; // 続きの行は先頭の空白が1オクテット
+    if (bytes + b > max) {
+      out += (first ? '' : ' ') + cur + '\r\n';
+      first = false;
+      cur = ch;
+      bytes = b;
+    } else {
+      cur += ch;
+      bytes += b;
+    }
+  }
+  return out + (first ? '' : ' ') + cur + '\r\n';
+}
+
+function icsYmd(dateStr) { return dateStr.replace(/-/g, ''); }
+
+// 予定の説明欄：メモから「更新:」「UID:」の行を除いたもの（分類行はそのまま入る）
+function icsDescription(t) {
+  return (t.note || '').split('\n')
+    .filter(l => !UPDATE_LINE_RE.test(l.trim()) && !UID_LINE_RE.test(l.trim()))
+    .join('\n').trim();
+}
+
+function buildIcsText(list) {
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); // 例：20261018T023800Z
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//arigato-tools.com//util-task-manager//JA',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-CALNAME:' + icsEscape('タスク管理'),
+  ];
+  list.forEach(t => {
+    const uid = ensureIcsUid(t); // 初めての出力ならここで固定UIDを発行してメモにも反映
+    const b = getBoard(t.quadrant);
+    const cats = [b ? boardName(b) : '', t.tagMain || '', t.tagSub || ''].filter(Boolean);
+    lines.push('BEGIN:VEVENT');
+    lines.push(`UID:${uid}@arigato-tools.com`);
+    lines.push(`DTSTAMP:${stamp}`);
+    lines.push(`DTSTART;VALUE=DATE:${icsYmd(t.due)}`);
+    lines.push(`DTEND;VALUE=DATE:${icsYmd(addDays(t.due, 1))}`); // 終日イベントの終了日は翌日を指定する仕様
+    lines.push('SUMMARY:' + icsEscape((t.completed ? '✅ ' : '') + (t.title || '（無題のタスク）')));
+    const desc = icsDescription(t);
+    if (desc) lines.push('DESCRIPTION:' + icsEscape(desc));
+    if (cats.length) lines.push('CATEGORIES:' + cats.map(icsEscape).join(','));
+    lines.push('TRANSP:TRANSPARENT');
+    lines.push('STATUS:CONFIRMED');
+    lines.push('END:VEVENT');
+  });
+  lines.push('END:VCALENDAR');
+  return lines.map(icsFold).join('');
+}
+
+function exportIcs() {
+  const list = icsMatchedTasks();
+  if (list.length === 0) { alert('対象のタスクがありません'); return; }
+  const text = buildIcsText(list);
+  const blob = new Blob([text], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `util-task-manager_${todayCompactStr()}.ics`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  closeIcsModal();
+  renderAll(); // UID発行でメモが変わった可能性があるため
+}
+
+/* =====================================================
    【ボード設定】名称・色・順番・行ごとの列数・特別枠
    ・保存先：SETTINGS_STORAGE_KEY（タスク本体・タブ・並び順とは別キー）
    ・タスクの quadrant は「ボードID」として使う（既定の①〜④はid=1〜4のまま＝既存データは移行不要）
@@ -3687,7 +3954,7 @@ function getDefaultSettings() {
       { id: 4, name: '④後回し',       sub: '非重要×非緊急', color: '#8a8f98' },
       { id: 3, name: '③サクッとやる', sub: '非重要×緊急',   color: '#d98c1f' },
     ],
-    rowCols: [2, 2],   // 行ごとの列数（1行目2列・2行目2列）
+    slots: [[2, 1], [4, 3]], // ★ボードの配置枠：行ごとの配列（各枠にボードIDかnull）。既定は②①／④③
     nextBoardId: 5,
     nowDoing:  { name: '★今からやること', color: '#d4a017' },
     completed: { name: '✅完了済み',       color: '#3a9a5c' },
@@ -3712,15 +3979,27 @@ function normalizeSettings(raw) {
       .filter(b => b && Number.isInteger(b.id) && b.id > 0 && !seen.has(b.id) && seen.add(b.id))
       .map(b => ({ id: b.id, name: str(b.name, ''), sub: str(b.sub, ''), color: isColor(b.color) ? b.color : '#8a8f98' }));
   }
-  let rowCols = def.rowCols;
-  if (Array.isArray(raw.rowCols) && raw.rowCols.length > 0) {
-    rowCols = raw.rowCols.map(n => Math.max(1, Math.floor(Number(n)) || 1));
+  // 配置枠：新形式（slots）があればそれを検証して使う。無ければ旧形式（ボードの並び順＋行ごとの列数）から作る
+  let slots;
+  if (Array.isArray(raw.slots)) {
+    const ids = new Set(boards.map(b => b.id));
+    const used = new Set();
+    slots = raw.slots
+      .map(row => Array.isArray(row)
+        ? row.map(id => (Number.isInteger(id) && ids.has(id) && !used.has(id) && used.add(id)) ? id : null)
+        : [])
+      .filter(row => row.length > 0);
+  } else {
+    const rc = (Array.isArray(raw.rowCols) && raw.rowCols.length > 0)
+      ? raw.rowCols.map(n => Math.max(1, Math.floor(Number(n)) || 1))
+      : [2, 2];
+    slots = flowSlots(boards, rc);
   }
   const maxId = boards.reduce((m, b) => Math.max(m, b.id), 0);
   const special = (r, d) => ({ name: str(r && r.name, d.name), color: isColor(r && r.color) ? r.color : d.color });
   return {
     boards,
-    rowCols,
+    slots,
     nextBoardId: Math.max(Number(raw.nextBoardId) || 0, maxId + 1),
     nowDoing: special(raw.nowDoing, def.nowDoing),
     completed: special(raw.completed, def.completed),
@@ -3778,20 +4057,37 @@ function getBoard(id) {
 }
 function boardName(b) { return b.name || '（名称なし）'; }
 
-// ボードを「行」に割り当てる：ボードの並び順に1行目から埋める
-// ・行の定義（rowCols）を使い切ったら、最後の行の列数を繰り返す
-// ・最後の行でボードが足りない時は、あるだけで横いっぱいに広げる
-function computeBoardRows() {
-  const rows = [];
-  const rc = settings.rowCols.length ? settings.rowCols : [2];
+// ★旧方式（ボードの並び順に1行目から流し込む）から、枠配置（slots）を作る。旧データの移行用
+// ・行の定義を使い切ったら最後の行の列数を繰り返す／最後の行でボードが足りない時はあるだけの枠にする
+function flowSlots(boards, rowCols) {
+  const rc = rowCols && rowCols.length ? rowCols : [2];
+  const slots = [];
   let i = 0, r = 0;
-  while (i < settings.boards.length) {
+  while (i < boards.length) {
     const cols = Math.max(1, rc[Math.min(r, rc.length - 1)]);
-    rows.push(settings.boards.slice(i, i + cols));
-    i += cols;
+    const n = Math.min(cols, boards.length - i);
+    slots.push(boards.slice(i, i + n).map(b => b.id));
+    i += n;
     r++;
   }
-  return rows;
+  return slots;
+}
+
+// 枠ごとのボード（空の枠はnull）
+function computeBoardRows() {
+  return settings.slots.map(row => row.map(id => (id === null || id === undefined) ? null : getBoard(id)));
+}
+function placedBoardIds() {
+  return new Set(settings.slots.flat().filter(id => id !== null && id !== undefined));
+}
+function unplacedBoards() {
+  const placed = placedBoardIds();
+  return settings.boards.filter(b => !placed.has(b.id));
+}
+// 画面の並び順（枠の左上→右下）＋未配置。モーダルのボタン・設定タブの一覧はこの順で出す
+function boardsInLayoutOrder() {
+  const placed = settings.slots.flat().map(id => getBoard(id)).filter(Boolean);
+  return [...placed, ...unplacedBoards()];
 }
 
 // ---------- 画面への反映 ----------
@@ -3804,17 +4100,18 @@ function renderBoardGrid() {
     initZoneSortables();
     return;
   }
-  const rows = computeBoardRows();
+  // 全ての枠が空の行は出さない。行の中の空の枠は空白のまま（配置位置を保つ）
+  const rows = computeBoardRows().filter(row => row.some(b => b));
   if (rows.length === 0) {
-    wrap.innerHTML = '<div class="empty-msg">ボードがありません。設定タブから追加できます</div>';
+    wrap.innerHTML = '<div class="empty-msg">ボードがありません。設定タブで追加・配置できます</div>';
   } else {
     wrap.innerHTML = rows.map(row => `
       <div class="matrix-row" style="grid-template-columns:repeat(${row.length},minmax(0,1fr))">
-        ${row.map(b => `
+        ${row.map(b => b ? `
         <div class="matrix-quadrant" style="--board-color:${b.color}" onclick="handleZoneBlankClick(event, 'quadrant', ${b.id})">
           <div class="matrix-title"><span>${escapeHtml(boardName(b))}</span>${b.sub ? `<span>${escapeHtml(b.sub)}</span>` : ''}</div>
           <div class="matrix-list" id="matrixList${b.id}" data-q="${b.id}" data-droplist="1"></div>
-        </div>`).join('')}
+        </div>` : '<div class="matrix-spacer"></div>').join('')}
       </div>`).join('');
   }
   initZoneSortables();
@@ -3836,8 +4133,9 @@ function applySpecialZones() {
 function renderQuadrantButtons() {
   const wrap = document.getElementById('qSelectWrap');
   if (!wrap) return;
-  wrap.innerHTML = settings.boards.length
-    ? settings.boards.map(b =>
+  const ordered = boardsInLayoutOrder();
+  wrap.innerHTML = ordered.length
+    ? ordered.map(b =>
         `<button type="button" class="q-btn" data-q="${b.id}" style="--board-color:${b.color}" onclick="setQuadrant(${b.id})">${escapeHtml(boardName(b))}</button>`
       ).join('')
     : '<div class="set-empty">ボードが未設定です（設定タブで追加）</div>';
@@ -3886,8 +4184,8 @@ function renderSettingsTab() {
 function renderSettingsBoards() {
   const el = document.getElementById('settingsBoards');
   if (!el) return;
-  const last = settings.boards.length - 1;
-  el.innerHTML = settings.boards.length ? settings.boards.map((b, i) => `
+  const ordered = boardsInLayoutOrder(); // レイアウトの並び順（左上→右下）で表示
+  el.innerHTML = ordered.length ? ordered.map(b => `
     <div class="set-board">
       <div class="set-row">
         <input type="color" class="set-color" value="${b.color}" aria-label="色" oninput="updateBoardField(${b.id}, 'color', this.value)">
@@ -3895,14 +4193,12 @@ function renderSettingsBoards() {
       </div>
       <div class="set-row">
         <input type="text" class="set-input" value="${escapeAttr(b.sub)}" maxlength="40" placeholder="補足（任意）例：重要×緊急" aria-label="補足" oninput="updateBoardField(${b.id}, 'sub', this.value)">
-        <button type="button" class="set-icon-btn" ${i === 0 ? 'disabled' : ''} onclick="moveBoard(${b.id}, -1)" aria-label="上へ">▲</button>
-        <button type="button" class="set-icon-btn" ${i === last ? 'disabled' : ''} onclick="moveBoard(${b.id}, 1)" aria-label="下へ">▼</button>
         <button type="button" class="set-icon-btn danger" onclick="deleteBoard(${b.id})" aria-label="削除">🗑</button>
       </div>
     </div>`).join('') : '<div class="set-empty">ボードがありません。「＋ ボードを追加」から作れます</div>';
 }
 
-// 名称・補足・色の変更（入力中に呼ばれるため、設定タブ自身は再描画しない＝フォーカスを失わない）
+// 名称・補足・色の変更（入力中に呼ばれるため、この一覧自身は再描画しない＝フォーカスを失わない）
 function updateBoardField(id, field, value) {
   const b = getBoard(id);
   if (!b) return;
@@ -3913,26 +4209,23 @@ function updateBoardField(id, field, value) {
     b[field] = String(value).slice(0, 40);
   }
   commitSettings();
-  renderLayoutPreview();
+  renderSettingsLayout(); // 枠の中のボード名・色も追従
 }
 
-function moveBoard(id, dir) {
-  const i = settings.boards.findIndex(b => b.id === id);
-  const j = i + dir;
-  if (i < 0 || j < 0 || j >= settings.boards.length) return;
-  [settings.boards[i], settings.boards[j]] = [settings.boards[j], settings.boards[i]];
-  commitSettings();
-  renderSettingsBoards();
-  renderLayoutPreview();
-}
-
+// ボードを追加：空いている最初の枠に入れる（空きが無ければ「未配置」に置く）
 function addBoard() {
   const color = NEW_BOARD_COLORS[(settings.nextBoardId - 1) % NEW_BOARD_COLORS.length];
-  settings.boards.push({ id: settings.nextBoardId, name: '新しいボード', sub: '', color });
+  const nb = { id: settings.nextBoardId, name: '新しいボード', sub: '', color };
   settings.nextBoardId++;
+  settings.boards.push(nb);
+  outer: for (const row of settings.slots) {
+    for (let c = 0; c < row.length; c++) {
+      if (row[c] === null || row[c] === undefined) { row[c] = nb.id; break outer; }
+    }
+  }
   commitSettings();
   renderSettingsBoards();
-  renderLayoutPreview();
+  renderSettingsLayout();
 }
 
 function deleteBoard(id) {
@@ -3943,58 +4236,135 @@ function deleteBoard(id) {
   tasks.forEach(t => { if (t.quadrant === id) t.quadrant = null; });
   saveTasks();
   settings.boards = settings.boards.filter(x => x.id !== id);
+  settings.slots = settings.slots.map(row => row.map(x => (x === id ? null : x)));
   commitSettings();
   renderSettingsBoards();
-  renderLayoutPreview();
+  renderSettingsLayout();
 }
 
-// ---------- 設定タブ：行ごとの列数 ----------
+// ---------- 設定タブ：ボードのレイアウト（枠の形＋ドラッグ配置） ----------
+// ・枠の形＝行ごとの列数（例：2,2／3,3,3／4,2,3）。入力欄かプリセットボタンで決める
+// ・できた枠にボードをドラッグして配置。枠にボードがある所へ落とすと入れ替わり、「未配置」へ落とすと外れる
+// ・未配置のボードはボードタブに表示されない
+let layoutSortables = [];
+
 function renderSettingsLayout() {
   const el = document.getElementById('settingsLayout');
   if (!el) return;
-  const onlyOne = settings.rowCols.length <= 1;
-  el.innerHTML = settings.rowCols.map((c, i) => `
+  const chip = b => `<div class="lay-chip" data-id="${b.id}" style="--board-color:${b.color}">${escapeHtml(boardName(b))}</div>`;
+  const pattern = settings.slots.map(r => r.length).join(',');
+
+  const rowsHtml = settings.slots.map((row, r) => `
+    <div class="lay-row">
+      <div class="set-row">
+        <span class="set-row-label">${r + 1}行目（${row.length}枠）</span>
+        <button type="button" class="set-icon-btn" ${row.length <= 1 ? 'disabled' : ''} onclick="changeRowCols(${r}, -1)" aria-label="枠を減らす">−</button>
+        <button type="button" class="set-icon-btn" onclick="changeRowCols(${r}, 1)" aria-label="枠を増やす">＋</button>
+        <button type="button" class="set-icon-btn danger" onclick="deleteRow(${r})" aria-label="行を削除">🗑</button>
+      </div>
+      <div class="lay-grid" style="grid-template-columns:repeat(${row.length},minmax(0,1fr))">
+        ${row.map((id, c) => {
+          const b = (id === null || id === undefined) ? null : getBoard(id);
+          return `<div class="lay-slot" data-r="${r}" data-c="${c}">${b ? chip(b) : ''}</div>`;
+        }).join('')}
+      </div>
+    </div>`).join('');
+
+  el.innerHTML = `
+    <div class="set-sub-label">枠の形（行ごとの列数を「,」区切りで入力）</div>
     <div class="set-row">
-      <span class="set-row-label">${i + 1}行目</span>
-      <button type="button" class="set-icon-btn" ${c <= 1 ? 'disabled' : ''} onclick="changeRowCols(${i}, -1)" aria-label="列を減らす">−</button>
-      <span class="set-col-num">${c}列</span>
-      <button type="button" class="set-icon-btn" onclick="changeRowCols(${i}, 1)" aria-label="列を増やす">＋</button>
-      <button type="button" class="set-icon-btn danger" ${onlyOne ? 'disabled' : ''} onclick="deleteRow(${i})" aria-label="行を削除">🗑</button>
-    </div>`).join('') + `
+      <input type="text" class="set-input" id="layPatternInput" value="${pattern}" placeholder="例：2,2,3" aria-label="行ごとの列数" onkeydown="if(event.key==='Enter'){applyLayoutPatternFromInput();}">
+      <button type="button" class="set-icon-btn" onclick="applyLayoutPatternFromInput()">適用</button>
+    </div>
+    <div class="tag-btn-wrap" style="margin-bottom:10px;">
+      <button type="button" class="tag-btn" onclick="applyLayoutPattern([2,2])">2×2</button>
+      <button type="button" class="tag-btn" onclick="applyLayoutPattern([3,3,3])">3×3</button>
+      <button type="button" class="tag-btn" onclick="applyLayoutPattern([2,2,3])">2・2・3</button>
+      <button type="button" class="tag-btn" onclick="applyLayoutPattern([4,2,3])">4・2・3</button>
+    </div>
+    <div class="set-sub-label">枠（ボードをドラッグして移動。スマホは少し長押ししてから動かす）</div>
+    ${rowsHtml || '<div class="set-empty">枠がありません。上の入力欄か「＋ 行を追加」で作れます</div>'}
     <button type="button" class="set-add-btn" onclick="addRow()">＋ 行を追加</button>
-    <div class="set-note">ボードは上のリストの順に、1行目から埋まります。行の合計よりボードが多い時は最後の行の列数を繰り返し、最後の行でボードが足りない時はあるだけ横いっぱいに広げます。</div>
-    <div class="layout-preview" id="layoutPreview"></div>`;
-  renderLayoutPreview();
+    <div class="set-sub-label">未配置のボード（枠へドラッグして配置）</div>
+    <div class="lay-tray" data-tray="1">${unplacedBoards().map(chip).join('')}</div>
+    <div class="set-note">未配置のボードはボードタブに表示されません。枠を減らすと、はみ出したボードはここに戻ります。空の枠はボードタブでも空白のまま位置が保たれ、全部空の行は表示されません。</div>`;
+  initLayoutSortables();
 }
 
-// 配置プレビュー（ボードの名称・色を反映した縮小図）
-function renderLayoutPreview() {
-  const el = document.getElementById('layoutPreview');
-  if (!el) return;
-  const rows = computeBoardRows();
-  el.innerHTML = rows.map(row =>
-    `<div class="lp-row" style="grid-template-columns:repeat(${row.length},minmax(0,1fr))">` +
-    row.map(b => `<div class="lp-cell" style="--board-color:${b.color}">${escapeHtml(boardName(b))}</div>`).join('') +
-    '</div>'
-  ).join('');
+function initLayoutSortables() {
+  layoutSortables.forEach(s => s.destroy());
+  layoutSortables = [];
+  document.querySelectorAll('#settingsLayout .lay-slot, #settingsLayout .lay-tray').forEach(el => {
+    layoutSortables.push(new Sortable(el, {
+      group: 'boardLayout',
+      animation: 150,
+      delay: 150,              // スマホでスクロールと区別するため、少し長押ししてからドラッグ開始
+      delayOnTouchOnly: true,
+      ghostClass: 'lay-ghost',
+      onEnd: onLayoutDrop,
+    }));
+  });
 }
 
-function changeRowCols(i, d) {
-  if (i < 0 || i >= settings.rowCols.length) return;
-  settings.rowCols[i] = Math.max(1, settings.rowCols[i] + d);
+// ドロップ時：DOMではなくデータ（settings.slots）を書き換え、画面は作り直す（1枠1ボードを保つため）
+function onLayoutDrop(evt) {
+  const id = Number(evt.item.dataset.id);
+  const from = evt.from, to = evt.to;
+  if (from !== to) {
+    const src = from.dataset.tray ? null : [Number(from.dataset.r), Number(from.dataset.c)];
+    const dst = to.dataset.tray ? null : [Number(to.dataset.r), Number(to.dataset.c)];
+    if (src) settings.slots[src[0]][src[1]] = null;
+    if (dst) {
+      const occupant = settings.slots[dst[0]][dst[1]]; // 先にいたボード
+      settings.slots[dst[0]][dst[1]] = id;
+      if (src && occupant !== null && occupant !== undefined) settings.slots[src[0]][src[1]] = occupant; // 元の枠と入れ替え
+      // 元が「未配置」の場合、先にいたボードは未配置に戻る（slotsから外れるだけ）
+    }
+    commitSettings();
+  }
+  setTimeout(() => { renderSettingsLayout(); renderSettingsBoards(); }, 0);
+}
+
+function parseLayoutPattern(s) {
+  return String(s).split(/[^0-9]+/).filter(Boolean).map(Number).filter(n => n >= 1);
+}
+function applyLayoutPatternFromInput() {
+  const input = document.getElementById('layPatternInput');
+  const cols = parseLayoutPattern(input ? input.value : '');
+  if (cols.length === 0) { alert('行ごとの列数を数字で入力してください（例：2,2,3）'); return; }
+  applyLayoutPattern(cols);
+}
+// 枠の形を変える：今ある位置（行・列）のボードはできるだけそのまま残し、はみ出したボードは未配置に戻る
+function applyLayoutPattern(cols) {
+  const old = settings.slots;
+  settings.slots = cols.map((n, r) =>
+    Array.from({ length: n }, (_, c) => (old[r] && old[r][c] !== undefined) ? old[r][c] : null));
   commitSettings();
   renderSettingsLayout();
+  renderSettingsBoards();
+}
+function changeRowCols(r, d) {
+  const row = settings.slots[r];
+  if (!row) return;
+  if (d > 0) row.push(null);
+  else if (row.length > 1) row.pop(); // 末尾の枠を削除（中のボードは未配置に戻る）
+  commitSettings();
+  renderSettingsLayout();
+  renderSettingsBoards();
 }
 function addRow() {
-  settings.rowCols.push(settings.rowCols[settings.rowCols.length - 1] || 2);
+  const last = settings.slots[settings.slots.length - 1];
+  settings.slots.push(Array.from({ length: last ? last.length : 2 }, () => null));
   commitSettings();
   renderSettingsLayout();
+  renderSettingsBoards();
 }
-function deleteRow(i) {
-  if (settings.rowCols.length <= 1) return;
-  settings.rowCols.splice(i, 1);
+function deleteRow(r) {
+  if (!settings.slots[r]) return;
+  settings.slots.splice(r, 1); // 行内のボードは未配置に戻る
   commitSettings();
   renderSettingsLayout();
+  renderSettingsBoards();
 }
 
 // ---------- 設定タブ：特別枠（今からやること／完了済み） ----------
