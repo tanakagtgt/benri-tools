@@ -310,6 +310,8 @@ h1{
   cursor:pointer;
 }
 .tag-chip.active{background:var(--color-primary);color:#fff;}
+.tag-sub-chips{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;padding-left:12px;}
+.tag-chip-sub{background:var(--color-input-bg);}
 
 /* =====================================================
    リスト表示：タスクカード
@@ -1215,6 +1217,37 @@ footer{
 .tag-add-row{display:flex;gap:6px;margin-top:6px;}
 .tag-sub-row{padding-left:6px;}
 .tag-sub-mark{flex-shrink:0;color:var(--color-text-label);font-size:14px;width:16px;}
+/* =====================================================
+   【タグボード】大ボード（大タグの枠）＋小ボード（小タグ）
+   ・小ボードは既存の .matrix-quadrant / .matrix-list をそのまま流用（ドラッグ・色の仕組みが同じ）
+   ===================================================== */
+.tagboard-big{
+  border:1px solid color-mix(in srgb,var(--board-color) 45%,var(--color-card));
+  border-radius:var(--radius-card);
+  background:color-mix(in srgb,var(--board-color) 6%,var(--color-card));
+  --board-text:color-mix(in srgb,var(--board-color,#8a8f98) 70%,var(--color-text));
+}
+.tagboard-head{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-height:44px;
+  padding:0 12px;
+  cursor:pointer;
+  font-size:14px;
+  font-weight:700;
+  color:var(--board-text);
+}
+.tagboard-arrow{font-size:11px;width:14px;}
+.tagboard-count{margin-left:auto;font-size:11px;font-weight:400;color:var(--color-text-muted);}
+.tagboard-body{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:8px;
+  padding:0 8px 8px;
+}
+.tagboard-body .matrix-quadrant{min-height:100px;}
+.tagboard-big.collapsed .tagboard-body{display:none;}
 .settings-title{
   font-size:11px;
   font-weight:700;
@@ -1274,7 +1307,13 @@ footer{
        マトリクス（重要度×緊急度）
        ・常時表示のダッシュボードとして機能する
        ===================================================== -->
-  <div id="matrixView"></div><!-- ★中身は renderBoardGrid()（設定のボード・列数）が生成する -->
+  <!-- ボードの見方：優先度（従来のボード）／タグ（大タグ→小タグのボード）。選択は設定として保存される -->
+  <div class="set-seg board-mode-seg" id="boardModeSeg">
+    <button type="button" class="set-seg-btn" data-mode="priority" onclick="setBoardMode('priority')">⭐ 優先度で見る</button>
+    <button type="button" class="set-seg-btn" data-mode="tag" onclick="setBoardMode('tag')">🏷 タグで見る</button>
+  </div>
+
+  <div id="matrixView"></div><!-- ★中身は renderBoardGrid()（優先度ボード or タグボード）が生成する -->
 
   <!-- =====================================================
        完了済みドロップゾーン
@@ -1387,6 +1426,7 @@ footer{
       <li>タブ切替でボード・リスト・設定を使い分け（前回開いていたタブを記憶）</li>
       <li>リストタブで締切日・追加日・完了日・タグ・曜日・件名の昇順／降順に並び替え（選んだ並び順も記憶）</li>
       <li>設定タブでボードの追加・削除・名称・色・並べ方（行ごとの列数）を自由に変更でき、「重要×緊急」型に限らず自分の使い方に合わせた分類ができる</li>
+      <li>ボードタブは「優先度で見る／タグで見る」を切り替え。タグ表示では大タグごとの枠（見出しを押して折りたたみ可）の中に小タグごとの小ボードが並び、ドラッグで移すとタグが付け替わる。リストやグラフの絞り込みも大タグ→小タグの2段</li>
       <li>タグは「大タグ→小タグ」の2階層。タスク作成時はボタンで選び、設定タブでタグの追加・改名・削除・並び替えができる（改名すると既存タスクも自動で書き換わる）</li>
       <li>グラフタブで、タスクの作成数と完了数の推移を棒グラフで確認。週（日ごと）・月（日ごと）・年（月ごと）・全期間（年ごと）に切り替え、タグや曜日で絞り込める</li>
       <li>カレンダータブで、締切日のタスクを月表示（Googleカレンダー風）または日表示で確認。日付をタップするとその日の一覧が開き、チェックや追加もできる</li>
@@ -1609,7 +1649,8 @@ const PRIORITY_LABEL = { high: '優先度：高', mid: '優先度：中', low: '
    ===================================================== */
 let tasks = [];              // タスク本体（配列）
 let currentFilter = 'all';   // 現在選択中のフィルタタブ（下部の一覧に適用）
-let activeTagFilter = null;  // タグ絞り込み（1つだけ選択可・トグル式）
+let activeTagFilter = null;  // 大タグ絞り込み（1つだけ選択可・トグル式）
+let activeSubFilter = null;  // 小タグ絞り込み（大タグ選択中だけ有効）
 let editingTaskId = null;    // モーダルで編集中のタスクid（nullなら新規追加）
 let selectedQuadrant = null;
 let pendingZonePreset = null; // ★ゾーン空欄タップで新規作成する時の初期状態（{isNowDoing, completed}）。openModalForZoneでのみセットする
@@ -1839,9 +1880,10 @@ function getFilteredTasks() {
       return inTitle || inTags;
     })
     .filter(t => {
-      // タグ絞り込み
+      // タグ絞り込み（大タグ→小タグの2段）
       if (!activeTagFilter) return true;
-      return t.tags.includes(activeTagFilter);
+      if (t.tagMain !== activeTagFilter) return false;
+      return !activeSubFilter || t.tagSub === activeSubFilter;
     })
     .sort(compareTasksForList);
 }
@@ -2006,18 +2048,40 @@ function setFilter(tabId) {
    ===================================================== */
 function renderTagFilters() {
   const wrap = document.getElementById('tagFilterWrap');
-  const allTags = [...new Set(tasks.flatMap(t => t.tags))];
-  if (allTags.length === 0) {
+  const mm = settings.tagMaster;
+  if (mm.length === 0) {
     wrap.innerHTML = '';
     return;
   }
-  wrap.innerHTML = allTags.map(tag =>
-    `<span class="tag-chip ${activeTagFilter === tag ? 'active' : ''}" onclick="toggleTagFilter('${escapeAttr(tag)}')">#${escapeHtml(tag)}</span>`
+  // 辞書から消えたタグを選択中のままにしない
+  if (activeTagFilter && !getMainTag(activeTagFilter)) { activeTagFilter = null; activeSubFilter = null; }
+  const main = activeTagFilter ? getMainTag(activeTagFilter) : null;
+  if (main && activeSubFilter && !main.subs.includes(activeSubFilter)) activeSubFilter = null;
+
+  // 1段目：大タグ／2段目：選んだ大タグの小タグ（大タグを選んだ時だけ表示）
+  let html = mm.map((m, i) =>
+    `<span class="tag-chip ${activeTagFilter === m.name ? 'active' : ''}" onclick="toggleTagFilter(${i})">#${escapeHtml(m.name)}</span>`
   ).join('');
+  if (main && main.subs.length) {
+    html += '<div class="tag-sub-chips">' + main.subs.map((s, j) =>
+      `<span class="tag-chip tag-chip-sub ${activeSubFilter === s ? 'active' : ''}" onclick="toggleSubFilter(${j})">› ${escapeHtml(s)}</span>`
+    ).join('') + '</div>';
+  }
+  wrap.innerHTML = html;
 }
 
-function toggleTagFilter(tag) {
-  activeTagFilter = (activeTagFilter === tag) ? null : tag;
+function toggleTagFilter(i) {
+  const m = settings.tagMaster[i];
+  if (!m) return;
+  activeTagFilter = (activeTagFilter === m.name) ? null : m.name;
+  activeSubFilter = null; // 大タグが変わったら小タグ絞り込みは解除
+  renderAll();
+}
+
+function toggleSubFilter(j) {
+  const main = activeTagFilter ? getMainTag(activeTagFilter) : null;
+  if (!main || main.subs[j] === undefined) return;
+  activeSubFilter = (activeSubFilter === main.subs[j]) ? null : main.subs[j];
   renderAll();
 }
 
@@ -2109,10 +2173,14 @@ function renderDashboard() {
   toggleEmptyHint('nowDoingList', 'nowDoingEmptyHint', nowDoingItems.length, 'now-action-zone');
 
   // 各ボード：今からやること欄／完了済みに入っていないタスクのみ
-  settings.boards.forEach(b => {
-    const items = base.filter(t => t.quadrant === b.id && !t.isNowDoing && !t.completed).sort((a, c) => a.order - c.order);
-    renderDropList('matrixList' + b.id, items);
-  });
+  if (settings.boardMode === 'tag') {
+    fillTagBoardLists(base); // ★タグボード：小ボードごとに流し込む
+  } else {
+    settings.boards.forEach(b => {
+      const items = base.filter(t => t.quadrant === b.id && !t.isNowDoing && !t.completed).sort((a, c) => a.order - c.order);
+      renderDropList('matrixList' + b.id, items);
+    });
+  }
 
   // ✅完了済み欄：completed＝true のタスク
   const completedItems = base.filter(t => t.completed).sort((a, b) => a.order - b.order);
@@ -2121,11 +2189,14 @@ function renderDashboard() {
 }
 
 // ドロップゾーン共通の描画（今からやること／マトリクス各象限／完了済みで共用）
-function renderDropList(listId, items, showDone) {
+// showPriority＝true（タグボード用）：優先度ボードの色を左端の線で示す（長押しで優先度名）
+function renderDropList(listId, items, showDone, showPriority) {
   const el = document.getElementById(listId);
-  el.innerHTML = items.map(t =>
-    `<div class="matrix-item ${showDone ? 'done' : ''}" data-id="${t.id}" onclick="openModal('${t.id}')">${escapeHtml(t.title)}</div>`
-  ).join('');
+  el.innerHTML = items.map(t => {
+    const b = showPriority ? getBoard(t.quadrant) : null;
+    const extra = b ? ` style="box-shadow:inset 3px 0 0 ${b.color}" title="${escapeAttr(boardName(b))}"` : '';
+    return `<div class="matrix-item ${showDone ? 'done' : ''}" data-id="${t.id}"${extra} onclick="openModal('${t.id}')">${escapeHtml(t.title)}</div>`;
+  }).join('');
 }
 
 // 空の時だけヒント文言を出す（zoneClassは親要素に is-empty を付けてCSSで制御）
@@ -2164,7 +2235,8 @@ let zoneSortables = [];
 function initZoneSortables() {
   zoneSortables.forEach(s => s.destroy());
   zoneSortables = [];
-  const ids = ['nowDoingList', 'completedDropList', ...settings.boards.map(b => 'matrixList' + b.id)];
+  // ★ボード側のドロップ先は data-droplist 付きの要素（優先度ボード／タグボードの両方）を拾う
+  const ids = ['nowDoingList', 'completedDropList', ...[...document.querySelectorAll('#matrixView [data-droplist]')].map(el => el.id)];
   ids.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -2189,6 +2261,13 @@ function handleZoneDrop(evt) {
     t.isNowDoing = true;
   } else if (toId === 'completedDropList') {
     setCompleted(t, true); // ★完了日を記録
+  } else if (evt.to.dataset.tagBoard !== undefined) {
+    // ★タグボードの小ボードにドロップ：大タグ・小タグを付け替える（優先度は変えない）
+    t.tagMain = evt.to.dataset.tagMain || null;
+    t.tagSub = t.tagMain ? (evt.to.dataset.tagSub || null) : null;
+    t.tags = t.tagMain ? [t.tagMain] : [];
+    setCompleted(t, false);
+    t.isNowDoing = false;
   } else {
     // マトリクスのいずれかの象限にドロップされた場合
     t.quadrant = Number(evt.to.dataset.q);
@@ -2572,7 +2651,7 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;');
 }
 function escapeAttr(str) {
-  return escapeHtml(str).replace(/'/g, '&#39;');
+  return escapeHtml(str).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
 }
 
 /* =====================================================
@@ -2823,7 +2902,7 @@ let graphChart = null;
 
 function graphEnsureState() {
   if (!graphState) {
-    graphState = { period: 'week', metric: 'both', tag: '', weekdays: [], anchor: todayStr() };
+    graphState = { period: 'week', metric: 'both', tag: '', subTag: '', weekdays: [], anchor: todayStr() };
   }
   return graphState;
 }
@@ -2886,7 +2965,8 @@ function graphBuildData(g) {
   const created = {}, done = {};
   const inc = (map, k) => { map[k] = (map[k] || 0) + 1; };
   tasks.forEach(t => {
-    if (g.tag && !(t.tags || []).includes(g.tag)) return;
+    if (g.tag && t.tagMain !== g.tag) return;                 // 大タグ
+    if (g.subTag && t.tagSub !== g.subTag) return;            // 小タグ
     if (t.addedDate && graphWeekdayOk(g, t.addedDate)) inc(created, bucketOf(t.addedDate));
     if (t.completed && t.completedAt && graphWeekdayOk(g, t.completedAt)) inc(done, bucketOf(t.completedAt));
   });
@@ -2917,10 +2997,13 @@ function renderGraphTab() {
   const sumC = data.createdData.reduce((s, n) => s + n, 0);
   const sumD = data.doneData.reduce((s, n) => s + n, 0);
 
-  const allTags = [...new Set(tasks.flatMap(t => t.tags || []))].sort((a, b) => a.localeCompare(b, 'ja'));
+  // 辞書から消えたタグを選択中のままにしない
+  if (g.tag && !getMainTag(g.tag)) { g.tag = ''; g.subTag = ''; }
+  const gMain = g.tag ? getMainTag(g.tag) : null;
+  if (gMain && g.subTag && !gMain.subs.includes(g.subTag)) g.subTag = '';
   const seg = (items, cur, fn) => items.map(([id, label]) =>
     `<button type="button" class="set-seg-btn ${cur === id ? 'active' : ''}" onclick="${fn}('${id}')">${label}</button>`).join('');
-  const hasFilter = g.tag || g.weekdays.length;
+  const hasFilter = g.tag || g.subTag || g.weekdays.length;
 
   const summaryParts = [];
   if (showCreated) summaryParts.push(`作成 ${sumC}件`);
@@ -2939,11 +3022,15 @@ function renderGraphTab() {
       <div class="gr-summary">${summaryParts.join('　／　')}${(sumC + sumD === 0) ? '<br><span class="cal-note">この期間・条件のデータはありません</span>' : ''}</div>
     </div>
     <div class="gr-card">
-      <div class="set-sub-label">タグで絞り込み</div>
-      <select class="sort-select" style="width:100%;margin-bottom:8px" aria-label="タグ" onchange="setGraphTag(this.value)">
-        <option value="">すべてのタグ</option>
-        ${allTags.map(tag => `<option value="${escapeAttr(tag)}" ${g.tag === tag ? 'selected' : ''}>#${escapeHtml(tag)}</option>`).join('')}
+      <div class="set-sub-label">タグで絞り込み（大タグ → 小タグ）</div>
+      <select class="sort-select" style="width:100%;margin-bottom:8px" aria-label="大タグ" onchange="setGraphTag(this.value)">
+        <option value="">すべての大タグ</option>
+        ${settings.tagMaster.map(m => `<option value="${escapeAttr(m.name)}" ${g.tag === m.name ? 'selected' : ''}>#${escapeHtml(m.name)}</option>`).join('')}
       </select>
+      ${gMain && gMain.subs.length ? `<select class="sort-select" style="width:100%;margin-bottom:8px" aria-label="小タグ" onchange="setGraphSubTag(this.value)">
+        <option value="">すべての小タグ</option>
+        ${gMain.subs.map(s => `<option value="${escapeAttr(s)}" ${g.subTag === s ? 'selected' : ''}>› ${escapeHtml(s)}</option>`).join('')}
+      </select>` : ''}
       <div class="set-sub-label">曜日で絞り込み（複数選択可・未選択＝全曜日）</div>
       <div class="gr-dow">${WEEKDAY_LABEL.map((w, i) =>
         `<button type="button" class="gr-dow-btn ${g.weekdays.includes(i) ? 'active' : ''}" onclick="toggleGraphWeekday(${i})">${w}</button>`).join('')}</div>
@@ -2996,7 +3083,8 @@ function initGraphThemeWatch() {
 
 function setGraphPeriod(p) { graphEnsureState().period = p; renderGraphTab(); }
 function setGraphMetric(m) { graphEnsureState().metric = m; renderGraphTab(); }
-function setGraphTag(tag) { graphEnsureState().tag = tag; renderGraphTab(); }
+function setGraphTag(tag) { const g = graphEnsureState(); g.tag = tag; g.subTag = ''; renderGraphTab(); } // 大タグを変えたら小タグはリセット
+function setGraphSubTag(tag) { graphEnsureState().subTag = tag; renderGraphTab(); }
 function toggleGraphWeekday(i) {
   const g = graphEnsureState();
   g.weekdays = g.weekdays.includes(i) ? g.weekdays.filter(x => x !== i) : [...g.weekdays, i].sort();
@@ -3005,6 +3093,7 @@ function toggleGraphWeekday(i) {
 function clearGraphFilters() {
   const g = graphEnsureState();
   g.tag = '';
+  g.subTag = '';
   g.weekdays = [];
   renderGraphTab();
 }
@@ -3247,6 +3336,7 @@ function renameMainTag(i, value) {
   }
   const old = m.name;
   m.name = nv;
+  settings.tagCollapsed = settings.tagCollapsed.map(x => (x === old ? nv : x)); // 折りたたみ状態も追従
   tasks.forEach(t => { if (t.tagMain === old) { t.tagMain = nv; t.tags = [nv]; } });
   if (activeTagFilter === old) activeTagFilter = nv;
   saveTasks();
@@ -3268,6 +3358,7 @@ function renameSubTag(i, j, value) {
   const old = m.subs[j];
   m.subs[j] = nv;
   tasks.forEach(t => { if (t.tagMain === m.name && t.tagSub === old) t.tagSub = nv; });
+  if (activeTagFilter === m.name && activeSubFilter === old) activeSubFilter = nv;
   saveTasks();
   saveSettings();
   renderAll();
@@ -3298,7 +3389,8 @@ function deleteMainTag(i) {
   const count = tasks.filter(t => t.tagMain === m.name).length;
   if (!confirm(`大タグ「${m.name}」を削除する？\nこの大タグ（配下の小タグ含む）が付いたタスク${count}件は、タグなしになる（タスクは消えない）`)) return;
   tasks.forEach(t => { if (t.tagMain === m.name) { t.tagMain = null; t.tagSub = null; t.tags = []; } });
-  if (activeTagFilter === m.name) activeTagFilter = null;
+  if (activeTagFilter === m.name) { activeTagFilter = null; activeSubFilter = null; }
+  settings.tagCollapsed = settings.tagCollapsed.filter(x => x !== m.name);
   settings.tagMaster.splice(i, 1);
   saveTasks();
   saveSettings();
@@ -3313,11 +3405,99 @@ function deleteSubTag(i, j) {
   const count = tasks.filter(t => t.tagMain === m.name && t.tagSub === name).length;
   if (!confirm(`小タグ「${name}」を削除する？\nこの小タグが付いたタスク${count}件は、大タグだけ残る（タスクは消えない）`)) return;
   tasks.forEach(t => { if (t.tagMain === m.name && t.tagSub === name) t.tagSub = null; });
+  if (activeTagFilter === m.name && activeSubFilter === name) activeSubFilter = null;
   m.subs.splice(j, 1);
   saveTasks();
   saveSettings();
   renderAll();
   renderSettingsTags();
+}
+
+/* =====================================================
+   【タグボード】ボードタブを「優先度」から「タグ」の見方に切り替える
+   ・大タグごとに大ボード（見出し＋枠）を縦に並べ、見出しを押すと折りたたみ
+   ・大ボードの中に、小タグごとの小ボード＋「小タグなし」の小ボード
+   ・大タグが無いタスクは最後の「未分類（タグなし）」大ボードに入る
+   ・小ボードへドラッグ → 大タグ・小タグを付け替え（優先度はそのまま。handleZoneDrop参照）
+   ・「今からやること」「完了済み」は優先度表示と共通
+   ・選択中の表示モードと折りたたみ状態は設定（settings.boardMode / tagCollapsed）に保存
+   ===================================================== */
+const TAG_NONE_KEY = '\u0000none'; // 「大タグなし」大ボードの折りたたみ状態キー
+
+function renderBoardModeSeg() {
+  document.querySelectorAll('#boardModeSeg .set-seg-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === settings.boardMode);
+  });
+}
+
+function setBoardMode(mode) {
+  settings.boardMode = (mode === 'tag') ? 'tag' : 'priority';
+  commitSettings(); // 保存→枠の作り直し→タスク再描画
+}
+
+function renderTagBoard(wrap) {
+  // 辞書の順に大ボード＋最後に「未分類」。idx=-1が未分類
+  const bigs = settings.tagMaster.map((m, i) => ({ idx: i, name: m.name, subs: m.subs }));
+  bigs.push({ idx: -1, name: null, subs: [] });
+
+  wrap.innerHTML = bigs.map(b => {
+    const key = b.name === null ? TAG_NONE_KEY : b.name;
+    const collapsed = settings.tagCollapsed.includes(key);
+    const color = b.idx >= 0 ? NEW_BOARD_COLORS[b.idx % NEW_BOARD_COLORS.length] : '#8a8f98';
+    const count = tasks.filter(t => (t.tagMain || null) === b.name && !t.isNowDoing && !t.completed).length;
+    const smalls = b.subs.map((s, j) => ({ j, name: s, label: s }));
+    smalls.push({ j: -1, name: null, label: b.name === null ? 'タグなし' : '小タグなし' });
+
+    const cells = smalls.map(s => `
+      <div class="matrix-quadrant" style="--board-color:${color}" onclick="handleTagBoardBlankClick(event, ${b.idx}, ${s.j})">
+        <div class="matrix-title"><span>${escapeHtml(s.label)}</span></div>
+        <div class="matrix-list" id="tagList_${b.idx < 0 ? 'n' : b.idx}_${s.j < 0 ? 'n' : s.j}"
+             data-droplist="1" data-tag-board="1" data-tag-main="${escapeAttr(b.name || '')}" data-tag-sub="${escapeAttr(s.name || '')}"></div>
+      </div>`).join('');
+
+    return `
+    <div class="tagboard-big ${collapsed ? 'collapsed' : ''}" style="--board-color:${color}">
+      <div class="tagboard-head" onclick="toggleTagBoardCollapse(${b.idx})">
+        <span class="tagboard-arrow">${collapsed ? '▶' : '▼'}</span>
+        <span>${b.name === null ? '未分類（タグなし）' : '#' + escapeHtml(b.name)}</span>
+        <span class="tagboard-count">${count}件</span>
+      </div>
+      <div class="tagboard-body">${cells}</div>
+    </div>`;
+  }).join('');
+}
+
+// 小ボードごとにタスクを流し込む（今からやること・完了済みに入っているタスクは除く）
+function fillTagBoardLists(base) {
+  document.querySelectorAll('#matrixView [data-tag-board]').forEach(el => {
+    const main = el.dataset.tagMain || null;
+    const sub = el.dataset.tagSub || null;
+    const items = base
+      .filter(t => (t.tagMain || null) === main && (t.tagSub || null) === sub && !t.isNowDoing && !t.completed)
+      .sort((a, b) => a.order - b.order);
+    renderDropList(el.id, items, false, true);
+  });
+}
+
+function toggleTagBoardCollapse(idx) {
+  const key = idx >= 0 ? (settings.tagMaster[idx] && settings.tagMaster[idx].name) : TAG_NONE_KEY;
+  if (key === undefined || key === null) return;
+  settings.tagCollapsed = settings.tagCollapsed.includes(key)
+    ? settings.tagCollapsed.filter(x => x !== key)
+    : [...settings.tagCollapsed, key];
+  commitSettings();
+}
+
+// 小ボードの空欄タップ → そのタグを初期選択した状態で新規追加モーダルを開く
+function handleTagBoardBlankClick(e, mainIdx, subIdx) {
+  if (e.target.closest('.matrix-item')) return;
+  openModal(null);
+  if (mainIdx >= 0 && settings.tagMaster[mainIdx]) {
+    const m = settings.tagMaster[mainIdx];
+    selectedTagMain = m.name;
+    selectedTagSub = (subIdx >= 0 && m.subs[subIdx] !== undefined) ? m.subs[subIdx] : null;
+    renderTagButtons();
+  }
 }
 
 /* =====================================================
@@ -3347,6 +3527,8 @@ function getDefaultSettings() {
     completed: { name: '✅完了済み',       color: '#3a9a5c' },
     calendarView: 'month', // カレンダータブの表示：'month'（月）／'day'（日）
     tagMaster: [],         // タグ辞書：[{ name:'仕事', subs:['会議','資料'] }]。配列の順＝ボタンの並び順
+    boardMode: 'priority', // ボードタブの表示：'priority'（優先度ボード）／'tag'（タグボード）
+    tagCollapsed: [],      // タグボードで折りたたんでいる大タグ名（大タグなしは TAG_NONE_KEY）
   };
 }
 
@@ -3377,6 +3559,8 @@ function normalizeSettings(raw) {
     completed: special(raw.completed, def.completed),
     calendarView: raw.calendarView === 'day' ? 'day' : 'month',
     tagMaster: normalizeTagMaster(raw.tagMaster),
+    boardMode: raw.boardMode === 'tag' ? 'tag' : 'priority',
+    tagCollapsed: Array.isArray(raw.tagCollapsed) ? raw.tagCollapsed.filter(x => typeof x === 'string').slice(0, 200) : [],
   };
 }
 
@@ -3441,6 +3625,11 @@ function computeBoardRows() {
 function renderBoardGrid() {
   const wrap = document.getElementById('matrixView');
   if (!wrap) return;
+  if (settings.boardMode === 'tag') { // ★タグボード表示（大タグ→小タグ）
+    renderTagBoard(wrap);
+    initZoneSortables();
+    return;
+  }
   const rows = computeBoardRows();
   if (rows.length === 0) {
     wrap.innerHTML = '<div class="empty-msg">ボードがありません。設定タブから追加できます</div>';
@@ -3450,7 +3639,7 @@ function renderBoardGrid() {
         ${row.map(b => `
         <div class="matrix-quadrant" style="--board-color:${b.color}" onclick="handleZoneBlankClick(event, 'quadrant', ${b.id})">
           <div class="matrix-title"><span>${escapeHtml(boardName(b))}</span>${b.sub ? `<span>${escapeHtml(b.sub)}</span>` : ''}</div>
-          <div class="matrix-list" id="matrixList${b.id}" data-q="${b.id}"></div>
+          <div class="matrix-list" id="matrixList${b.id}" data-q="${b.id}" data-droplist="1"></div>
         </div>`).join('')}
       </div>`).join('');
   }
@@ -3483,6 +3672,7 @@ function renderQuadrantButtons() {
 
 // 設定を画面全体へ反映（呼んだ後に renderAll() でタスクを流し込む）
 function applySettingsToUI() {
+  renderBoardModeSeg();
   renderBoardGrid();
   applySpecialZones();
   renderQuadrantButtons();
@@ -3661,9 +3851,13 @@ function resetSettings() {
   if (!confirm('ボードの名称・色・並べ方を初期状態に戻す？\n追加したボードのタスクは「未分類」になる（タスク自体は消えない）')) return;
   const keepCalendarView = settings.calendarView; // カレンダー表示の選択・タグ辞書はボード設定のリセット対象外
   const keepTagMaster = settings.tagMaster;
+  const keepBoardMode = settings.boardMode;
+  const keepTagCollapsed = settings.tagCollapsed;
   settings = getDefaultSettings();
   settings.calendarView = keepCalendarView;
   settings.tagMaster = keepTagMaster;
+  settings.boardMode = keepBoardMode;
+  settings.tagCollapsed = keepTagCollapsed;
   detachTasksFromMissingBoards();
   commitSettings();
   renderSettingsTab();
