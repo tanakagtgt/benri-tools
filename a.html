@@ -1248,6 +1248,8 @@ footer{
 }
 .tagboard-body .matrix-quadrant{min-height:100px;}
 .tagboard-big.collapsed .tagboard-body{display:none;}
+/* 両方表示モード：優先度ボードとタグボードの境目の見出し */
+.board-both-label{font-size:11px;font-weight:700;color:var(--color-text-muted);margin:14px 0 8px;letter-spacing:0.04em;}
 /* =====================================================
    【ボード上段】日付カード（左）＋タイマー（右）／今からやること（左）＋ボードの見方（右）
    ===================================================== */
@@ -1393,6 +1395,7 @@ footer{
       <div class="set-seg board-mode-seg" id="boardModeSeg">
         <button type="button" class="set-seg-btn" data-mode="priority" onclick="setBoardMode('priority')">⭐ 優先度で見る</button>
         <button type="button" class="set-seg-btn" data-mode="tag" onclick="setBoardMode('tag')">🏷 タグで見る</button>
+        <button type="button" class="set-seg-btn" data-mode="both" onclick="setBoardMode('both')">⭐＋🏷 両方</button>
       </div>
     </div>
   </div>
@@ -2270,11 +2273,11 @@ function renderDashboard() {
   toggleEmptyHint('nowDoingList', 'nowDoingEmptyHint', nowDoingItems.length, 'now-action-zone');
 
   // 各ボード：今からやること欄／完了済みに入っていないタスクのみ
-  if (settings.boardMode === 'tag') {
-    // ★タグの構成が変わっていたら、先に枠（大ボード・小ボード）を作り直す
-    if (tagBoardSignature() !== lastTagBoardSig) renderBoardGrid();
-    fillTagBoardLists(base); // ★タグボード：小ボードごとに流し込む
-  } else {
+  const showPriorityBoard = settings.boardMode !== 'tag';      // 優先度ボードを出すモード：priority / both
+  const showTagBoard      = settings.boardMode !== 'priority'; // タグボードを出すモード：tag / both
+  if (showTagBoard && tagBoardSignature() !== lastTagBoardSig) renderBoardGrid(); // ★タグの構成が変わっていたら先に枠を作り直す
+  if (showTagBoard) fillTagBoardLists(base); // ★タグボード：小ボードごとに流し込む
+  if (showPriorityBoard) {
     settings.boards.forEach(b => {
       if (!document.getElementById('matrixList' + b.id)) return; // 未配置のボードは枠が無いので流し込まない
       const items = base.filter(t => t.quadrant === b.id && !t.isNowDoing && !t.completed).sort((a, c) => a.order - c.order);
@@ -3588,7 +3591,7 @@ function renderBoardModeSeg() {
 }
 
 function setBoardMode(mode) {
-  settings.boardMode = (mode === 'tag') ? 'tag' : 'priority';
+  settings.boardMode = (mode === 'tag' || mode === 'both') ? mode : 'priority'; // ★'both'＝優先度ボードの下にタグボード
   commitSettings(); // 保存→枠の作り直し→タスク再描画
 }
 
@@ -4005,7 +4008,7 @@ function normalizeSettings(raw) {
     completed: special(raw.completed, def.completed),
     calendarView: raw.calendarView === 'day' ? 'day' : 'month',
     tagMaster: normalizeTagMaster(raw.tagMaster),
-    boardMode: raw.boardMode === 'tag' ? 'tag' : 'priority',
+    boardMode: (raw.boardMode === 'tag' || raw.boardMode === 'both') ? raw.boardMode : 'priority',
     tagCollapsed: Array.isArray(raw.tagCollapsed) ? raw.tagCollapsed.filter(x => typeof x === 'string').slice(0, 200) : [],
     tagBoardCols: Math.max(0, Math.floor(Number(raw.tagBoardCols)) || 0),
   };
@@ -4095,11 +4098,22 @@ function boardsInLayoutOrder() {
 function renderBoardGrid() {
   const wrap = document.getElementById('matrixView');
   if (!wrap) return;
-  if (settings.boardMode === 'tag') { // ★タグボード表示（大タグ→小タグ）
+  if (settings.boardMode === 'tag') { // ★タグボードのみ
     renderTagBoard(wrap);
-    initZoneSortables();
-    return;
+  } else if (settings.boardMode === 'both') {
+    // ★優先度ボード（上）＋タグボード（下）。どちらもドラッグ先として使える
+    //   タグボード → 優先度ボードへドラッグ＝優先度の付け替え（handleZoneDropの通常ボード分岐）
+    wrap.innerHTML = '<div id="boardPriorityWrap"></div><div class="board-both-label">🏷 タグ別（ここから上の優先度ボードへドラッグで優先度を設定）</div><div id="boardTagWrap"></div>';
+    renderPriorityBoard(document.getElementById('boardPriorityWrap'));
+    renderTagBoard(document.getElementById('boardTagWrap'));
+  } else {
+    renderPriorityBoard(wrap);
   }
+  initZoneSortables();
+}
+
+// 優先度ボードの枠だけを作る（wrapの中身を差し替える。Sortableの初期化は呼び出し側）
+function renderPriorityBoard(wrap) {
   // 全ての枠が空の行は出さない。行の中の空の枠は空白のまま（配置位置を保つ）
   const rows = computeBoardRows().filter(row => row.some(b => b));
   if (rows.length === 0) {
@@ -4114,7 +4128,6 @@ function renderBoardGrid() {
         </div>` : '<div class="matrix-spacer"></div>').join('')}
       </div>`).join('');
   }
-  initZoneSortables();
 }
 
 // 「今からやること」「完了済み」の名称・色を反映
