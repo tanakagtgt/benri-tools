@@ -22,6 +22,28 @@
   --color-error-text:  #b91c1c;
   --color-chip-bg:      #f1f5fd;  /* 戻る/コピー/シェア等ボタンの薄青背景 */
   --color-chip-hover:   #dbeafe;  /* 同ホバー */
+
+  /* ---- 警告系（オレンジ）：削除ボタン等 ---- */
+  --color-warn-bg:      #fff8f0;
+  --color-warn-border:  #f5c6a0;
+  --color-warn-text:    #c05a00;
+  --color-warn-hover:   #ffe8d0;
+  /* ---- 成功系（グリーン）：Excel用ボタン等 ---- */
+  --color-success-bg:     #f0faf4;
+  --color-success-border: #a8d5b5;
+  --color-success-text:   #217346;
+  --color-success-hover:  #d4edda;
+  /* ---- カレンダー用（営業日計算ツール等） ---- */
+  --cal-business-bg:#dbeafe;      --cal-business-border:#93c5fd;      --cal-business-text:#1e3a8a;
+  --cal-weekend-bg:#fef3c7;       --cal-weekend-border:#fcd34d;
+  --cal-weekend-sun-text:#92400e; --cal-weekend-sat-text:#1d4ed8;
+  --cal-holiday-bg:#fee2e2;       --cal-holiday-border:#fca5a5;       --cal-holiday-text:#991b1b;
+  --cal-holiday-wend-bg:#fde8e8;  --cal-holiday-wend-border:#f87171;  --cal-holiday-wend-text:#b91c1c;
+  --cal-leave-bg:#ede9fe;         --cal-leave-border:#c4b5fd;         --cal-leave-text:#5b21b6;
+  --cal-outside-bg:#f3f4f6;       --cal-outside-border:#e5e7eb;       --cal-outside-text:#bbb;
+  --cal-count-bg:#fff;            --cal-count-text:#1a56db;
+  --cal-head-sun:#dc2626;         --cal-head-sat:#1d4ed8;
+  --cal-today:#f59e0b;
   --radius-card:       10px;
   --radius-btn:        8px;
   --radius-input:      7px;
@@ -53,6 +75,28 @@ html[data-theme="dark"] {
   --color-error-text:     #f28b82;
   --color-chip-bg:        #202531;
   --color-chip-hover:     #2a3040;
+
+  /* ---- 警告系（オレンジ） ---- */
+  --color-warn-bg:        #2a1d10;
+  --color-warn-border:    #7a4a1e;
+  --color-warn-text:      #f0a35e;
+  --color-warn-hover:     #3a2814;
+  /* ---- 成功系（グリーン） ---- */
+  --color-success-bg:     #14261c;
+  --color-success-border: #2f6b46;
+  --color-success-text:   #6fcf97;
+  --color-success-hover:  #1b3326;
+  /* ---- カレンダー用 ---- */
+  --cal-business-bg:#172a4a;      --cal-business-border:#2f5a9e;      --cal-business-text:#bcd4ff;
+  --cal-weekend-bg:#3a3017;       --cal-weekend-border:#7a6320;
+  --cal-weekend-sun-text:#f3c98a; --cal-weekend-sat-text:#8db4ff;
+  --cal-holiday-bg:#3b1b1b;       --cal-holiday-border:#8a3a3a;       --cal-holiday-text:#f5a3a3;
+  --cal-holiday-wend-bg:#451f1f;  --cal-holiday-wend-border:#a34a4a;  --cal-holiday-wend-text:#f8b4b4;
+  --cal-leave-bg:#2b2347;         --cal-leave-border:#5b4a9a;         --cal-leave-text:#cdbcff;
+  --cal-outside-bg:#1b1e24;       --cal-outside-border:#2a2e37;       --cal-outside-text:#5c6370;
+  --cal-count-bg:#0f172a;         --cal-count-text:#8db4ff;
+  --cal-head-sun:#f28b82;         --cal-head-sat:#8db4ff;
+  --cal-today:#f59e0b;
   color-scheme: dark;
 }
 
