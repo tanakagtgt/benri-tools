@@ -1416,6 +1416,9 @@ footer{
     <div class="zone-empty-hint" id="completedEmptyHint">タスクをドラッグ、または空欄タップで完了タスクとして追加</div>
   </div>
 
+  <!-- Excel用コピー（ボード表示形式：ボードの見方に連動） -->
+  <div class="data-bar"><button type="button" class="btn-data" id="btnXlBoard" onclick="copyBoardExcel()">📊 Excel用コピー</button></div>
+
   </div><!-- /#tabPanel-board -->
 
   <!-- ================= タブ②：カレンダー（締切日のタスクを表示） ================= -->
@@ -1436,6 +1439,9 @@ footer{
     <select id="sortKeySelect" class="sort-select" aria-label="並び替え項目" onchange="onSortKeyChange(this.value)"></select>
     <button type="button" class="sort-dir-btn" id="sortDirBtn" onclick="toggleSortDir()">↑ 昇順</button>
   </div>
+
+  <!-- Excel用コピー（縦リスト形式：下の一覧の絞り込み・並び順を反映） -->
+  <div class="data-bar"><button type="button" class="btn-data" id="btnXlList" onclick="copyListExcel()">📊 Excel用コピー</button></div>
 
   <!-- フィルタタブ：今日／明日／今週／予定なし／完了済み／すべて（下の一覧に適用） -->
   <div class="filter-tabs" id="filterTabs"></div>
@@ -2792,6 +2798,104 @@ function importJson(event) {
 }
 
 /* =====================================================
+   【Excel用コピー】リスト／カレンダー／ボードの3形式
+   ・タブ区切りテキストをクリップボードへ（Excelに貼るとセルに分かれる）
+   ・メモ等の改行・タブ・ダブルクォートは、ダブルクォートで囲んで行ずれを防ぐ
+   ・コピーはcommon.jsのcopyToClipboard()を使う（ボタンに「コピーしました」を表示）
+   ===================================================== */
+function xlCell(v) {
+  const s = String(v ?? '');
+  return /[\t\n\r"]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function xlDate(s) { return s ? s.replace(/-/g, '/') : ''; } // 2026-10-21 → 2026/10/21（Excelが日付として認識する）
+function xlCopy(rows, btnId, label) {
+  copyToClipboard(rows.map(r => r.map(xlCell).join('\t')).join('\n'), btnId, label);
+}
+
+// ---------- ① 縦リスト形式（リストタブの検索・絞り込み・並び順をそのまま反映） ----------
+function copyListExcel() {
+  const list = getFilteredTasks();
+  if (!list.length) { alert('コピーするタスクがありません'); return; }
+  const rows = [['件名', '締切日', '追加日', '完了日', '状態', 'ボード', '大タグ', '小タグ', 'メモ']];
+  list.forEach(t => {
+    const b = getBoard(t.quadrant);
+    rows.push([
+      t.title, xlDate(t.due), xlDate(t.addedDate), xlDate(t.completedAt),
+      t.completed ? '完了' : '未完了', b ? boardName(b) : '',
+      t.tagMain || '', t.tagSub || '', stripTrailerLines(t.note),
+    ]);
+  });
+  xlCopy(rows, 'btnXlList', '📊 Excel用コピー');
+}
+
+// ---------- ② カレンダー形式（表示中の月。週ごとに「日付行→タスク行」） ----------
+function copyCalendarExcel() {
+  const s = calEnsureState();
+  const byDue = calGroupByDue();
+  const dim = new Date(s.year, s.month + 1, 0).getDate();
+  const offset = new Date(s.year, s.month, 1).getDay(); // 日曜始まり（画面と同じ）
+  const weeks = Math.ceil((offset + dim) / 7);
+  const rows = [[`${s.year}年${s.month + 1}月`], WEEKDAY_LABEL.slice()];
+  for (let w = 0; w < weeks; w++) {
+    const days = [];
+    for (let d = 0; d < 7; d++) {
+      const day = w * 7 + d - offset + 1;
+      days.push(day >= 1 && day <= dim ? day : null); // 前後の月は空欄
+    }
+    rows.push(days.map(d => d === null ? '' : d));
+    const lists = days.map(d => d === null ? [] : (byDue[calKey(s.year, s.month, d)] || []));
+    const n = Math.max(...lists.map(l => l.length));
+    for (let i = 0; i < n; i++) {
+      rows.push(lists.map(l => l[i] ? (l[i].completed ? '✓ ' : '') + l[i].title : ''));
+    }
+    rows.push([]); // 週の区切りの空行
+  }
+  xlCopy(rows, 'btnXlCal', '📊 Excel用コピー');
+}
+
+// ---------- ③ ボード表示形式（列＝ボード、その下にタスク名が縦に並ぶ） ----------
+function xlBlock(cols) { // cols: [{head, items}] → 見出し行＋タスク行
+  const n = Math.max(0, ...cols.map(c => c.items.length));
+  const rows = [cols.map(c => c.head)];
+  for (let i = 0; i < n; i++) rows.push(cols.map(c => c.items[i] ? c.items[i].title : ''));
+  return rows;
+}
+function xlSorted(fn) { return tasks.filter(fn).sort((a, b) => a.order - b.order); }
+
+function copyBoardExcel() {
+  const mode = settings.boardMode; // 'priority' / 'tag' / 'both'
+  const rows = [];
+  // 特別枠（今からやること／完了済み）は常に先頭
+  rows.push(...xlBlock([
+    { head: settings.nowDoing.name,  items: xlSorted(t => t.isNowDoing && !t.completed) },
+    { head: settings.completed.name, items: xlSorted(t => t.completed) },
+  ]));
+  // 優先度ボード（画面に配置済みのものだけ。画面の左上→右下の順）
+  if (mode !== 'tag') {
+    const placed = settings.slots.flat().map(id => getBoard(id)).filter(Boolean);
+    rows.push([]);
+    rows.push(...xlBlock(placed.map(b => ({
+      head: boardName(b),
+      items: xlSorted(t => t.quadrant === b.id && !t.isNowDoing && !t.completed),
+    }))));
+  }
+  // タグボード（大タグごとに「見出し行→小タグ見出し行→タスク行」）
+  if (mode !== 'priority') {
+    const bigs = settings.tagMaster.map(m => ({ name: m.name, subs: m.subs }));
+    bigs.push({ name: null, subs: [] }); // 未分類
+    bigs.forEach(bg => {
+      const inBig = t => (t.tagMain || null) === bg.name && !t.isNowDoing && !t.completed;
+      const cols = bg.subs.map(s => ({ head: s, items: xlSorted(t => inBig(t) && t.tagSub === s) }));
+      cols.push({ head: bg.name === null ? 'タグなし' : '小タグなし', items: xlSorted(t => inBig(t) && !t.tagSub) });
+      rows.push([]);
+      rows.push([bg.name === null ? '未分類（タグなし）' : '#' + bg.name]);
+      rows.push(...xlBlock(cols));
+    });
+  }
+  xlCopy(rows, 'btnXlBoard', '📊 Excel用コピー');
+}
+
+/* =====================================================
    【ユーティリティ】XSS対策のエスケープ処理
    ===================================================== */
 function escapeHtml(str) {
@@ -2915,6 +3019,7 @@ function renderCalendarTab() {
       <button type="button" class="cal-nav-btn" onclick="calShift(1)" aria-label="次へ">▶</button>
     </div>
     ${body}
+    <div class="data-bar"><button type="button" class="btn-data" id="btnXlCal" onclick="copyCalendarExcel()">📊 Excel用コピー</button></div>
     <div class="cal-note">表示の切替（月／日）は設定タブにあります。締切日が未設定のタスクはここには出ません。</div>`;
 }
 
