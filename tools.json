@@ -28,5 +28,6 @@
 { "id": "conv-bunsho-henkan", "name": "文章変換ツール", "url": "https://arigato-tools.com/conv-bunsho-henkan", "file": "conv-bunsho-henkan.html", "emoji": "🔧", "category": "conv", "desc": "文字数カウント・全角半角変換・置換・改行をまとめて処理" },
 { "id":"util-order-decider", "name":"順番決めツール", "url":"[https://arigato-tools.com/util-order-decider](https://arigato-tools.com/util-order-decider)", "file":"util-order-decider.html", "emoji":"🎲", "category":"util", "desc":"サイコロ・コイントス・くじ引き・じゃんけんで順番決め" },
   { "id":"util-pdf-editor", "name":"PDF編集ツール", "url":"[https://arigato-tools.com/util-pdf-editor](https://arigato-tools.com/util-pdf-editor)", "file":"util-pdf-editor.html", "emoji":"📝", "category":"util", "desc":"Adobe Readerより使いやすいのを目指しました" },
-{ "id": "util-pdf-merge", "name": "PDF結合・ページ整理", "url": "https://arigato-tools.com/util-pdf-merge", "file": "util-pdf-merge.html", "emoji": "📝", "category": "util", "desc": "複数のPDFを1つに結合し、ページの並べ替え・削除・回転・抽出ができる無料ツール。ファイルは外部送信なし" }
+{ "id": "util-pdf-merge", "name": "PDF結合・ページ整理", "url": "https://arigato-tools.com/util-pdf-merge", "file": "util-pdf-merge.html", "emoji": "📝", "category": "util", "desc": "複数のPDFを1つに結合し、ページの並べ替え・削除・回転・抽出ができる無料ツール。ファイルは外部送信なし" },
+{ "id": "doc-ui-glossary", "name": "UI用語図鑑", "url": "https://arigato-tools.com/doc-ui-glossary", "file": "doc-ui-glossary.html", "emoji": "📖", "category": "doc", "desc": "モーダル・トースト等のUI用語を12カテゴリで検索できる図鑑" }
 ]
