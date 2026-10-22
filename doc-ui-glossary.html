@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<!-- AdSense（静的配置） -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2195458991382480" crossorigin="anonymous"></script>
+<link rel="canonical" href="https://arigato-tools.com/doc-ui-glossary">
+<!-- gtag：既存ツールのgtagスニペットをここに貼る -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI用語図鑑｜モーダル・トースト・アコーディオン等の意味を一覧で解説</title>
+<meta name="description" content="入力・ボタン・ナビ・モーダル・トーストなどUI用語12カテゴリを短い説明つきで一覧化。検索とカテゴリ絞り込みで、デザイン指示やAIへの依頼に使える言葉がすぐ見つかります。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="UI用語図鑑｜UI用語を一覧で解説">
+<meta property="og:description" content="モーダル・トースト・アコーディオン等、UI用語12カテゴリを検索できる無料ツール。">
+<meta property="og:url" content="https://arigato-tools.com/doc-ui-glossary">
+<meta name="twitter:card" content="summary">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/common.css">
+<style>
+/* カテゴリ選択チップ（横スクロールなしで折り返し） */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.chip {
+  font-family: 'BIZ UDPGothic', sans-serif; font-size: 12px; font-weight: 700;
+  color: var(--color-text-sub); background: var(--color-input-bg);
+  border: 1px solid var(--color-border-input); border-radius: 999px;
+  padding: 8px 12px; min-height: 36px; cursor: pointer; transition: all 0.15s;
+}
+.chip.active { border-color: var(--color-primary); background: var(--color-primary-bg); color: var(--color-primary); }
+/* 用語カード */
+.cat-head { font-size: 13px; font-weight: 700; color: var(--color-primary); margin: 4px 0 8px; }
+.term { background: var(--color-card); border: 1px solid var(--color-border); border-radius: var(--radius-card); padding: 12px 14px; margin-bottom: 8px; }
+.term-name { font-size: 15px; font-weight: 700; color: var(--color-text); margin-bottom: 4px; }
+.term-text { font-size: 13px; color: var(--color-text-sub); line-height: 1.7; }
+.count { font-size: 12px; color: var(--color-text-muted); margin-bottom: 10px; }
+.empty { text-align: center; color: var(--color-text-muted); font-size: 13px; padding: 20px 0; }
+/* 解説文 */
+.tool-desc { background: var(--color-card); border: 1px solid var(--color-border); border-radius: var(--radius-card); padding: 18px 20px; margin-bottom: 14px; font-size: 13px; line-height: 1.9; color: var(--color-text-sub); }
+.tool-desc h2 { font-size: 15px; color: var(--color-text); margin-bottom: 8px; }
+.tool-desc h3 { font-size: 13px; color: var(--color-text); margin: 12px 0 4px; }
+</style>
+</head>
+<body>
+<div class="container">
+<div id="topNavSlot"></div>
+
+<header>
+  <h1>UI用語図鑑</h1>
+  <p class="subtitle">モーダル？ドロワー？トースト？<br>UIの用語を12カテゴリで検索・確認</p>
+</header>
+
+<!-- 絞り込み入力 -->
+<div class="card">
+  <div class="input-group">
+    <label for="searchInput">キーワード検索</label>
+    <input type="text" id="searchInput" placeholder="例：モーダル" oninput="onInputChange()">
+  </div>
+  <div class="input-group" style="margin-bottom:0">
+    <label for="catSelect">カテゴリ</label>
+    <select id="catSelect" onchange="onInputChange()"><option value="">すべて</option></select>
+  </div>
+</div>
+
+<div class="chips" id="chips"></div>
+<div class="count" id="countText"></div>
+<div id="termList"></div>
+
+<section class="tool-desc">
+  <h2>UI用語図鑑の使い方</h2>
+  <p>画面づくりの言葉を12カテゴリ・約50語にまとめた用語集です。キーワード検索かカテゴリの絞り込みで、知りたい言葉をすぐ確認できます。</p>
+  <h3>こんな場面で役立ちます</h3>
+  <p>デザイナーや開発者への依頼、AIへのプロンプト、ノーコードツールの設定画面などで「あのポップアップみたいなやつ」を正しい名前で伝えたい時に便利です。初学者の学習用にも使えます。</p>
+  <h3>補足</h3>
+  <p>説明は一般的な使われ方に基づく簡易的なものです。サービスやフレームワークごとに呼び名が違う場合があります。今後、実際に動くデモも順次追加予定です。</p>
+  <h3>よくある質問</h3>
+  <p>Q. モーダルとドロワーの違いは？ A. モーダルは中央に出る確認用の窓、ドロワーは画面の端からスライドして出るパネルです。</p>
+</section>
+
+<div id="shareAreaSlot"></div>
+<div id="resetBtnSlot"></div>
+<div id="bottomNavSlot"></div>
+<div id="adAreaSlot"></div>
+<div id="qrModalSlot"></div>
+<div id="footerSlot"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="/common.js"></script>
+<script>
+/* ===== common.js必須定義 ===== */
+const CURRENT_TOOL_ID = 'doc-ui-glossary';
+const STORAGE_KEY = 'doc-ui-glossary_v1';
+const STORAGE_FIELDS = ['searchInput', 'catSelect'];
+const INPUT_LABELS = { searchInput: 'キーワード', catSelect: 'カテゴリ' };
+const RESULT_LABELS = { main: '表示中の用語数' };
+
+/* ===== 用語データ（追加はここに [用語名, 説明] を足すだけ） ===== */
+const DATA = [
+ {id:'01',name:'入力・選択',terms:[
+  ['テキスト入力','文字を打ち込む欄。名前や検索語など自由記述に使う。'],
+  ['チェックボックス','複数の項目からONにしたいものを選ぶ四角いボタン。'],
+  ['プルダウン','タップすると選択肢が下に開くリスト。セレクトとも呼ぶ。'],
+  ['日付選択','カレンダーから日付を選ぶ部品。入力ミスを防げる。']]},
+ {id:'02',name:'ボタン・アクション',terms:[
+  ['クリック','ボタンを押す操作。スマホではタップと呼ぶ。'],
+  ['送信','入力内容を確定してサーバー等へ送る操作。'],
+  ['コピー','内容をクリップボードに写す操作。完了表示を出すと親切。'],
+  ['削除','データを消す操作。誤操作防止に確認ダイアログを併用する。'],
+  ['Undo／Redo','直前の操作を取り消す／やり直す機能。']]},
+ {id:'03',name:'ナビゲーション',terms:[
+  ['タブ','同じ階層の画面を切り替える見出し。'],
+  ['パンくず','「ホーム＞カテゴリ＞ページ」のように現在地を示す道しるべ。'],
+  ['サイドバー','画面の横に常設するメニュー領域。'],
+  ['ページネーション','一覧を「1 2 3…」とページ分割して移動する仕組み。']]},
+ {id:'04',name:'オーバーレイ・ポップアップ',terms:[
+  ['モーダル','画面の上に重ねて表示し、閉じるまで背面を操作させない窓。'],
+  ['ドロワー','画面の端からスライドして出るパネル。'],
+  ['ポップオーバー','ボタン付近に浮かぶ小さな補足パネル。外側タップで閉じる。'],
+  ['ツールチップ','マウスを乗せると出る短い説明の吹き出し。']]},
+ {id:'05',name:'展開・折りたたみ',terms:[
+  ['アコーディオン','見出しをタップすると中身が開閉する縦並びの部品。FAQでよく使う。'],
+  ['Disclosure','1つの見出しで中身を開閉するシンプルな仕組み。'],
+  ['ツリー表示','フォルダのように階層構造を枝分かれで見せる表示。']]},
+ {id:'06',name:'スクロール・移動操作',terms:[
+  ['プルトゥリフレッシュ','画面を下に引っ張って内容を更新する操作。'],
+  ['無限スクロール','下へ進むと自動で続きが読み込まれる一覧。'],
+  ['スワイプ','指を横や縦に滑らせて画面や項目を動かす操作。']]},
+ {id:'07',name:'通知・フィードバック',terms:[
+  ['トースト','画面の端に一時的に出て自動で消える短い通知。'],
+  ['アラート','エラーや警告など注意を引く通知。'],
+  ['バナー','画面上部などに固定表示するお知らせ帯。'],
+  ['確認ダイアログ','「本当に削除しますか？」のように実行前に確認する窓。']]},
+ {id:'08',name:'読み込み・進捗',terms:[
+  ['スピナー','くるくる回る待機表示。所要時間が不明な時に使う。'],
+  ['プログレスバー','進み具合を横棒で示す表示。'],
+  ['スケルトン','読み込み前に中身の形だけ灰色で出す仮表示。体感が速くなる。'],
+  ['遅延読み込み','画面に入るまで画像等を読まず、表示を軽くする手法。']]},
+ {id:'09',name:'データ表示・操作',terms:[
+  ['テーブル','行と列でデータを並べる表。'],
+  ['ソート','昇順・降順などで並べ替える機能。'],
+  ['フィルター','条件に合うデータだけに絞り込む機能。'],
+  ['検索','キーワードでデータを探す機能。'],
+  ['インライン編集','別画面に移らず、その場で値を書き換える編集方式。']]},
+ {id:'10',name:'レイアウト・表示',terms:[
+  ['カード','1つの情報のまとまりを枠で囲んだ表示単位。'],
+  ['グリッド','格子状に要素を整列させるレイアウト。'],
+  ['分割ペイン','画面を左右などに分け、一覧と詳細を同時に見せる配置。'],
+  ['レスポンシブ表示','画面幅に合わせてレイアウトが変わる仕組み。']]},
+ {id:'11',name:'入力支援・アクセシビリティ',terms:[
+  ['オートコンプリート','入力途中で候補を出して補完する機能。'],
+  ['キーボード操作','マウスなしでもTabキーや矢印キーで操作できること。'],
+  ['フォーカス管理','今どの部品が操作対象かを見える形で示し、移動順を整えること。']]},
+ {id:'12',name:'状態・アニメーション',terms:[
+  ['ホバー','カーソルを乗せた時の見た目の変化。'],
+  ['選択中','今選ばれている状態。色や枠で目立たせる。'],
+  ['無効状態','操作できない状態。薄く表示してタップを受け付けない。'],
+  ['ドラッグ中','要素をつかんで動かしている最中の状態。'],
+  ['トランジション','状態が変わる時の滑らかな変化演出。']]}
+];
+
+/* ===== 初期化：セレクトとチップを生成（common.jsの復元より前に実行される） ===== */
+const $ = id => document.getElementById(id);
+DATA.forEach(c => $('catSelect').insertAdjacentHTML('beforeend', `<option value="${c.id}">${c.id}. ${c.name}</option>`));
+$('chips').innerHTML = `<button type="button" class="chip" data-id="">すべて</button>` +
+  DATA.map(c => `<button type="button" class="chip" data-id="${c.id}">${c.id} ${c.name}</button>`).join('');
+$('chips').addEventListener('click', e => {
+  const b = e.target.closest('.chip');
+  if (!b) return;
+  $('catSelect').value = b.dataset.id;
+  onInputChange();
+});
+
+/* ===== 入力取得（alertは出さない） ===== */
+function calculateInputs() {
+  return { cat: $('catSelect').value, q: $('searchInput').value.trim().toLowerCase() };
+}
+
+/* ===== 絞り込み（常にnullを返さない＝シェアが空入力でも動く） ===== */
+function calculateResult(i) {
+  const cats = [];
+  let total = 0;
+  DATA.forEach(c => {
+    if (i.cat && c.id !== i.cat) return;
+    const terms = c.terms.filter(t => !i.q || (t[0] + t[1] + c.name).toLowerCase().includes(i.q));
+    if (terms.length) { cats.push({ c, terms }); total += terms.length; }
+  });
+  return { main: total, cats, cat: i.cat };
+}
+
+/* ===== 表示 ===== */
+function displayResult(r) {
+  document.querySelectorAll('.chip').forEach(b => b.classList.toggle('active', b.dataset.id === r.cat));
+  $('countText').textContent = `表示中：${r.main}語`;
+  $('termList').innerHTML = r.main === 0
+    ? '<div class="empty">該当する用語がありません。別のキーワードで試してね。</div>'
+    : r.cats.map(({ c, terms }) =>
+        `<div class="cat-head">${c.id}. ${c.name}</div>` +
+        terms.map(t => `<div class="term"><div class="term-name">${t[0]}</div><div class="term-text">${t[1]}</div></div>`).join('')
+      ).join('');
+}
+
+/* reset()上書き：common.jsのreset()はresultNum前提のため、一覧は全件表示に戻す */
+function onResetExtra() { calculate(); }
+
+function buildShareText(result) { return 'UI用語図鑑：モーダル・トースト等のUI用語を一覧で確認できる無料ツール'; }
+function buildShareUrl() { return 'https://arigato-tools.com/doc-ui-glossary'; }
+
+calculate(); // 初回表示（保存値があればDOMContentLoaded後に再計算される）
+</script>
+</body>
+</html>
