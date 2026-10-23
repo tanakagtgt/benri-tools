@@ -810,7 +810,7 @@ footer{
   top:0;
   z-index:40;
   display:grid;
-  grid-template-columns:repeat(5,1fr);
+  grid-template-columns:repeat(6,1fr);
   gap:4px;
   background:var(--color-bg);
   padding:6px 0 8px;
@@ -1340,6 +1340,275 @@ footer{
   letter-spacing:0.05em;
   margin:6px 0 2px;
 }
+
+/* =====================================================
+   【付箋ボードタブ】ホワイトボード風キャンバス
+   ・付箋＝タスク本体（タスクの見え方を自由配置したもの）
+   ・色は全てCSS変数（ダークモード対応）。付箋の色名(y/o/p/g/b/v/k/w)ごとに bg(背景)／bd(枠線) を持つ
+   ・クラス名は wb- で統一（他のタブと衝突しないように）
+   ===================================================== */
+:root{
+  --wb-y-bg:#fff3a8; --wb-y-bd:#e6c84a;  /* 黄 */
+  --wb-o-bg:#ffd9a8; --wb-o-bd:#e8a24a;  /* 橙 */
+  --wb-p-bg:#ffc9d6; --wb-p-bd:#e88aa5;  /* 桃 */
+  --wb-g-bg:#c9f0c4; --wb-g-bd:#7cc47a;  /* 緑 */
+  --wb-b-bg:#c4dcff; --wb-b-bd:#7aa6e8;  /* 青 */
+  --wb-v-bg:#ddd0ff; --wb-v-bd:#a88ae8;  /* 紫 */
+  --wb-k-bg:#e3e6ea; --wb-k-bd:#a9b0ba;  /* 灰 */
+  --wb-w-bg:#ffffff; --wb-w-bd:#cfd5de;  /* 白 */
+  --wb-note-text:#222;
+  --wb-grid-dot:#c2cadb;
+}
+html[data-theme="dark"]{
+  --wb-y-bg:#4a4220; --wb-y-bd:#8a7a2c;
+  --wb-o-bg:#4d3519; --wb-o-bd:#8f6a2c;
+  --wb-p-bg:#4d2433; --wb-p-bd:#9a4c68;
+  --wb-g-bg:#1f4023; --wb-g-bd:#46804a;
+  --wb-b-bg:#1d3350; --wb-b-bd:#3f6aa8;
+  --wb-v-bg:#33284f; --wb-v-bd:#6a54a8;
+  --wb-k-bg:#2d3138; --wb-k-bd:#5a626e;
+  --wb-w-bg:#262a32; --wb-w-bd:#4a505c;
+  --wb-note-text:#e7e9ee;
+  --wb-grid-dot:#3a3f4b;
+}
+.wb-c-y,.c-y{--nbg:var(--wb-y-bg);--nbd:var(--wb-y-bd);}
+.c-o{--nbg:var(--wb-o-bg);--nbd:var(--wb-o-bd);}
+.c-p{--nbg:var(--wb-p-bg);--nbd:var(--wb-p-bd);}
+.c-g{--nbg:var(--wb-g-bg);--nbd:var(--wb-g-bd);}
+.c-b{--nbg:var(--wb-b-bg);--nbd:var(--wb-b-bd);}
+.c-v{--nbg:var(--wb-v-bg);--nbd:var(--wb-v-bd);}
+.c-k{--nbg:var(--wb-k-bg);--nbd:var(--wb-k-bd);}
+.c-w{--nbg:var(--wb-w-bg);--nbd:var(--wb-w-bd);}
+
+.wb-root{display:flex;flex-direction:column;gap:6px;}
+/* 全画面モード：画面いっぱいに広げる（モーダル z-index:100 より下、FABより上） */
+.wb-root.wb-full{
+  position:fixed;inset:0;z-index:60;
+  background:var(--color-bg);
+  padding:8px 8px 10px;
+  overflow:auto;
+}
+.wb-root.wb-full .wb-viewport{flex:1;height:auto;min-height:240px;}
+body.wb-lock{overflow:hidden;}
+
+.wb-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;position:relative;}
+.wb-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:3px;
+  min-height:44px;padding:0 10px;
+  background:var(--color-chip-bg);
+  border:1px solid var(--color-primary-border);
+  border-radius:var(--radius-input);
+  color:var(--color-primary);
+  font-family:inherit;font-size:13px;font-weight:700;
+  cursor:pointer;white-space:nowrap;
+  flex:1 1 auto;
+}
+.wb-btn:hover{background:var(--color-chip-hover);}
+.wb-btn:disabled{opacity:.4;cursor:not-allowed;}
+.wb-btn.on{background:var(--color-primary);border-color:var(--color-primary);color:#fff;}
+.wb-btn.wb-primary{background:var(--color-primary);border-color:var(--color-primary);color:#fff;}
+.wb-btn.wb-primary:hover{background:var(--color-primary-hover);}
+.wb-btn.wb-danger{background:var(--color-warn-bg);border-color:var(--color-warn-border);color:var(--color-warn-text);}
+.wb-btn.wb-danger:hover{background:var(--color-warn-hover);}
+.wb-btn.sm{min-height:40px;font-size:12px;padding:0 8px;}
+.wb-sel{
+  flex:2 1 140px;min-width:0;min-height:44px;
+  border:1px solid var(--color-border-input);border-radius:var(--radius-input);
+  background:var(--color-input-bg);color:var(--color-text);
+  font-family:inherit;font-size:16px; /* iPhoneの自動ズーム防止 */
+  padding:0 8px;
+}
+.wb-save{font-size:11px;color:var(--color-text-muted);margin-left:auto;white-space:nowrap;}
+
+/* ボードメニュー（⋯） */
+.wb-menu{
+  position:absolute;top:48px;left:0;z-index:70;
+  min-width:230px;max-width:100%;
+  background:var(--color-card);border:1px solid var(--color-border-input);
+  border-radius:var(--radius-card);box-shadow:0 6px 20px rgba(0,0,0,.25);
+  padding:6px;display:none;flex-direction:column;gap:4px;
+}
+.wb-menu.show{display:flex;}
+.wb-menu button{
+  min-height:44px;text-align:left;padding:0 12px;
+  background:transparent;border:none;border-radius:var(--radius-input);
+  color:var(--color-text);font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;
+}
+.wb-menu button:hover{background:var(--color-primary-bg);}
+.wb-menu .wb-menu-sep{height:1px;background:var(--color-border);margin:2px 0;}
+
+/* キャンバス本体 */
+.wb-viewport{
+  position:relative;height:60vh;min-height:320px;
+  border:1px solid var(--color-border);border-radius:var(--radius-card);
+  background-color:var(--color-input-bg);
+  background-image:radial-gradient(circle,var(--wb-grid-dot) 1.2px,transparent 1.7px);
+  overflow:hidden;
+  touch-action:none; /* ブラウザ標準のスクロール／ピンチを止めて自前で処理 */
+  -webkit-user-select:none;user-select:none;
+  -webkit-touch-callout:none;
+  cursor:grab;
+}
+.wb-viewport.wb-nogrid{background-image:none;}
+.wb-viewport.tool-frame,.wb-viewport.tool-arrow{cursor:crosshair;}
+.wb-world{position:absolute;left:0;top:0;width:0;height:0;transform-origin:0 0;--inv:1;}
+.wb-item{position:absolute;box-sizing:border-box;}
+
+/* 付箋 */
+.wb-note{
+  background:var(--nbg);border:2px solid var(--nbd);color:var(--wb-note-text);
+  border-radius:6px;padding:6px 8px;
+  box-shadow:0 2px 6px rgba(0,0,0,.2);
+  overflow:hidden;cursor:move;
+  display:flex;flex-direction:column;gap:4px;
+}
+.wb-note.done{opacity:.55;}
+.wb-note.done .wb-note-title{text-decoration:line-through;}
+.wb-note.ghost{border-style:dashed;opacity:.6;}
+.wb-note-top{display:flex;gap:4px;align-items:flex-start;flex:1;min-height:0;}
+.wb-chk{
+  flex:0 0 auto;width:26px;height:26px;margin:-2px 0 0 -3px;
+  background:transparent;border:none;color:inherit;
+  font-size:18px;line-height:1;cursor:pointer;padding:0;
+}
+.wb-note-title{
+  flex:1;min-width:0;font-size:14px;font-weight:700;line-height:1.35;
+  overflow:hidden;word-break:break-word;
+}
+.wb-edit{
+  flex:1;min-width:0;width:100%;height:100%;resize:none;
+  border:1px solid var(--color-primary);border-radius:4px;
+  background:var(--color-card);color:var(--color-text);
+  font-family:inherit;font-size:16px;line-height:1.3;padding:3px 5px;outline:none;
+  -webkit-user-select:text;user-select:text;
+}
+.wb-note-meta{display:flex;gap:6px;flex-wrap:wrap;font-size:11px;opacity:.85;}
+.wb-due.over{color:var(--color-error-text);font-weight:700;}
+
+/* 枠（グループ）：本体はクリックを通し、見出しとハンドルだけ操作できる */
+.wb-frame{
+  border:2px dashed var(--nbd);border-radius:10px;
+  background:color-mix(in srgb,var(--nbd) 10%,transparent);
+  pointer-events:none;
+}
+.wb-frame-head{
+  pointer-events:auto;cursor:move;height:28px;
+  display:flex;align-items:center;gap:8px;padding:0 10px;
+  background:color-mix(in srgb,var(--nbd) 28%,transparent);
+  border-radius:8px 8px 0 0;
+  font-size:13px;font-weight:700;color:var(--color-text);
+}
+.wb-frame-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.wb-frame-prog{font-size:11px;color:var(--color-text-muted);background:var(--color-card);border-radius:8px;padding:1px 7px;}
+.wb-frame-preview{position:absolute;border:2px dashed var(--color-primary);background:var(--color-primary-bg);opacity:.6;border-radius:10px;pointer-events:none;}
+
+/* 選択・矢印の始点・サイズ変更ハンドル */
+.wb-item.sel{outline:3px solid var(--color-primary);outline-offset:2px;}
+.wb-item.from{outline:3px dashed var(--color-warn-text);outline-offset:2px;}
+.wb-handle{
+  position:absolute;right:0;bottom:0;width:28px;height:28px;
+  background:linear-gradient(135deg,transparent 50%,var(--color-primary) 50%);
+  border-radius:0 0 4px 0;cursor:nwse-resize;touch-action:none;pointer-events:auto;
+  transform:scale(var(--inv));transform-origin:100% 100%; /* 拡大縮小しても画面上の大きさを一定に */
+}
+
+/* 矢印（SVG）：付箋・枠より手前に描く */
+.wb-svg{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none;z-index:100000;}
+.wb-arrow-line{stroke:var(--color-text-sub);stroke-width:2.5;fill:none;}
+.wb-arrow-head{fill:var(--color-text-sub);}
+.wb-arrow-hit{stroke:transparent;stroke-width:calc(18px * var(--inv));fill:none;pointer-events:stroke;cursor:pointer;}
+.wb-arrow.sel .wb-arrow-line{stroke:var(--color-primary);stroke-width:4;}
+.wb-arrow.sel .wb-arrow-head{fill:var(--color-primary);}
+.wb-arrow-label{
+  font-size:13px;font-weight:700;fill:var(--color-text);
+  paint-order:stroke;stroke:var(--color-card);stroke-width:5px;stroke-linejoin:round;
+  text-anchor:middle;dominant-baseline:middle;pointer-events:all;cursor:pointer;
+}
+
+/* キャンバス上の小物（ヒント・ズーム・空の案内） */
+.wb-hint{
+  position:absolute;left:8px;top:8px;right:8px;z-index:5;display:none;
+  align-items:center;gap:8px;justify-content:space-between;
+  background:var(--color-card);border:1px solid var(--color-primary);
+  border-radius:var(--radius-input);padding:4px 6px 4px 10px;
+  font-size:12px;font-weight:700;color:var(--color-primary);
+}
+.wb-hint button{
+  min-height:36px;padding:0 12px;border:1px solid var(--color-primary-border);
+  border-radius:var(--radius-input);background:var(--color-chip-bg);color:var(--color-primary);
+  font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;
+}
+.wb-zoomctl{position:absolute;right:8px;bottom:8px;z-index:5;display:flex;gap:4px;}
+.wb-zoomctl button{
+  min-width:40px;height:40px;padding:0 6px;
+  background:var(--color-card);border:1px solid var(--color-border-input);
+  border-radius:var(--radius-input);color:var(--color-text);
+  font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;opacity:.92;
+}
+.wb-empty{
+  position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  text-align:center;padding:20px;font-size:13px;line-height:1.8;
+  color:var(--color-text-muted);pointer-events:none;
+}
+
+/* 選択中の操作バー（キャンバスの下＝親指の届く位置） */
+.wb-ctx{
+  background:var(--color-card);border:1px solid var(--color-border);
+  border-radius:var(--radius-card);padding:8px;
+  display:flex;flex-direction:column;gap:6px;min-height:56px;justify-content:center;
+}
+.wb-ctx-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.wb-ctx-hint{font-size:12px;color:var(--color-text-muted);line-height:1.7;}
+.wb-pal{display:flex;gap:4px;flex-wrap:wrap;}
+.wb-sw{
+  width:36px;height:36px;border-radius:50%;
+  background:var(--nbg);border:3px solid var(--nbd);cursor:pointer;padding:0;
+}
+.wb-sw.on{outline:3px solid var(--color-primary);outline-offset:1px;}
+.wb-input{
+  flex:1;min-width:0;min-height:44px;
+  border:1px solid var(--color-border-input);border-radius:var(--radius-input);
+  background:var(--color-input-bg);color:var(--color-text);
+  font-family:inherit;font-size:16px;padding:0 10px;outline:none;
+}
+.wb-input:focus{border-color:var(--color-primary);}
+.wb-chip{
+  min-height:36px;padding:0 12px;border-radius:18px;
+  border:1px solid var(--color-primary-border);background:var(--color-primary-bg);color:var(--color-primary);
+  font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;
+}
+
+/* 既存タスクをボードに追加するダイアログ */
+.wb-picker-overlay{
+  display:none;position:fixed;inset:0;z-index:110;
+  background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:12px;
+}
+.wb-picker-overlay.show{display:flex;}
+.wb-picker{
+  background:var(--color-card);color:var(--color-text);
+  width:100%;max-width:480px;max-height:85vh;
+  border-radius:var(--radius-card);padding:14px;
+  display:flex;flex-direction:column;gap:8px;
+}
+.wb-picker-title{font-size:14px;font-weight:700;color:var(--color-primary);}
+.wb-picker-opt{display:flex;align-items:center;gap:8px;font-size:13px;min-height:36px;}
+.wb-picker-opt input{width:18px;height:18px;accent-color:var(--color-primary);}
+.wb-picker-list{flex:1;overflow:auto;min-height:120px;border:1px solid var(--color-border);border-radius:var(--radius-input);}
+.wb-pick-item{
+  display:flex;align-items:center;gap:8px;min-height:44px;padding:6px 10px;
+  border-bottom:1px solid var(--color-border);cursor:pointer;font-size:13px;
+}
+.wb-pick-item:last-child{border-bottom:none;}
+.wb-pick-item input{width:18px;height:18px;accent-color:var(--color-primary);flex:0 0 auto;}
+.wb-pick-main{flex:1;min-width:0;}
+.wb-pick-title{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.wb-pick-sub{font-size:11px;color:var(--color-text-muted);}
+.wb-picker-btns{display:flex;gap:8px;}
+
+@media (max-width:420px){
+  .tab-bar{gap:3px;}
+  .tab-btn{font-size:10px;}
+}
 </style>
 </head>
 <body>
@@ -1359,6 +1628,7 @@ footer{
        ===================================================== -->
   <nav class="tab-bar" id="tabBar" role="tablist" aria-label="表示切替">
     <button type="button" class="tab-btn active" data-tab="board" role="tab" onclick="showTab('board')"><span class="tab-emoji">🧭</span>ボード</button>
+    <button type="button" class="tab-btn" data-tab="wb" role="tab" onclick="showTab('wb')" title="付箋ボード"><span class="tab-emoji">📝</span>付箋</button>
     <button type="button" class="tab-btn" data-tab="calendar" role="tab" onclick="showTab('calendar')"><span class="tab-emoji">📅</span>カレンダー</button>
     <button type="button" class="tab-btn" data-tab="list" role="tab" onclick="showTab('list')"><span class="tab-emoji">📋</span>リスト</button>
     <button type="button" class="tab-btn" data-tab="graph" role="tab" onclick="showTab('graph')"><span class="tab-emoji">📊</span>グラフ</button>
@@ -1420,6 +1690,69 @@ footer{
   <div class="data-bar"><button type="button" class="btn-data" id="btnXlBoard" onclick="copyBoardExcel()">📊 Excel用コピー</button></div>
 
   </div><!-- /#tabPanel-board -->
+
+  <!-- ================= タブ：付箋ボード（付箋＝タスクを自由配置するキャンバス） ================= -->
+  <div class="tab-panel" id="tabPanel-wb">
+    <div class="wb-root" id="wbRoot">
+
+      <!-- 1段目：ボード選択・ボードメニュー・全画面 -->
+      <div class="wb-row">
+        <select class="wb-sel" id="wbBoardSel" onchange="wbSwitchBoard(this.value)" aria-label="ボード選択"></select>
+        <button type="button" class="wb-btn" id="wbMenuBtn" onclick="wbToggleMenu()">⋯ ボード</button>
+        <button type="button" class="wb-btn" id="wbFullBtn" onclick="wbToggleFull()">⛶ 全画面</button>
+        <!-- ボードメニュー（新規／名前変更／複製／削除／PNG／JSON） -->
+        <div class="wb-menu" id="wbMenu">
+          <button type="button" onclick="wbNewBoard()">＋ 新しいボード</button>
+          <button type="button" onclick="wbRenameBoard()">✏️ ボード名を変更</button>
+          <button type="button" onclick="wbDuplicateBoard()">⧉ このボードを複製</button>
+          <button type="button" onclick="wbDeleteBoard()">🗑 このボードを削除</button>
+          <div class="wb-menu-sep"></div>
+          <button type="button" onclick="wbExportPng()">🖼 PNG画像で保存</button>
+          <button type="button" onclick="wbExportJson()">⬇️ JSONで保存（全ボード）</button>
+          <button type="button" onclick="wbQ('wbImportInput').click()">⬆️ JSON読込（追加）</button>
+          <div class="wb-menu-sep"></div>
+          <button type="button" id="wbCarryBtn" onclick="wbToggleOpt('carry')">枠ごと中身も動かす：ON</button>
+        </div>
+        <input type="file" id="wbImportInput" accept="application/json" style="display:none" onchange="wbImportJson(event)">
+      </div>
+
+      <!-- 2段目：付箋・枠・矢印 -->
+      <div class="wb-row">
+        <button type="button" class="wb-btn wb-primary" onclick="wbAddNote()">＋ 付箋</button>
+        <button type="button" class="wb-btn" onclick="wbOpenPicker()">📥 タスクから</button>
+        <button type="button" class="wb-btn" id="wbToolFrame" onclick="wbSetTool('frame')">▭ 枠</button>
+        <button type="button" class="wb-btn" id="wbToolArrow" onclick="wbSetTool('arrow')">➡️ 矢印</button>
+      </div>
+
+      <!-- 3段目：元に戻す／やり直す／グリッド／吸着／全体表示／保存状態 -->
+      <div class="wb-row">
+        <button type="button" class="wb-btn" id="wbUndoBtn" onclick="wbUndo()" title="元に戻す (Ctrl+Z)">↶ 戻す</button>
+        <button type="button" class="wb-btn" id="wbRedoBtn" onclick="wbRedo()" title="やり直す (Ctrl+Y)">↷ 進む</button>
+        <button type="button" class="wb-btn" id="wbGridBtn" onclick="wbToggleOpt('grid')">▦ グリッド</button>
+        <button type="button" class="wb-btn" id="wbSnapBtn" onclick="wbToggleOpt('snap')">🧲 吸着</button>
+        <button type="button" class="wb-btn" onclick="wbFit()">🔍 全体表示</button>
+        <span class="wb-save" id="wbSaveLabel"></span>
+      </div>
+
+      <!-- キャンバス -->
+      <div class="wb-viewport" id="wbViewport">
+        <div class="wb-world" id="wbWorld">
+          <div id="wbItems"></div>
+          <svg class="wb-svg" id="wbSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+        <div class="wb-empty" id="wbEmpty">まだ何もありません<br>「＋ 付箋」で新しいタスクを作成<br>「📥 タスクから」で登録済みのタスクを配置</div>
+        <div class="wb-hint" id="wbHint"></div>
+        <div class="wb-zoomctl">
+          <button type="button" onclick="wbZoomBy(1.25)" aria-label="拡大">＋</button>
+          <button type="button" onclick="wbZoomBy(0.8)" aria-label="縮小">－</button>
+          <button type="button" id="wbZoomLabel" onclick="wbZoomReset()" aria-label="倍率を100%に戻す">100%</button>
+        </div>
+      </div>
+
+      <!-- 選択中のものの操作バー（色・複製・重なり順・矢印の説明など） -->
+      <div class="wb-ctx" id="wbCtx"></div>
+    </div>
+  </div><!-- /#tabPanel-wb -->
 
   <!-- ================= タブ②：カレンダー（締切日のタスクを表示） ================= -->
   <div class="tab-panel" id="tabPanel-calendar">
@@ -1518,6 +1851,7 @@ footer{
       <li>画面上部のタブで「ボード／リスト／設定」を切り替え。リストタブでは「今日／明日／今週／予定なし／完了済み／すべて」で一覧を絞り込み</li>
       <li>リストタブの検索欄・タグチップで、件名やタグから目的のタスクをすぐ探せる</li>
       <li>完了したタスクはチェック、またはドラッグで「完了済み」ゾーンに移動</li>
+      <li>「付箋」タブでは、タスクを付箋としてキャンバスに自由に並べられる。「＋ 付箋」で新規作成、「📥 タスクから」で登録済みのタスクを配置。ダブルタップで文字編集、ピンチやホイールで拡大縮小、空いている所をドラッグで画面移動</li>
     </ol>
 
     <h3 class="tool-desc-subtitle">特徴・できること</h3>
@@ -1535,6 +1869,7 @@ footer{
       <li>「今日／明日／今週／予定なし／完了済み／すべて」の絞り込み表示</li>
       <li>ドラッグ＆ドロップでの並び替え・象限移動（スマホのタッチ操作にも対応）</li>
       <li>重要度×緊急度の4象限マトリクス（①今すぐやる②計画してやる③サクッとやる④後回し）を常時表示</li>
+      <li>付箋タブ（ホワイトボード風）：付箋の追加・移動・サイズ変更・8色の色分け・複製、枠でのグループ化（枠ごと中身も移動・完了数を表示）、付箋同士を矢印でつないで「原因」「次の工程」などの説明を付ける、重なり順の変更、グリッド表示と位置合わせ、全体表示、元に戻す／やり直す、自動保存、ボードの複製・名前変更、PNG画像出力、JSONバックアップ・復元</li>
       <li>JSON形式でのエクスポート／インポート（機種変更やバックアップに利用可）</li>
       <li>タスク単位でGoogleカレンダーへ個別登録、またはタグ・分類別にソートしてからのICS一括出力</li>
     </ul>
@@ -1552,6 +1887,8 @@ footer{
       <li>データはこの端末のブラウザ内にのみ保存される。ブラウザのキャッシュ・データを削除すると消えるので注意</li>
       <li>他端末との自動同期機能はない。機種変更時や複数端末での利用には、設定タブのJSONエクスポート／インポートが必要</li>
       <li>定期的なJSONエクスポートでのバックアップを推奨</li>
+      <li>付箋はタスクそのもの。付箋の文字を直すとタスクの件名も変わり、付箋の完了チェックもタスクに反映される。「ボードから外す」はタスクを消さず、「タスクも削除」を選んだ時だけタスクごと消える</li>
+      <li>付箋ボードのレイアウトは専用のJSONバックアップ（付箋タブの「⋯ ボード」メニュー）で保存・復元する。タスク本体のJSONバックアップには含まれない。元に戻す／やり直すは付箋の文字編集を対象としない</li>
       <li>締切日が未設定のタスクはカレンダーには表示されない（リストタブで確認）</li>
       <li>グラフの完了数は、完了枠に入れた日／チェックを付けた日で集計する。この機能の追加前から完了済みだったタスクは、締切日などで仮置きした日付が混ざる</li>
       <li>並び替えで、締切日・完了日などが未設定のタスクは昇順・降順どちらでも末尾に並ぶ。タグ順は先頭のタグ、曜日順は締切日の曜日（月曜始まり）で判定</li>
@@ -1585,6 +1922,20 @@ footer{
 
 <!-- フッター（共通・common.jsが自動注入。触らない） -->
 <div id="footerSlot"></div>
+
+<!-- 付箋ボード：既存タスクをボードに配置するダイアログ -->
+<div class="wb-picker-overlay" id="wbPicker" onclick="wbPickerOverlay(event)">
+  <div class="wb-picker" role="dialog" aria-label="タスクをボードに追加">
+    <div class="wb-picker-title">📥 登録済みのタスクをボードに置く</div>
+    <input type="text" class="wb-input" id="wbPickerSearch" placeholder="件名で検索" oninput="wbPickerRender()">
+    <label class="wb-picker-opt"><input type="checkbox" id="wbPickerDone" onchange="wbPickerRender()"> 完了済みも表示する</label>
+    <div class="wb-picker-list" id="wbPickerList"></div>
+    <div class="wb-picker-btns">
+      <button type="button" class="wb-btn" onclick="wbPickerClose()">キャンセル</button>
+      <button type="button" class="wb-btn wb-primary" id="wbPickerAddBtn" onclick="wbPickerAdd()">追加</button>
+    </div>
+  </div>
+</div>
 
 <!-- タスク追加ボタン（片手操作しやすい右下固定） -->
 <button class="fab-add" onclick="openModal()">＋</button>
@@ -1774,6 +2125,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initSortable();
   applyListSortMode(); // ★手動以外の並び順ではドラッグ並び替えを無効化
   initKeyboardShortcuts(); // ★モーダル内Ctrl+S保存（③対応）
+  wbInit(); // ★付箋ボードのデータ読込とイベント登録（initTabsより前に呼ぶ）
   initTabs(); // ★前回開いていたタブを復元
   initGraphThemeWatch(); // ★ライト／ダーク切替時にグラフの色を取り直す
   renderNowClock();
@@ -2202,6 +2554,7 @@ function renderAll() {
   renderListView();
   if (activeTab === 'calendar') renderCalendarTab(); // ★カレンダー表示中はタスク変更に追従
   if (activeTab === 'graph') renderGraphTab();       // ★グラフ表示中も追従
+  if (activeTab === 'wb' && wbData) wbRender();      // ★付箋ボード表示中も追従（件名・完了・期限・タグの変更を付箋に反映）
 }
 
 /* =====================================================
@@ -2919,13 +3272,14 @@ function escapeAttr(str) {
 const TAB_STORAGE_KEY = 'task_manager_active_tab_v1'; // ※タスク本体のSTORAGE_KEYとは別キー
 const TABS = [
   { id: 'board',    render: () => renderAll() }, // ★設定タブで変えた内容（ボード・タグ）をボードタブを開いた時に必ず反映
+  { id: 'wb',       render: () => wbOnShow() },  // ★付箋ボード（ホワイトボード風キャンバス）
   { id: 'calendar', render: renderCalendarTab },
   { id: 'list',     render: renderListView },
   { id: 'graph',    render: renderGraphTab },
   { id: 'settings', render: renderSettingsTab },
 ];
 // 右下の「＋」ボタンを隠すタブ（タスクを追加する場面が無いタブ）
-const FAB_HIDDEN_TABS = ['graph', 'settings'];
+const FAB_HIDDEN_TABS = ['wb', 'graph', 'settings']; // 付箋タブは専用の「＋ 付箋」ボタンがあるのでFABは隠す
 
 let activeTab = 'board';
 
@@ -4527,6 +4881,1228 @@ function resetSettings() {
   detachTasksFromMissingBoards();
   commitSettings();
   renderSettingsTab();
+}
+
+
+/* =====================================================
+   【付箋ボードタブ】ホワイトボード風キャンバス
+   ・付箋＝タスクそのもの。付箋の文字を直すとタスクの件名が変わり、完了チェックもタスクに反映される
+   ・ボードから外す＝付箋を消すだけ（タスクは残る）／「タスク削除」を選んだ時だけタスクごと消える
+   ・保存先：localStorage（WB_STORAGE_KEY）。タスク本体（STORAGE_KEY）とは別キー
+   ・座標は全て「ワールド座標」（無限に広いキャンバス上の位置）。画面への変換は view={x,y,zoom}
+   ・元に戻す／やり直すの対象＝付箋・枠・矢印の位置／サイズ／色／重なり順／追加・削除（文字は対象外）
+   ・★機能追加の目安：
+       付箋の種類を足す → WB_COLORS（色）／wbItemHtml（見た目）／wbNormItem（保存形式）
+       ツールを足す     → wb.tool／wbPointerDown（操作）／ツールバーHTML
+   ===================================================== */
+const WB_STORAGE_KEY = 'task_manager_whiteboard_v1';
+const WB_COLORS = ['y', 'o', 'p', 'g', 'b', 'v', 'k', 'w'];
+const WB_COLOR_NAMES = { y: '黄', o: '橙', p: '桃', g: '緑', b: '青', v: '紫', k: '灰', w: '白' };
+const WB_GRID = 20;                      // グリッドの間隔（px）
+const WB_ZOOM_MIN = 0.1, WB_ZOOM_MAX = 3;
+const WB_NOTE_W = 180, WB_NOTE_H = 100;  // 付箋の初期サイズ
+const WB_NOTE_MIN_W = 100, WB_NOTE_MIN_H = 56;
+const WB_FRAME_MIN_W = 100, WB_FRAME_MIN_H = 70;
+const WB_FRAME_HEAD = 28;                // 枠の見出しの高さ
+const WB_ARROW_LABELS = ['原因', '結果', '次の工程', '前提', '依存', '関連'];
+const WB_HIST_MAX = 100;                 // 元に戻せる回数
+
+let wbData = null; // { boards:[{id,name,items[],view{x,y,zoom,init}}], activeId, opt{grid,snap,carry} }
+const wb = {
+  tool: 'select',       // 'select' | 'frame' | 'arrow'
+  sel: null,            // 選択中のitem id（付箋・枠・矢印のどれか）
+  arrowFrom: null,      // 矢印モードで始点に選んだitem id
+  g: null,              // 進行中のジェスチャ（pan / drag / resize / frame / pinch）
+  ptrs: new Map(),      // 触れている指／ポインタ
+  editing: null,        // 文字編集中 { id, ta, isNew, cancel }
+  lastTap: null,        // ダブルタップ判定用
+  full: false,          // 全画面中か
+  saveTimer: null,
+  textSnap: null,       // 枠名・矢印説明の入力前スナップショット（元に戻す用）
+  ctxSig: null,         // 操作バーの再描画判定
+  hist: {},             // ボードid → { undo:[], redo:[] }（メモリのみ）
+  pick: new Set(),      // タスク追加ダイアログで選択中のタスクid
+};
+
+const wbQ = id => document.getElementById(id);
+const wbNum = (v, d = 0) => (typeof v === 'number' && isFinite(v)) ? v : d;
+const wbClamp = (v, a, b) => Math.min(b, Math.max(a, v));
+function wbId(prefix) { return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function wbSnapVal(v) { return wbData.opt.snap ? Math.round(v / WB_GRID) * WB_GRID : v; }
+function wbMD(due) { const p = String(due).split('-'); return (+p[1]) + '/' + (+p[2]); }
+
+/* ---------- データの読込・検証・保存 ---------- */
+function wbDefaultBoard(name) {
+  return { id: wbId('b_'), name: name, items: [], view: { x: 40, y: 40, zoom: 1, init: false } };
+}
+
+// 付箋／枠／矢印1件の検証（壊れたデータ・手書き編集されたJSONでも落ちないように）
+function wbNormItem(it) {
+  if (!it || typeof it !== 'object') return null;
+  const id = String(it.id || '');
+  if (!id || !/^[A-Za-z0-9_\-]+$/.test(id)) return null;
+  if (it.type === 'note') {
+    return {
+      id, type: 'note', taskId: String(it.taskId || ''),
+      x: wbNum(it.x), y: wbNum(it.y),
+      w: wbClamp(wbNum(it.w, WB_NOTE_W), WB_NOTE_MIN_W, 1500),
+      h: wbClamp(wbNum(it.h, WB_NOTE_H), WB_NOTE_MIN_H, 1500),
+      color: WB_COLORS.includes(it.color) ? it.color : 'y',
+      z: wbNum(it.z),
+    };
+  }
+  if (it.type === 'frame') {
+    return {
+      id, type: 'frame', title: String(it.title || '').slice(0, 40),
+      x: wbNum(it.x), y: wbNum(it.y),
+      w: wbClamp(wbNum(it.w, 360), WB_FRAME_MIN_W, 6000),
+      h: wbClamp(wbNum(it.h, 240), WB_FRAME_MIN_H, 6000),
+      color: WB_COLORS.includes(it.color) ? it.color : 'b',
+      z: wbNum(it.z),
+    };
+  }
+  if (it.type === 'arrow') {
+    return {
+      id, type: 'arrow', from: String(it.from || ''), to: String(it.to || ''),
+      label: String(it.label || '').slice(0, 30),
+      dir: ['fwd', 'both', 'none'].includes(it.dir) ? it.dir : 'fwd',
+    };
+  }
+  return null;
+}
+
+// 端点が存在しない矢印・自分自身へ向かう矢印を除く
+function wbPruneArrows(items) {
+  const nodeIds = new Set(items.filter(i => i.type !== 'arrow').map(i => i.id));
+  return items.filter(i => i.type !== 'arrow' || (nodeIds.has(i.from) && nodeIds.has(i.to) && i.from !== i.to));
+}
+
+function wbNormBoard(b) {
+  if (!b || typeof b !== 'object') return null;
+  const seen = new Set();
+  let items = [];
+  (Array.isArray(b.items) ? b.items : []).forEach(raw => {
+    const n = wbNormItem(raw);
+    if (n && !seen.has(n.id)) { seen.add(n.id); items.push(n); }
+  });
+  items = wbPruneArrows(items);
+  const v = (b.view && typeof b.view === 'object') ? b.view : {};
+  return {
+    id: String(b.id || wbId('b_')).slice(0, 60),
+    name: String(b.name || 'ボード').slice(0, 30),
+    items,
+    view: { x: wbNum(v.x, 40), y: wbNum(v.y, 40), zoom: wbClamp(wbNum(v.zoom, 1), WB_ZOOM_MIN, WB_ZOOM_MAX), init: !!v.init },
+  };
+}
+
+function wbLoad() {
+  let raw = null;
+  try { raw = JSON.parse(localStorage.getItem(WB_STORAGE_KEY)); } catch (e) { /* 読めなければ新規扱い */ }
+  const data = { boards: [], activeId: null, opt: { grid: true, snap: true, carry: true } };
+  if (raw && typeof raw === 'object') {
+    if (raw.opt && typeof raw.opt === 'object') {
+      data.opt.grid = raw.opt.grid !== false;
+      data.opt.snap = raw.opt.snap !== false;
+      data.opt.carry = raw.opt.carry !== false;
+    }
+    (Array.isArray(raw.boards) ? raw.boards : []).forEach(b => {
+      const nb = wbNormBoard(b);
+      if (nb && !data.boards.some(x => x.id === nb.id)) data.boards.push(nb);
+    });
+    data.activeId = raw.activeId;
+  }
+  if (!data.boards.length) data.boards.push(wbDefaultBoard('ボード1'));
+  if (!data.boards.some(b => b.id === data.activeId)) data.activeId = data.boards[0].id;
+  return data;
+}
+
+function wbSetSaveLabel(text) { const el = wbQ('wbSaveLabel'); if (el) el.textContent = text; }
+
+function wbSaveNow() {
+  clearTimeout(wb.saveTimer); wb.saveTimer = null;
+  if (!wbData) return;
+  try {
+    localStorage.setItem(WB_STORAGE_KEY, JSON.stringify(wbData));
+    const d = new Date();
+    wbSetSaveLabel('💾 自動保存済み ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'));
+  } catch (e) {
+    wbSetSaveLabel('⚠️ 保存できません（容量／プライベートモード）');
+  }
+}
+function wbQueueSave() {
+  wbSetSaveLabel('保存中…');
+  clearTimeout(wb.saveTimer);
+  wb.saveTimer = setTimeout(wbSaveNow, 300);
+}
+
+/* ---------- 参照ヘルパー ---------- */
+function wbBoard() { return wbData.boards.find(b => b.id === wbData.activeId); }
+function wbItem(id) { return wbBoard().items.find(i => i.id === id); }
+function wbTask(it) { return tasks.find(t => t.id === it.taskId); }
+function wbElOf(id) { return wbQ('wbItems').querySelector('[data-wb-id="' + id + '"]'); }
+function wbH() { const id = wbData.activeId; return wb.hist[id] || (wb.hist[id] = { undo: [], redo: [] }); }
+
+/* ---------- 元に戻す／やり直す ---------- */
+function wbSnapStr() { return JSON.stringify(wbBoard().items); }
+function wbPushUndo(snap) {
+  if (snap === wbSnapStr()) return; // 変化なしは記録しない
+  const h = wbH();
+  h.undo.push(snap);
+  if (h.undo.length > WB_HIST_MAX) h.undo.shift();
+  h.redo = [];
+}
+// 変更はこの関数に包んで行う（変更前を記録→変更→重なり順を整える→保存→再描画）
+function wbDo(fn) {
+  const s = wbSnapStr();
+  fn();
+  wbNormZ();
+  wbPushUndo(s);
+  wbQueueSave();
+  wbRender();
+}
+function wbFixSel() {
+  if (wb.sel && !wbItem(wb.sel)) wb.sel = null;
+  if (wb.arrowFrom && !wbItem(wb.arrowFrom)) wb.arrowFrom = null;
+}
+function wbUndo() {
+  wbCommitEdit();
+  const h = wbH(); if (!h.undo.length) return;
+  h.redo.push(wbSnapStr());
+  wbBoard().items = JSON.parse(h.undo.pop());
+  wbFixSel(); wbQueueSave(); wbRender();
+}
+function wbRedo() {
+  wbCommitEdit();
+  const h = wbH(); if (!h.redo.length) return;
+  h.undo.push(wbSnapStr());
+  wbBoard().items = JSON.parse(h.redo.pop());
+  wbFixSel(); wbQueueSave(); wbRender();
+}
+
+// 重なり順zを1,2,3…に振り直す（矢印はzを持たず常に最前面）
+function wbNormZ() {
+  wbBoard().items.filter(i => i.type !== 'arrow').sort((a, b) => a.z - b.z).forEach((n, i) => { n.z = i + 1; });
+}
+
+// 削除されたタスクの付箋を掃除（タスクが0件の時は読込失敗の可能性があるので触らない）
+function wbSanitize() {
+  if (!tasks.length) return;
+  const ids = new Set(tasks.map(t => t.id));
+  let changed = false;
+  wbData.boards.forEach(b => {
+    const dead = new Set(b.items.filter(i => i.type === 'note' && !ids.has(i.taskId)).map(i => i.id));
+    if (!dead.size) return;
+    b.items = b.items.filter(i => !dead.has(i.id) && !(i.type === 'arrow' && (dead.has(i.from) || dead.has(i.to))));
+    changed = true;
+  });
+  if (changed) { wbFixSel(); wbQueueSave(); }
+}
+
+/* ---------- 初期化・タブ表示 ---------- */
+function wbInit() {
+  wbData = wbLoad();
+  wbBindEvents();
+}
+function wbOnShow() {
+  wbRender();
+  if (!wbBoard().view.init) wbFit(); // 初めて開いたボードは全体が見える位置に合わせる
+}
+
+function wbBindEvents() {
+  const vp = wbQ('wbViewport');
+  vp.addEventListener('pointerdown', wbPointerDown);
+  vp.addEventListener('pointermove', wbPointerMove);
+  vp.addEventListener('pointerup', wbPointerUp);
+  vp.addEventListener('pointercancel', wbPointerUp);
+  vp.addEventListener('wheel', wbWheel, { passive: false });
+  vp.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('keydown', wbKeyDown);
+  document.addEventListener('click', e => { if (!e.target.closest('#wbMenu, #wbMenuBtn')) wbCloseMenu(); });
+  window.addEventListener('pagehide', wbSaveNow);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) wbSaveNow(); });
+}
+
+/* =====================================================
+   表示（ズーム・移動・全体表示）
+   ===================================================== */
+function wbApplyView() {
+  const vp = wbQ('wbViewport'), world = wbQ('wbWorld');
+  if (!vp || !world || !wbData) return;
+  const v = wbBoard().view;
+  world.style.transform = 'translate(' + v.x + 'px,' + v.y + 'px) scale(' + v.zoom + ')';
+  world.style.setProperty('--inv', String(1 / v.zoom));
+  // グリッド：縮小しすぎて点が潰れる時は5マス間隔に切替。点は「マスの角」に合わせるため半マスずらす
+  let step = WB_GRID * v.zoom;
+  if (step < 10) step = WB_GRID * 5 * v.zoom;
+  vp.style.backgroundSize = step + 'px ' + step + 'px';
+  vp.style.backgroundPosition = (v.x - step / 2) + 'px ' + (v.y - step / 2) + 'px';
+  vp.classList.toggle('wb-nogrid', !wbData.opt.grid);
+  wbQ('wbZoomLabel').textContent = Math.round(v.zoom * 100) + '%';
+}
+
+function wbToWorld(e) {
+  const r = wbQ('wbViewport').getBoundingClientRect(), v = wbBoard().view;
+  return { x: (e.clientX - r.left - v.x) / v.zoom, y: (e.clientY - r.top - v.y) / v.zoom };
+}
+function wbCenterWorld() {
+  const vp = wbQ('wbViewport'), v = wbBoard().view;
+  return { x: (vp.clientWidth / 2 - v.x) / v.zoom, y: (vp.clientHeight / 2 - v.y) / v.zoom };
+}
+
+// 画面上の点(cx,cy)を動かさずに倍率を変える
+function wbZoomAt(cx, cy, nz) {
+  const v = wbBoard().view, r = wbQ('wbViewport').getBoundingClientRect();
+  nz = wbClamp(nz, WB_ZOOM_MIN, WB_ZOOM_MAX);
+  const px = cx - r.left, py = cy - r.top;
+  const wx = (px - v.x) / v.zoom, wy = (py - v.y) / v.zoom;
+  v.zoom = nz; v.x = px - wx * nz; v.y = py - wy * nz; v.init = true;
+  wbApplyView(); wbQueueSave();
+}
+function wbZoomBy(f) {
+  const r = wbQ('wbViewport').getBoundingClientRect();
+  wbZoomAt(r.left + r.width / 2, r.top + r.height / 2, wbBoard().view.zoom * f);
+}
+function wbZoomReset() {
+  const r = wbQ('wbViewport').getBoundingClientRect();
+  wbZoomAt(r.left + r.width / 2, r.top + r.height / 2, 1);
+}
+
+// 全体表示：付箋・枠の全体が収まる倍率と位置に合わせる
+function wbFit() {
+  const b = wbBoard(), vp = wbQ('wbViewport');
+  const W = vp.clientWidth, H = vp.clientHeight;
+  if (!W || !H) return;
+  const nodes = b.items.filter(i => i.type !== 'arrow');
+  if (!nodes.length) {
+    b.view = { x: 40, y: 40, zoom: 1, init: true };
+  } else {
+    const minX = Math.min(...nodes.map(n => n.x)), minY = Math.min(...nodes.map(n => n.y));
+    const maxX = Math.max(...nodes.map(n => n.x + n.w)), maxY = Math.max(...nodes.map(n => n.y + n.h));
+    const bw = Math.max(1, maxX - minX), bh = Math.max(1, maxY - minY), pad = 40;
+    const z = wbClamp(Math.min((W - pad * 2) / bw, (H - pad * 2) / bh, 1.2), WB_ZOOM_MIN, WB_ZOOM_MAX);
+    b.view = { zoom: z, x: (W - bw * z) / 2 - minX * z, y: (H - bh * z) / 2 - minY * z, init: true };
+  }
+  wbApplyView(); wbQueueSave();
+}
+
+function wbToggleFull() {
+  wbCommitEdit();
+  wb.full = !wb.full;
+  wbQ('wbRoot').classList.toggle('wb-full', wb.full);
+  document.body.classList.toggle('wb-lock', wb.full);
+  wbQ('wbFullBtn').textContent = wb.full ? '✕ 全画面を閉じる' : '⛶ 全画面';
+  wbCloseMenu();
+}
+
+/* =====================================================
+   描画
+   ===================================================== */
+function wbRender() {
+  if (!wbData) return;
+  if (wb.editing && wb.editing.ta.isConnected) return; // 文字編集中は作り直さない（入力が消えるため）
+  wbSanitize();
+  wbFixSel();
+  const b = wbBoard();
+  wbRenderBoardSel();
+  wbApplyView();
+  const nodes = b.items.filter(i => i.type !== 'arrow').sort((x, y) => x.z - y.z);
+  wbQ('wbItems').innerHTML = nodes.map(wbItemHtml).join('');
+  wbDrawArrows();
+  wbQ('wbEmpty').style.display = nodes.length ? 'none' : 'flex';
+  wbQ('wbViewport').className = 'wb-viewport' + (wbData.opt.grid ? '' : ' wb-nogrid') + (wb.tool !== 'select' ? ' tool-' + wb.tool : '');
+  wbUpdateHint();
+  wbUpdateToolbar();
+  wbRenderCtx(false);
+}
+
+function wbRenderBoardSel() {
+  wbQ('wbBoardSel').innerHTML = wbData.boards.map(b =>
+    '<option value="' + escapeAttr(b.id) + '"' + (b.id === wbData.activeId ? ' selected' : '') + '>' + escapeHtml(b.name) + '</option>'
+  ).join('');
+}
+
+function wbFrameStats(f) {
+  let total = 0, done = 0;
+  wbBoard().items.forEach(i => {
+    if (i.type !== 'note') return;
+    const cx = i.x + i.w / 2, cy = i.y + i.h / 2;
+    if (cx >= f.x && cx <= f.x + f.w && cy >= f.y && cy <= f.y + f.h) {
+      total++;
+      const t = wbTask(i);
+      if (t && t.completed) done++;
+    }
+  });
+  return { total, done };
+}
+
+function wbItemHtml(it) {
+  const cls = ['wb-item', it.type === 'frame' ? 'wb-frame' : 'wb-note', 'c-' + it.color];
+  if (wb.sel === it.id) cls.push('sel');
+  if (wb.arrowFrom === it.id) cls.push('from');
+  const st = 'left:' + it.x + 'px;top:' + it.y + 'px;width:' + it.w + 'px;height:' + it.h + 'px;z-index:' + it.z;
+  const handle = (wb.sel === it.id) ? '<div class="wb-handle" data-act="resize"></div>' : '';
+
+  if (it.type === 'frame') {
+    const s = wbFrameStats(it);
+    return '<div class="' + cls.join(' ') + '" data-wb-id="' + it.id + '" style="' + st + '">' +
+      '<div class="wb-frame-head"><span class="wb-frame-name">' + escapeHtml(it.title || '（名称なし）') + '</span>' +
+      (s.total ? '<span class="wb-frame-prog">' + s.done + '/' + s.total + '</span>' : '') +
+      '</div>' + handle + '</div>';
+  }
+
+  const t = wbTask(it);
+  if (t && t.completed) cls.push('done');
+  if (!t) cls.push('ghost');
+  const title = t ? t.title : '（削除済みのタスク）';
+  let meta = '';
+  if (t) {
+    if (t.due) {
+      const over = !t.completed && t.due < todayStr();
+      meta += '<span class="wb-due' + (over ? ' over' : '') + '">📅' + wbMD(t.due) + '</span>';
+    }
+    const tg = tagText(t);
+    if (tg) meta += '<span class="wb-tag">' + escapeHtml(tg) + '</span>';
+  }
+  return '<div class="' + cls.join(' ') + '" data-wb-id="' + it.id + '" style="' + st + '">' +
+    '<div class="wb-note-top"><button type="button" class="wb-chk" data-act="chk" aria-label="完了切替">' + (t && t.completed ? '☑' : '☐') + '</button>' +
+    '<div class="wb-note-title">' + escapeHtml(title) + '</div></div>' +
+    (meta ? '<div class="wb-note-meta">' + meta + '</div>' : '') + handle + '</div>';
+}
+
+/* ---------- 矢印 ---------- */
+// 矢印の幾何：中心同士を結び、付箋／枠の縁で切る。逆向きの矢印があれば少しずらして重ならないようにする
+function wbArrowGeom(a, items) {
+  const A = items.find(i => i.id === a.from), B = items.find(i => i.id === a.to);
+  if (!A || !B) return null;
+  let ax = A.x + A.w / 2, ay = A.y + A.h / 2, bx = B.x + B.w / 2, by = B.y + B.h / 2;
+  const len = Math.hypot(bx - ax, by - ay);
+  if (len < 1) return null;
+  const ux = (bx - ax) / len, uy = (by - ay) / len;
+  const rev = items.some(o => o.type === 'arrow' && o.from === a.to && o.to === a.from);
+  const off = rev ? 9 : 0, nx = -uy * off, ny = ux * off;
+  ax += nx; ay += ny; bx += nx; by += ny;
+  // 点(px,py)から単位方向(sx,sy)に進んで矩形Rの縁に出るまでの距離
+  const exit = (R, px, py, sx, sy) => {
+    let t = Infinity;
+    if (sx > 1e-6) t = Math.min(t, (R.x + R.w - px) / sx); else if (sx < -1e-6) t = Math.min(t, (R.x - px) / sx);
+    if (sy > 1e-6) t = Math.min(t, (R.y + R.h - py) / sy); else if (sy < -1e-6) t = Math.min(t, (R.y - py) / sy);
+    return t;
+  };
+  const t1 = exit(A, ax, ay, ux, uy) + 4, t2 = exit(B, bx, by, -ux, -uy) + 4;
+  if (!isFinite(t1) || !isFinite(t2) || t1 + t2 >= len) return null; // 重なっていて描けない
+  return { x1: ax + ux * t1, y1: ay + uy * t1, x2: bx - ux * t2, y2: by - uy * t2, ux, uy };
+}
+// 矢じりの三角形（先端(x,y)・向き(ux,uy)）
+function wbHeadPts(x, y, ux, uy) {
+  const bx = x - ux * 15, by = y - uy * 15, nx = -uy * 6.5, ny = ux * 6.5;
+  return x + ',' + y + ' ' + (bx + nx) + ',' + (by + ny) + ' ' + (bx - nx) + ',' + (by - ny);
+}
+function wbDrawArrows() {
+  const svg = wbQ('wbSvg'); if (!svg) return;
+  const items = wbBoard().items;
+  let html = '';
+  items.filter(i => i.type === 'arrow').forEach(a => {
+    const g = wbArrowGeom(a, items); if (!g) return;
+    const line = 'x1="' + g.x1 + '" y1="' + g.y1 + '" x2="' + g.x2 + '" y2="' + g.y2 + '"';
+    html += '<g class="wb-arrow' + (wb.sel === a.id ? ' sel' : '') + '" data-arrow="' + a.id + '">' +
+      '<line class="wb-arrow-hit" ' + line + '/><line class="wb-arrow-line" ' + line + '/>' +
+      (a.dir !== 'none' ? '<polygon class="wb-arrow-head" points="' + wbHeadPts(g.x2, g.y2, g.ux, g.uy) + '"/>' : '') +
+      (a.dir === 'both' ? '<polygon class="wb-arrow-head" points="' + wbHeadPts(g.x1, g.y1, -g.ux, -g.uy) + '"/>' : '') +
+      (a.label ? '<text class="wb-arrow-label" x="' + ((g.x1 + g.x2) / 2) + '" y="' + ((g.y1 + g.y2) / 2) + '">' + escapeHtml(a.label) + '</text>' : '') +
+      '</g>';
+  });
+  svg.innerHTML = html;
+}
+
+/* ---------- ツールバー・ヒント・操作バー ---------- */
+function wbUpdateToolbar() {
+  const h = wbH();
+  wbQ('wbUndoBtn').disabled = !h.undo.length;
+  wbQ('wbRedoBtn').disabled = !h.redo.length;
+  wbQ('wbToolFrame').classList.toggle('on', wb.tool === 'frame');
+  wbQ('wbToolArrow').classList.toggle('on', wb.tool === 'arrow');
+  wbQ('wbGridBtn').classList.toggle('on', wbData.opt.grid);
+  wbQ('wbSnapBtn').classList.toggle('on', wbData.opt.snap);
+  wbQ('wbCarryBtn').textContent = '枠ごと中身も動かす：' + (wbData.opt.carry ? 'ON' : 'OFF');
+}
+
+function wbUpdateHint() {
+  const el = wbQ('wbHint');
+  let h = '';
+  if (wb.tool === 'arrow') h = wb.arrowFrom ? '➡️ つなぐ先をタップ' : '➡️ 矢印モード：始点 → 終点の順にタップ';
+  else if (wb.tool === 'frame') h = '▭ 空いている所をドラッグして枠を描く';
+  if (!h) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  el.innerHTML = '<span>' + h + '</span><button type="button" onclick="wbSetTool(\'select\')">終了</button>';
+}
+
+function wbCtxSig(it) {
+  if (!it) return 'none|' + wb.tool + '|' + (wb.arrowFrom ? 1 : 0);
+  if (it.type === 'note') { const t = wbTask(it); return 'note|' + it.id + '|' + it.color + '|' + (t && t.completed ? 1 : 0) + '|' + (t ? 1 : 0); }
+  if (it.type === 'frame') return 'frame|' + it.id + '|' + it.color;
+  return 'arrow|' + it.id + '|' + it.dir;
+}
+function wbPaletteHtml(cur) {
+  return '<div class="wb-pal">' + WB_COLORS.map(c =>
+    '<button type="button" class="wb-sw c-' + c + (c === cur ? ' on' : '') + '" title="' + WB_COLOR_NAMES[c] + '" aria-label="' + WB_COLOR_NAMES[c] + '" onclick="wbSetColor(\'' + c + '\')"></button>'
+  ).join('') + '</div>';
+}
+function wbZOrderHtml() {
+  return '<button type="button" class="wb-btn sm" onclick="wbZ(\'front\')">⤒ 最前面</button>' +
+    '<button type="button" class="wb-btn sm" onclick="wbZ(\'up\')">↑ 前へ</button>' +
+    '<button type="button" class="wb-btn sm" onclick="wbZ(\'down\')">↓ 後ろへ</button>' +
+    '<button type="button" class="wb-btn sm" onclick="wbZ(\'back\')">⤓ 最背面</button>';
+}
+// 選択中のものに合わせた操作バーを作る（内容が変わらない時は作り直さない＝入力欄のフォーカスを守る）
+function wbRenderCtx(force) {
+  const el = wbQ('wbCtx'); if (!el) return;
+  const it = wb.sel ? wbItem(wb.sel) : null;
+  const sig = wbCtxSig(it);
+  if (!force && sig === wb.ctxSig) return;
+  wb.ctxSig = sig;
+
+  if (!it) {
+    el.innerHTML = '<div class="wb-ctx-hint">' +
+      '付箋をタップで選択、ダブルタップで文字編集。空いている所をドラッグで移動、ピンチ／ホイールで拡大縮小。<br>' +
+      '枠は見出し部分をつかんで動かせます（中身の付箋も一緒に動きます）。</div>';
+    return;
+  }
+  if (it.type === 'note') {
+    const t = wbTask(it);
+    el.innerHTML = wbPaletteHtml(it.color) +
+      '<div class="wb-ctx-row">' +
+      '<button type="button" class="wb-btn sm" onclick="wbEditSel()">✏️ 文字</button>' +
+      '<button type="button" class="wb-btn sm" onclick="wbOpenDetail()">📝 詳細</button>' +
+      '<button type="button" class="wb-btn sm" onclick="wbToggleDone()">' + (t && t.completed ? '↩️ 未完了に' : '✅ 完了') + '</button>' +
+      '<button type="button" class="wb-btn sm" onclick="wbStartArrowFrom()">➡️ 矢印</button>' +
+      '<button type="button" class="wb-btn sm" onclick="wbDuplicate()">⧉ 複製</button></div>' +
+      '<div class="wb-ctx-row">' + wbZOrderHtml() + '</div>' +
+      '<div class="wb-ctx-row">' +
+      '<button type="button" class="wb-btn sm" onclick="wbRemoveSel()">📤 ボードから外す</button>' +
+      '<button type="button" class="wb-btn sm wb-danger" onclick="wbDeleteTaskSel()">🗑 タスクも削除</button></div>';
+  } else if (it.type === 'frame') {
+    el.innerHTML = '<div class="wb-ctx-row"><input type="text" class="wb-input" id="wbFrameName" maxlength="40" placeholder="枠の名前（例：調査中・次にやる）" value="' + escapeAttr(it.title) + '" onfocus="wbTextFocus()" oninput="wbSetFrameName(this.value)" onchange="wbTextChange()"></div>' +
+      wbPaletteHtml(it.color) +
+      '<div class="wb-ctx-row">' +
+      '<button type="button" class="wb-btn sm" onclick="wbStartArrowFrom()">➡️ 矢印</button>' +
+      '<button type="button" class="wb-btn sm" onclick="wbDuplicate()">⧉ 複製</button>' + wbZOrderHtml() + '</div>' +
+      '<div class="wb-ctx-row"><button type="button" class="wb-btn sm wb-danger" onclick="wbRemoveSel()">🗑 枠を削除（中の付箋は残ります）</button></div>';
+  } else {
+    const dirLabel = it.dir === 'fwd' ? '→ 片方向' : it.dir === 'both' ? '↔ 両方向' : '— 線のみ';
+    el.innerHTML = '<div class="wb-ctx-row"><input type="text" class="wb-input" id="wbArrowLabel" maxlength="30" placeholder="矢印の説明（例：原因）" value="' + escapeAttr(it.label) + '" onfocus="wbTextFocus()" oninput="wbSetArrowLabel(this.value)" onchange="wbTextChange()"></div>' +
+      '<div class="wb-ctx-row">' + WB_ARROW_LABELS.map(l => '<button type="button" class="wb-chip" onclick="wbChipLabel(\'' + l + '\')">' + l + '</button>').join('') + '</div>' +
+      '<div class="wb-ctx-row">' +
+      '<button type="button" class="wb-btn sm" onclick="wbArrowDir()">向き：' + dirLabel + '</button>' +
+      '<button type="button" class="wb-btn sm" onclick="wbArrowReverse()">⇄ 逆向きにする</button>' +
+      '<button type="button" class="wb-btn sm wb-danger" onclick="wbRemoveSel()">🗑 矢印を削除</button></div>';
+  }
+}
+
+/* =====================================================
+   付箋・枠・矢印の操作
+   ===================================================== */
+function wbSetTool(t) {
+  wbCommitEdit();
+  wb.tool = (wb.tool === t && t !== 'select') ? 'select' : t; // 同じボタンをもう一度押すと終了
+  wb.arrowFrom = null;
+  wbRender();
+}
+
+// 新しい付箋（＝新しいタスク）を画面中央に置いて、すぐ文字入力に入る
+function wbAddNote() {
+  wbCommitEdit();
+  const c = wbCenterWorld();
+  const n = wbBoard().items.filter(i => i.type === 'note').length;
+  const t = addTask({ title: '新しいタスク' });
+  const it = {
+    id: wbId('i_'), type: 'note', taskId: t.id,
+    x: wbSnapVal(c.x - WB_NOTE_W / 2 + (n % 6) * 24), y: wbSnapVal(c.y - WB_NOTE_H / 2 + (n % 6) * 24),
+    w: WB_NOTE_W, h: WB_NOTE_H, color: 'y', z: 1e9,
+  };
+  wbDo(() => { wbBoard().items.push(it); wb.sel = it.id; });
+  renderFilterTabs(); renderAll();
+  wbStartEdit(it.id, true);
+}
+
+function wbSetColor(c) {
+  const it = wb.sel && wbItem(wb.sel); if (!it || it.type === 'arrow') return;
+  wbDo(() => { it.color = c; });
+}
+
+function wbDuplicate() {
+  const it = wb.sel && wbItem(wb.sel); if (!it || it.type === 'arrow') return;
+  wbCommitEdit();
+  let newId = null;
+  wbDo(() => {
+    const c = JSON.parse(JSON.stringify(it));
+    c.id = wbId('i_'); c.x += 24; c.y += 24; c.z = 1e9;
+    if (it.type === 'note') {
+      const t = wbTask(it); if (!t) return;
+      const nt = addTask({ title: t.title, note: stripTrailerLines(t.note), due: t.due, quadrant: t.quadrant, tags: (t.tags || []).slice(), tagMain: t.tagMain, tagSub: t.tagSub });
+      c.taskId = nt.id;
+    } else {
+      c.title = (it.title || '') ? it.title + 'のコピー' : '';
+      c.z = -1e9; // 枠は元の枠の少し後ろへ（付箋を隠さないよう最背面）
+    }
+    wbBoard().items.push(c); wb.sel = c.id; newId = c.id;
+  });
+  if (newId && it.type === 'note') { renderFilterTabs(); renderAll(); }
+}
+
+// 付箋だけ外す（タスクは残る）／矢印・枠はそのまま削除。付箋を外すとつながる矢印も消える
+function wbRemoveSel() {
+  const id = wb.sel; if (!id) return;
+  wbCommitEdit();
+  wbDo(() => {
+    wbBoard().items = wbBoard().items.filter(i => i.id !== id && !(i.type === 'arrow' && (i.from === id || i.to === id)));
+    wb.sel = null;
+  });
+}
+function wbDeleteTaskSel() {
+  const it = wb.sel && wbItem(wb.sel); if (!it || it.type !== 'note') return;
+  const t = wbTask(it);
+  if (t && !confirm('タスク「' + t.title + '」を削除しますか？\n（リスト・カレンダーなど他のタブからも消えます。元に戻せません）')) return;
+  const tid = it.taskId;
+  wbRemoveSel();
+  if (t) deleteTask(tid);
+  renderFilterTabs(); renderAll();
+}
+
+function wbToggleDone() {
+  const it = wb.sel && wbItem(wb.sel); if (!it || it.type !== 'note') return;
+  wbCommitEdit();
+  if (wbTask(it)) toggleComplete(it.taskId); // 内部でrenderAll→wbRenderまで走る
+}
+// 期限・タグ・メモ・ボード分類などは既存のタスク編集モーダルで直す
+function wbOpenDetail() {
+  const it = wb.sel && wbItem(wb.sel); if (!it || it.type !== 'note' || !wbTask(it)) return;
+  wbCommitEdit();
+  openModal(it.taskId);
+}
+function wbEditSel() {
+  const it = wb.sel && wbItem(wb.sel); if (!it || it.type !== 'note') return;
+  wbStartEdit(it.id, false);
+}
+
+// 重なり順：front/back＝最前面／最背面、up/down＝重なっている1つ分だけ前後
+function wbOverlap(a, b) { return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h; }
+function wbZ(mode) {
+  const it = wb.sel && wbItem(wb.sel); if (!it || it.type === 'arrow') return;
+  wbDo(() => {
+    if (mode === 'front') { it.z = 1e9; return; }
+    if (mode === 'back') { it.z = -1e9; return; }
+    const nodes = wbBoard().items.filter(i => i.type !== 'arrow').sort((a, b) => a.z - b.z);
+    const dir = mode === 'up' ? 1 : -1;
+    let j = nodes.findIndex(n => n.id === it.id) + dir;
+    while (j >= 0 && j < nodes.length && !wbOverlap(it, nodes[j])) j += dir; // 重なっていない相手は飛ばす
+    if (j < 0 || j >= nodes.length) return;
+    it.z = nodes[j].z + dir * 0.5; // 相手のすぐ前／後ろ（直後のwbNormZで整数に振り直す）
+  });
+}
+
+/* ---------- 枠名・矢印の説明（入力しながら反映。元に戻す用に入力前の状態を覚える） ---------- */
+function wbTextFocus() { wb.textSnap = wbSnapStr(); }
+function wbTextChange() { if (wb.textSnap !== null) { wbPushUndo(wb.textSnap); wb.textSnap = null; wbUpdateToolbar(); } }
+function wbSetFrameName(val) {
+  const it = wb.sel && wbItem(wb.sel); if (!it || it.type !== 'frame') return;
+  it.title = val.slice(0, 40);
+  const el = wbElOf(it.id);
+  if (el) el.querySelector('.wb-frame-name').textContent = it.title || '（名称なし）';
+  wbQueueSave();
+}
+function wbSetArrowLabel(val) {
+  const it = wb.sel && wbItem(wb.sel); if (!it || it.type !== 'arrow') return;
+  it.label = val.slice(0, 30);
+  wbDrawArrows(); wbQueueSave();
+}
+function wbChipLabel(l) {
+  const it = wb.sel && wbItem(wb.sel); if (!it || it.type !== 'arrow') return;
+  wbDo(() => { it.label = l; });
+  wbRenderCtx(true); // 入力欄の表示を更新
+}
+function wbArrowDir() {
+  const it = wb.sel && wbItem(wb.sel); if (!it || it.type !== 'arrow') return;
+  wbDo(() => { it.dir = it.dir === 'fwd' ? 'both' : it.dir === 'both' ? 'none' : 'fwd'; });
+}
+function wbArrowReverse() {
+  const it = wb.sel && wbItem(wb.sel); if (!it || it.type !== 'arrow') return;
+  wbDo(() => { const f = it.from; it.from = it.to; it.to = f; });
+}
+
+/* ---------- 矢印モード ---------- */
+function wbStartArrowFrom() {
+  if (!wb.sel) return;
+  wbCommitEdit();
+  wb.tool = 'arrow'; wb.arrowFrom = wb.sel;
+  wbRender();
+}
+function wbArrowClick(id) {
+  if (!wb.arrowFrom) { wb.arrowFrom = id; wb.sel = id; wbRender(); return; }
+  if (wb.arrowFrom === id) { wb.arrowFrom = null; wbRender(); return; }
+  const from = wb.arrowFrom;
+  const dup = wbBoard().items.find(i => i.type === 'arrow' && i.from === from && i.to === id);
+  wb.arrowFrom = null;
+  if (dup) { wb.sel = dup.id; wbRender(); return; } // 同じ向きの矢印は重ねて作らない
+  const a = { id: wbId('a_'), type: 'arrow', from, to: id, label: '', dir: 'fwd' };
+  wbDo(() => { wbBoard().items.push(a); wb.sel = a.id; }); // 作った矢印を選択＝下の操作バーですぐ説明を入力できる
+}
+
+/* =====================================================
+   文字編集（付箋の文字＝タスクの件名）
+   ===================================================== */
+function wbStartEdit(id, isNew) {
+  const it = wbItem(id); if (!it || it.type !== 'note') return;
+  const t = wbTask(it); if (!t) return;
+  const el = wbElOf(id); if (!el) return;
+  const titleEl = el.querySelector('.wb-note-title'); if (!titleEl) return;
+  const ta = document.createElement('textarea');
+  ta.className = 'wb-edit'; ta.value = t.title; ta.maxLength = 200;
+  titleEl.replaceWith(ta);
+  wb.editing = { id, ta, isNew: !!isNew, cancel: false };
+  ta.addEventListener('keydown', ev => {
+    ev.stopPropagation();
+    if (ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); ta.blur(); }
+    else if (ev.key === 'Escape') { ev.preventDefault(); if (wb.editing) wb.editing.cancel = true; ta.blur(); }
+  });
+  ta.addEventListener('blur', () => wbCommitEdit());
+  ta.focus(); ta.select();
+}
+
+function wbCommitEdit() {
+  const ed = wb.editing; if (!ed) return;
+  wb.editing = null;
+  const it = wbItem(ed.id), t = it ? wbTask(it) : null;
+  const v = ed.cancel ? null : ed.ta.value.replace(/\s+/g, ' ').trim();
+  if (!t) { wbRender(); return; }
+  if (ed.isNew && (v === null || v === '')) { // 作ったばかりで文字が空＝作成を取り消す（タスクも消す）
+    wbH().undo.pop();
+    wbBoard().items = wbBoard().items.filter(i => i.id !== ed.id && !(i.type === 'arrow' && (i.from === ed.id || i.to === ed.id)));
+    wb.sel = null;
+    deleteTask(t.id);
+    wbQueueSave(); renderFilterTabs(); renderAll(); wbRender();
+    return;
+  }
+  if (v && v !== t.title) { updateTask(t.id, { title: v }); renderFilterTabs(); renderAll(); }
+  wbRender();
+}
+
+/* =====================================================
+   ポインタ操作（マウス・タッチ・ペン共通）
+   ・空き地ドラッグ＝画面移動／付箋ドラッグ＝移動／右下ハンドル＝サイズ変更
+   ・2本指＝ピンチで拡大縮小（＋移動）／ホイール＝拡大縮小
+   ===================================================== */
+function wbPointerDown(e) {
+  if (e.target.closest('.wb-zoomctl, .wb-hint')) return;
+  if (e.target.closest('textarea')) return;
+  wbCommitEdit();
+  if (e.pointerType === 'mouse') { if (e.button !== 0) return; wb.ptrs.clear(); } // マウスは常に1本
+  const vp = wbQ('wbViewport');
+  wb.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  try { vp.setPointerCapture(e.pointerId); } catch (err) { /* 非対応でも続行 */ }
+  if (wb.ptrs.size === 2) { wbStartPinch(); return; }
+  if (wb.ptrs.size > 2) return;
+
+  const v = wbBoard().view;
+  const t = e.target;
+  const chk = t.closest('[data-act="chk"]'), hnd = t.closest('[data-act="resize"]');
+  const itemEl = t.closest('.wb-item'), arrowEl = t.closest('[data-arrow]');
+  const w = wbToWorld(e);
+  const base = { sx: e.clientX, sy: e.clientY, moved: false };
+  const finish = () => { wb.ptrs.delete(e.pointerId); };
+
+  // 完了チェック（付箋左上の☐）
+  if (chk && itemEl) {
+    const it = wbItem(itemEl.dataset.wbId);
+    finish();
+    if (it && wbTask(it)) { wb.sel = it.id; toggleComplete(it.taskId); }
+    return;
+  }
+
+  let g = null;
+  if (hnd && itemEl) {
+    const it = wbItem(itemEl.dataset.wbId);
+    g = { kind: 'resize', id: it.id, snap: wbSnapStr(), w0: it.w, h0: it.h, ...base };
+  } else if (wb.tool === 'arrow') {
+    if (itemEl) { finish(); wbArrowClick(itemEl.dataset.wbId); return; }
+    if (arrowEl) { finish(); wb.sel = arrowEl.dataset.arrow; wb.arrowFrom = null; wbRender(); return; }
+    g = { kind: 'pan', vx: v.x, vy: v.y, ...base };
+  } else if (arrowEl && !itemEl) {
+    finish(); wb.sel = arrowEl.dataset.arrow; wb.arrowFrom = null; wbRender(); return;
+  } else if (itemEl) {
+    const it = wbItem(itemEl.dataset.wbId);
+    if (wb.sel !== it.id) { wb.sel = it.id; wbRender(); }
+    const ids = [it.id];
+    if (it.type === 'frame' && wbData.opt.carry) ids.push(...wbContained(it)); // 枠ごと中身も動かす
+    const starts = {};
+    ids.forEach(i => { const o = wbItem(i); starts[i] = { x: o.x, y: o.y }; });
+    g = { kind: 'drag', id: it.id, ids, starts, snap: wbSnapStr(), tapId: it.id, ...base };
+  } else if (wb.tool === 'frame') {
+    g = { kind: 'frame', x0: w.x, y0: w.y, x1: w.x, y1: w.y, prev: null, ...base };
+  } else {
+    g = { kind: 'pan', vx: v.x, vy: v.y, ...base };
+  }
+  wb.g = g;
+}
+
+// 枠の中身（付箋は中心が枠内、他の枠は丸ごと枠内にあるもの）
+function wbContained(f) {
+  const out = [];
+  wbBoard().items.forEach(i => {
+    if (i.id === f.id || i.type === 'arrow') return;
+    if (i.type === 'note') {
+      const cx = i.x + i.w / 2, cy = i.y + i.h / 2;
+      if (cx >= f.x && cx <= f.x + f.w && cy >= f.y && cy <= f.y + f.h) out.push(i.id);
+    } else if (i.x >= f.x && i.y >= f.y && i.x + i.w <= f.x + f.w && i.y + i.h <= f.y + f.h && i.w * i.h < f.w * f.h) {
+      out.push(i.id);
+    }
+  });
+  return out;
+}
+
+function wbPointerMove(e) {
+  if (wb.ptrs.has(e.pointerId)) wb.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  const g = wb.g; if (!g) return;
+  if (g.kind === 'pinch') { wbPinchMove(); return; }
+  const v = wbBoard().view;
+  const dx = e.clientX - g.sx, dy = e.clientY - g.sy;
+  if (!g.moved) { if (Math.hypot(dx, dy) < 5) return; g.moved = true; } // 5px未満はタップ扱い
+
+  if (g.kind === 'pan') {
+    v.x = g.vx + dx; v.y = g.vy + dy; v.init = true;
+    wbApplyView();
+  } else if (g.kind === 'drag') {
+    const p0 = g.starts[g.id];
+    const ddx = wbSnapVal(p0.x + dx / v.zoom) - p0.x, ddy = wbSnapVal(p0.y + dy / v.zoom) - p0.y;
+    g.ids.forEach(id => {
+      const o = wbItem(id), s = g.starts[id]; if (!o) return;
+      o.x = s.x + ddx; o.y = s.y + ddy;
+      const el = wbElOf(id);
+      if (el) { el.style.left = o.x + 'px'; el.style.top = o.y + 'px'; }
+    });
+    wbDrawArrows();
+  } else if (g.kind === 'resize') {
+    const o = wbItem(g.id); if (!o) return;
+    const minW = o.type === 'frame' ? WB_FRAME_MIN_W : WB_NOTE_MIN_W, minH = o.type === 'frame' ? WB_FRAME_MIN_H : WB_NOTE_MIN_H;
+    o.w = Math.max(minW, wbSnapVal(g.w0 + dx / v.zoom));
+    o.h = Math.max(minH, wbSnapVal(g.h0 + dy / v.zoom));
+    const el = wbElOf(g.id);
+    if (el) { el.style.width = o.w + 'px'; el.style.height = o.h + 'px'; }
+    wbDrawArrows();
+  } else if (g.kind === 'frame') {
+    const w = wbToWorld(e);
+    g.x1 = w.x; g.y1 = w.y;
+    if (!g.prev) { g.prev = document.createElement('div'); g.prev.className = 'wb-frame-preview'; wbQ('wbWorld').appendChild(g.prev); }
+    const r = wbFrameRect(g);
+    g.prev.style.cssText = 'left:' + r.x + 'px;top:' + r.y + 'px;width:' + r.w + 'px;height:' + r.h + 'px;';
+  }
+}
+function wbFrameRect(g) {
+  const x0 = wbSnapVal(Math.min(g.x0, g.x1)), y0 = wbSnapVal(Math.min(g.y0, g.y1));
+  const x1 = wbSnapVal(Math.max(g.x0, g.x1)), y1 = wbSnapVal(Math.max(g.y0, g.y1));
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+}
+
+function wbPointerUp(e) {
+  wb.ptrs.delete(e.pointerId);
+  try { wbQ('wbViewport').releasePointerCapture(e.pointerId); } catch (err) { /* 無視 */ }
+  const g = wb.g; if (!g) return;
+  if (g.kind === 'pinch') { if (wb.ptrs.size < 2) { wb.g = null; wbQueueSave(); } return; }
+  wb.g = null;
+
+  if (g.kind === 'pan') {
+    if (g.moved) { wbQueueSave(); return; }
+    // 何もない所をタップ：選択解除（矢印モードなら始点の選び直し）
+    if (wb.tool === 'arrow') { wb.arrowFrom = null; wbRender(); }
+    else if (wb.sel) { wb.sel = null; wbRender(); }
+    return;
+  }
+  if (g.kind === 'drag' || g.kind === 'resize') {
+    if (g.moved) { wb.lastTap = null; wbPushUndo(g.snap); wbQueueSave(); wbRender(); return; }
+    if (g.kind === 'resize') return;
+    // 動かさず離した＝タップ。短時間に同じものを2回タップ＝ダブルタップ（付箋は文字編集／枠は名前入力）
+    const now = Date.now(), L = wb.lastTap;
+    if (L && L.id === g.tapId && now - L.t < 400) {
+      wb.lastTap = null;
+      const it = wbItem(g.tapId);
+      if (it && it.type === 'note') wbStartEdit(it.id, false);
+      else if (it && it.type === 'frame') { const inp = wbQ('wbFrameName'); if (inp) { inp.focus(); inp.select(); } }
+    } else {
+      wb.lastTap = { id: g.tapId, t: now };
+    }
+    return;
+  }
+  if (g.kind === 'frame') {
+    if (g.prev) g.prev.remove();
+    if (!g.moved) return;
+    const r = wbFrameRect(g);
+    if (r.w < 60 || r.h < 40) return; // 小さすぎる枠は作らない
+    const f = { id: wbId('i_'), type: 'frame', title: '', x: r.x, y: r.y, w: Math.max(WB_FRAME_MIN_W, r.w), h: Math.max(WB_FRAME_MIN_H, r.h), color: 'b', z: -1e9 };
+    wb.tool = 'select';
+    wbDo(() => { wbBoard().items.push(f); wb.sel = f.id; });
+    setTimeout(() => { const inp = wbQ('wbFrameName'); if (inp) inp.focus(); }, 0); // すぐ名前を付けられるように
+  }
+}
+
+function wbWheel(e) {
+  e.preventDefault();
+  const f = Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015));
+  wbZoomAt(e.clientX, e.clientY, wbBoard().view.zoom * f);
+}
+
+// ピンチ：途中のドラッグは取り消して元に戻し、2本指の中点を基準に拡大縮小する
+function wbStartPinch() {
+  const g = wb.g;
+  if (g && g.snap) { wbBoard().items = JSON.parse(g.snap); wbRender(); }
+  if (g && g.prev) g.prev.remove();
+  const pts = [...wb.ptrs.values()], v = wbBoard().view, r = wbQ('wbViewport').getBoundingClientRect();
+  const mx = (pts[0].x + pts[1].x) / 2, my = (pts[0].y + pts[1].y) / 2;
+  wb.g = { kind: 'pinch', d0: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1, z0: v.zoom, wx: (mx - r.left - v.x) / v.zoom, wy: (my - r.top - v.y) / v.zoom };
+}
+function wbPinchMove() {
+  const pts = [...wb.ptrs.values()]; if (pts.length < 2) return;
+  const g = wb.g, v = wbBoard().view, r = wbQ('wbViewport').getBoundingClientRect();
+  const d = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+  const mx = (pts[0].x + pts[1].x) / 2, my = (pts[0].y + pts[1].y) / 2;
+  const nz = wbClamp(g.z0 * d / g.d0, WB_ZOOM_MIN, WB_ZOOM_MAX);
+  v.zoom = nz; v.x = (mx - r.left) - g.wx * nz; v.y = (my - r.top) - g.wy * nz; v.init = true;
+  wbApplyView();
+}
+
+/* ---------- キーボードショートカット ---------- */
+function wbKeyDown(e) {
+  if (activeTab !== 'wb') return;
+  const ov = wbQ('modalOverlay');
+  if (ov && ov.classList.contains('show')) return; // タスク編集モーダル表示中は何もしない
+  if (wbQ('wbPicker').classList.contains('show')) { if (e.key === 'Escape') wbPickerClose(); return; }
+  const tag = (e.target.tagName || '').toLowerCase();
+  const typing = tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable;
+  const k = e.key, mod = e.ctrlKey || e.metaKey;
+
+  if (k === 'Escape' && !typing) {
+    if (wb.arrowFrom) wb.arrowFrom = null;
+    else if (wb.tool !== 'select') wb.tool = 'select';
+    else if (wb.sel) wb.sel = null;
+    else if (wb.full) { wbToggleFull(); return; }
+    wbRender();
+    return;
+  }
+  if (typing) return;
+  if (mod && k.toLowerCase() === 'z') { e.preventDefault(); if (e.shiftKey) wbRedo(); else wbUndo(); return; }
+  if (mod && k.toLowerCase() === 'y') { e.preventDefault(); wbRedo(); return; }
+  if (mod && k.toLowerCase() === 'd') { e.preventDefault(); wbDuplicate(); return; }
+  if ((k === 'Delete' || k === 'Backspace') && wb.sel) { e.preventDefault(); wbRemoveSel(); return; }
+  if (k === 'Enter' && wb.sel) { const it = wbItem(wb.sel); if (it && it.type === 'note') { e.preventDefault(); wbStartEdit(it.id, false); } return; }
+  if (k.startsWith('Arrow') && wb.sel) { // 矢印キーで1マスずつ微調整
+    const it = wbItem(wb.sel); if (!it || it.type === 'arrow') return;
+    e.preventDefault();
+    const step = wbData.opt.snap ? WB_GRID : 10;
+    wbDo(() => {
+      if (k === 'ArrowLeft') it.x -= step; if (k === 'ArrowRight') it.x += step;
+      if (k === 'ArrowUp') it.y -= step; if (k === 'ArrowDown') it.y += step;
+    });
+  }
+}
+
+/* =====================================================
+   ボード管理（切替・新規・名前変更・複製・削除）／メニュー／オプション
+   ===================================================== */
+function wbToggleMenu() { wbQ('wbMenu').classList.toggle('show'); }
+function wbCloseMenu() { const m = wbQ('wbMenu'); if (m) m.classList.remove('show'); }
+
+function wbToggleOpt(name) {
+  wbData.opt[name] = !wbData.opt[name];
+  wbQueueSave(); wbApplyView(); wbUpdateToolbar(); wbCloseMenu();
+}
+
+function wbSwitchBoard(id) {
+  wbCommitEdit();
+  if (!wbData.boards.some(b => b.id === id)) return;
+  wbData.activeId = id; wb.sel = null; wb.arrowFrom = null; wb.tool = 'select';
+  wbQueueSave(); wbRender();
+  if (!wbBoard().view.init) wbFit();
+}
+function wbNewBoard() {
+  wbCloseMenu();
+  const name = prompt('新しいボードの名前', 'ボード' + (wbData.boards.length + 1));
+  if (name === null) return;
+  const b = wbDefaultBoard(name.trim().slice(0, 30) || 'ボード' + (wbData.boards.length + 1));
+  wbData.boards.push(b);
+  wbSwitchBoard(b.id);
+}
+function wbRenameBoard() {
+  wbCloseMenu();
+  const b = wbBoard();
+  const name = prompt('ボードの名前を変更', b.name);
+  if (name === null) return;
+  b.name = name.trim().slice(0, 30) || b.name;
+  wbQueueSave(); wbRender();
+}
+function wbDuplicateBoard() {
+  wbCloseMenu();
+  const b = wbBoard();
+  const c = JSON.parse(JSON.stringify(b));
+  c.id = wbId('b_'); c.name = (b.name + 'のコピー').slice(0, 30);
+  wbData.boards.push(c);
+  wbSwitchBoard(c.id);
+}
+function wbDeleteBoard() {
+  wbCloseMenu();
+  const b = wbBoard();
+  if (!confirm('ボード「' + b.name + '」を削除しますか？\n（付箋のタスク自体は消えません）')) return;
+  wbData.boards = wbData.boards.filter(x => x.id !== b.id);
+  delete wb.hist[b.id];
+  if (!wbData.boards.length) wbData.boards.push(wbDefaultBoard('ボード1'));
+  wbData.activeId = wbData.boards[0].id;
+  wb.sel = null; wb.arrowFrom = null; wb.tool = 'select';
+  wbQueueSave(); wbRender();
+  if (!wbBoard().view.init) wbFit();
+}
+
+/* =====================================================
+   既存タスクをボードに配置するダイアログ
+   ===================================================== */
+function wbOpenPicker() {
+  wbCommitEdit();
+  wb.pick = new Set();
+  wbQ('wbPickerSearch').value = '';
+  wbQ('wbPickerDone').checked = false;
+  wbPickerRender();
+  wbQ('wbPicker').classList.add('show');
+}
+function wbPickerClose() { wbQ('wbPicker').classList.remove('show'); }
+function wbPickerOverlay(e) { if (e.target === wbQ('wbPicker')) wbPickerClose(); }
+function wbPickerCandidates() {
+  const placed = new Set(wbBoard().items.filter(i => i.type === 'note').map(i => i.taskId));
+  const q = wbQ('wbPickerSearch').value.trim().toLowerCase();
+  const showDone = wbQ('wbPickerDone').checked;
+  return tasks.filter(t => !placed.has(t.id) && (showDone || !t.completed) && (!q || (t.title || '').toLowerCase().includes(q)))
+    .sort((a, b) => (a.due || '9999') < (b.due || '9999') ? -1 : 1).slice(0, 300);
+}
+function wbPickerRender() {
+  const list = wbPickerCandidates();
+  wbQ('wbPickerList').innerHTML = list.length ? list.map(t =>
+    '<label class="wb-pick-item"><input type="checkbox" ' + (wb.pick.has(t.id) ? 'checked ' : '') + 'onchange="wbPickToggle(\'' + t.id + '\',this.checked)">' +
+    '<div class="wb-pick-main"><div class="wb-pick-title">' + (t.completed ? '✅ ' : '') + escapeHtml(t.title) + '</div>' +
+    '<div class="wb-pick-sub">' + (t.due ? '📅' + wbMD(t.due) : '期限なし') + (tagText(t) ? '　' + escapeHtml(tagText(t)) : '') + '</div></div></label>'
+  ).join('') : '<div class="wb-pick-item" style="cursor:default">置けるタスクがありません</div>';
+  wbPickUpdateBtn();
+}
+function wbPickToggle(id, on) { if (on) wb.pick.add(id); else wb.pick.delete(id); wbPickUpdateBtn(); }
+function wbPickUpdateBtn() {
+  const b = wbQ('wbPickerAddBtn'); b.textContent = '追加（' + wb.pick.size + '件）'; b.disabled = wb.pick.size === 0;
+}
+function wbPickerAdd() {
+  const ids = tasks.filter(t => wb.pick.has(t.id)).map(t => t.id);
+  if (!ids.length) return;
+  const c = wbCenterWorld(), cols = Math.min(4, ids.length), gap = 20;
+  const rows = Math.ceil(ids.length / cols);
+  const x0 = c.x - (cols * (WB_NOTE_W + gap) - gap) / 2, y0 = c.y - (rows * (WB_NOTE_H + gap) - gap) / 2;
+  wbPickerClose();
+  wbDo(() => {
+    ids.forEach((tid, i) => {
+      wbBoard().items.push({
+        id: wbId('i_'), type: 'note', taskId: tid,
+        x: wbSnapVal(x0 + (i % cols) * (WB_NOTE_W + gap)), y: wbSnapVal(y0 + Math.floor(i / cols) * (WB_NOTE_H + gap)),
+        w: WB_NOTE_W, h: WB_NOTE_H, color: 'y', z: 1e9,
+      });
+    });
+    wb.sel = null;
+  });
+}
+
+/* =====================================================
+   JSONバックアップ・復元
+   ・全ボードをまとめて保存。付箋は「タスクの控え」も一緒に書き出すので、別の端末でも復元できる
+   ・読込は既存ボードに「追加」（上書きしない）。タスクが存在しない付箋は控えからタスクを作り直す
+   ===================================================== */
+function wbExportJson() {
+  wbCloseMenu(); wbCommitEdit();
+  const out = {
+    app: 'util-task-manager-whiteboard', version: 1, exportedAt: new Date().toISOString(),
+    boards: wbData.boards.map(b => {
+      const snaps = {};
+      b.items.forEach(i => {
+        if (i.type !== 'note') return;
+        const t = wbTask(i); if (!t) return;
+        snaps[i.taskId] = {
+          title: t.title, note: stripTrailerLines(t.note), addedDate: t.addedDate, due: t.due, quadrant: t.quadrant,
+          tags: t.tags || [], tagMain: t.tagMain || null, tagSub: t.tagSub || null, completed: !!t.completed, completedAt: t.completedAt || null,
+        };
+      });
+      return { ...b, tasks: snaps };
+    }),
+  };
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = 'whiteboard_' + todayStr() + '.json'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function wbImportJson(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const raw = JSON.parse(ev.target.result);
+      if (!raw || raw.app !== 'util-task-manager-whiteboard' || !Array.isArray(raw.boards)) throw new Error('format');
+      let nb = 0, nt = 0, lastId = null;
+      raw.boards.forEach(rb => {
+        const b = wbNormBoard(rb); if (!b) return;
+        const snaps = (rb.tasks && typeof rb.tasks === 'object') ? rb.tasks : {};
+        b.items = b.items.filter(i => {
+          if (i.type !== 'note') return true;
+          if (tasks.some(t => t.id === i.taskId)) return true; // 既にあるタスクにはそのまま紐付け
+          const s = snaps[i.taskId];
+          if (!s || typeof s.title !== 'string') return false; // 控えが無ければ付箋を捨てる
+          const t = addTask({
+            title: s.title.slice(0, 200), note: typeof s.note === 'string' ? s.note : '',
+            addedDate: typeof s.addedDate === 'string' ? s.addedDate : undefined, due: typeof s.due === 'string' ? s.due : null,
+            quadrant: settings.boards.some(bd => bd.id === s.quadrant) ? s.quadrant : null,
+            tags: Array.isArray(s.tags) ? s.tags.filter(x => typeof x === 'string') : [],
+            tagMain: typeof s.tagMain === 'string' ? s.tagMain : null, tagSub: typeof s.tagSub === 'string' ? s.tagSub : null,
+            completed: !!s.completed,
+          });
+          t.id = i.taskId; // 元のIDで復元（他のボードの付箋とも紐付く）
+          if (s.completed && typeof s.completedAt === 'string') t.completedAt = s.completedAt;
+          nt++;
+          return true;
+        });
+        b.items = wbPruneArrows(b.items);
+        b.id = wbId('b_');
+        if (wbData.boards.some(x => x.name === b.name)) b.name = (b.name + '（読込）').slice(0, 30);
+        b.view.init = false;
+        wbData.boards.push(b); lastId = b.id; nb++;
+      });
+      if (!nb) throw new Error('empty');
+      if (nt) { saveTasks(); renderFilterTabs(); renderAll(); }
+      wbData.activeId = lastId; wb.sel = null;
+      wbSaveNow(); wbRender(); wbFit();
+      alert(nb + '個のボードを読み込みました' + (nt ? '（タスク' + nt + '件を復元）' : ''));
+    } catch (err) {
+      alert('JSONファイルの読み込みに失敗しました。付箋ボードで保存したファイルか確認してください。');
+    } finally {
+      event.target.value = '';
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* =====================================================
+   PNG画像出力（Canvasに描き直す。今の表示テーマの色で出力）
+   ・付箋・枠・矢印の全体が収まる範囲を出力（画面の表示位置には依存しない）
+   ・大きすぎる時は最大4096pxに収まるよう自動で縮小
+   ===================================================== */
+function wbRR(ctx, x, y, w, h, r) { // 角丸の矩形パス
+  r = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+function wbWrapLines(ctx, text, maxW, maxLines) { // 日本語も1文字ずつ折り返す
+  const lines = []; let cur = '';
+  for (const ch of String(text)) {
+    if (ctx.measureText(cur + ch).width > maxW && cur) { lines.push(cur); cur = ch; } else cur += ch;
+  }
+  if (cur) lines.push(cur);
+  if (lines.length > maxLines) {
+    const keep = lines.slice(0, maxLines); let last = keep[maxLines - 1];
+    while (last && ctx.measureText(last + '…').width > maxW) last = last.slice(0, -1);
+    keep[maxLines - 1] = last + '…';
+    return keep;
+  }
+  return lines;
+}
+
+function wbExportPng() {
+  wbCloseMenu(); wbCommitEdit();
+  const b = wbBoard(), nodes = b.items.filter(i => i.type !== 'arrow');
+  if (!nodes.length) { alert('出力する付箋や枠がありません'); return; }
+  const cs = getComputedStyle(document.documentElement);
+  const css = n => cs.getPropertyValue(n).trim();
+  const pad = 40;
+  const minX = Math.min(...nodes.map(n => n.x)), minY = Math.min(...nodes.map(n => n.y));
+  const maxX = Math.max(...nodes.map(n => n.x + n.w)), maxY = Math.max(...nodes.map(n => n.y + n.h));
+  const W = maxX - minX + pad * 2, H = maxY - minY + pad * 2;
+  const scale = Math.max(0.1, Math.min(2, 4096 / Math.max(W, H)));
+  const cv = document.createElement('canvas');
+  cv.width = Math.max(1, Math.round(W * scale)); cv.height = Math.max(1, Math.round(H * scale));
+  const ctx = cv.getContext('2d');
+  if (!ctx) { alert('画像を作れませんでした'); return; }
+  ctx.scale(scale, scale);
+  ctx.fillStyle = css('--color-card') || '#ffffff'; ctx.fillRect(0, 0, W, H);
+  ctx.translate(pad - minX, pad - minY);
+  const FONT = '"BIZ UDPGothic", sans-serif';
+  const textColor = css('--color-text') || '#222', noteText = css('--wb-note-text') || '#222';
+
+  nodes.slice().sort((a, c) => a.z - c.z).forEach(it => {
+    const bg = css('--wb-' + it.color + '-bg'), bd = css('--wb-' + it.color + '-bd');
+    if (it.type === 'frame') {
+      ctx.save();
+      wbRR(ctx, it.x, it.y, it.w, it.h, 10);
+      ctx.globalAlpha = 0.10; ctx.fillStyle = bd; ctx.fill();
+      ctx.save(); ctx.clip(); ctx.globalAlpha = 0.28; ctx.fillRect(it.x, it.y, it.w, WB_FRAME_HEAD); ctx.restore();
+      ctx.globalAlpha = 1; ctx.setLineDash([7, 5]); ctx.lineWidth = 2; ctx.strokeStyle = bd; wbRR(ctx, it.x, it.y, it.w, it.h, 10); ctx.stroke();
+      ctx.setLineDash([]);
+      const s = wbFrameStats(it);
+      ctx.fillStyle = textColor; ctx.font = '700 13px ' + FONT; ctx.textBaseline = 'middle';
+      const label = (it.title || '（名称なし）') + (s.total ? '  ' + s.done + '/' + s.total : '');
+      ctx.fillText(wbWrapLines(ctx, label, it.w - 20, 1)[0] || '', it.x + 10, it.y + WB_FRAME_HEAD / 2);
+      ctx.restore();
+      return;
+    }
+    const t = wbTask(it);
+    ctx.save();
+    if (t && t.completed) ctx.globalAlpha = 0.55;
+    ctx.shadowColor = 'rgba(0,0,0,0.25)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
+    wbRR(ctx, it.x, it.y, it.w, it.h, 6); ctx.fillStyle = bg; ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.lineWidth = 2; ctx.strokeStyle = bd; ctx.stroke();
+    ctx.fillStyle = noteText; ctx.textBaseline = 'top';
+    ctx.font = '18px ' + FONT; ctx.fillText(t && t.completed ? '☑' : '☐', it.x + 6, it.y + 5);
+    ctx.font = '700 14px ' + FONT;
+    let meta = '';
+    if (t) { if (t.due) meta += '📅' + wbMD(t.due) + '  '; if (tagText(t)) meta += tagText(t); }
+    const metaH = meta ? 18 : 0;
+    const maxLines = Math.max(1, Math.floor((it.h - 14 - metaH) / 19));
+    const lines = wbWrapLines(ctx, t ? t.title : '（削除済みのタスク）', it.w - 16 - 24, maxLines);
+    lines.forEach((ln, i) => {
+      const ty = it.y + 8 + i * 19;
+      ctx.fillText(ln, it.x + 8 + 24, ty);
+      if (t && t.completed) { const lw = ctx.measureText(ln).width; ctx.fillRect(it.x + 32, ty + 8, lw, 1.5); }
+    });
+    if (meta) {
+      ctx.font = '11px ' + FONT; ctx.globalAlpha *= 0.85;
+      ctx.fillText(wbWrapLines(ctx, meta, it.w - 16, 1)[0] || '', it.x + 8, it.y + it.h - 20);
+    }
+    ctx.restore();
+  });
+
+  // 矢印（付箋・枠より手前）
+  const arrowColor = css('--color-text-sub') || '#555', cardColor = css('--color-card') || '#fff';
+  const head = (x, y, ux, uy) => {
+    const bx = x - ux * 15, by = y - uy * 15, nx = -uy * 6.5, ny = ux * 6.5;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(bx + nx, by + ny); ctx.lineTo(bx - nx, by - ny); ctx.closePath(); ctx.fill();
+  };
+  b.items.filter(i => i.type === 'arrow').forEach(a => {
+    const g = wbArrowGeom(a, b.items); if (!g) return;
+    ctx.strokeStyle = arrowColor; ctx.fillStyle = arrowColor; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(g.x1, g.y1); ctx.lineTo(g.x2, g.y2); ctx.stroke();
+    if (a.dir !== 'none') head(g.x2, g.y2, g.ux, g.uy);
+    if (a.dir === 'both') head(g.x1, g.y1, -g.ux, -g.uy);
+    if (a.label) {
+      ctx.font = '700 13px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const mx = (g.x1 + g.x2) / 2, my = (g.y1 + g.y2) / 2;
+      ctx.lineWidth = 5; ctx.lineJoin = 'round'; ctx.strokeStyle = cardColor; ctx.strokeText(a.label, mx, my);
+      ctx.fillStyle = textColor; ctx.fillText(a.label, mx, my); ctx.textAlign = 'start';
+    }
+  });
+
+  cv.toBlob(blob => {
+    if (!blob) { alert('画像を作れませんでした'); return; }
+    const url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = b.name.replace(/[\\/:*?"<>|]/g, '_') + '_' + todayStr() + '.png'; a.click();
+    URL.revokeObjectURL(url);
+  }, 'image/png');
 }
 
 </script>
