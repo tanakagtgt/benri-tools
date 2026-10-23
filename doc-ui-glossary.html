@@ -35,6 +35,38 @@
 .term-text { font-size: 13px; color: var(--color-text-sub); line-height: 1.7; }
 .count { font-size: 12px; color: var(--color-text-muted); margin-bottom: 10px; }
 .empty { text-align: center; color: var(--color-text-muted); font-size: 13px; padding: 20px 0; }
+/* ===== 段階2：デモ枠（色は全てCSS変数） ===== */
+.demo { position: relative; margin-top: 10px; padding: 12px; border: 1px dashed var(--color-border-input); border-radius: var(--radius-input); background: var(--color-input-bg); overflow: hidden; font-size: 13px; color: var(--color-text); }
+.demo-label { font-size: 10px; color: var(--color-text-label); margin-bottom: 8px; }
+.demo-h { min-height: 120px; } /* モーダル／ドロワーが収まる高さ */
+.dbtn { font-family: 'BIZ UDPGothic', sans-serif; font-size: 13px; font-weight: 700; color: var(--color-primary); background: var(--color-chip-bg); border: 1px solid var(--color-primary-border); border-radius: var(--radius-input); padding: 8px 14px; min-height: 44px; cursor: pointer; }
+.dbtn:hover:not(:disabled) { background: var(--color-chip-hover); }
+.dbtn:disabled { opacity: 0.4; cursor: not-allowed; }
+.demo select { font-family: inherit; font-size: 16px; min-height: 44px; padding: 0 10px; color: var(--color-text); background: var(--color-card); border: 1px solid var(--color-border-input); border-radius: var(--radius-input); }
+.d-over { position: absolute; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; }
+.demo.on .d-over { display: flex; }
+.d-box { background: var(--color-card); border: 1px solid var(--color-border); border-radius: var(--radius-card); padding: 14px; text-align: center; }
+.d-drawer { position: absolute; top: 0; bottom: 0; right: 0; width: 60%; background: var(--color-card); border-left: 1px solid var(--color-border); padding: 12px; transform: translateX(100%); transition: transform 0.25s; }
+.demo.on .d-drawer { transform: none; }
+.d-toast { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); background: var(--color-text); color: var(--color-bg); padding: 8px 14px; border-radius: 999px; font-size: 12px; opacity: 0; transition: opacity 0.2s; white-space: nowrap; }
+.demo.on .d-toast { opacity: 1; }
+.d-acc-body { display: none; padding: 8px 2px 0; color: var(--color-text-sub); }
+.demo.on .d-acc-body { display: block; }
+.d-tip { position: relative; display: inline-block; margin-top: 26px; }
+.d-tip span { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 4px; background: var(--color-text); color: var(--color-bg); font-size: 11px; padding: 4px 8px; border-radius: 5px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.15s; }
+.d-tip:hover span, .d-tip:focus-within span { opacity: 1; }
+.d-spin { width: 28px; height: 28px; border: 3px solid var(--color-border); border-top-color: var(--color-primary); border-radius: 50%; animation: dspin 0.8s linear infinite; }
+@keyframes dspin { to { transform: rotate(360deg); } }
+.d-bar { height: 10px; background: var(--color-border); border-radius: 5px; overflow: hidden; margin-bottom: 8px; }
+.d-bar i { display: block; height: 100%; width: 0; background: var(--color-primary); transition: width 0.3s; }
+.d-sk { height: 12px; border-radius: 6px; margin: 6px 0; background: linear-gradient(90deg, var(--color-border) 25%, var(--color-input-bg) 50%, var(--color-border) 75%); background-size: 200% 100%; animation: dsk 1.2s infinite; }
+@keyframes dsk { to { background-position: -200% 0; } }
+.d-real { display: none; }
+.demo.on .d-sk { display: none; }
+.demo.on .d-real { display: block; }
+.d-hov { padding: 14px; text-align: center; border: 1px solid var(--color-border); border-radius: var(--radius-input); transition: all 0.15s; }
+.d-hov:hover { background: var(--color-primary-bg); border-color: var(--color-primary); color: var(--color-primary); }
+.d-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 /* 解説文 */
 .tool-desc { background: var(--color-card); border: 1px solid var(--color-border); border-radius: var(--radius-card); padding: 18px 20px; margin-bottom: 14px; font-size: 13px; line-height: 1.9; color: var(--color-text-sub); }
 .tool-desc h2 { font-size: 15px; color: var(--color-text); margin-bottom: 8px; }
@@ -72,7 +104,7 @@
   <h3>こんな場面で役立ちます</h3>
   <p>デザイナーや開発者への依頼、AIへのプロンプト、ノーコードツールの設定画面などで「あのポップアップみたいなやつ」を正しい名前で伝えたい時に便利です。初学者の学習用にも使えます。</p>
   <h3>補足</h3>
-  <p>説明は一般的な使われ方に基づく簡易的なものです。サービスやフレームワークごとに呼び名が違う場合があります。今後、実際に動くデモも順次追加予定です。</p>
+  <p>説明は一般的な使われ方に基づく簡易的なものです。サービスやフレームワークごとに呼び名が違う場合があります。モーダル・トースト・アコーディオンなど代表的な用語には、実際に触れるデモを付けています。残りの用語も順次追加予定です。</p>
   <h3>よくある質問</h3>
   <p>Q. モーダルとドロワーの違いは？ A. モーダルは中央に出る確認用の窓、ドロワーは画面の端からスライドして出るパネルです。</p>
 </section>
@@ -196,9 +228,38 @@ function displayResult(r) {
     ? '<div class="empty">該当する用語がありません。別のキーワードで試してね。</div>'
     : r.cats.map(({ c, terms }) =>
         `<div class="cat-head">${c.id}. ${c.name}</div>` +
-        terms.map(t => `<div class="term"><div class="term-name">${t[0]}</div><div class="term-text">${t[1]}</div></div>`).join('')
+        terms.map(t => `<div class="term"><div class="term-name">${t[0]}</div><div class="term-text">${t[1]}</div>${DEMOS[t[0]] ? `<div class="demo"><div class="demo-label">▶ 触ってみる</div>${DEMOS[t[0]]}</div>` : ''}</div>`).join('')
       ).join('');
 }
+
+/* ===== 段階2：デモ定義（キー＝用語名。追加はここに足すだけ） =====
+   data-act: toggle=開閉 / toast=一時表示 / prog=進捗+25% / sel=選択切替 / tab=タブ切替 */
+const DEMOS = {
+ 'チェックボックス': `<label class="checkbox-item"><input type="checkbox"> メルマガを受け取る</label><label class="checkbox-item"><input type="checkbox"> 利用規約に同意する</label>`,
+ 'プルダウン': `<select><option>選んでください</option><option>りんご</option><option>みかん</option><option>ぶどう</option></select>`,
+ 'タブ': `<div class="d-row"><button class="chip active" data-act="tab" data-i="0">概要</button><button class="chip" data-act="tab" data-i="1">詳細</button><button class="chip" data-act="tab" data-i="2">設定</button></div><div class="d-pane" data-i="0" style="margin-top:8px">概要の内容です</div><div class="d-pane" data-i="1" hidden style="margin-top:8px">詳細の内容です</div><div class="d-pane" data-i="2" hidden style="margin-top:8px">設定の内容です</div>`,
+ 'モーダル': `<div class="demo-h"><button class="dbtn" data-act="toggle">モーダルを開く</button></div><div class="d-over"><div class="d-box">背面は操作できません<br><button class="dbtn" data-act="toggle" style="margin-top:8px">閉じる</button></div></div>`,
+ 'ドロワー': `<div class="demo-h"><button class="dbtn" data-act="toggle">ドロワーを開閉</button></div><div class="d-drawer">横からスライドして出るパネル<br><button class="dbtn" data-act="toggle" style="margin-top:8px">閉じる</button></div>`,
+ 'ツールチップ': `<div class="d-tip"><button class="dbtn">ここにマウスを乗せる／タップ</button><span>これがツールチップ</span></div>`,
+ 'アコーディオン': `<button class="dbtn" data-act="toggle" style="width:100%;text-align:left">▼ よくある質問：送料は？</button><div class="d-acc-body">3,000円以上で送料無料です。（デモ用の文章）</div>`,
+ 'トースト': `<button class="dbtn" data-act="toast">保存する</button><div class="d-toast">✅ 保存しました</div><div style="height:30px"></div>`,
+ 'スピナー': `<div class="d-row"><div class="d-spin"></div><span>読み込み中…</span></div>`,
+ 'プログレスバー': `<div class="d-bar"><i></i></div><div class="d-row"><button class="dbtn" data-act="prog">進める</button><span class="pv">0%</span></div>`,
+ 'スケルトン': `<div class="d-sk"></div><div class="d-sk" style="width:70%"></div><div class="d-real">読み込み完了！本物の内容が出ました。</div><button class="dbtn" data-act="toggle" style="margin-top:6px">読み込み完了／戻す</button>`,
+ 'ホバー': `<div class="d-hov">カーソルを乗せると色が変わる（スマホはタップ中）</div>`,
+ '選択中': `<div class="d-row"><button class="chip active" data-act="sel">A</button><button class="chip" data-act="sel">B</button><button class="chip" data-act="sel">C</button></div>`,
+ '無効状態': `<div class="d-row"><button class="dbtn">有効</button><button class="dbtn" disabled>無効</button></div>`
+};
+$('termList').addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const d = el.closest('.demo'), a = el.dataset.act;
+  if (a === 'toggle') d.classList.toggle('on');
+  else if (a === 'toast') { d.classList.add('on'); clearTimeout(d._t); d._t = setTimeout(() => d.classList.remove('on'), 1800); }
+  else if (a === 'prog') { const i = d.querySelector('i'); let w = (parseInt(i.style.width) || 0) + 25; if (w > 100) w = 0; i.style.width = w + '%'; d.querySelector('.pv').textContent = w + '%'; }
+  else if (a === 'sel') { el.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); el.classList.add('active'); }
+  else if (a === 'tab') { d.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c === el)); d.querySelectorAll('.d-pane').forEach(p => p.hidden = p.dataset.i !== el.dataset.i); }
+});
 
 /* reset()上書き：common.jsのreset()はresultNum前提のため、一覧は全件表示に戻す */
 function onResetExtra() { calculate(); }
