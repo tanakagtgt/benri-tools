@@ -67,6 +67,31 @@
 .d-hov { padding: 14px; text-align: center; border: 1px solid var(--color-border); border-radius: var(--radius-input); transition: all 0.15s; }
 .d-hov:hover { background: var(--color-primary-bg); border-color: var(--color-primary); color: var(--color-primary); }
 .d-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+/* ===== 段階3：残りのデモ用CSS ===== */
+.din { width: 100%; font-family: inherit; font-size: 16px; min-height: 44px; padding: 0 10px; color: var(--color-text); background: var(--color-card); border: 1px solid var(--color-border-input); border-radius: var(--radius-input); margin-bottom: 6px; }
+.din:focus, .demo button:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; } /* フォーカス管理デモ */
+.d-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; margin-bottom: 6px; border: 1px solid var(--color-border); border-radius: var(--radius-input); background: var(--color-card); }
+.d-warn { background: var(--color-error-bg); border-color: var(--color-error-border); color: var(--color-error-text); }
+.d-ban { background: var(--color-primary-bg); border-color: var(--color-primary-border); color: var(--color-primary); }
+.d-side { padding: 8px; border-right: 1px solid var(--color-border); white-space: nowrap; }
+.demo.on .d-side { display: none; }
+.d-pop { display: none; margin-top: 8px; padding: 10px; background: var(--color-card); border: 1px solid var(--color-border); border-radius: var(--radius-input); }
+.demo.on .d-pop { display: block; }
+.demo summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 700; color: var(--color-primary); }
+.d-inf { position: relative; height: 110px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: var(--radius-input); padding: 6px; background: var(--color-card); }
+.d-snap { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; }
+.d-snap > div { flex: 0 0 80%; scroll-snap-align: start; padding: 22px 10px; text-align: center; border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-card); }
+.d-tbl { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+.d-tbl th, .d-tbl td { border: 1px solid var(--color-border); padding: 6px 8px; text-align: left; }
+.d-tbl th { background: var(--color-primary-bg); color: var(--color-primary); }
+.d-fi { padding: 6px 2px; }
+.d-ed { border-bottom: 1px dashed var(--color-primary); cursor: text; padding: 4px; }
+.d-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; transition: all 0.2s; }
+.demo.on .d-grid.resp { grid-template-columns: 1fr; }
+.d-drag { display: inline-block; padding: 12px 18px; background: var(--color-card); border: 1px solid var(--color-border); border-radius: 8px; cursor: grab; touch-action: none; user-select: none; }
+.d-drag.dragging { opacity: 0.7; border-color: var(--color-primary); box-shadow: 0 4px 12px rgba(0,0,0,0.25); cursor: grabbing; }
+.d-tr { width: 40px; height: 40px; margin: 0 0 10px; background: var(--color-primary); border-radius: 8px; transition: all 0.6s; }
+.demo.on .d-tr { margin-left: 70%; border-radius: 50%; transform: rotate(180deg); }
 /* 解説文 */
 .tool-desc { background: var(--color-card); border: 1px solid var(--color-border); border-radius: var(--radius-card); padding: 18px 20px; margin-bottom: 14px; font-size: 13px; line-height: 1.9; color: var(--color-text-sub); }
 .tool-desc h2 { font-size: 15px; color: var(--color-text); margin-bottom: 8px; }
@@ -104,7 +129,7 @@
   <h3>こんな場面で役立ちます</h3>
   <p>デザイナーや開発者への依頼、AIへのプロンプト、ノーコードツールの設定画面などで「あのポップアップみたいなやつ」を正しい名前で伝えたい時に便利です。初学者の学習用にも使えます。</p>
   <h3>補足</h3>
-  <p>説明は一般的な使われ方に基づく簡易的なものです。サービスやフレームワークごとに呼び名が違う場合があります。モーダル・トースト・アコーディオンなど代表的な用語には、実際に触れるデモを付けています。残りの用語も順次追加予定です。</p>
+  <p>説明は一般的な使われ方に基づく簡易的なものです。サービスやフレームワークごとに呼び名が違う場合があります。すべての用語に、実際に触れるデモを付けています。モーダルを開く、表を並べ替える、要素をドラッグするなど、動きを体験すると名前と見た目が結びつきやすくなります。</p>
   <h3>よくある質問</h3>
   <p>Q. モーダルとドロワーの違いは？ A. モーダルは中央に出る確認用の窓、ドロワーは画面の端からスライドして出るパネルです。</p>
 </section>
@@ -248,7 +273,42 @@ const DEMOS = {
  'スケルトン': `<div class="d-sk"></div><div class="d-sk" style="width:70%"></div><div class="d-real">読み込み完了！本物の内容が出ました。</div><button class="dbtn" data-act="toggle" style="margin-top:6px">読み込み完了／戻す</button>`,
  'ホバー': `<div class="d-hov">カーソルを乗せると色が変わる（スマホはタップ中）</div>`,
  '選択中': `<div class="d-row"><button class="chip active" data-act="sel">A</button><button class="chip" data-act="sel">B</button><button class="chip" data-act="sel">C</button></div>`,
- '無効状態': `<div class="d-row"><button class="dbtn">有効</button><button class="dbtn" disabled>無効</button></div>`
+ '無効状態': `<div class="d-row"><button class="dbtn">有効</button><button class="dbtn" disabled>無効</button></div>`,
+ /* ---- 段階3 ---- */
+ 'テキスト入力': `<input class="din" type="text" placeholder="名前を入力">`,
+ '日付選択': `<input class="din" type="date">`,
+ 'クリック': `<button class="dbtn" data-act="cnt">押してみる</button>`,
+ '送信': `<button class="dbtn" data-act="toast">送信</button><div class="d-toast">✅ 送信しました</div><div style="height:30px"></div>`,
+ 'コピー': `<button class="dbtn" data-act="toast">📋 コピー</button><div class="d-toast">📋 コピーしました</div><div style="height:30px"></div>`,
+ '削除': `<div class="d-item">資料A.pdf <button class="dbtn" data-act="rm">🗑 削除</button></div><div class="d-item">資料B.pdf <button class="dbtn" data-act="rm">🗑 削除</button></div>`,
+ 'Undo／Redo': `<div class="uv" style="margin-bottom:6px">値：0</div><div class="d-row"><button class="dbtn" data-act="hist" data-k="add">＋1</button><button class="dbtn" data-act="hist" data-k="undo">↩ Undo</button><button class="dbtn" data-act="hist" data-k="redo">↪ Redo</button></div>`,
+ 'パンくず': `<span style="color:var(--color-primary)">ホーム</span> ＞ <span style="color:var(--color-primary)">家電</span> ＞ <b>掃除機</b>`,
+ 'サイドバー': `<div class="d-row" style="flex-wrap:nowrap;align-items:stretch"><div class="d-side">🏠 ホーム<br>⚙️ 設定</div><div style="flex:1;padding:4px 8px">本文エリア<br><button class="dbtn" data-act="toggle" style="margin-top:6px">開閉</button></div></div>`,
+ 'ページネーション': `<div class="d-row"><button class="chip active" data-act="sel">1</button><button class="chip" data-act="sel">2</button><button class="chip" data-act="sel">3</button><button class="chip" data-act="sel">4</button></div>`,
+ 'ポップオーバー': `<button class="dbtn" data-act="toggle">ℹ️ 詳細を見る</button><div class="d-pop">ボタン付近に出る補足パネル。もう一度押すと閉じます。</div>`,
+ 'Disclosure': `<details><summary>詳しく見る</summary>HTML標準のdetails要素で作れる開閉部品です。</details>`,
+ 'ツリー表示': `<details open><summary>📁 src</summary><div style="padding-left:16px">📄 index.html<details><summary>📁 css</summary><div style="padding-left:16px">📄 main.css</div></details></div></details>`,
+ 'プルトゥリフレッシュ': `<button class="dbtn" data-act="toast">↓ 下に引っ張る（疑似）</button><div class="d-toast">🔄 最新に更新しました</div><div style="height:30px"></div>`,
+ '無限スクロール': `<div class="d-inf"><div class="d-fi">項目 1</div><div class="d-fi">項目 2</div><div class="d-fi">項目 3</div><div class="d-fi">項目 4</div><div class="d-fi">項目 5</div><div class="d-fi">項目 6</div></div><div class="demo-label" style="margin:6px 0 0">下までスクロールすると続きが増える</div>`,
+ 'スワイプ': `<div class="d-snap"><div>カード1 ➡ 横に滑らせる</div><div>カード2</div><div>カード3</div></div>`,
+ 'アラート': `<div class="d-item d-warn">⚠️ 入力内容に誤りがあります <button class="dbtn" data-act="rm">✕</button></div>`,
+ 'バナー': `<div class="d-item d-ban">📢 メンテナンスのお知らせ <button class="dbtn" data-act="rm">✕</button></div>`,
+ '確認ダイアログ': `<div class="demo-h"><button class="dbtn" data-act="toggle">データを削除</button></div><div class="d-over"><div class="d-box">本当に削除しますか？<br><div class="d-row" style="justify-content:center;margin-top:8px"><button class="dbtn" data-act="toggle">キャンセル</button><button class="dbtn" data-act="toggle">削除する</button></div></div></div>`,
+ '遅延読み込み': `<div class="d-inf d-lazy"><div style="height:160px">↓ スクロールしてね</div><div class="d-lz">（まだ読み込まれていません）</div><div style="height:40px"></div></div>`,
+ 'テーブル': `<table class="d-tbl"><tr><th>商品</th><th>価格</th></tr><tr><td>りんご</td><td>300</td></tr><tr><td>みかん</td><td>200</td></tr></table>`,
+ 'ソート': `<table class="d-tbl"><thead><tr><th>商品</th><th>価格</th></tr></thead><tbody><tr data-v="300"><td>りんご</td><td>300</td></tr><tr data-v="100"><td>バナナ</td><td>100</td></tr><tr data-v="200"><td>みかん</td><td>200</td></tr></tbody></table><button class="dbtn" data-act="sort">価格で並べ替え</button>`,
+ 'フィルター': `<div class="d-row"><button class="chip active" data-act="flt" data-c="">全部</button><button class="chip" data-act="flt" data-c="f">果物</button><button class="chip" data-act="flt" data-c="v">野菜</button></div><div class="d-fi" data-c="f">🍎 りんご</div><div class="d-fi" data-c="v">🥕 にんじん</div><div class="d-fi" data-c="f">🍊 みかん</div><div class="d-fi" data-c="v">🥬 キャベツ</div>`,
+ '検索': `<input class="din" data-in="srch" placeholder="例：り"><div class="d-fi">りんご</div><div class="d-fi">りんどう</div><div class="d-fi">みかん</div><div class="d-fi">ぶどう</div>`,
+ 'インライン編集': `<span class="d-ed" data-act="edit">タップして編集</span>`,
+ 'カード': `<div class="d-grid" style="grid-template-columns:1fr 1fr"><div class="d-hov">🍎 りんご<br>300円</div><div class="d-hov">🍊 みかん<br>200円</div></div>`,
+ 'グリッド': `<div class="d-grid"><div class="d-hov">1</div><div class="d-hov">2</div><div class="d-hov">3</div><div class="d-hov">4</div><div class="d-hov">5</div><div class="d-hov">6</div></div>`,
+ '分割ペイン': `<div class="d-row" style="flex-wrap:nowrap;align-items:stretch"><div style="display:flex;flex-direction:column;gap:6px"><button class="chip active" data-act="pane" data-t="りんごの詳細です">りんご</button><button class="chip" data-act="pane" data-t="みかんの詳細です">みかん</button></div><div class="pd" style="flex:1;padding:8px;border-left:1px solid var(--color-border)">りんごの詳細です</div></div>`,
+ 'レスポンシブ表示': `<div class="d-grid resp"><div class="d-hov">A</div><div class="d-hov">B</div><div class="d-hov">C</div></div><button class="dbtn" data-act="toggle" style="margin-top:8px">画面幅を狭める／戻す</button>`,
+ 'オートコンプリート': `<input class="din" data-in="auto" placeholder="例：り"><div class="d-sug"></div>`,
+ 'キーボード操作': `<div class="d-row"><button class="dbtn" data-act="log">A</button><button class="dbtn" data-act="log">B</button><button class="dbtn" data-act="log">C</button></div><div class="lg" style="margin-top:6px">Tabで移動、Enterで押してみて</div>`,
+ 'フォーカス管理': `<input class="din" placeholder="1つ目"><input class="din" placeholder="2つ目"><div class="demo-label">Tabキーで移動すると枠が出る</div>`,
+ 'ドラッグ中': `<div class="demo-h"><div class="d-drag">つかんで動かしてね</div></div>`,
+ 'トランジション': `<div class="d-tr"></div><button class="dbtn" data-act="toggle">動かす</button>`
 };
 $('termList').addEventListener('click', e => {
   const el = e.target.closest('[data-act]');
@@ -258,7 +318,75 @@ $('termList').addEventListener('click', e => {
   else if (a === 'toast') { d.classList.add('on'); clearTimeout(d._t); d._t = setTimeout(() => d.classList.remove('on'), 1800); }
   else if (a === 'prog') { const i = d.querySelector('i'); let w = (parseInt(i.style.width) || 0) + 25; if (w > 100) w = 0; i.style.width = w + '%'; d.querySelector('.pv').textContent = w + '%'; }
   else if (a === 'sel') { el.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); el.classList.add('active'); }
+  else if (a === 'cnt') { el._n = (el._n || 0) + 1; el.textContent = `押した回数：${el._n}`; }
+  else if (a === 'rm') el.closest('.d-item').remove();
+  else if (a === 'log') d.querySelector('.lg').textContent = `${el.textContent} が押されました`;
+  else if (a === 'hist') {
+    const s = d._s || (d._s = { h: [0], i: 0 }), k = el.dataset.k;
+    if (k === 'add') { s.h = s.h.slice(0, s.i + 1); s.h.push(s.h[s.i] + 1); s.i++; }
+    else if (k === 'undo' && s.i > 0) s.i--;
+    else if (k === 'redo' && s.i < s.h.length - 1) s.i++;
+    d.querySelector('.uv').textContent = '値：' + s.h[s.i];
+  }
+  else if (a === 'sort') {
+    const tb = d.querySelector('tbody'), asc = d._asc = !d._asc;
+    [...tb.rows].sort((x, y) => asc ? x.dataset.v - y.dataset.v : y.dataset.v - x.dataset.v).forEach(r => tb.appendChild(r));
+    el.textContent = asc ? '価格 ▲ 安い順' : '価格 ▼ 高い順';
+  }
+  else if (a === 'flt') {
+    d.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c === el));
+    d.querySelectorAll('.d-fi').forEach(x => x.hidden = !!el.dataset.c && x.dataset.c !== el.dataset.c);
+  }
+  else if (a === 'pane') {
+    d.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c === el));
+    d.querySelector('.pd').textContent = el.dataset.t;
+  }
+  else if (a === 'pick') { d.querySelector('input').value = el.textContent; d.querySelector('.d-sug').innerHTML = ''; }
+  else if (a === 'edit') {
+    const i = document.createElement('input');
+    i.className = 'din'; i.value = el.textContent; el.replaceWith(i); i.focus();
+    i.addEventListener('blur', () => { el.textContent = i.value || el.textContent; i.replaceWith(el); });
+    i.addEventListener('keydown', ev => { if (ev.key === 'Enter') i.blur(); });
+  }
   else if (a === 'tab') { d.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c === el)); d.querySelectorAll('.d-pane').forEach(p => p.hidden = p.dataset.i !== el.dataset.i); }
+});
+
+/* 入力系デモ（検索／オートコンプリート） */
+const SUG = ['りんご', 'りんごジュース', 'みかん', 'ぶどう', 'バナナ'];
+$('termList').addEventListener('input', e => {
+  const t = e.target, d = t.closest('.demo'), v = t.value.trim();
+  if (!d || !t.dataset.in) return;
+  if (t.dataset.in === 'srch') d.querySelectorAll('.d-fi').forEach(x => x.hidden = !!v && !x.textContent.includes(v));
+  else d.querySelector('.d-sug').innerHTML = v ? SUG.filter(x => x.startsWith(v)).map(x => `<button class="dbtn" data-act="pick" style="display:block;width:100%;text-align:left">${x}</button>`).join('') : '';
+});
+/* スクロール系デモ（無限スクロール／遅延読み込み）※scrollは伝播しないためcaptureで拾う */
+$('termList').addEventListener('scroll', e => {
+  const s = e.target;
+  if (!s.classList || !s.classList.contains('d-inf')) return;
+  if (s.classList.contains('d-lazy')) {
+    const z = s.querySelector('.d-lz');
+    if (s.scrollTop + s.clientHeight > z.offsetTop + 10) z.textContent = '🖼️ 画面に入ったので今読み込みました';
+  } else if (s.scrollTop + s.clientHeight >= s.scrollHeight - 4) {
+    for (let k = 0; k < 3; k++) s.insertAdjacentHTML('beforeend', `<div class="d-fi">項目 ${s.children.length + 1}</div>`);
+  }
+}, true);
+/* ドラッグデモ（マウス・タッチ共通のpointerイベント） */
+$('termList').addEventListener('pointerdown', e => {
+  const b = e.target.closest('.d-drag');
+  if (!b) return;
+  b.setPointerCapture(e.pointerId);
+  b._o = [e.clientX - (b._x || 0), e.clientY - (b._y || 0)];
+  b.classList.add('dragging'); b.textContent = 'ドラッグ中…';
+});
+$('termList').addEventListener('pointermove', e => {
+  const b = e.target.closest('.d-drag');
+  if (!b || !b.classList.contains('dragging')) return;
+  b._x = e.clientX - b._o[0]; b._y = e.clientY - b._o[1];
+  b.style.transform = `translate(${b._x}px,${b._y}px)`;
+});
+$('termList').addEventListener('pointerup', e => {
+  const b = e.target.closest('.d-drag');
+  if (b) { b.classList.remove('dragging'); b.textContent = 'つかんで動かしてね'; }
 });
 
 /* reset()上書き：common.jsのreset()はresultNum前提のため、一覧は全件表示に戻す */
