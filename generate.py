@@ -5,14 +5,14 @@ index.html のツール一覧部分と sitemap.xml を自動生成するスク�
 
 ■ 使い方
     python3 generate.py
-    ※ 通常は手で実行しなくてOK。tools.json か index.template.html を
-      main に push すると、GitHub Actions（generate.yml）が自動で実行する
+    ※ 通常は手で実行しなくてOK。tools.json を main に push すると、
+      GitHub Actions（generate.yml）が自動で実行する
 
 ■ ファイル構成（すべてリポジトリ直下のフラット構成）
     tools.json            … ツール一覧の正解データ（これだけ手で編集する）
-    index.template.html   … トップページ本体。TOOLLIST_START〜ENDの間だけ自動置換される
-                            ★トップの見た目を変えたい時はここを編集する
-    index.html            … 自動生成される完成品（★直接編集しない。編集しても次回の生成で上書きされる）
+    index.html            … トップページ本体（★直接編集してOK）
+                            ただしTOOLLIST_START〜ENDの間だけは自動置換されるので触らない
+                            （目印コメントを消すと生成が止まる）
     sitemap.xml           … 自動生成される完成品（★直接編集しない）
 
 ■ 新しいツールを追加するとき
@@ -22,7 +22,7 @@ index.html のツール一覧部分と sitemap.xml を自動生成するスク�
        ・urlは絶対URL（https://arigato-tools.com/<id>）。sitemap.xmlにそのまま出力される
        ・前の行の末尾のカンマを忘れない（JSON構文エラーになると生成が止まる）
     3. 同じコミットで main に push する
-       → Actionsが index.html と sitemap.xml を自動更新する
+       → Actionsが index.html のツール一覧部分と sitemap.xml を自動更新する
 
 ■ 本番ドメイン
     arigato-tools.com 固定（sitemap.xml・canonicalタグ共通）
@@ -34,7 +34,8 @@ from xml.sax.saxutils import escape
 
 BASE_DIR = Path(__file__).resolve().parent
 TOOLS_JSON = BASE_DIR / "tools.json"
-INDEX_TEMPLATE = BASE_DIR / "index.template.html"
+# index.html自体を読み込み、目印の間だけ書き換える（別テンプレは使わない）
+INDEX_HTML = BASE_DIR / "index.html"
 DIST_DIR = BASE_DIR
 
 DOMAIN = "https://arigato-tools.com"
@@ -62,13 +63,13 @@ def build_tool_list_html(tools) -> str:
 
 
 def build_index_html(tools) -> str:
-    if not INDEX_TEMPLATE.exists():
-        raise FileNotFoundError(f"テンプレが見つかりません: {INDEX_TEMPLATE}")
+    if not INDEX_HTML.exists():
+        raise FileNotFoundError(f"index.html が見つかりません: {INDEX_HTML}")
 
-    template_html = INDEX_TEMPLATE.read_text(encoding="utf-8")
+    template_html = INDEX_HTML.read_text(encoding="utf-8")
 
     if TOOLLIST_START not in template_html or TOOLLIST_END not in template_html:
-        raise ValueError("index.template.html に TOOLLIST_START / TOOLLIST_END の目印がありません")
+        raise ValueError("index.html に TOOLLIST_START / TOOLLIST_END の目印がありません")
 
     start_idx = template_html.index(TOOLLIST_START) + len(TOOLLIST_START)
     end_idx = template_html.index(TOOLLIST_END)
@@ -98,7 +99,7 @@ def main():
     DIST_DIR.mkdir(parents=True, exist_ok=True)
 
     index_html = build_index_html(tools)
-    index_path = DIST_DIR / "index.html"
+    index_path = INDEX_HTML
     index_path.write_text(index_html, encoding="utf-8")
     print(f"✓ 生成しました: {index_path}  ({len(tools)}件のツールを掲載)")
 
