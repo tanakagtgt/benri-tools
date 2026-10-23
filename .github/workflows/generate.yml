@@ -5,7 +5,6 @@ on:
     branches: [main]
     paths:
       - "tools.json"
-      - "index.template.html"
 
 permissions:
   contents: write
