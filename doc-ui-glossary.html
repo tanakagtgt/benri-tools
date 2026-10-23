@@ -92,6 +92,11 @@
 .d-drag.dragging { opacity: 0.7; border-color: var(--color-primary); box-shadow: 0 4px 12px rgba(0,0,0,0.25); cursor: grabbing; }
 .d-tr { width: 40px; height: 40px; margin: 0 0 10px; background: var(--color-primary); border-radius: 8px; transition: all 0.6s; }
 .demo.on .d-tr { margin-left: 70%; border-radius: 50%; transform: rotate(180deg); }
+/* プルトゥリフレッシュ：本体(.d-ptr-body)を下に動かし、裏の表示(.d-ptr-ind)を見せる */
+.d-ptr { position: relative; height: 150px; overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-input); background: var(--color-input-bg); }
+.d-ptr-ind { position: absolute; top: 0; left: 0; right: 0; height: 44px; line-height: 44px; text-align: center; font-size: 12px; color: var(--color-text-muted); }
+.d-ptr-body { position: absolute; inset: 0; padding: 10px; background: var(--color-card); touch-action: none; overscroll-behavior: contain; user-select: none; cursor: grab; }
+.d-ptr-body.back { transition: transform 0.25s; }
 /* 解説文 */
 .tool-desc { background: var(--color-card); border: 1px solid var(--color-border); border-radius: var(--radius-card); padding: 18px 20px; margin-bottom: 14px; font-size: 13px; line-height: 1.9; color: var(--color-text-sub); }
 .tool-desc h2 { font-size: 15px; color: var(--color-text); margin-bottom: 8px; }
@@ -128,6 +133,8 @@
   <p>画面づくりの言葉を12カテゴリ・約50語にまとめた用語集です。キーワード検索かカテゴリの絞り込みで、知りたい言葉をすぐ確認できます。</p>
   <h3>こんな場面で役立ちます</h3>
   <p>デザイナーや開発者への依頼、AIへのプロンプト、ノーコードツールの設定画面などで「あのポップアップみたいなやつ」を正しい名前で伝えたい時に便利です。初学者の学習用にも使えます。</p>
+  <h3>こんな人におすすめ</h3>
+  <p>Webデザイナー・UI/UXデザイナーを目指す方、HTML/CSS/JavaScriptを学ぶフロントエンド初学者、NotionやBubbleなどのノーコードを使う方に向いています。デザイナーやエンジニアへ依頼するディレクター・企画担当、AIでサイトやアプリを作る方にも役立ちます。部品の正式名称を知っておくと、依頼や検索、AIへの指示の精度が上がります。</p>
   <h3>補足</h3>
   <p>説明は一般的な使われ方に基づく簡易的なものです。サービスやフレームワークごとに呼び名が違う場合があります。すべての用語に、実際に触れるデモを付けています。モーダルを開く、表を並べ替える、要素をドラッグするなど、動きを体験すると名前と見た目が結びつきやすくなります。</p>
   <h3>よくある質問</h3>
@@ -288,7 +295,7 @@ const DEMOS = {
  'ポップオーバー': `<button class="dbtn" data-act="toggle">ℹ️ 詳細を見る</button><div class="d-pop">ボタン付近に出る補足パネル。もう一度押すと閉じます。</div>`,
  'Disclosure': `<details><summary>詳しく見る</summary>HTML標準のdetails要素で作れる開閉部品です。</details>`,
  'ツリー表示': `<details open><summary>📁 src</summary><div style="padding-left:16px">📄 index.html<details><summary>📁 css</summary><div style="padding-left:16px">📄 main.css</div></details></div></details>`,
- 'プルトゥリフレッシュ': `<button class="dbtn" data-act="toast">↓ 下に引っ張る（疑似）</button><div class="d-toast">🔄 最新に更新しました</div><div style="height:30px"></div>`,
+ 'プルトゥリフレッシュ': `<div class="d-ptr"><div class="d-ptr-ind">↓ 引っ張る</div><div class="d-ptr-body"><b>📰 ニュース</b><div class="d-fi">記事 A</div><div class="d-fi">記事 B</div><div class="d-fi ptr-t">最終更新：--</div></div></div><div class="demo-label" style="margin:6px 0 0">枠の中を下に引っ張って離す（PCはマウスでドラッグ）</div>`,
  '無限スクロール': `<div class="d-inf"><div class="d-fi">項目 1</div><div class="d-fi">項目 2</div><div class="d-fi">項目 3</div><div class="d-fi">項目 4</div><div class="d-fi">項目 5</div><div class="d-fi">項目 6</div></div><div class="demo-label" style="margin:6px 0 0">下までスクロールすると続きが増える</div>`,
  'スワイプ': `<div class="d-snap"><div>カード1 ➡ 横に滑らせる</div><div>カード2</div><div>カード3</div></div>`,
  'アラート': `<div class="d-item d-warn">⚠️ 入力内容に誤りがあります <button class="dbtn" data-act="rm">✕</button></div>`,
@@ -388,6 +395,37 @@ $('termList').addEventListener('pointerup', e => {
   const b = e.target.closest('.d-drag');
   if (b) { b.classList.remove('dragging'); b.textContent = 'つかんで動かしてね'; }
 });
+
+/* プルトゥリフレッシュ：しきい値PTR(px)以上引いて離すと「更新中」→1秒後に完了 */
+const PTR = 50;
+const ptrInd = b => b.parentElement.querySelector('.d-ptr-ind');
+$('termList').addEventListener('pointerdown', e => {
+  const b = e.target.closest('.d-ptr-body');
+  if (!b || b._busy) return;
+  b.setPointerCapture(e.pointerId);
+  b._s = e.clientY; b._y = 0; b.classList.remove('back');
+});
+$('termList').addEventListener('pointermove', e => {
+  const b = e.target.closest('.d-ptr-body');
+  if (!b || b._s == null || b._busy) return;
+  b._y = Math.max(0, Math.min((e.clientY - b._s) * 0.5, 80)); // 0.5倍＝引っ張る重さ
+  b.style.transform = `translateY(${b._y}px)`;
+  ptrInd(b).textContent = b._y >= PTR ? '⬆ 離して更新' : '↓ 引っ張る';
+});
+const ptrEnd = e => {
+  const b = e.target.closest('.d-ptr-body');
+  if (!b || b._s == null) return;
+  b._s = null; b.classList.add('back');
+  if (b._y >= PTR) {
+    b._busy = true; b.style.transform = 'translateY(44px)'; ptrInd(b).textContent = '🔄 更新中…';
+    setTimeout(() => {
+      b.querySelector('.ptr-t').textContent = '最終更新：' + new Date().toLocaleTimeString('ja-JP');
+      b.style.transform = ''; ptrInd(b).textContent = '✅ 更新しました'; b._busy = false;
+    }, 1000);
+  } else { b.style.transform = ''; ptrInd(b).textContent = '↓ 引っ張る'; }
+};
+$('termList').addEventListener('pointerup', ptrEnd);
+$('termList').addEventListener('pointercancel', ptrEnd);
 
 /* reset()上書き：common.jsのreset()はresultNum前提のため、一覧は全件表示に戻す */
 function onResetExtra() { calculate(); }
