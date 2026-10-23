@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<!-- AdSense（静的配置） -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2195458991382480" crossorigin="anonymous"></script>
+<link rel="canonical" href="https://arigato-tools.com/util-led-sign">
+<!-- ★gtag：既存ツールのheadからコピペして差し替える（G-XXXXXXXXXX はダミー） -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
+</script>
+<!-- viewport-fit=cover：ノッチ端末で画面いっぱい表示するため（ズーム禁止は付けない） -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- ホーム画面に追加した時にフルスクリーン風に起動させる設定 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>スマホ電光掲示板｜LED風スクロール表示・画像対応【無料】</title>
+<meta name="description" content="スマホの画面を電光掲示板にできる無料ツール。テキストや画像をLEDドット風に横・縦へスクロール表示。色・速度・点滅を調整でき、ライブの応援メッセージや店頭の営業中表示に使えます。">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="💡 スマホ電光掲示板">
+<meta property="og:title" content="スマホ電光掲示板｜LED風スクロール表示・画像対応【無料】">
+<meta property="og:description" content="スマホの画面を電光掲示板に。テキストや画像をLEDドット風にスクロール表示できる無料ツール。">
+<meta property="og:url" content="https://arigato-tools.com/util-led-sign">
+<meta name="twitter:card" content="summary">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/common.css">
+<style>
+  /* =====================================================
+     ツール固有CSS（色は必ず var(--color-*) を使う）
+     ===================================================== */
+  /* common.cssの .input-group input は幅100%・枠・44px高なので、スライダーだけ見た目を調整 */
+  .input-group input[type=range]{ border:none; background:transparent; padding:0; accent-color:var(--color-primary); }
+  .input-group input[type=color]{ padding:2px; }
+  .val{ color:var(--color-text); font-weight:400; }
+
+  /* プレビュー：背景はユーザーが選んだ「背景色」で塗るので固定色でOK */
+  #preview{ width:100%; height:72px; border-radius:var(--radius-input); border:1px solid var(--color-border); display:block; background:#000; }
+
+  /* ボタン行（フルスクリーン／表示開始） */
+  .btns{ display:flex; gap:10px; margin-top:4px; }
+  .btns > button{ flex:1; }
+  .btn-sub{ background:var(--color-chip-bg); border:1px solid var(--color-primary-border); border-radius:var(--radius-btn);
+    color:var(--color-primary); font-family:inherit; font-size:15px; font-weight:700; min-height:50px; cursor:pointer; }
+  .btn-sub:hover{ background:var(--color-chip-hover); }
+
+  /* チップ（よく使うテキスト／画像ショートカット） */
+  .chips{ display:flex; gap:8px; flex-wrap:wrap; }
+  .chip{ padding:10px 14px; border-radius:999px; border:1px solid var(--color-border-input); background:var(--color-input-bg);
+    color:var(--color-text); font-family:inherit; font-size:13px; cursor:pointer; min-height:44px; }
+  .chip:active{ background:var(--color-primary-bg); border-color:var(--color-primary); }
+
+  /* 画像選択 */
+  .fileRow{ display:flex; gap:10px; align-items:center; }
+  .fileBtn{ padding:11px 14px; border:1px dashed var(--color-border-input); border-radius:var(--radius-input); background:var(--color-input-bg);
+    color:var(--color-text); font-size:14px; cursor:pointer; white-space:nowrap; min-height:44px; display:inline-flex; align-items:center; }
+  .fileBtn:active{ background:var(--color-primary-bg); }
+  .fileName{ font-size:12px; color:var(--color-text-muted); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #imgPreview{ max-width:64px; max-height:64px; border-radius:8px; background:var(--color-input-bg); border:1px solid var(--color-border); display:none; }
+  .removeBtn{ padding:10px 12px; border:1px solid var(--color-border-input); border-radius:var(--radius-input); background:transparent;
+    color:var(--color-text-sub); font-family:inherit; font-size:12px; cursor:pointer; min-height:44px; }
+
+  .hint{ font-size:12px; color:var(--color-text-muted); line-height:1.7; margin-top:8px; }
+  .ios-note{ display:none; font-size:12px; color:var(--color-warn-text); line-height:1.7; margin-top:10px; }
+
+  /* 表示モード（全画面）：LED表示なので背景は常に黒系固定 */
+  #display{ position:fixed; inset:0; background:#000; display:none; z-index:10; touch-action:manipulation; }
+  #led{ display:block; }
+  #exitHint{ position:fixed; bottom:calc(18px + env(safe-area-inset-bottom)); left:0; right:0; text-align:center;
+    color:#888; font-size:12px; pointer-events:none; opacity:0; transition:opacity .4s; }
+
+  /* 解説文（将来common.cssへ移動可） */
+  .tool-desc{ background:var(--color-card); border:1px solid var(--color-border); border-radius:var(--radius-card);
+    padding:18px 20px; margin-bottom:14px; font-size:13px; line-height:1.9; color:var(--color-text-sub); }
+  .tool-desc h2{ font-size:15px; color:var(--color-primary); margin-bottom:6px; }
+  .tool-desc h3{ font-size:13px; color:var(--color-text); margin:12px 0 2px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div id="topNavSlot"></div>
+
+  <header>
+    <h1>💡 スマホ電光掲示板</h1>
+    <p class="subtitle">スマホの画面を流れる電光掲示板に。<br>テキスト・ロゴ・写真をLEDドット風にスクロール表示します。</p>
+  </header>
+
+  <!-- ===== ツール本体 ===== -->
+  <!-- ① テキスト・プレビュー・色・開始ボタン（主要操作を上にまとめて片手で完結） -->
+  <div class="card">
+    <div class="input-group">
+      <label for="text">メインのテキスト</label>
+      <input type="text" id="text" value="ようこそ！" maxlength="120" autocomplete="off">
+    </div>
+    <div class="input-group">
+      <label>プレビュー</label>
+      <canvas id="preview" width="480" height="72"></canvas>
+    </div>
+    <div class="input-grid">
+      <div class="input-group" style="margin-bottom:0">
+        <label for="color">文字の色</label>
+        <input type="color" id="color" value="#ff4b1f">
+      </div>
+      <div class="input-group" style="margin-bottom:0">
+        <label for="bg">背景の色</label>
+        <input type="color" id="bg" value="#000000">
+      </div>
+    </div>
+    <div class="btns" style="margin-top:14px">
+      <button type="button" class="btn-sub" id="fsBtn">フルスクリーン</button>
+      <button type="button" class="btn-calc" id="startBtn">表示開始</button>
+    </div>
+    <p class="hint">表示中は画面タップで設定に戻ります。設定と画像は端末に自動保存されます。</p>
+  </div>
+
+  <!-- ② スクロール設定 -->
+  <div class="card">
+    <div class="input-group">
+      <label for="dir">スクロールの向き</label>
+      <select id="dir">
+        <option value="rtl">右から左（標準）</option>
+        <option value="ltr">左から右</option>
+        <option value="ttb">下から上（縦スクロール）</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label for="speed">スクロール速度 <span class="val" id="speedVal">120</span></label>
+      <input type="range" id="speed" min="20" max="600" step="10" value="120">
+    </div>
+    <div class="input-group">
+      <label for="size">文字サイズ（ドットの大きさ） <span class="val" id="sizeVal">ふつう</span></label>
+      <input type="range" id="size" min="0.5" max="1.5" step="0.05" value="1">
+    </div>
+    <label class="checkbox-item"><input type="checkbox" id="blink"><span>点滅させる</span></label>
+  </div>
+
+  <!-- ③ 画像設定 -->
+  <div class="card">
+    <div class="section-title">ロゴ / 画像（任意）</div>
+    <div class="fileRow">
+      <label class="fileBtn" for="imgFile">📷 画像を選ぶ</label>
+      <input type="file" id="imgFile" accept="image/*" style="display:none">
+      <button class="removeBtn" id="imgClear" type="button">クリア</button>
+      <img id="imgPreview" alt="">
+      <span class="fileName" id="fileName">未選択</span>
+    </div>
+
+    <div class="input-group" style="margin-top:14px">
+      <label for="imgPos">画像の表示位置</label>
+      <select id="imgPos">
+        <option value="none">画像なし（テキストだけ）</option>
+        <option value="before">テキストの先頭</option>
+        <option value="after">テキストの後ろ</option>
+        <option value="only">画像だけ表示（テキスト非表示）</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label for="imgSize">画像の大きさ <span class="val" id="imgSizeVal">中</span></label>
+      <input type="range" id="imgSize" min="40" max="160" step="5" value="100">
+    </div>
+    <label class="checkbox-item"><input type="checkbox" id="ledImage"><span>画像も同じLEDドット風にする</span></label>
+
+    <div class="chips" id="imgPresets" style="margin-top:8px"></div>
+    <p class="hint">
+      ・カメラロールから写真を選べます<br>
+      ・画像は端末内で自動縮小して保存します（外部送信なし）<br>
+      ・透過PNGのロゴもきれいに表示されます
+    </p>
+  </div>
+
+  <!-- ④ よく使うテキスト -->
+  <div class="card">
+    <div class="section-title">よく使うテキスト</div>
+    <div class="chips" id="presets"></div>
+    <div class="ios-note" id="iosNote">
+      iPhone / iPadのSafariはフルスクリーン非対応のため、アドレスバーが表示されます。<br>
+      「共有」→「ホーム画面に追加」から起動すると、より画面いっぱいに表示できます。
+    </div>
+  </div>
+
+  <!-- ===== 解説文（AdSense有用性対策：独自コンテンツ） ===== -->
+  <section class="tool-desc">
+    <h2>スマホ電光掲示板の使い方</h2>
+    <p>テキストを入力し、文字色・背景色・スクロール速度を選んで「表示開始」を押すと、スマホ全体がLEDの電光掲示板になります。スマホを横向きにすると長い文章も読みやすく、画面をタップすれば設定に戻れます。画像を選べば、ロゴや写真をテキストの前後に流すことも可能です。</p>
+    <h3>こんな場面で使えます</h3>
+    <p>ライブ会場での応援メッセージ、待ち合わせ場所での目印、お店の「営業中」「準備中」表示、イベント受付の案内、パーティーの余興などを想定しています。運転中の操作や、周囲の迷惑になる強い光での表示は避けてください。</p>
+    <h3>仕様と補足</h3>
+    <p>文字は一度ドットの集まりに変換し、円形のドットとして描画することでLED風に見せています。画像は端末内で縮小してから保存するため外部へ送信されません。表示中の画面スリープ防止は、対応ブラウザでのみ働きます。iPhoneのSafariはフルスクリーン非対応なので、ホーム画面に追加して起動してください。</p>
+    <h3>よくある質問</h3>
+    <p>Q. 設定は消えますか？ A. ブラウザに自動保存されます。履歴やキャッシュを消すと初期状態に戻ります。<br>Q. 画像が大きすぎると言われます。 A. 端末の保存容量に収まるよう自動で縮小しますが、それでも入らない場合は別の画像をお試しください。</p>
+  </section>
+
+  <div id="shareAreaSlot"></div>
+  <div id="resetBtnSlot"></div>
+  <div id="bottomNavSlot"></div>
+  <div id="adAreaSlot"></div>
+  <div id="qrModalSlot"></div>
+  <div id="footerSlot"></div>
+</div>
+
+<!-- 表示モード（全画面のLED表示） -->
+<div id="display">
+  <canvas id="led"></canvas>
+  <div id="exitHint">タップで戻る</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="/common.js"></script>
+<script>
+/* =====================================================
+   ツール固有ロジック（common.jsの呼び出し前提の定義＋LED描画）
+   ===================================================== */
+var CURRENT_TOOL_ID = 'util-led-sign';
+var STORAGE_KEY = 'util-led-sign';
+var IMAGE_KEY = 'util-led-sign-image'; // 画像は容量が大きいので別キーで保存（common.jsの保存対象外）
+
+// common.jsが保存・復元する入力欄（画像以外）
+var STORAGE_FIELDS = ['text','color','bg','dir','speed','size','blink','imgPos','imgSize','ledImage'];
+
+// リセット時に戻す初期値（selectが空にならないようonResetExtraで使う）
+var DEFAULTS = { text:'ようこそ！', color:'#ff4b1f', bg:'#000000', dir:'rtl', speed:120, size:1,
+                 blink:false, imgPos:'after', imgSize:100, ledImage:false };
+
+var INPUT_LABELS = { text:'テキスト', color:'文字色', bg:'背景色', dir:'向き', speed:'速度', size:'文字サイズ' };
+var RESULT_LABELS = { main:'表示テキスト' };
+
+var PRESETS = ['営業中','準備中','本日限定セール','ただいま混雑しています','愛してる♡','危険！立入禁止','東京駅 18:00 集合'];
+
+function $(id){ return document.getElementById(id); }
+
+/* ---------- 描画用の状態（入力欄の値＋画像） ---------- */
+var state = Object.assign({}, DEFAULTS, { image: null });
+
+/* ---------- common.jsから呼ばれる4関数 ---------- */
+// 入力取得（ここでalertは出さない）
+function calculateInputs(){
+  return {
+    text: $('text').value, color: $('color').value, bg: $('bg').value, dir: $('dir').value,
+    speed: parseFloat($('speed').value), size: parseFloat($('size').value),
+    blink: $('blink').checked, imgPos: $('imgPos').value,
+    imgSize: parseFloat($('imgSize').value), ledImage: $('ledImage').checked
+  };
+}
+// 計算＝状態の確定。数値が不正な時だけnull
+function calculateResult(i){
+  if(isNaN(i.speed) || isNaN(i.size) || isNaN(i.imgSize)) return null;
+  return Object.assign({ main: i.text || '（空）' }, i);
+}
+// 表示＝ラベル更新＋プレビュー再描画
+function displayResult(r){
+  Object.assign(state, r);
+  $('speedVal').textContent = state.speed;
+  $('sizeVal').textContent = state.size <= 0.6 ? 'ちいさい' : state.size >= 1.3 ? 'おおきい' : 'ふつう';
+  $('imgSizeVal').textContent = state.imgSize <= 60 ? '小' : state.imgSize >= 130 ? '大' : '中';
+  drawPreview();
+}
+function buildShareText(r){
+  var t = r.main.length > 30 ? r.main.slice(0, 30) + '…' : r.main;
+  return '「' + t + '」をスマホの電光掲示板にしてみた！💡';
+}
+function buildShareUrl(){ return 'https://arigato-tools.com/util-led-sign'; }
+
+// リセット後：全入力を初期値に戻して再計算（resetAllは入力を空にするため）
+function onResetExtra(){
+  Object.keys(DEFAULTS).forEach(function(id){
+    var el = $(id);
+    if(el.type === 'checkbox') el.checked = DEFAULTS[id]; else el.value = DEFAULTS[id];
+  });
+  try{ localStorage.removeItem(IMAGE_KEY); }catch(e){}
+  setImage(SAMPLE_IMG, false);
+  onInputChange();
+}
+
+/* =====================================================
+   画像まわり
+   ===================================================== */
+// サンプル画像（赤いハート＋S）をcanvasで生成
+var SAMPLE_IMG = (function(){
+  var c = document.createElement('canvas'); c.width = 64; c.height = 64;
+  var ctx = c.getContext('2d');
+  ctx.fillStyle = '#ff4b1f';
+  ctx.beginPath(); ctx.moveTo(32,56);
+  ctx.bezierCurveTo(8,40, 4,18, 22,12); ctx.bezierCurveTo(28,10, 32,16, 32,20);
+  ctx.bezierCurveTo(32,16, 36,10, 42,12); ctx.bezierCurveTo(60,18, 56,40, 32,56);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 22px sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('S', 32, 36);
+  return c.toDataURL('image/png');
+})();
+
+// 保存済み画像の復元（キー無し＝初回はサンプル／空文字＝「なし」を選択済み）
+try{
+  var savedImg = localStorage.getItem(IMAGE_KEY);
+  state.image = (savedImg === null) ? SAMPLE_IMG : (savedImg || null);
+}catch(e){ state.image = SAMPLE_IMG; }
+
+function loadImageEl(url, cb){
+  var img = new Image();
+  img.onload = function(){ cb(img); };
+  img.onerror = function(){ cb(null); };
+  if(url) img.src = url;
+}
+function downscale(src, maxSide){
+  var scale = Math.min(1, maxSide / Math.max(src.width, src.height));
+  var c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(src.width * scale));
+  c.height = Math.max(1, Math.round(src.height * scale));
+  c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+  return c;
+}
+// 縮小してlocalStorageに保存。入らなければ形式→サイズの順に小さくして再挑戦
+// ★JPEGは透過が潰れるので、JPEG以外（PNG等）はPNG/WebPだけで試す
+function persistImage(dataUrl, mime, callback){
+  loadImageEl(dataUrl, function(img){
+    if(!img){ callback(false); return; }
+    var base = document.createElement('canvas');
+    base.width = img.naturalWidth; base.height = img.naturalHeight;
+    base.getContext('2d').drawImage(img, 0, 0);
+    var types = (mime === 'image/jpeg')
+      ? [['image/jpeg',0.85], ['image/jpeg',0.7], ['image/jpeg',0.55]]
+      : [['image/png',undefined], ['image/webp',0.8]];
+    var sizes = [900, 600, 360, 220, 140];
+    function tryAt(i, j){
+      if(i >= sizes.length){ callback(false); return; }
+      var data = downscale(base, sizes[i]).toDataURL(types[j][0], types[j][1]);
+      try{ localStorage.setItem(IMAGE_KEY, data); callback(true, data); }
+      catch(e){ if(j + 1 < types.length) tryAt(i, j + 1); else tryAt(i + 1, 0); }
+    }
+    tryAt(0, 0);
+  });
+}
+// 画像の差し替え（persist=falseなら保存済み／保存不要）
+function setImage(data, persist){
+  state.image = data;
+  if(persist !== false){
+    try{
+      if(data === SAMPLE_IMG) localStorage.removeItem(IMAGE_KEY);
+      else localStorage.setItem(IMAGE_KEY, data || '');
+    }catch(e){}
+  }
+  refreshImageUI();
+  refreshImageCache(function(){ drawPreview(); });
+}
+function refreshImageUI(){
+  var prev = $('imgPreview'), name = $('fileName');
+  if(state.image){
+    prev.src = state.image; prev.style.display = 'block';
+    name.textContent = (state.image === SAMPLE_IMG) ? 'サンプル（赤いハート）' : '画像あり（自動縮小済み）';
+  }else{
+    prev.style.display = 'none'; name.textContent = '未選択';
+  }
+}
+// 画像要素のキャッシュ（idはマトリクスキャッシュのキー用）
+var imgCache = { url:null, img:null, ready:false, id:0 }, imgSeq = 0;
+function refreshImageCache(cb){
+  if(imgCache.url === state.image && imgCache.ready){ if(cb) cb(imgCache.img); return; }
+  imgCache = { url: state.image, img: null, ready: false, id: ++imgSeq };
+  loadImageEl(state.image, function(img){
+    imgCache.img = img; imgCache.ready = !!img;
+    if(cb) cb(img);
+  });
+}
+
+/* =====================================================
+   ドットマトリクス化（毎フレーム作り直さないようキャッシュする）
+   ===================================================== */
+var FONT_PX = 96, SAMPLE = 2, matSeq = 0;
+var matCache = {}, tileCache = {};
+function limitCache(o){ if(Object.keys(o).length > 8){ for(var k in o) delete o[k]; } }
+
+function buildMatrix(text){
+  var c = document.createElement('canvas'), ctx = c.getContext('2d');
+  var font = '900 ' + FONT_PX + 'px "BIZ UDPGothic","Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif';
+  ctx.font = font;
+  c.width = Math.max(8, Math.ceil(ctx.measureText(text).width)) + 8;
+  c.height = FONT_PX + 8;
+  ctx.font = font; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = '#fff';
+  ctx.fillText(text, 4, FONT_PX - 2);
+  var data = ctx.getImageData(0, 0, c.width, c.height).data;
+  var cols = Math.ceil(c.width / SAMPLE), rows = Math.ceil(c.height / SAMPLE);
+  var cells = new Uint8Array(cols * rows);
+  for(var r = 0; r < rows; r++){
+    for(var col = 0; col < cols; col++){
+      cells[r * cols + col] = data[((r * SAMPLE) * c.width + col * SAMPLE) * 4 + 3] > 100 ? 1 : 0;
+    }
+  }
+  return { id: ++matSeq, cols: cols, rows: rows, cells: cells };
+}
+// 縦スクロール用：90度回転
+function rotateMatrix(m){
+  var cols = m.rows, rows = m.cols, cells = new Uint8Array(cols * rows);
+  for(var r = 0; r < rows; r++){
+    for(var c = 0; c < cols; c++) cells[r * cols + c] = m.cells[(m.rows - 1 - c) * m.cols + r];
+  }
+  return { id: ++matSeq, cols: cols, rows: rows, cells: cells };
+}
+function getTextMatrix(text, rot){
+  var key = 't|' + rot + '|' + text;
+  if(matCache[key]) return matCache[key];
+  limitCache(matCache);
+  var m = buildMatrix(text);
+  return (matCache[key] = rot ? rotateMatrix(m) : m);
+}
+// 画像 → マトリクス（輝度とアルファでON/OFF判定）
+function getImageMatrix(img, maxCols){
+  var key = 'i|' + imgCache.id + '|' + maxCols;
+  if(matCache[key]) return matCache[key];
+  limitCache(matCache);
+  var w0 = img.naturalWidth, h0 = img.naturalHeight, scale = Math.min(1, maxCols / w0);
+  var w = Math.max(1, Math.round(w0 * scale)), h = Math.max(1, Math.round(h0 * scale));
+  var c = document.createElement('canvas'); c.width = w; c.height = h;
+  var ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+  var d = ctx.getImageData(0, 0, w, h).data, cells = new Uint8Array(w * h);
+  for(var i = 0; i < w * h; i++){
+    cells[i] = (d[i*4+3] > 40 && (d[i*4] + d[i*4+1] + d[i*4+2]) / 3 > 80) ? 1 : 0;
+  }
+  return (matCache[key] = { id: ++matSeq, cols: w, rows: h, cells: cells });
+}
+// マトリクス → 円形ドットのタイル画像
+function buildTile(m, dot, color, bg){
+  var key = [m.id, dot, color, bg].join('|');
+  if(tileCache[key]) return tileCache[key];
+  limitCache(tileCache);
+  var c = document.createElement('canvas'); c.width = m.cols * dot; c.height = m.rows * dot;
+  var ctx = c.getContext('2d'), r2 = dot / 2;
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, c.width, c.height);
+  ctx.fillStyle = color;
+  for(var r = 0; r < m.rows; r++){
+    for(var col = 0; col < m.cols; col++){
+      if(m.cells[r * m.cols + col]){
+        ctx.beginPath(); ctx.arc(col * dot + r2, r * dot + r2, r2 * 0.82, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+  }
+  return (tileCache[key] = c);
+}
+
+/* =====================================================
+   描画本体（プレビューと全画面表示で共通）
+   dir: rtl / ltr / ttb、offset: 進んだ距離(px)、minDot: ドット最小px、sizeF: 文字サイズ倍率
+   ===================================================== */
+function render(ctx, W, H, dir, offset, minDot, sizeF){
+  var vert = (dir === 'ttb');
+  ctx.fillStyle = state.bg; ctx.fillRect(0, 0, W, H);
+
+  // 文字タイル（縦は回転済み。ドットの大きさは「文字の太さ方向」で決める）
+  var tm = getTextMatrix(state.text || ' ', vert);
+  var dot = Math.max(minDot, Math.floor((vert ? W / (tm.cols + 3) : H / (tm.rows + 3)) * sizeF));
+  var tile = buildTile(tm, dot, state.color, state.bg);
+  var img = (imgCache.ready && imgCache.url === state.image) ? imgCache.img : null;
+  var useImg = !!img && state.imgPos !== 'none';
+
+  // 部品（文字／画像／余白）を並べる。g＝前後の余白
+  var parts = [];
+  function add(cw, ch, g, fn){ parts.push({ w: cw + g, h: ch + g, g: g, fn: fn }); }
+  function addText(){ add(tile.width, tile.height, 12, function(x,y){ ctx.drawImage(tile, x, y); }); }
+  function addSep(){ add(0, 0, dot * 3, function(){}); }
+  function addImg(){
+    var ratio = img.naturalWidth / Math.max(1, img.naturalHeight), f = state.imgSize / 100, iw, ih;
+    if(vert){ iw = W * 0.7 * f; ih = iw / ratio; } else { ih = H * 0.7 * f; iw = ih * ratio; }
+    iw = Math.max(8, Math.round(iw)); ih = Math.max(8, Math.round(ih));
+    var gap = dot * 1.5;
+    if(state.ledImage){ // 画像もLEDドット化
+      var mat = getImageMatrix(img, Math.max(40, Math.round(iw / Math.max(4, dot))));
+      var pd = Math.max(1, Math.floor(Math.min(iw / mat.cols, ih / mat.rows)));
+      var pt = buildTile(mat, pd, state.color, state.bg);
+      add(pt.width, pt.height, gap, function(x,y){ ctx.drawImage(pt, x, y); });
+    }else{
+      add(iw, ih, gap, function(x,y){ ctx.drawImage(img, x, y, iw, ih); });
+    }
+  }
+  if(useImg && state.imgPos === 'before'){ addImg(); addSep(); addText(); }
+  else if(useImg && state.imgPos === 'after'){ addText(); addSep(); addImg(); }
+  else if(useImg && state.imgPos === 'only'){ addImg(); }
+  else { addText(); }
+  addSep();
+
+  // ループ：1周の長さは「全部品の合計」と「画面の長さ」の長い方（短い文字でも画面外へ出きってから再登場）
+  var len = vert ? H : W;
+  var total = parts.reduce(function(s,p){ return s + (vert ? p.h : p.w); }, 0);
+  var P = Math.max(total, len);
+  var shift = (dir === 'ltr') ? P - (offset % P) : (offset % P);
+  for(var base = -shift; base < len; base += P){
+    var pos = base;
+    parts.forEach(function(p){
+      if(vert){ p.fn((W - p.w) / 2 + p.g / 2, pos + p.g / 2); pos += p.h; }
+      else    { p.fn(pos + p.g / 2, (H - p.h) / 2 + p.g / 2); pos += p.w; }
+    });
+  }
+}
+
+/* ---------- プレビュー（設定画面の小さいcanvas） ---------- */
+var pCanvas = $('preview'), pCtx = pCanvas.getContext('2d');
+function drawPreview(){
+  var dir = (state.dir === 'ltr') ? 'ltr' : 'rtl'; // プレビューは横のみ
+  render(pCtx, pCanvas.width, pCanvas.height, dir, Date.now() / 1000 * state.speed * 0.3, 1, 1);
+}
+setInterval(function(){
+  if($('display').style.display === 'block') return;
+  if(state.image && (!imgCache.ready || imgCache.url !== state.image)) refreshImageCache(drawPreview);
+  drawPreview();
+}, 90);
+
+/* =====================================================
+   全画面表示
+   ===================================================== */
+var canvas = $('led'), dctx = canvas.getContext('2d');
+var offset = 0, lastT = 0, running = false, rafId = 0, wakeLock = null;
+
+function resizeCanvas(){
+  var dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  var vw = Math.max(1, window.innerWidth), vh = Math.max(1, window.innerHeight);
+  canvas.width = Math.round(vw * dpr); canvas.height = Math.round(vh * dpr);
+  canvas.style.width = vw + 'px'; canvas.style.height = vh + 'px';
+}
+function frame(t){
+  if(!running) return;
+  var dt = Math.min((t - lastT) / 1000, 0.1); lastT = t;
+  var sizeF = state.size;
+  // 点滅のOFF中は背景だけ塗って進行は止める
+  if(state.blink && Math.floor(t / 480) % 2 === 1){
+    dctx.fillStyle = state.bg; dctx.fillRect(0, 0, canvas.width, canvas.height);
+  }else{
+    offset += state.speed * sizeF * dt;
+    render(dctx, canvas.width, canvas.height, state.dir, offset, 2, sizeF);
+  }
+  rafId = requestAnimationFrame(frame);
+}
+function startDisplay(){
+  $('display').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  running = true; resizeCanvas(); requestWakeLock();
+  var hint = $('exitHint'); hint.style.opacity = '1';
+  setTimeout(function(){ hint.style.opacity = '0'; }, 1800);
+  lastT = performance.now();
+  cancelAnimationFrame(rafId);
+  refreshImageCache(function(){ rafId = requestAnimationFrame(frame); });
+}
+function exitDisplay(){
+  running = false;
+  $('display').style.display = 'none';
+  document.body.style.overflow = '';
+  releaseWakeLock();
+  if(document.fullscreenElement || document.webkitFullscreenElement){
+    (document.exitFullscreen || document.webkitExitFullscreen || function(){}).call(document);
+  }
+}
+// 画面スリープ防止（対応ブラウザのみ）
+function requestWakeLock(){
+  if('wakeLock' in navigator){ navigator.wakeLock.request('screen').then(function(wl){ wakeLock = wl; }).catch(function(){}); }
+}
+function releaseWakeLock(){ if(wakeLock){ wakeLock.release(); wakeLock = null; } }
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState === 'visible' && running) requestWakeLock();
+});
+
+/* =====================================================
+   イベント登録
+   ===================================================== */
+// 入力欄：変更→保存＋再計算（common.jsのonInputChange）
+STORAGE_FIELDS.forEach(function(id){
+  $(id).addEventListener('input', onInputChange);
+  $(id).addEventListener('change', onInputChange);
+});
+
+// 画像ファイル選択
+$('imgFile').addEventListener('change', function(e){
+  var f = e.target.files && e.target.files[0];
+  if(!f) return;
+  var reader = new FileReader();
+  reader.onload = function(){
+    persistImage(reader.result, f.type, function(ok, data){
+      if(!ok){ alert('画像が大きすぎて保存できませんでした。別の画像を試してください。'); return; }
+      setImage(data, false); // 保存済み
+    });
+  };
+  reader.readAsDataURL(f);
+  e.target.value = '';
+});
+$('imgClear').addEventListener('click', function(){ setImage(null); });
+
+// 画像ショートカット／テキストプリセット
+[{ label:'❤️ サンプル', val:SAMPLE_IMG }, { label:'なし', val:null }].forEach(function(item){
+  var b = document.createElement('button');
+  b.className = 'chip'; b.type = 'button'; b.textContent = item.label;
+  b.addEventListener('click', function(){ setImage(item.val); });
+  $('imgPresets').appendChild(b);
+});
+PRESETS.forEach(function(p){
+  var b = document.createElement('button');
+  b.className = 'chip'; b.type = 'button'; b.textContent = p;
+  b.addEventListener('click', function(){ $('text').value = p; onInputChange(); });
+  $('presets').appendChild(b);
+});
+
+// 開始／フルスクリーン／終了
+$('startBtn').addEventListener('click', startDisplay);
+var isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+var fsReq = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
+if(isIOS || !fsReq){ $('iosNote').style.display = 'block'; $('fsBtn').style.display = 'none'; }
+$('fsBtn').addEventListener('click', function(){
+  var p = fsReq && fsReq.call(document.documentElement);
+  if(p && p.catch) p.catch(function(){});
+});
+var lastTouchMoved = false;
+canvas.addEventListener('click', exitDisplay);
+canvas.addEventListener('touchend', function(e){
+  if(!lastTouchMoved){ e.preventDefault(); exitDisplay(); }
+  lastTouchMoved = false;
+});
+canvas.addEventListener('touchmove', function(){ lastTouchMoved = true; });
+window.addEventListener('resize', function(){ if(running) resizeCanvas(); });
+window.addEventListener('orientationchange', function(){ setTimeout(function(){ if(running) resizeCanvas(); }, 300); });
+
+// ?mode=display で直接全画面表示（ホーム画面ショートカット用）
+if(new URLSearchParams(location.search).get('mode') === 'display'){ setTimeout(startDisplay, 100); }
+
+// 初期表示：画像を読み込んでからUI・プレビューを更新（入力値の復元はcommon.jsが実行）
+refreshImageUI();
+refreshImageCache(function(){ refreshImageUI(); drawPreview(); });
+</script>
+</body>
+</html>
