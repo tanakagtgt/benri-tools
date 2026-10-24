@@ -286,6 +286,25 @@
   .tool-desc h3 { font-size: 13px; color: var(--color-text); margin: 14px 0 4px; }
   .tool-desc ul { padding-left: 18px; }
   .tool-desc li { margin-bottom: 2px; }
+
+  /* =====================================================
+     【改修】スクロール削減レイアウト用
+     ===================================================== */
+  .io-card { padding: 14px 14px 12px; margin-bottom: 10px; }
+  .io-card textarea.io-textarea { height: 110px; }
+  .io-tools { display: flex; gap: 6px; }
+  .io-tool-btn { min-height: 36px; padding: 6px 10px; font-size: 12px; }
+  /* 文字数ストリップ（5列・小さめ表示） */
+  .count-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 10px; }
+  .count-strip .breakdown-item { padding: 8px 2px; }
+  .count-strip .b-num { font-size: 18px; }
+  .count-strip .b-label { font-size: 10px; }
+  .count-strip .main-count { border-color: var(--color-primary-border); background: var(--color-primary-bg); }
+  .count-strip .main-count .b-num { color: var(--color-primary); }
+  /* 「適用中の変換」表示 */
+  .setting-summary { font-size: 11px; color: var(--color-text-muted); line-height: 1.5; margin-bottom: 6px; }
+  details.rule-doc { margin-bottom: 10px; }
+  details.rule-doc summary { min-height: 24px; }
 </style>
 
 </head>
@@ -297,10 +316,7 @@
 
   <header>
     <h1>🔧 文章変換ツール</h1>
-    <p class="subtitle">
-      ※ 文字数・行数・バイト数をリアルタイムでカウントします<br>
-      ※ 全角⇔半角／ひらがな⇔カタカナ変換、置換ルール、自動改行にも対応
-    </p>
+    <p class="subtitle">文字数カウント・全角半角／ひらカナ変換・置換・自動改行</p>
   </header>
 
   <!-- タブ切り替え（作業／置換ルール管理） -->
@@ -309,15 +325,45 @@
     <button type="button" class="tab-btn" id="tabBtnRules" onclick="switchTab('rules')">🔁 置換ルール管理</button>
   </div>
 
-  <!-- =====================================================
-       タブ①「作業」：変換設定＋文字数・バイト数＋入力欄／変換結果欄
-       ===================================================== -->
   <div class="tab-panel active" id="tabWork">
 
-    <!-- 変換設定カード（★将来オプション追加はこの中に項目を足すだけでOK） -->
-    <div class="card">
-      <div class="section-title">▶ 変換設定</div>
+    <!-- ① 入力欄＋文字数（最上段：開いてすぐ貼り付けられる） -->
+    <div class="card io-card">
+      <div class="text-io-label">
+        <label for="inputText">入力欄（原文）</label>
+        <div class="io-tools">
+          <button type="button" class="matrix-bulk-btn io-tool-btn" onclick="pasteInput()">📥 貼り付け</button>
+          <button type="button" class="matrix-bulk-btn io-tool-btn" onclick="clearInput()">🗑 クリア</button>
+        </div>
+      </div>
+      <textarea id="inputText" class="io-textarea" placeholder="ここに変換・カウントしたい文章を入力してください..."></textarea>
 
+      <!-- 文字数ストリップ（IDはcommon.jsのreset()が参照するresultNum/bA/bB/bCを維持） -->
+      <div class="count-strip">
+        <div class="breakdown-item main-count"><div class="b-num placeholder" id="resultNum">—</div><div class="b-label">文字数</div></div>
+        <div class="breakdown-item"><div class="b-num placeholder" id="outCharCount">—</div><div class="b-label">変換後</div></div>
+        <div class="breakdown-item"><div class="b-num placeholder" id="bA">—</div><div class="b-label">改行数</div></div>
+        <div class="breakdown-item"><div class="b-num placeholder" id="bB">—</div><div class="b-label">空白数</div></div>
+        <div class="breakdown-item"><div class="b-num placeholder" id="bC">—</div><div class="b-label">行数</div></div>
+      </div>
+    </div>
+
+    <!-- ② 変換結果＋コピー（入力のすぐ下） -->
+    <div class="card io-card">
+      <div class="text-io-label">
+        <label for="outputText">変換結果欄</label>
+      </div>
+      <div class="setting-summary" id="settingSummary"></div>
+      <textarea id="outputText" class="io-textarea" readonly placeholder="変換結果がここに表示されます..."></textarea>
+      <button type="button" class="btn-calc" id="btnCopyOutput" style="margin-top:10px;" onclick="copyOutputText()">📋 変換結果をコピー</button>
+      <div class="error-msg" id="errorMsg"></div>
+      <div class="rule-log" id="ruleLog"></div>
+    </div>
+
+    <!-- ③ 変換設定（折りたたみ：普段は隠して画面を節約。現在の設定は上の「適用中」で確認） -->
+    <details class="rule-doc">
+      <summary>⚙️ 変換設定（全角半角・改行・置換など）</summary>
+      <div style="margin-top:12px;">
       <div class="setting-row">
         <div class="setting-item">
           <label for="wrapLength" style="display:block;font-size:11px;font-weight:700;color:var(--color-text-sub);margin-bottom:4px;">任意の文字数で改行（0で無効）</label>
@@ -395,37 +441,13 @@
           </tbody>
         </table>
       </div>
-      <div class="error-msg" id="errorMsg"></div>
-    </div>
-
-    <!-- 文字数・バイト数＋入力欄／変換結果欄 -->
-    <div class="result-panel">
-      <div class="result-main">
-        <div class="result-label">文字数（全体）</div>
-        <div>
-          <span class="result-number placeholder" id="resultNum">—</span>
-          <span class="result-unit">文字</span>
-        </div>
-        <div class="result-sub" id="resultSub"></div>
       </div>
-      <div class="breakdown-wrap">
-        <div class="analysis-section-title">▶ 文字数・バイト数</div>
-        <div class="breakdown">
-          <div class="breakdown-item">
-            <div class="b-num placeholder" id="bA">—</div>
-            <div class="b-label">改行数</div>
-          </div>
-          <div class="breakdown-item">
-            <div class="b-num placeholder" id="bB">—</div>
-            <div class="b-label">空白スペース数</div>
-          </div>
-          <div class="breakdown-item">
-            <div class="b-num placeholder" id="bC">—</div>
-            <div class="b-label">行数</div>
-          </div>
-        </div>
+    </details>
 
-        <!-- バイト数（breakdownクラスを流用・☆不要なら丸ごと削除可） -->
+    <!-- ④ バイト数（折りたたみ） -->
+    <details class="rule-doc">
+      <summary>📏 バイト数を見る（UTF-8／Shift-JIS など）</summary>
+      <div style="margin-top:10px;">
         <div class="breakdown">
           <div class="breakdown-item">
             <div class="b-num placeholder" id="byteUtf8">—</div>
@@ -448,24 +470,13 @@
             <div class="b-label">JIS (ISO-2022-JP)</div>
           </div>
         </div>
+      </div>
+    </details>
 
-        <!-- 入力欄（原文） -->
-        <div class="text-io-label" style="margin-top:6px;">
-          <label for="inputText">入力欄（原文）</label>
-        </div>
-        <textarea id="inputText" class="io-textarea" placeholder="ここに変換・カウントしたい文章を入力してください..."></textarea>
-
-        <!-- 変換結果欄 -->
-        <div class="text-io-label" style="margin-top:14px;">
-          <label for="outputText">変換結果欄</label>
-          <button type="button" class="btn-copy io-copy-btn" id="btnCopyOutput" onclick="copyOutputText()">📋 コピー</button>
-        </div>
-        <textarea id="outputText" class="io-textarea" readonly placeholder="変換結果がここに表示されます..."></textarea>
-
-        <!-- 置換ルールのヒット件数ログ（ルール適用時のみ表示） -->
-        <div class="rule-log" id="ruleLog"></div>
-
-        <!-- 結果アクションボタン（共通処理はcommon.js側、書き換え不要） -->
+    <!-- ⑤ その他のコピー・共有（折りたたみ。ボタンIDはcommon.jsが参照するため残置） -->
+    <details class="rule-doc">
+      <summary>📤 その他のコピー（条件・URL・QR・Excel）</summary>
+      <div style="margin-top:10px;">
         <div class="copy-actions" style="margin-top:12px;">
           <button class="btn-action" id="btnCopyText" onclick="copyResultText()" disabled>📄 条件+文字数をコピー</button>
           <button class="btn-action" id="btnCopyUrlInputs" onclick="copyResultUrlInputs()" disabled>🔗 入力値URLコピー</button>
@@ -473,9 +484,8 @@
           <button class="btn-action" id="btnCopyExcel" onclick="copyResultExcel()" disabled>📊 Excel用コピー</button>
         </div>
       </div>
-    </div>
+    </details>
 
-    <!-- 処理法則の説明（詳細情報は折りたたんで1画面収まりを優先） -->
     <details class="rule-doc">
       <summary>💡 変換・カウントの処理法則を見る</summary>
       <h4>1. 文字数・バイト数の法則</h4>
@@ -888,7 +898,72 @@ function setBulkRadio(value) {
     const radios = document.getElementsByName(name);
     for (let r of radios) { if (r.value === value) r.checked = true; }
   });
+  saveMatrix();
   onInputChange(); // common.js: 保存＋再計算
+}
+
+/* =====================================================
+   マトリクス（ラジオ）の保存／復元
+   - common.jsの汎用保存はid前提のため、name属性のラジオは別キーで保存
+   ===================================================== */
+const MATRIX_KEY = STORAGE_KEY + '_matrix';
+const MATRIX_NAMES = ['m_num', 'm_alpha', 'm_kana', 'm_sym', 'm_space'];
+function saveMatrix() {
+  try {
+    const d = {};
+    MATRIX_NAMES.forEach(n => { d[n] = getRadioMode(n); });
+    localStorage.setItem(MATRIX_KEY, JSON.stringify(d));
+  } catch (e) { /* 保存不可は無視 */ }
+}
+function loadMatrix() {
+  try {
+    const raw = localStorage.getItem(MATRIX_KEY);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    MATRIX_NAMES.forEach(n => {
+      const r = document.querySelector(`input[name="${n}"][value="${d[n]}"]`);
+      if (r) r.checked = true;
+    });
+  } catch (e) { /* 破損は無視 */ }
+}
+
+/* =====================================================
+   入力欄の貼り付け／クリア
+   ===================================================== */
+async function pasteInput() {
+  try {
+    const t = await navigator.clipboard.readText();
+    document.getElementById('inputText').value = t;
+    onInputChange();
+  } catch (e) {
+    showError('貼り付けできませんでした。入力欄を長押しして貼り付けてください。');
+  }
+}
+function clearInput() {
+  const el = document.getElementById('inputText');
+  el.value = '';
+  onInputChange();
+  el.focus();
+}
+
+/* =====================================================
+   「適用中の変換」を結果欄の上に1行表示（設定が折りたたまれていても分かるように）
+   ===================================================== */
+function updateSettingSummary(inp) {
+  const el = document.getElementById('settingSummary');
+  if (!el) return;
+  const nm = { zen: '全角', han: '半角' };
+  const parts = [];
+  [['数字', inp.mNum], ['英字', inp.mAlpha], ['カナ', inp.mKana], ['記号', inp.mSym], ['空白', inp.mSpace]]
+    .forEach(([n, m]) => { if (m !== 'none') parts.push(`${n}→${nm[m]}`); });
+  if (inp.hiraToKata) parts.push('ひら→カナ');
+  if (inp.kataToHira) parts.push('カナ→ひら');
+  if (inp.useNfkc) parts.push('NFKC');
+  if (inp.breakPeriod) parts.push('「。」で改行');
+  if (inp.wrapLen > 0) parts.push(`${inp.wrapLen}文字で改行`);
+  const ruleOn = inp.applyRules ? inp.rules.filter(r => r.enabled && r.find !== '').length : 0;
+  if (ruleOn > 0) parts.push(`置換${ruleOn}件`);
+  el.textContent = parts.length ? '適用中：' + parts.join('／') : '適用中の変換：なし（文字数カウントのみ）';
 }
 
 function getRadioMode(name) {
@@ -987,6 +1062,8 @@ function displayResult(result) {
   setNumDisplay('byteSjis', result.bytes.sjis);
   setNumDisplay('byteEucjp', result.bytes.euc);
   setNumDisplay('byteJis', result.bytes.jis);
+  setNumDisplay('outCharCount', result.convertedText.length); // 変換後の文字数
+  updateSettingSummary(calculateInputs());
 
   document.getElementById('outputText').value = result.convertedText;
   renderRuleLog(result.ruleLog);
@@ -1003,7 +1080,7 @@ function displayResult(result) {
    ===================================================== */
 function onResetExtra() {
   document.getElementById('outputText').value = '';
-  ['byteUtf8', 'byteUtf16', 'byteSjis', 'byteEucjp', 'byteJis'].forEach(id => {
+  ['byteUtf8', 'byteUtf16', 'byteSjis', 'byteEucjp', 'byteJis', 'outCharCount'].forEach(id => {
     const el = document.getElementById(id);
     el.textContent = '—';
     el.classList.add('placeholder');
@@ -1021,7 +1098,7 @@ function onResetExtra() {
    ===================================================== */
 function copyOutputText() {
   const text = document.getElementById('outputText').value;
-  copyToClipboard(text, 'btnCopyOutput', '📋 コピー');
+  copyToClipboard(text, 'btnCopyOutput', '📋 変換結果をコピー');
 }
 
 /* =====================================================
@@ -1273,6 +1350,7 @@ function importRules() {
    ===================================================== */
 loadRules();
 renderRules();
+loadMatrix(); // restoreInputs→calculateより前にラジオを復元
 
 /* =====================================================
    イベント登録（入力・設定変更のたびに保存＋再計算）
@@ -1287,7 +1365,7 @@ document.getElementById('excludeChars').addEventListener('input', onInputChange)
 document.getElementById('ruleTiming').addEventListener('change', onInputChange);
 
 document.querySelectorAll('input[type="radio"]').forEach(radio => {
-  radio.addEventListener('change', onInputChange);
+  radio.addEventListener('change', () => { saveMatrix(); onInputChange(); });
 });
 </script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"2a7173a55c5f444c84b89f17403d7062","r":1,"spa":2}' crossorigin="anonymous"></script>
