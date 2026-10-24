@@ -1450,7 +1450,9 @@ body.wb-lock{overflow:hidden;}
   cursor:grab;
 }
 .wb-viewport.wb-nogrid{background-image:none;}
-.wb-viewport.tool-frame,.wb-viewport.tool-arrow{cursor:crosshair;}
+.wb-viewport.tool-frame,.wb-viewport.tool-arrow,.wb-viewport.tool-multi{cursor:crosshair;}
+.wb-marquee{position:absolute;border:1.5px dashed var(--color-primary);background:var(--color-primary-bg);opacity:.5;pointer-events:none;}
+.wb-ctx-label{font-size:11px;font-weight:700;color:var(--color-text-muted);}
 .wb-world{position:absolute;left:0;top:0;width:0;height:0;transform-origin:0 0;--inv:1;}
 .wb-item{position:absolute;box-sizing:border-box;}
 
@@ -1719,9 +1721,11 @@ body.wb-lock{overflow:hidden;}
       <!-- 2段目：付箋・枠・矢印 -->
       <div class="wb-row">
         <button type="button" class="wb-btn wb-primary" onclick="wbAddNote()">＋ 付箋</button>
-        <button type="button" class="wb-btn" onclick="wbOpenPicker()">📥 タスクから</button>
+        <button type="button" class="wb-btn" onclick="wbOpenPicker()">📥 既存タスクから追加</button>
         <button type="button" class="wb-btn" id="wbToolFrame" onclick="wbSetTool('frame')">▭ 枠</button>
         <button type="button" class="wb-btn" id="wbToolArrow" onclick="wbSetTool('arrow')">➡️ 矢印</button>
+        <button type="button" class="wb-btn" id="wbToolMulti" onclick="wbSetTool('multi')">☑ 複数選択</button>
+        <button type="button" class="wb-btn" onclick="wbAutoTagFrames()">🏷 タグで枠を自動作成</button>
       </div>
 
       <!-- 3段目：元に戻す／やり直す／グリッド／吸着／全体表示／保存状態 -->
@@ -1740,7 +1744,7 @@ body.wb-lock{overflow:hidden;}
           <div id="wbItems"></div>
           <svg class="wb-svg" id="wbSvg" xmlns="http://www.w3.org/2000/svg"></svg>
         </div>
-        <div class="wb-empty" id="wbEmpty">まだ何もありません<br>「＋ 付箋」で新しいタスクを作成<br>「📥 タスクから」で登録済みのタスクを配置</div>
+        <div class="wb-empty" id="wbEmpty">まだ何もありません<br>「＋ 付箋」で新しいタスクを作成<br>「📥 既存タスクから追加」で登録済みのタスクを配置</div>
         <div class="wb-hint" id="wbHint"></div>
         <div class="wb-zoomctl">
           <button type="button" onclick="wbZoomBy(1.25)" aria-label="拡大">＋</button>
@@ -1851,7 +1855,7 @@ body.wb-lock{overflow:hidden;}
       <li>画面上部のタブで「ボード／リスト／設定」を切り替え。リストタブでは「今日／明日／今週／予定なし／完了済み／すべて」で一覧を絞り込み</li>
       <li>リストタブの検索欄・タグチップで、件名やタグから目的のタスクをすぐ探せる</li>
       <li>完了したタスクはチェック、またはドラッグで「完了済み」ゾーンに移動</li>
-      <li>「付箋」タブでは、タスクを付箋としてキャンバスに自由に並べられる。「＋ 付箋」で新規作成、「📥 タスクから」で登録済みのタスクを配置。ダブルタップで文字編集、ピンチやホイールで拡大縮小、空いている所をドラッグで画面移動</li>
+      <li>「付箋」タブでは、タスクを付箋としてキャンバスに自由に並べられる。「＋ 付箋」で新規作成、「📥 既存タスクから追加」で登録済みのタスクを配置（日付・大タグ・小タグの昇順／降順で並び替え可）。ダブルタップで文字編集、ピンチやホイールで拡大縮小、空いている所をドラッグで画面移動</li>
     </ol>
 
     <h3 class="tool-desc-subtitle">特徴・できること</h3>
@@ -1869,7 +1873,7 @@ body.wb-lock{overflow:hidden;}
       <li>「今日／明日／今週／予定なし／完了済み／すべて」の絞り込み表示</li>
       <li>ドラッグ＆ドロップでの並び替え・象限移動（スマホのタッチ操作にも対応）</li>
       <li>重要度×緊急度の4象限マトリクス（①今すぐやる②計画してやる③サクッとやる④後回し）を常時表示</li>
-      <li>付箋タブ（ホワイトボード風）：付箋の追加・移動・サイズ変更・8色の色分け・複製、枠でのグループ化（枠ごと中身も移動・完了数を表示）、付箋同士を矢印でつないで「原因」「次の工程」などの説明を付ける、重なり順の変更、グリッド表示と位置合わせ、全体表示、元に戻す／やり直す、自動保存、ボードの複製・名前変更、PNG画像出力、JSONバックアップ・復元</li>
+      <li>付箋タブ（ホワイトボード風）：付箋の追加・移動・サイズ変更・8色の色分け・複製、枠でのグループ化（枠ごと中身も移動・完了数を表示）、大タグごとに枠を自動作成して付箋を並べる機能、複数選択（範囲選択・まとめて移動／色変更／整列／等間隔／格子配置）、付箋同士を矢印でつないで「原因」「次の工程」などの説明を付ける、重なり順の変更、グリッド表示と位置合わせ、全体表示、元に戻す／やり直す、自動保存、ボードの複製・名前変更、PNG画像出力、JSONバックアップ・復元</li>
       <li>JSON形式でのエクスポート／インポート（機種変更やバックアップに利用可）</li>
       <li>タスク単位でGoogleカレンダーへ個別登録、またはタグ・分類別にソートしてからのICS一括出力</li>
     </ul>
@@ -1926,8 +1930,14 @@ body.wb-lock{overflow:hidden;}
 <!-- 付箋ボード：既存タスクをボードに配置するダイアログ -->
 <div class="wb-picker-overlay" id="wbPicker" onclick="wbPickerOverlay(event)">
   <div class="wb-picker" role="dialog" aria-label="タスクをボードに追加">
-    <div class="wb-picker-title">📥 登録済みのタスクをボードに置く</div>
+    <div class="wb-picker-title">📥 既存タスクから追加</div>
     <input type="text" class="wb-input" id="wbPickerSearch" placeholder="件名で検索" oninput="wbPickerRender()">
+    <div class="wb-row">
+      <select class="wb-sel" id="wbPickerKey" onchange="wbPickerSortChange()" aria-label="並び替え">
+        <option value="due">日付（期限）順</option><option value="main">大タグ順</option><option value="sub">小タグ順</option>
+      </select>
+      <button type="button" class="wb-btn" id="wbPickerDir" onclick="wbPickerDirToggle()">▲ 昇順</button>
+    </div>
     <label class="wb-picker-opt"><input type="checkbox" id="wbPickerDone" onchange="wbPickerRender()"> 完了済みも表示する</label>
     <div class="wb-picker-list" id="wbPickerList"></div>
     <div class="wb-picker-btns">
@@ -4922,6 +4932,7 @@ const wb = {
   ctxSig: null,         // 操作バーの再描画判定
   hist: {},             // ボードid → { undo:[], redo:[] }（メモリのみ）
   pick: new Set(),      // タスク追加ダイアログで選択中のタスクid
+  ms: new Set(),        // 複数選択中のitem id（付箋・枠）。空なら単一選択(sel)で動く
 };
 
 const wbQ = id => document.getElementById(id);
@@ -4998,12 +5009,14 @@ function wbNormBoard(b) {
 function wbLoad() {
   let raw = null;
   try { raw = JSON.parse(localStorage.getItem(WB_STORAGE_KEY)); } catch (e) { /* 読めなければ新規扱い */ }
-  const data = { boards: [], activeId: null, opt: { grid: true, snap: true, carry: true } };
+  const data = { boards: [], activeId: null, opt: { grid: true, snap: true, carry: true, pickKey: 'due', pickDir: 'asc' } };
   if (raw && typeof raw === 'object') {
     if (raw.opt && typeof raw.opt === 'object') {
       data.opt.grid = raw.opt.grid !== false;
       data.opt.snap = raw.opt.snap !== false;
       data.opt.carry = raw.opt.carry !== false;
+      data.opt.pickKey = ['due', 'main', 'sub'].includes(raw.opt.pickKey) ? raw.opt.pickKey : 'due';
+      data.opt.pickDir = raw.opt.pickDir === 'desc' ? 'desc' : 'asc';
     }
     (Array.isArray(raw.boards) ? raw.boards : []).forEach(b => {
       const nb = wbNormBoard(b);
@@ -5060,7 +5073,9 @@ function wbDo(fn) {
   wbQueueSave();
   wbRender();
 }
+function wbIsSel(id) { return wb.ms.size ? wb.ms.has(id) : wb.sel === id; }
 function wbFixSel() {
+  [...wb.ms].forEach(id => { if (!wbItem(id)) wb.ms.delete(id); });
   if (wb.sel && !wbItem(wb.sel)) wb.sel = null;
   if (wb.arrowFrom && !wbItem(wb.arrowFrom)) wb.arrowFrom = null;
 }
@@ -5237,10 +5252,10 @@ function wbFrameStats(f) {
 
 function wbItemHtml(it) {
   const cls = ['wb-item', it.type === 'frame' ? 'wb-frame' : 'wb-note', 'c-' + it.color];
-  if (wb.sel === it.id) cls.push('sel');
+  if (wbIsSel(it.id)) cls.push('sel');
   if (wb.arrowFrom === it.id) cls.push('from');
   const st = 'left:' + it.x + 'px;top:' + it.y + 'px;width:' + it.w + 'px;height:' + it.h + 'px;z-index:' + it.z;
-  const handle = (wb.sel === it.id) ? '<div class="wb-handle" data-act="resize"></div>' : '';
+  const handle = (!wb.ms.size && wb.sel === it.id) ? '<div class="wb-handle" data-act="resize"></div>' : '';
 
   if (it.type === 'frame') {
     const s = wbFrameStats(it);
@@ -5321,6 +5336,7 @@ function wbUpdateToolbar() {
   wbQ('wbRedoBtn').disabled = !h.redo.length;
   wbQ('wbToolFrame').classList.toggle('on', wb.tool === 'frame');
   wbQ('wbToolArrow').classList.toggle('on', wb.tool === 'arrow');
+  wbQ('wbToolMulti').classList.toggle('on', wb.tool === 'multi');
   wbQ('wbGridBtn').classList.toggle('on', wbData.opt.grid);
   wbQ('wbSnapBtn').classList.toggle('on', wbData.opt.snap);
   wbQ('wbCarryBtn').textContent = '枠ごと中身も動かす：' + (wbData.opt.carry ? 'ON' : 'OFF');
@@ -5331,6 +5347,7 @@ function wbUpdateHint() {
   let h = '';
   if (wb.tool === 'arrow') h = wb.arrowFrom ? '➡️ つなぐ先をタップ' : '➡️ 矢印モード：始点 → 終点の順にタップ';
   else if (wb.tool === 'frame') h = '▭ 空いている所をドラッグして枠を描く';
+  else if (wb.tool === 'multi') h = '☑ 付箋をタップで追加／解除、空きをドラッグで範囲選択';
   if (!h) { el.style.display = 'none'; return; }
   el.style.display = 'flex';
   el.innerHTML = '<span>' + h + '</span><button type="button" onclick="wbSetTool(\'select\')">終了</button>';
@@ -5342,9 +5359,10 @@ function wbCtxSig(it) {
   if (it.type === 'frame') return 'frame|' + it.id + '|' + it.color;
   return 'arrow|' + it.id + '|' + it.dir;
 }
-function wbPaletteHtml(cur) {
+function wbPaletteHtml(cur, fn) {
+  fn = fn || 'wbSetColor';
   return '<div class="wb-pal">' + WB_COLORS.map(c =>
-    '<button type="button" class="wb-sw c-' + c + (c === cur ? ' on' : '') + '" title="' + WB_COLOR_NAMES[c] + '" aria-label="' + WB_COLOR_NAMES[c] + '" onclick="wbSetColor(\'' + c + '\')"></button>'
+    '<button type="button" class="wb-sw c-' + c + (c === cur ? ' on' : '') + '" title="' + WB_COLOR_NAMES[c] + '" aria-label="' + WB_COLOR_NAMES[c] + '" onclick="' + fn + '(\'' + c + '\')"></button>'
   ).join('') + '</div>';
 }
 function wbZOrderHtml() {
@@ -5356,10 +5374,15 @@ function wbZOrderHtml() {
 // 選択中のものに合わせた操作バーを作る（内容が変わらない時は作り直さない＝入力欄のフォーカスを守る）
 function wbRenderCtx(force) {
   const el = wbQ('wbCtx'); if (!el) return;
-  const it = wb.sel ? wbItem(wb.sel) : null;
-  const sig = wbCtxSig(it);
+  const it = (wb.ms.size || !wb.sel) ? null : wbItem(wb.sel);
+  const sig = wb.ms.size ? 'multi|' + [...wb.ms].sort().join(',') : wbCtxSig(it);
   if (!force && sig === wb.ctxSig) return;
   wb.ctxSig = sig;
+  if (wb.ms.size) { el.innerHTML = wbMultiCtxHtml(); return; }
+  if (!it && wb.tool === 'multi') {
+    el.innerHTML = '<div class="wb-ctx-hint">☑ 複数選択モード：付箋をタップで追加／解除、空いている所をドラッグで範囲選択します。選ぶとここに整列・色・複製などが出ます。</div>';
+    return;
+  }
 
   if (!it) {
     el.innerHTML = '<div class="wb-ctx-hint">' +
@@ -5405,6 +5428,11 @@ function wbSetTool(t) {
   wbCommitEdit();
   wb.tool = (wb.tool === t && t !== 'select') ? 'select' : t; // 同じボタンをもう一度押すと終了
   wb.arrowFrom = null;
+  if (wb.tool === 'arrow' || wb.tool === 'frame') wb.ms.clear();
+  if (wb.tool === 'multi' && !wb.ms.size && wb.sel) { // 選択中の1枚を最初の仲間にして複数選択へ
+    const cur = wbItem(wb.sel);
+    if (cur && cur.type !== 'arrow') { wb.ms.add(cur.id); wb.sel = null; }
+  }
   wbRender();
 }
 
@@ -5430,6 +5458,7 @@ function wbSetColor(c) {
 }
 
 function wbDuplicate() {
+  if (wb.ms.size) { wbMsDuplicate(); return; }
   const it = wb.sel && wbItem(wb.sel); if (!it || it.type === 'arrow') return;
   wbCommitEdit();
   let newId = null;
@@ -5618,10 +5647,20 @@ function wbPointerDown(e) {
     return;
   }
 
+  // PC：Shift／Ctrl＋クリックで複数選択に追加・解除
+  if ((e.shiftKey || e.ctrlKey || e.metaKey) && itemEl && wb.tool === 'select') { finish(); wbMsToggle(itemEl.dataset.wbId); return; }
+
   let g = null;
   if (hnd && itemEl) {
     const it = wbItem(itemEl.dataset.wbId);
     g = { kind: 'resize', id: it.id, snap: wbSnapStr(), w0: it.w, h0: it.h, ...base };
+  } else if (wb.tool === 'multi') {
+    if (itemEl) {
+      const it = wbItem(itemEl.dataset.wbId), was = wb.ms.has(it.id);
+      if (!was) { wb.ms.add(it.id); wb.sel = null; wbRender(); }
+      g = wbMakeDrag(it, base); g.toggle = was; // 動かさず離したら選択解除
+    } else if (arrowEl) { finish(); return; }
+    else g = { kind: 'marquee', x0: w.x, y0: w.y, x1: w.x, y1: w.y, prev: null, ...base };
   } else if (wb.tool === 'arrow') {
     if (itemEl) { finish(); wbArrowClick(itemEl.dataset.wbId); return; }
     if (arrowEl) { finish(); wb.sel = arrowEl.dataset.arrow; wb.arrowFrom = null; wbRender(); return; }
@@ -5630,12 +5669,12 @@ function wbPointerDown(e) {
     finish(); wb.sel = arrowEl.dataset.arrow; wb.arrowFrom = null; wbRender(); return;
   } else if (itemEl) {
     const it = wbItem(itemEl.dataset.wbId);
-    if (wb.sel !== it.id) { wb.sel = it.id; wbRender(); }
-    const ids = [it.id];
-    if (it.type === 'frame' && wbData.opt.carry) ids.push(...wbContained(it)); // 枠ごと中身も動かす
-    const starts = {};
-    ids.forEach(i => { const o = wbItem(i); starts[i] = { x: o.x, y: o.y }; });
-    g = { kind: 'drag', id: it.id, ids, starts, snap: wbSnapStr(), tapId: it.id, ...base };
+    if (!(wb.ms.size > 1 && wb.ms.has(it.id))) { // 複数選択中の1枚を動かす時は全員で動く。それ以外は単一選択に戻す
+      const changed = wb.ms.size > 0 || wb.sel !== it.id;
+      wb.ms.clear(); wb.sel = it.id;
+      if (changed) wbRender();
+    }
+    g = wbMakeDrag(it, base);
   } else if (wb.tool === 'frame') {
     g = { kind: 'frame', x0: w.x, y0: w.y, x1: w.x, y1: w.y, prev: null, ...base };
   } else {
@@ -5645,6 +5684,15 @@ function wbPointerDown(e) {
 }
 
 // 枠の中身（付箋は中心が枠内、他の枠は丸ごと枠内にあるもの）
+// 動かす対象（複数選択ならその全員、枠は中身ごと）をまとめてドラッグ情報にする
+function wbMakeDrag(it, base) {
+  const src = (wb.ms.size && wb.ms.has(it.id)) ? [...wb.ms] : [it.id];
+  const set = new Set(src);
+  if (wbData.opt.carry) src.forEach(id => { const o = wbItem(id); if (o && o.type === 'frame') wbContained(o).forEach(c => set.add(c)); });
+  const ids = [...set], starts = {};
+  ids.forEach(i => { const o = wbItem(i); starts[i] = { x: o.x, y: o.y }; });
+  return { kind: 'drag', id: it.id, ids, starts, snap: wbSnapStr(), tapId: it.id, ...base };
+}
 function wbContained(f) {
   const out = [];
   wbBoard().items.forEach(i => {
@@ -5688,6 +5736,11 @@ function wbPointerMove(e) {
     const el = wbElOf(g.id);
     if (el) { el.style.width = o.w + 'px'; el.style.height = o.h + 'px'; }
     wbDrawArrows();
+  } else if (g.kind === 'marquee') {
+    const w = wbToWorld(e);
+    g.x1 = w.x; g.y1 = w.y;
+    if (!g.prev) { g.prev = document.createElement('div'); g.prev.className = 'wb-marquee'; wbQ('wbWorld').appendChild(g.prev); }
+    g.prev.style.cssText = 'left:' + Math.min(g.x0, g.x1) + 'px;top:' + Math.min(g.y0, g.y1) + 'px;width:' + Math.abs(g.x1 - g.x0) + 'px;height:' + Math.abs(g.y1 - g.y0) + 'px;';
   } else if (g.kind === 'frame') {
     const w = wbToWorld(e);
     g.x1 = w.x; g.y1 = w.y;
@@ -5713,12 +5766,14 @@ function wbPointerUp(e) {
     if (g.moved) { wbQueueSave(); return; }
     // 何もない所をタップ：選択解除（矢印モードなら始点の選び直し）
     if (wb.tool === 'arrow') { wb.arrowFrom = null; wbRender(); }
-    else if (wb.sel) { wb.sel = null; wbRender(); }
+    else if (wb.sel || wb.ms.size) { wb.sel = null; wb.ms.clear(); wbRender(); }
     return;
   }
   if (g.kind === 'drag' || g.kind === 'resize') {
     if (g.moved) { wb.lastTap = null; wbPushUndo(g.snap); wbQueueSave(); wbRender(); return; }
     if (g.kind === 'resize') return;
+    if (g.toggle) { wb.ms.delete(g.tapId); wbRender(); return; } // 複数選択モードで選択済みをタップ＝解除
+    if (wb.tool === 'multi') return;
     // 動かさず離した＝タップ。短時間に同じものを2回タップ＝ダブルタップ（付箋は文字編集／枠は名前入力）
     const now = Date.now(), L = wb.lastTap;
     if (L && L.id === g.tapId && now - L.t < 400) {
@@ -5729,6 +5784,18 @@ function wbPointerUp(e) {
     } else {
       wb.lastTap = { id: g.tapId, t: now };
     }
+    return;
+  }
+  if (g.kind === 'marquee') {
+    if (g.prev) g.prev.remove();
+    if (!g.moved) { wb.ms.clear(); wbRender(); return; } // 空きをタップ＝選択解除
+    const x0 = Math.min(g.x0, g.x1), x1 = Math.max(g.x0, g.x1), y0 = Math.min(g.y0, g.y1), y1 = Math.max(g.y0, g.y1);
+    wb.ms = new Set(wbBoard().items.filter(i => {
+      if (i.type === 'arrow') return false;
+      if (i.type === 'frame') return i.x >= x0 && i.y >= y0 && i.x + i.w <= x1 && i.y + i.h <= y1; // 枠は丸ごと入った時だけ
+      return i.x < x1 && i.x + i.w > x0 && i.y < y1 && i.y + i.h > y0; // 付箋は少しでも触れたら
+    }).map(i => i.id));
+    wb.sel = null; wbRender();
     return;
   }
   if (g.kind === 'frame') {
@@ -5781,6 +5848,7 @@ function wbKeyDown(e) {
   if (k === 'Escape' && !typing) {
     if (wb.arrowFrom) wb.arrowFrom = null;
     else if (wb.tool !== 'select') wb.tool = 'select';
+    else if (wb.ms.size) wb.ms.clear();
     else if (wb.sel) wb.sel = null;
     else if (wb.full) { wbToggleFull(); return; }
     wbRender();
@@ -5790,7 +5858,7 @@ function wbKeyDown(e) {
   if (mod && k.toLowerCase() === 'z') { e.preventDefault(); if (e.shiftKey) wbRedo(); else wbUndo(); return; }
   if (mod && k.toLowerCase() === 'y') { e.preventDefault(); wbRedo(); return; }
   if (mod && k.toLowerCase() === 'd') { e.preventDefault(); wbDuplicate(); return; }
-  if ((k === 'Delete' || k === 'Backspace') && wb.sel) { e.preventDefault(); wbRemoveSel(); return; }
+  if ((k === 'Delete' || k === 'Backspace') && (wb.sel || wb.ms.size)) { e.preventDefault(); if (wb.ms.size) wbMsRemove(); else wbRemoveSel(); return; }
   if (k === 'Enter' && wb.sel) { const it = wbItem(wb.sel); if (it && it.type === 'note') { e.preventDefault(); wbStartEdit(it.id, false); } return; }
   if (k.startsWith('Arrow') && wb.sel) { // 矢印キーで1マスずつ微調整
     const it = wbItem(wb.sel); if (!it || it.type === 'arrow') return;
@@ -5817,7 +5885,7 @@ function wbToggleOpt(name) {
 function wbSwitchBoard(id) {
   wbCommitEdit();
   if (!wbData.boards.some(b => b.id === id)) return;
-  wbData.activeId = id; wb.sel = null; wb.arrowFrom = null; wb.tool = 'select';
+  wbData.activeId = id; wb.sel = null; wb.ms.clear(); wb.arrowFrom = null; wb.tool = 'select';
   wbQueueSave(); wbRender();
   if (!wbBoard().view.init) wbFit();
 }
@@ -5853,7 +5921,7 @@ function wbDeleteBoard() {
   delete wb.hist[b.id];
   if (!wbData.boards.length) wbData.boards.push(wbDefaultBoard('ボード1'));
   wbData.activeId = wbData.boards[0].id;
-  wb.sel = null; wb.arrowFrom = null; wb.tool = 'select';
+  wb.sel = null; wb.ms.clear(); wb.arrowFrom = null; wb.tool = 'select';
   wbQueueSave(); wbRender();
   if (!wbBoard().view.init) wbFit();
 }
@@ -5866,6 +5934,7 @@ function wbOpenPicker() {
   wb.pick = new Set();
   wbQ('wbPickerSearch').value = '';
   wbQ('wbPickerDone').checked = false;
+  wbPickerSyncSort();
   wbPickerRender();
   wbQ('wbPicker').classList.add('show');
 }
@@ -5876,7 +5945,7 @@ function wbPickerCandidates() {
   const q = wbQ('wbPickerSearch').value.trim().toLowerCase();
   const showDone = wbQ('wbPickerDone').checked;
   return tasks.filter(t => !placed.has(t.id) && (showDone || !t.completed) && (!q || (t.title || '').toLowerCase().includes(q)))
-    .sort((a, b) => (a.due || '9999') < (b.due || '9999') ? -1 : 1).slice(0, 300);
+    .sort(wbPickerCompare).slice(0, 300);
 }
 function wbPickerRender() {
   const list = wbPickerCandidates();
@@ -6105,6 +6174,191 @@ function wbExportPng() {
   }, 'image/png');
 }
 
+
+/* =====================================================
+   既存タスク追加ダイアログの並び替え（日付／大タグ／小タグ × 昇順／降順）
+   ・値が無いタスク（期限なし・タグなし）は昇順でも降順でも常に末尾
+   ・タグ順は設定タブのタグの並び順に従う
+   ===================================================== */
+function wbPickKey(t, key) {
+  if (key === 'due') return t.due ? [t.due] : null;
+  if (!t.tagMain) return null;
+  const mi = settings.tagMaster.findIndex(m => m.name === t.tagMain), mIdx = mi < 0 ? 999 : mi;
+  if (key === 'main') return [mIdx, t.tagMain];
+  if (!t.tagSub) return null;
+  const m = settings.tagMaster[mi], si = m ? m.subs.indexOf(t.tagSub) : -1;
+  return [mIdx, si < 0 ? 999 : si, t.tagSub];
+}
+function wbPickerCompare(a, b) {
+  const key = wbData.opt.pickKey, dir = wbData.opt.pickDir === 'desc' ? -1 : 1;
+  const ka = wbPickKey(a, key), kb = wbPickKey(b, key);
+  const byTitle = () => (a.title || '').localeCompare(b.title || '', 'ja');
+  if (!ka && !kb) return byTitle();
+  if (!ka) return 1;
+  if (!kb) return -1;
+  for (let i = 0; i < ka.length; i++) {
+    if (ka[i] < kb[i]) return -dir;
+    if (ka[i] > kb[i]) return dir;
+  }
+  return byTitle();
+}
+function wbPickerSyncSort() {
+  wbQ('wbPickerKey').value = wbData.opt.pickKey;
+  wbQ('wbPickerDir').textContent = wbData.opt.pickDir === 'desc' ? '▼ 降順' : '▲ 昇順';
+}
+function wbPickerSortChange() { wbData.opt.pickKey = wbQ('wbPickerKey').value; wbQueueSave(); wbPickerRender(); }
+function wbPickerDirToggle() { wbData.opt.pickDir = wbData.opt.pickDir === 'desc' ? 'asc' : 'desc'; wbPickerSyncSort(); wbQueueSave(); wbPickerRender(); }
+
+/* =====================================================
+   複数選択（範囲選択・まとめて移動／色／整列／等間隔／格子／複製／外す）
+   ・wb.ms が選択中のid集合。付箋・枠が対象（矢印は対象外）
+   ===================================================== */
+function wbMsItems() { return wbBoard().items.filter(i => wb.ms.has(i.id) && i.type !== 'arrow'); }
+function wbMsClear() { wb.ms.clear(); wb.sel = null; wbRender(); }
+function wbMsAll() { wbBoard().items.forEach(i => { if (i.type !== 'arrow') wb.ms.add(i.id); }); wb.sel = null; wbRender(); }
+function wbMsToggle(id) {
+  const it = wbItem(id); if (!it || it.type === 'arrow') return;
+  if (!wb.ms.size && wb.sel && wb.sel !== id) { const s0 = wbItem(wb.sel); if (s0 && s0.type !== 'arrow') wb.ms.add(s0.id); }
+  if (wb.ms.has(id)) wb.ms.delete(id); else wb.ms.add(id);
+  wb.sel = null; wbRender();
+}
+function wbMultiCtxHtml() {
+  const al = (m, label) => '<button type="button" class="wb-btn sm" onclick="wbAlign(\'' + m + '\')">' + label + '</button>';
+  return '<div class="wb-ctx-row"><b style="font-size:13px;color:var(--color-text)">☑ ' + wb.ms.size + '個を選択中</b>' +
+    '<button type="button" class="wb-btn sm" onclick="wbMsAll()">全選択</button>' +
+    '<button type="button" class="wb-btn sm" onclick="wbMsClear()">選択解除</button></div>' +
+    wbPaletteHtml('', 'wbMsColor') +
+    '<div class="wb-ctx-label">整列</div><div class="wb-ctx-row">' +
+    al('l', '⇤ 左') + al('cx', '↔ 横中央') + al('r', '右 ⇥') + al('t', '⤒ 上') + al('cy', '↕ 縦中央') + al('b', '⤓ 下') + '</div>' +
+    '<div class="wb-ctx-label">並べ方</div><div class="wb-ctx-row">' +
+    '<button type="button" class="wb-btn sm" onclick="wbDistribute(\'h\')">⇹ 横に等間隔</button>' +
+    '<button type="button" class="wb-btn sm" onclick="wbDistribute(\'v\')">⇳ 縦に等間隔</button>' +
+    '<button type="button" class="wb-btn sm" onclick="wbGridArrange()">▦ 格子に並べる</button></div>' +
+    '<div class="wb-ctx-row">' +
+    '<button type="button" class="wb-btn sm" onclick="wbMsDuplicate()">⧉ 複製</button>' +
+    '<button type="button" class="wb-btn sm" onclick="wbMsFront()">⤒ 最前面</button>' +
+    '<button type="button" class="wb-btn sm" onclick="wbMsRemove()">📤 ボードから外す</button></div>';
+}
+function wbMsColor(c) { const its = wbMsItems(); if (its.length) wbDo(() => its.forEach(i => { i.color = c; })); }
+function wbAlign(mode) {
+  const its = wbMsItems(); if (its.length < 2) return;
+  wbDo(() => {
+    const minX = Math.min(...its.map(i => i.x)), maxR = Math.max(...its.map(i => i.x + i.w));
+    const minY = Math.min(...its.map(i => i.y)), maxB = Math.max(...its.map(i => i.y + i.h));
+    its.forEach(i => {
+      if (mode === 'l') i.x = minX; else if (mode === 'r') i.x = maxR - i.w;
+      else if (mode === 'cx') i.x = Math.round((minX + maxR) / 2 - i.w / 2);
+      else if (mode === 't') i.y = minY; else if (mode === 'b') i.y = maxB - i.h;
+      else if (mode === 'cy') i.y = Math.round((minY + maxB) / 2 - i.h / 2);
+    });
+  });
+}
+// 両端は動かさず、間の隙間を均等にする（3つ以上）
+function wbDistribute(axis) {
+  const its = wbMsItems();
+  if (its.length < 3) { alert('等間隔に並べるには3つ以上選んでください'); return; }
+  wbDo(() => {
+    const hz = axis === 'h';
+    const s0 = its.slice().sort((a, b) => hz ? a.x - b.x : a.y - b.y);
+    const start = hz ? s0[0].x : s0[0].y;
+    const end = Math.max(...s0.map(i => hz ? i.x + i.w : i.y + i.h));
+    const total = s0.reduce((a, i) => a + (hz ? i.w : i.h), 0);
+    const gap = (end - start - total) / (s0.length - 1);
+    let pos = start;
+    s0.forEach(i => { if (hz) i.x = Math.round(pos); else i.y = Math.round(pos); pos += (hz ? i.w : i.h) + gap; });
+  });
+}
+// 付箋だけを、今の上下左右の並び順を保ったまま格子状に詰める
+function wbGridArrange() {
+  const its = wbMsItems().filter(i => i.type === 'note');
+  if (its.length < 2) { alert('格子に並べるには付箋を2枚以上選んでください'); return; }
+  wbDo(() => {
+    const x0 = Math.min(...its.map(i => i.x)), y0 = Math.min(...its.map(i => i.y));
+    const s0 = its.slice().sort((a, b) => (Math.round(a.y / 60) - Math.round(b.y / 60)) || (a.x - b.x));
+    const cols = Math.ceil(Math.sqrt(s0.length));
+    const cw = Math.max(...its.map(i => i.w)) + 20, ch = Math.max(...its.map(i => i.h)) + 20;
+    s0.forEach((i, k) => { i.x = wbSnapVal(x0 + (k % cols) * cw); i.y = wbSnapVal(y0 + Math.floor(k / cols) * ch); });
+  });
+}
+function wbMsDuplicate() {
+  const its = wbMsItems(); if (!its.length) return;
+  wbCommitEdit();
+  const idMap = {}, newIds = []; let addedTask = false;
+  wbDo(() => {
+    its.forEach(it => {
+      const c = JSON.parse(JSON.stringify(it));
+      c.id = wbId('i_'); c.x += 24; c.y += 24;
+      if (it.type === 'note') {
+        const t = wbTask(it); if (!t) return;
+        c.taskId = addTask({ title: t.title, note: stripTrailerLines(t.note), due: t.due, quadrant: t.quadrant, tags: (t.tags || []).slice(), tagMain: t.tagMain, tagSub: t.tagSub }).id;
+        c.z = 1e9; addedTask = true;
+      } else { c.z = -1e9; }
+      idMap[it.id] = c.id; newIds.push(c.id);
+      wbBoard().items.push(c);
+    });
+    // 選んだもの同士をつなぐ矢印も一緒に複製
+    wbBoard().items.filter(i => i.type === 'arrow' && idMap[i.from] && idMap[i.to]).forEach(a => {
+      wbBoard().items.push({ ...a, id: wbId('a_'), from: idMap[a.from], to: idMap[a.to] });
+    });
+    wb.ms = new Set(newIds);
+  });
+  if (addedTask) { renderFilterTabs(); renderAll(); }
+}
+function wbMsRemove() {
+  if (!wb.ms.size) return;
+  const ids = new Set(wb.ms);
+  wbCommitEdit();
+  wbDo(() => {
+    wbBoard().items = wbBoard().items.filter(i => !ids.has(i.id) && !(i.type === 'arrow' && (ids.has(i.from) || ids.has(i.to))));
+    wb.ms.clear(); wb.sel = null;
+  });
+}
+function wbMsFront() { wbDo(() => { wbMsItems().sort((a, b) => a.z - b.z).forEach((i, k) => { i.z = 1e9 + k; }); }); }
+
+/* =====================================================
+   タグで枠を自動作成：ボード上の付箋を大タグごとの枠に並べ直す
+   ・枠の名前＝大タグ名（タグなしは「タグなし」）。並び順は設定タブのタグ順
+   ・枠の中は小タグ順→件名順に3列で並べる。付箋のサイズは初期サイズに揃う（色は変えない）
+   ・新しい枠を作るので、既にある枠はそのまま残る（不要なら選択して削除）
+   ===================================================== */
+function wbAutoTagFrames() {
+  wbCommitEdit();
+  const b = wbBoard();
+  const notes = b.items.filter(i => i.type === 'note' && wbTask(i));
+  if (!notes.length) { alert('ボード上に付箋がありません。先に「既存タスクから追加」で置いてください'); return; }
+  if (!confirm('ボード上の付箋 ' + notes.length + ' 枚を、大タグごとの枠に並べ直します。\n枠を新しく作り、付箋の位置が変わります。（元に戻すで戻せます）')) return;
+  const groups = new Map();
+  notes.forEach(n => { const k = wbTask(n).tagMain || ''; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(n); });
+  const order = settings.tagMaster.map(m => m.name);
+  const keys = [...groups.keys()].sort((a, c) => {
+    if (a === '' || c === '') return a === '' ? (c === '' ? 0 : 1) : -1; // タグなしは最後
+    const ia = order.indexOf(a), ic = order.indexOf(c);
+    return ((ia < 0 ? 999 : ia) - (ic < 0 ? 999 : ic)) || a.localeCompare(c, 'ja');
+  });
+  const subIdx = t => { const m = settings.tagMaster.find(x => x.name === t.tagMain); if (!m || !t.tagSub) return 999; const i = m.subs.indexOf(t.tagSub); return i < 0 ? 998 : i; };
+  const frameColors = ['b', 'g', 'o', 'p', 'v', 'y', 'k'];
+  const GAP = 20, MAXW = 1500;
+  wbDo(() => {
+    const nodes = b.items.filter(i => i.type !== 'arrow');
+    const x0 = Math.min(...nodes.map(n => n.x)), y0 = Math.min(...nodes.map(n => n.y));
+    let cx = x0, cy = y0, rowH = 0;
+    keys.forEach((k, gi) => {
+      const arr = groups.get(k).slice().sort((p, q) => (subIdx(wbTask(p)) - subIdx(wbTask(q))) || (wbTask(p).title || '').localeCompare(wbTask(q).title || '', 'ja'));
+      const cols = Math.min(3, arr.length), rows = Math.ceil(arr.length / cols);
+      const fw = cols * (WB_NOTE_W + GAP) + GAP, fh = WB_FRAME_HEAD + rows * (WB_NOTE_H + GAP) + GAP;
+      if (cx > x0 && cx - x0 + fw > MAXW) { cx = x0; cy += rowH + 40; rowH = 0; } // 横に長くなりすぎたら次の段へ
+      b.items.push({ id: wbId('i_'), type: 'frame', title: k || 'タグなし', x: cx, y: cy, w: fw, h: fh, color: frameColors[gi % frameColors.length], z: -1e9 + gi });
+      arr.forEach((n, i) => {
+        n.w = WB_NOTE_W; n.h = WB_NOTE_H;
+        n.x = cx + GAP + (i % cols) * (WB_NOTE_W + GAP);
+        n.y = cy + WB_FRAME_HEAD + GAP + Math.floor(i / cols) * (WB_NOTE_H + GAP);
+      });
+      cx += fw + 40; rowH = Math.max(rowH, fh);
+    });
+    wb.sel = null; wb.ms.clear();
+  });
+  wbFit();
+}
 </script>
 </body>
 </html>
