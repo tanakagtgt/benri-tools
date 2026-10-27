@@ -118,6 +118,122 @@
   }
 
   /* =====================================================
+     並び替え／★のみ絞り込み／最近使った／お気に入り★／NEWバッジ
+     - 色は全てCSS変数（ダークモード対応）。固定色は使わない
+     - タップ領域は44px以上、input/selectは16px以上（iPhoneズーム防止）
+     ===================================================== */
+  .top-toolbar { display: flex; gap: 8px; margin: 0 0 12px; }
+  #sortSelect {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    font-family: 'BIZ UDPGothic', sans-serif;
+    font-size: 16px;
+    padding: 8px 10px;
+    border: 1px solid var(--color-border-input);
+    border-radius: var(--radius-input);
+    background: var(--color-input-bg);
+    color: var(--color-text);
+    outline: none;
+  }
+  #sortSelect:focus { border-color: var(--color-primary); }
+  .filter-btn {
+    min-height: 44px;
+    padding: 0 14px;
+    border: 2px solid var(--color-border-input);
+    border-radius: var(--radius-input);
+    background: var(--color-input-bg);
+    color: var(--color-text-sub);
+    font-family: 'BIZ UDPGothic', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-btn.active {
+    border-color: var(--color-primary);
+    background: var(--color-primary-bg);
+    color: var(--color-primary);
+  }
+
+  /* 最近使ったツール（履歴が1件もない時はJSで非表示） */
+  .recent-card {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .recent-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .recent-title { font-size: 12px; font-weight: 700; color: var(--color-text-muted); }
+  .recent-clear {
+    border: none;
+    background: transparent;
+    color: var(--color-text-label);
+    font-family: 'BIZ UDPGothic', sans-serif;
+    font-size: 12px;
+    min-height: 44px;
+    padding: 0 6px;
+    margin: -8px -6px -8px 0; /* タップ領域は確保しつつ見た目の高さは詰める */
+    cursor: pointer;
+  }
+  .recent-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .recent-chip {
+    display: inline-block;
+    max-width: 100%;
+    padding: 12px 12px;
+    background: var(--color-chip-bg);
+    border: 1px solid var(--color-primary-border);
+    border-radius: var(--radius-input);
+    color: var(--color-primary);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .recent-chip:hover { background: var(--color-chip-hover); }
+
+  /* 一覧のカード：右上に★ボタン分の余白を確保（上のli定義を上書き） */
+  .tool-list li { position: relative; padding-right: 60px; }
+  .fav-btn {
+    position: absolute;
+    top: 4px;
+    right: 2px;
+    min-width: 48px;
+    min-height: 48px;
+    border: none;
+    background: transparent;
+    color: var(--color-text-label);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .fav-btn.on { color: var(--cal-today); } /* 星の色はライト／ダーク共通の黄色 */
+  .new-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--color-warn-bg);
+    border: 1px solid var(--color-warn-border);
+    color: var(--color-warn-text);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    vertical-align: middle;
+  }
+
+  /* =====================================================
      サイト紹介文（.tool-desc）
      - 将来、全ツール共通化したくなったらこのブロックをcommon.cssへ移動
      ===================================================== */
@@ -161,6 +277,28 @@
     <input type="text" id="toolSearch" inputmode="search" placeholder="🔍 ツール名やキーワードで検索（例：住宅ローン）" oninput="searchTools()">
     <button class="search-clear" id="searchClearBtn" onclick="clearSearch()" aria-label="検索をクリア">✕</button>
   </div>
+  <!-- =====================================================
+       並び替え＋★のみ絞り込み（JSのchangeSort／toggleFavOnlyが操作）
+       ===================================================== -->
+  <div class="top-toolbar">
+    <select id="sortSelect" onchange="changeSort(this.value)" aria-label="並び替え">
+      <option value="default">並び順：標準</option>
+      <option value="new">並び順：新着順</option>
+      <option value="name">並び順：名前順</option>
+      <option value="fav">並び順：★お気に入り優先</option>
+    </select>
+    <button type="button" class="filter-btn" id="favOnlyBtn" aria-pressed="false" onclick="toggleFavOnly()">★のみ</button>
+  </div>
+
+  <!-- 最近使ったツール（localStorageの履歴。0件の間は非表示） -->
+  <div class="recent-card" id="recentCard" style="display:none">
+    <div class="recent-head">
+      <span class="recent-title">🕘 最近使ったツール</span>
+      <button type="button" class="recent-clear" onclick="clearRecent()">履歴を消す</button>
+    </div>
+    <div class="recent-chips" id="recentChips"></div>
+  </div>
+
   <div class="search-count" id="searchCount"></div>
 
   <ul class="tool-list" id="toolList">
@@ -355,38 +493,262 @@ function calculateResult() { return {}; }
 function displayResult() {}
 
 /* =====================================================
-   初期表示：全件数をカウント表示
-   （おすすめツールはcommon.jsのloadRecommends＝tools.jsonから読込）
+   お気に入り／最近使った／新着バッジ／並び替え（トップ専用）
+   ■保存先（すべてlocalStorage。登録不要・端末内だけで完結）
+     arigato_favorites … お気に入りid配列
+     arigato_recent    … 最近使ったid配列（新しい順）
+     arigato_sort      … 並び順の選択
+   ■idの求め方：liのhref（例 calc-eigyobi-count.html）から.htmlを除いた値
+     → tools.jsonのid／各ツールのCURRENT_TOOL_IDと同じ値になる前提
+   ■新着バッジは tools.json の "date": "YYYY-MM-DD"（任意項目）で判定
+     dateが無いツールはバッジなし＆新着順では末尾
+   ■generate.pyは触らない：tools.jsonをブラウザ側で読んで補完する
    ===================================================== */
-document.addEventListener('DOMContentLoaded', () => {
-  updateSearchCount();
-});
+const INDEX_FAV_KEY    = 'arigato_favorites';
+const INDEX_RECENT_KEY = 'arigato_recent'; // ★common.jsのRECENT_STORAGE_KEYと同じ値にしておく
+const INDEX_SORT_KEY   = 'arigato_sort';
+const RECENT_SHOW_MAX  = 5;   // 画面に出す最近使った件数
+const RECENT_STORE_MAX = 10;  // 保存しておく最大件数
+const NEW_BADGE_DAYS   = 14;  // 追加日からこの日数以内ならNEW
+
+let toolItems = [];   // [{ id, li, link, name, order, favBtn }]
+let toolMeta  = {};   // id -> { emoji, date, category }（tools.jsonから補完）
+let favIds    = [];
+let favOnly   = false;
+let sortMode  = 'default';
+
+/* ---------- localStorage 小物（失敗しても落とさない） ---------- */
+function readList(key) {
+  try {
+    const v = JSON.parse(localStorage.getItem(key));
+    return Array.isArray(v) ? v : [];
+  } catch (e) { return []; }
+}
+function writeList(key, arr) {
+  try { localStorage.setItem(key, JSON.stringify(arr)); } catch (e) {}
+}
+// href（相対／絶対どちらでも）→ id（拡張子なし）
+function hrefToId(href) {
+  return (href || '').split('#')[0].split('?')[0].replace(/^.*\//, '').replace(/\.html$/, '');
+}
 
 /* =====================================================
-   【検索】ツール名＋説明文をキーワードで絞り込み
-   - #toolList li を毎回全走査してtextContent一致判定
-   - ツールが増えてもロジック変更不要（li追加だけでOK）
+   初期化
    ===================================================== */
-function searchTools() {
-  const keyword = document.getElementById('toolSearch').value.trim().toLowerCase();
-  const items = document.querySelectorAll('#toolList li');
+document.addEventListener('DOMContentLoaded', initTop);
 
+function initTop() {
+  if (toolItems.length > 0) return; // 二重初期化の防止（★ボタンが重複しないように）
+  favIds = readList(INDEX_FAV_KEY);
+  try {
+    const s = localStorage.getItem(INDEX_SORT_KEY);
+    if (['default', 'new', 'name', 'fav'].includes(s)) sortMode = s;
+  } catch (e) {}
+  const sel = document.getElementById('sortSelect');
+  if (sel) sel.value = sortMode;
+
+  // 自動生成されたliに★ボタンを後付けする（generate.pyの出力は変えない）
+  document.querySelectorAll('#toolList li').forEach((li, i) => {
+    const link = li.querySelector('a');
+    if (!link) return;
+    const id = hrefToId(link.getAttribute('href'));
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'fav-btn';
+    btn.addEventListener('click', () => toggleFav(id));
+    li.appendChild(btn);
+    toolItems.push({ id, li, link, name: link.textContent.trim(), order: i, favBtn: btn });
+  });
+  toolItems.forEach(updateFavButton);
+  updateFavOnlyLabel();
+
+  // 一覧・履歴チップのリンクをクリックしたら「最近使った」に記録
+  document.getElementById('toolList').addEventListener('click', onToolLinkClick);
+  document.getElementById('recentChips').addEventListener('click', onToolLinkClick);
+
+  applySort();
+  applyFilter();
+  renderRecent();
+  loadToolMeta(); // 非同期：絵文字・追加日を補完してNEWバッジ／新着順に反映
+}
+
+/* tools.jsonを読んで絵文字・追加日を補完（失敗しても主機能は動く） */
+async function loadToolMeta() {
+  try {
+    const res = await fetch('/tools.json');
+    const tools = await res.json();
+    tools.forEach(t => {
+      const meta = { emoji: t.emoji || '', date: t.date || '', category: t.category || '' };
+      toolMeta[t.id] = meta;
+      if (t.file) toolMeta[hrefToId(t.file)] = meta; // idとファイル名がズレた時の保険
+    });
+  } catch (e) { return; }
+
+  toolItems.forEach(item => {
+    if (isNewTool(item.id) && !item.li.querySelector('.new-badge')) {
+      const badge = document.createElement('span');
+      badge.className = 'new-badge';
+      badge.textContent = 'NEW';
+      item.link.after(badge);
+    }
+  });
+  applySort();
+  applyFilter();
+  renderRecent();
+}
+
+function isNewTool(id) {
+  const date = toolMeta[id] && toolMeta[id].date;
+  if (!date) return false;
+  const d = new Date(date + 'T00:00:00');
+  if (isNaN(d.getTime())) return false;
+  const days = (Date.now() - d.getTime()) / 86400000;
+  return days >= 0 && days <= NEW_BADGE_DAYS; // 未来日付はバッジなし
+}
+
+/* =====================================================
+   お気に入り
+   ===================================================== */
+function toggleFav(id) {
+  const i = favIds.indexOf(id);
+  if (i >= 0) favIds.splice(i, 1); else favIds.push(id);
+  writeList(INDEX_FAV_KEY, favIds);
+
+  toolItems.filter(item => item.id === id).forEach(updateFavButton);
+  updateFavOnlyLabel();
+  if (sortMode === 'fav') applySort(); // ★優先順の時だけ並びを即反映
+  if (favOnly) applyFilter();          // ★のみ表示中は外したものを即消す
+}
+
+function updateFavButton(item) {
+  const on = favIds.includes(item.id);
+  item.favBtn.textContent = on ? '★' : '☆';
+  item.favBtn.classList.toggle('on', on);
+  item.favBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  item.favBtn.setAttribute('aria-label', item.name + (on ? 'をお気に入りから外す' : 'をお気に入りに追加'));
+}
+
+// 「★のみ(3)」のように、実在するツールのお気に入り件数を表示
+function updateFavOnlyLabel() {
+  const n = toolItems.filter(item => favIds.includes(item.id)).length;
+  document.getElementById('favOnlyBtn').textContent = n > 0 ? `★のみ(${n})` : '★のみ';
+}
+
+function toggleFavOnly() {
+  favOnly = !favOnly;
+  const btn = document.getElementById('favOnlyBtn');
+  btn.classList.toggle('active', favOnly);
+  btn.setAttribute('aria-pressed', favOnly ? 'true' : 'false');
+  applyFilter();
+}
+
+/* =====================================================
+   最近使った
+   - 記録は2か所：①各ツールページ（common.jsのrecordRecentTool）
+                  ②トップのリンククリック（ここ）。どちらも同じキー
+   ===================================================== */
+function onToolLinkClick(e) {
+  const a = e.target.closest('a');
+  if (!a) return;
+  pushRecent(hrefToId(a.getAttribute('href')));
+}
+
+function pushRecent(id) {
+  if (!id) return;
+  const list = readList(INDEX_RECENT_KEY).filter(x => x !== id);
+  list.unshift(id);
+  writeList(INDEX_RECENT_KEY, list.slice(0, RECENT_STORE_MAX));
+}
+
+function renderRecent() {
+  const card = document.getElementById('recentCard');
+  const box = document.getElementById('recentChips');
+  const byId = {};
+  toolItems.forEach(item => { byId[item.id] = item; });
+
+  // 一覧に存在しないid（リネーム・削除済み）は無視する
+  const items = readList(INDEX_RECENT_KEY).map(id => byId[id]).filter(Boolean).slice(0, RECENT_SHOW_MAX);
+
+  box.textContent = '';
+  if (items.length === 0) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+
+  items.forEach(item => {
+    const a = document.createElement('a');
+    a.className = 'recent-chip';
+    a.href = item.link.getAttribute('href');
+    const emoji = toolMeta[item.id] && toolMeta[item.id].emoji;
+    a.textContent = (emoji ? emoji + ' ' : '') + item.name;
+    box.appendChild(a);
+  });
+}
+
+function clearRecent() {
+  try { localStorage.removeItem(INDEX_RECENT_KEY); } catch (e) {}
+  renderRecent();
+}
+
+/* =====================================================
+   並び替え
+   default：tools.json（＝生成されたHTML）の順
+   new    ：追加日が新しい順（dateなしは末尾）
+   name   ：名前の五十音順
+   fav    ：★付きを先頭（中身は標準順）
+   ===================================================== */
+function changeSort(mode) {
+  sortMode = mode;
+  try { localStorage.setItem(INDEX_SORT_KEY, mode); } catch (e) {}
+  applySort();
+  applyFilter();
+}
+
+function applySort() {
+  const dateOf = item => (toolMeta[item.id] && toolMeta[item.id].date) || '';
+  const byOrder = (a, b) => a.order - b.order;
+  const list = toolItems.slice();
+
+  if (sortMode === 'new') {
+    list.sort((a, b) => dateOf(b).localeCompare(dateOf(a)) || byOrder(a, b));
+  } else if (sortMode === 'name') {
+    list.sort((a, b) => a.name.localeCompare(b.name, 'ja') || byOrder(a, b));
+  } else if (sortMode === 'fav') {
+    const rank = item => (favIds.includes(item.id) ? 0 : 1);
+    list.sort((a, b) => rank(a) - rank(b) || byOrder(a, b));
+  } else {
+    list.sort(byOrder);
+  }
+
+  const ul = document.getElementById('toolList');
+  list.forEach(item => ul.appendChild(item.li)); // appendChildは既存要素を「移動」する
+}
+
+/* =====================================================
+   【検索＋★のみ】キーワードと★のみ絞り込みを同時に適用
+   - oninputから呼ばれるsearchTools()は絞り込みだけやり直す
+   ===================================================== */
+function searchTools() { applyFilter(); }
+
+function applyFilter() {
+  const keyword = document.getElementById('toolSearch').value.trim().toLowerCase();
   // ✕クリアボタンはキーワードがあるときだけ表示
   document.getElementById('searchClearBtn').style.display = keyword ? 'block' : 'none';
 
   let visibleCount = 0;
-
-  items.forEach(li => {
-    const name = li.querySelector('a')?.textContent.toLowerCase() || '';
-    const desc = li.querySelector('.desc')?.textContent.toLowerCase() || '';
-    const isMatch = !keyword || name.includes(keyword) || desc.includes(keyword);
-
-    li.style.display = isMatch ? '' : 'none';
-    if (isMatch) visibleCount++;
+  toolItems.forEach(item => {
+    const desc = item.li.querySelector('.desc')?.textContent.toLowerCase() || '';
+    const hitKeyword = !keyword || item.name.toLowerCase().includes(keyword) || desc.includes(keyword);
+    const hitFav = !favOnly || favIds.includes(item.id);
+    const show = hitKeyword && hitFav;
+    item.li.style.display = show ? '' : 'none';
+    if (show) visibleCount++;
   });
 
-  // 0件のときだけ「見つかりませんでした」を表示
-  document.getElementById('noResultMsg').style.display = visibleCount === 0 ? 'block' : 'none';
+  // 0件メッセージ：★のみで空の時は登録方法を案内
+  const noResult = document.getElementById('noResultMsg');
+  noResult.textContent = (favOnly && !keyword)
+    ? '☆をタップすると、お気に入りに登録できます'
+    : '😢 該当するツールが見つかりませんでした';
+  noResult.style.display = visibleCount === 0 ? 'block' : 'none';
 
   updateSearchCount(visibleCount);
 }
@@ -397,21 +759,20 @@ function searchTools() {
 function clearSearch() {
   const input = document.getElementById('toolSearch');
   input.value = '';
-  searchTools();
+  applyFilter();
   input.focus();
 }
 
 /* =====================================================
-   【件数表示】「全◯件」または「◯件ヒット」を出す
-   @param {number} [count] - 表示中の件数（未指定なら全件数を数える）
+   【件数表示】「全◯件」または「◯件表示（全◯件中）」を出す
    ===================================================== */
 function updateSearchCount(count) {
   const total = document.querySelectorAll('#toolList li').length;
   const keyword = document.getElementById('toolSearch').value.trim();
   const shown = typeof count === 'number' ? count : total;
 
-  document.getElementById('searchCount').textContent = keyword
-    ? `${shown}件ヒット（全${total}件中）`
+  document.getElementById('searchCount').textContent = (keyword || favOnly)
+    ? `${shown}件表示（全${total}件中）`
     : `全${total}件`;
 }
 

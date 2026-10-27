@@ -93,6 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadRecommends();  // おすすめツールを非同期で読み込む
   restoreInputs();   // LocalStorageから入力値を復元
   setCopyrightYear(); // フッターの©年号を自動表示
+  recordRecentTool(); // 「最近使ったツール」に自ツールを記録（トップ画面で表示）
 });
 
 /* =====================================================
@@ -209,6 +210,28 @@ function handleReset() {
 function setCopyrightYear() {
   const el = document.getElementById('copyrightYear');
   if (el) el.textContent = new Date().getFullYear();
+}
+
+/* =====================================================
+   最近使ったツールの記録（トップの「最近使ったツール」用）
+   - 保存先: localStorage 'arigato_recent'（id配列・新しい順・最大10件）
+   - CURRENT_TOOL_IDが空（トップページ等）の時は何もしない
+   - ★index.html側のINDEX_RECENT_KEYと同じキー名にしておくこと
+   ===================================================== */
+const RECENT_STORAGE_KEY = 'arigato_recent';
+const RECENT_STORE_MAX_COMMON = 10;
+
+function recordRecentTool() {
+  if (typeof CURRENT_TOOL_ID === 'undefined' || !CURRENT_TOOL_ID) return;
+  try {
+    let list = JSON.parse(localStorage.getItem(RECENT_STORAGE_KEY));
+    if (!Array.isArray(list)) list = [];
+    list = list.filter(id => id !== CURRENT_TOOL_ID);
+    list.unshift(CURRENT_TOOL_ID);
+    localStorage.setItem(RECENT_STORAGE_KEY, JSON.stringify(list.slice(0, RECENT_STORE_MAX_COMMON)));
+  } catch (e) {
+    // プライベートモード等でlocalStorageが使えない場合は無視
+  }
 }
 
 /* =====================================================
