@@ -1286,6 +1286,32 @@ footer{
 .now-beside-slot{display:flex;gap:8px;flex:1 1 200px;min-width:0;}
 .now-beside-slot > *{flex:1 1 0;min-width:0;}
 .board-mode-bar .now-card{margin-bottom:0;display:flex;flex-direction:column;justify-content:center;padding:8px;}
+/* ★表示件数の上限を超えた分を開閉するボタン（枠の下に出る。ボタンのクリックで新規タスク追加が開かないようJS側でstopPropagation） */
+.limit-more{
+  display:block;width:100%;margin-top:6px;min-height:36px;
+  border:1px dashed var(--color-border-input);border-radius:var(--radius-input);
+  background:var(--color-input-bg);color:var(--color-text-sub);
+  font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;
+}
+.limit-more:hover{background:var(--color-primary-bg);color:var(--color-primary);}
+/* ★メモ枠（タスクではなく直接書き込む枠）。色は--board-colorとCSS変数だけで作る（ダークモード対応） */
+.memo-box{
+  --board-text:color-mix(in srgb,var(--board-color,#8a8f98) 70%,var(--color-text));
+  background:color-mix(in srgb,var(--board-color,#8a8f98) 13%,var(--color-card));
+  border:1px solid color-mix(in srgb,var(--board-color,#8a8f98) 45%,var(--color-card));
+  border-radius:var(--radius-card);
+  padding:8px;min-width:0;display:flex;flex-direction:column;gap:6px;
+}
+.memo-box .zone-title{color:var(--board-text);margin-bottom:0;}
+.memo-text{
+  width:100%;min-height:44px;resize:vertical;
+  font-family:inherit;font-size:16px;line-height:1.5; /* 16px以上＝iPhoneの自動ズーム防止 */
+  color:var(--color-text);background:var(--color-input-bg);
+  border:1px solid var(--color-border-input);border-radius:var(--radius-input);
+  padding:8px 10px;
+}
+.memo-text:focus{outline:none;border-color:var(--color-primary);}
+.lay-swatch{width:12px;height:12px;border-radius:3px;flex:none;}
 /* ★「今からやること」「完了済み」を優先度ボードの枠として並べた時（matrix-row内）の調整 */
 .matrix-row .now-action-zone,.matrix-row .completed-zone{margin-bottom:0;min-width:0;min-height:100px;}
 /* 設定タブ：セレクト（16px以上でiPhoneのズーム防止／44px以上のタップ領域） */
@@ -1827,7 +1853,7 @@ body.wb-lock{overflow:hidden;}
   <div class="settings-title">画面表示（ヘッダー・日付・タイマー・テーマ）</div>
   <div class="set-card" id="settingsView"></div>
 
-  <div class="settings-title">ボードのレイアウト（枠を作って、ボード・今からやること・完了済みをドラッグで配置）</div>
+  <div class="settings-title">ボードのレイアウト（枠を作って、ボード・今からやること・完了済み・メモ枠をドラッグで配置）</div>
   <div class="set-card" id="settingsLayout"></div>
 
   <div class="settings-title">ボードの名称・色・補足</div>
@@ -1836,6 +1862,13 @@ body.wb-lock{overflow:hidden;}
 
   <div class="settings-title">今からやること・完了済み（名称・色）</div>
   <div class="set-card" id="settingsSpecial"></div>
+
+  <div class="settings-title">表示件数（枠ごと）</div>
+  <div class="set-card" id="settingsLimits"></div>
+
+  <div class="settings-title">メモ枠（タスクではなく直接書き込めるメモ）</div>
+  <div class="set-card" id="settingsMemos"></div>
+  <button type="button" class="set-add-btn" onclick="addMemo()">＋ メモ枠を追加</button>
 
   <button type="button" class="set-reset-btn" onclick="resetSettings()">🔄 ボード設定を初期状態に戻す</button>
 
@@ -2328,11 +2361,13 @@ function setCompleted(t, done) {
   if (t.completed) {
     t.isNowDoing = false; // 完了したら「今からやること」欄からは外す
     if (!was || !t.completedAt) {
+      t.completedSeq = Date.now(); // ★完了した順（新しい順の表示用）。同じ日に完了した分の順番づけに使う
       t.completedAt = todayStr();
       delete t.completedAtGuess; // 実際の完了日になったので仮置きフラグは外す
     }
   } else {
     t.completedAt = null;
+    delete t.completedSeq;
     delete t.completedAtGuess;
   }
 }
@@ -2665,7 +2700,7 @@ function renderDashboard() {
 
   // ★今からやること欄：isNowDoing＝true かつ 未完了のタスク
   const nowDoingItems = base.filter(t => t.isNowDoing && !t.completed).sort((a, b) => a.order - b.order);
-  renderDropList('nowDoingList', nowDoingItems);
+  renderDropList('nowDoingList', applyLimit('now', nowDoingItems));
   toggleEmptyHint('nowDoingList', 'nowDoingEmptyHint', nowDoingItems.length, 'now-action-zone');
 
   // 各ボード：今からやること欄／完了済みに入っていないタスクのみ
@@ -2676,14 +2711,42 @@ function renderDashboard() {
     settings.boards.forEach(b => {
       if (!document.getElementById('matrixList' + b.id)) return; // 未配置のボードは枠が無いので流し込まない
       const items = base.filter(t => t.quadrant === b.id && !t.isNowDoing && !t.completed).sort((a, c) => a.order - c.order);
-      renderDropList('matrixList' + b.id, items);
+      renderDropList('matrixList' + b.id, applyLimit(String(b.id), items));
     });
   }
 
   // ✅完了済み欄：completed＝true のタスク
-  const completedItems = base.filter(t => t.completed).sort((a, b) => a.order - b.order);
-  renderDropList('completedDropList', completedItems, true);
+  // ★完了済みは「新しく完了した順」（表示件数で絞った時に、最近完了した分が見えるように）
+  const completedItems = base.filter(t => t.completed).sort((a, b) =>
+    ((b.completedSeq || 0) - (a.completedSeq || 0)) ||
+    String(b.completedAt || '').localeCompare(String(a.completedAt || '')) ||
+    (a.order - b.order));
+  renderDropList('completedDropList', applyLimit('done', completedItems), true);
   toggleEmptyHint('completedDropList', 'completedEmptyHint', completedItems.length, null, 'completed-zone');
+}
+
+/* =====================================================
+   【表示件数】枠ごとの上限（settings.limits：{ now, done, <ボードID>: 件数 }。未設定・0＝全部表示）
+   ・上限を超えた分はデータとして残り、枠の下の「あと◯件を表示」で開閉できる（開閉状態は画面を開いている間だけ保持）
+   ===================================================== */
+let expandedLimits = new Set(); // 「全部表示」に開いている枠のキー
+function applyLimit(key, items) {
+  const lim = (settings.limits && settings.limits[key]) || 0;
+  const btn = document.getElementById('limitMore_' + key);
+  if (!lim || items.length <= lim) {
+    if (btn) btn.style.display = 'none';
+    return items;
+  }
+  const open = expandedLimits.has(key);
+  if (btn) {
+    btn.style.display = '';
+    btn.textContent = open ? `▲ ${lim}件に絞って表示` : `▼ あと${items.length - lim}件を表示`;
+  }
+  return open ? items : items.slice(0, lim);
+}
+function toggleLimitExpand(key) {
+  if (expandedLimits.has(key)) expandedLimits.delete(key); else expandedLimits.add(key);
+  renderDashboard();
 }
 
 // ドロップゾーン共通の描画（今からやること／マトリクス各象限／完了済みで共用）
@@ -2789,6 +2852,15 @@ function handleZoneDrop(evt) {
 // ★これをやらないと、ドラッグで並び替えてもrenderAll()時に元の順序へ戻ってしまう
 function reorderZone(zoneEl) {
   const ids = [...zoneEl.children].map(el => el.dataset.id);
+  // ★表示件数の上限で隠れているタスクは、見えている分の後ろに元の順で続ける（順番がぶつからないように）
+  let all = null;
+  if (zoneEl.id === 'nowDoingList') all = tasks.filter(t => t.isNowDoing && !t.completed);
+  else if (zoneEl.id === 'completedDropList') all = tasks.filter(t => t.completed);
+  else if (zoneEl.dataset.q) all = tasks.filter(t => t.quadrant === Number(zoneEl.dataset.q) && !t.isNowDoing && !t.completed);
+  if (all) {
+    const hidden = all.filter(t => !ids.includes(t.id)).sort((a, b) => a.order - b.order);
+    ids.push(...hidden.map(t => t.id));
+  }
   ids.forEach((id, index) => {
     const t = tasks.find(t => t.id === id);
     if (t) t.order = index;
@@ -2963,6 +3035,12 @@ function saveTaskFromModal() {
      常に発火する仕様（ブラウザ標準の「ページ保存」はpreventDefaultで抑止）
    ===================================================== */
 function initKeyboardShortcuts() {
+  // ★ESCキー：タスク追加／編集モーダルを確認なしで閉じる（日本語入力の変換中のESCは変換取り消しなので無視）
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || e.isComposing || e.keyCode === 229) return;
+    const overlay = document.getElementById('modalOverlay');
+    if (overlay && overlay.classList.contains('show')) closeModal();
+  });
   document.addEventListener('keydown', (e) => {
     const key = e.key.toLowerCase();
     if (!(e.ctrlKey || e.metaKey) || key !== 's') return;
@@ -4490,6 +4568,9 @@ function getDefaultSettings() {
     //   既定＝今からやること／②①／④③／完了済み
     slots: [['now'], [2, 1], [4, 3], ['done']],
     layoutV: 2, // ★配置枠に特別枠（now/done）を含む形式のバージョン（旧データは読み込み時に移行）
+    limits: { done: 10 }, // ★表示件数の上限（キー：'now'／'done'／ボードID文字列。未設定・0＝全部表示）。既定は完了済みだけ10件
+    memos: [],            // ★メモ枠：[{ id, name, color, rows, text }]。配置枠には 'memo:<id>' で入る
+    nextMemoId: 1,
     nextBoardId: 5,
     nowDoing:  { name: '★今からやること', color: '#d4a017' },
     completed: { name: '✅完了済み',       color: '#3a9a5c' },
@@ -4518,14 +4599,15 @@ function normalizeSettings(raw) {
       .filter(b => b && Number.isInteger(b.id) && b.id > 0 && !seen.has(b.id) && seen.add(b.id))
       .map(b => ({ id: b.id, name: str(b.name, ''), sub: str(b.sub, ''), color: isColor(b.color) ? b.color : '#8a8f98' }));
   }
+  const memos = normalizeMemos(raw.memos);
   // 配置枠：新形式（slots）があればそれを検証して使う。無ければ旧形式（ボードの並び順＋行ごとの列数）から作る
   let slots;
   if (Array.isArray(raw.slots)) {
-    const ids = new Set([...boards.map(b => b.id), 'now', 'done']);
+    const ids = new Set([...boards.map(b => b.id), 'now', 'done', ...memos.map(m => 'memo:' + m.id)]);
     const used = new Set();
     slots = raw.slots
       .map(row => Array.isArray(row)
-        ? row.map(id => ((Number.isInteger(id) || id === 'now' || id === 'done') && ids.has(id) && !used.has(id) && used.add(id)) ? id : null)
+        ? row.map(id => (ids.has(id) && !used.has(id) && used.add(id)) ? id : null)
         : [])
       .filter(row => row.length > 0);
   } else {
@@ -4542,6 +4624,9 @@ function normalizeSettings(raw) {
     boards,
     slots,
     layoutV: 2,
+    memos,
+    nextMemoId: Math.max(Number(raw.nextMemoId) || 0, memos.reduce((mx, m) => Math.max(mx, m.id), 0) + 1),
+    limits: raw.limits === undefined ? { ...def.limits } : normalizeLimits(raw.limits),
     nextBoardId: Math.max(Number(raw.nextBoardId) || 0, maxId + 1),
     nowDoing: special(raw.nowDoing, def.nowDoing),
     completed: special(raw.completed, def.completed),
@@ -4555,6 +4640,36 @@ function normalizeSettings(raw) {
     datePos: VIEW_POS_KEYS.includes(raw.datePos) ? raw.datePos : (raw.datePos === 'afterDone' ? 'bottom' : 'top'),
     timerPos: VIEW_POS_KEYS.includes(raw.timerPos) ? raw.timerPos : (raw.timerPos === 'afterDone' ? 'bottom' : 'top'),
   };
+}
+
+// メモ枠の検証：IDの重複・不正を除き、名前・色・行数を丸める
+function normalizeMemos(raw) {
+  const out = [];
+  if (!Array.isArray(raw)) return out;
+  const seen = new Set();
+  raw.forEach(m => {
+    if (!m || !Number.isInteger(m.id) || m.id <= 0 || seen.has(m.id)) return;
+    seen.add(m.id);
+    out.push({
+      id: m.id,
+      name: (typeof m.name === 'string' ? m.name : '').slice(0, 40),
+      color: (typeof m.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(m.color)) ? m.color : '#8a8f98',
+      rows: Math.min(30, Math.max(2, Math.floor(Number(m.rows)) || 6)),
+      text: typeof m.text === 'string' ? m.text.slice(0, 20000) : '',
+    });
+  });
+  return out;
+}
+// 表示件数の検証：キーは now／done／ボードID（数字）だけ。1〜999件、それ以外は「全部表示」扱いで捨てる
+function normalizeLimits(raw) {
+  const out = {};
+  if (!raw || typeof raw !== 'object') return out;
+  Object.keys(raw).forEach(k => {
+    if (!(k === 'now' || k === 'done' || /^\d+$/.test(k))) return;
+    const n = Math.floor(Number(raw[k]));
+    if (n > 0) out[k] = Math.min(n, 999);
+  });
+  return out;
 }
 
 // タグ辞書の検証：空名・重複を除く（大タグ同士、小タグは同じ大タグの中で重複不可）
@@ -4623,7 +4738,16 @@ function flowSlots(boards, rowCols) {
 function getSlotItem(id) {
   if (id === 'now')  return { id: 'now',  special: true, name: settings.nowDoing.name,  sub: '', color: settings.nowDoing.color };
   if (id === 'done') return { id: 'done', special: true, name: settings.completed.name, sub: '', color: settings.completed.color };
+  if (typeof id === 'string' && id.startsWith('memo:')) { // ★メモ枠
+    const m = settings.memos.find(x => 'memo:' + x.id === id);
+    return m ? { id, memo: true, name: m.name, color: m.color, ref: m } : null;
+  }
   return getBoard(id);
+}
+// 配置されていないメモ枠
+function unplacedMemos() {
+  const placed = placedBoardIds();
+  return settings.memos.filter(m => !placed.has('memo:' + m.id)).map(m => getSlotItem('memo:' + m.id));
 }
 // 枠ごとのボード／特別枠（空の枠はnull）
 function computeBoardRows() {
@@ -4637,7 +4761,7 @@ function unplacedSpecials() {
 // 画面の並び順（枠の左上→右下）＋未配置。特別枠も含む（モーダルのボタン用）
 function itemsInLayoutOrder() {
   const placed = settings.slots.flat().map(id => (id === null || id === undefined) ? null : getSlotItem(id)).filter(Boolean);
-  return [...placed, ...unplacedBoards(), ...unplacedSpecials()];
+  return [...placed, ...unplacedBoards(), ...unplacedSpecials()].filter(it => !it.memo); // メモ枠はタスクの行き先ではないので除く
 }
 function placedBoardIds() {
   return new Set(settings.slots.flat().filter(id => id !== null && id !== undefined));
@@ -4662,6 +4786,7 @@ function zoneHtml(kind) {
     return `<div class="now-action-zone" id="nowZone" style="--board-color:${s.color}" onclick="handleZoneBlankClick(event, 'nowDoing')">
       <div class="zone-title" id="nowZoneTitle">${escapeHtml(s.name || '（名称なし）')}</div>
       <div class="now-action-list" id="nowDoingList"></div>
+      <button type="button" class="limit-more" id="limitMore_now" style="display:none" onclick="event.stopPropagation(); toggleLimitExpand('now')"></button>
       <div class="zone-empty-hint" id="nowDoingEmptyHint">タスクをドラッグ、または空欄タップで追加</div>
     </div>`;
   }
@@ -4669,16 +4794,43 @@ function zoneHtml(kind) {
   return `<div class="completed-zone" id="completedZone" style="--board-color:${c.color}" onclick="handleZoneBlankClick(event, 'completed')">
       <div class="zone-title" id="completedZoneTitle">${escapeHtml(c.name || '（名称なし）')}</div>
       <div class="completed-drop-list" id="completedDropList"></div>
+      <button type="button" class="limit-more" id="limitMore_done" style="display:none" onclick="event.stopPropagation(); toggleLimitExpand('done')"></button>
       <div class="zone-empty-hint" id="completedEmptyHint">タスクをドラッグ、または空欄タップで完了タスクとして追加</div>
     </div>`;
 }
+
+// ★メモ枠のHTML（タスクではなく直接書き込む欄。入力は自動保存）。textareaは先頭の改行が消えるので、必ず改行を1つ足す
+function memoHtml(m) {
+  return `<div class="memo-box" style="--board-color:${m.color}">
+      <div class="zone-title">${escapeHtml('📝 ' + (m.name || 'メモ'))}</div>
+      <textarea class="memo-text" rows="${m.rows}" placeholder="ここに直接メモできます（自動保存）" oninput="onMemoInput(${m.id}, this)" onblur="flushMemoSave()">
+${escapeHtml(m.text)}</textarea>
+    </div>`;
+}
+let memoSaveTimer = null;
+function onMemoInput(id, el) {
+  const m = settings.memos.find(x => x.id === id);
+  if (!m) return;
+  m.text = el.value.slice(0, 20000);
+  clearTimeout(memoSaveTimer);
+  memoSaveTimer = setTimeout(flushMemoSave, 400); // 打つたびに保存せず、少し待ってまとめて保存
+}
+function flushMemoSave() {
+  if (memoSaveTimer === null) return;
+  clearTimeout(memoSaveTimer);
+  memoSaveTimer = null;
+  saveSettings();
+}
+window.addEventListener('pagehide', flushMemoSave);
+document.addEventListener('visibilitychange', () => { if (document.hidden) flushMemoSave(); });
 
 function renderBoardGrid() {
   const wrap = document.getElementById('matrixView');
   if (!wrap) return;
   if (settings.boardMode === 'tag') { // ★タグボードのみ：今からやる／完了済みは固定で上と下に出す（タスクが見えなくなるのを防ぐ）
     wrap.innerHTML = '<div class="now-action-row" style="grid-template-columns:minmax(0,1fr);margin-bottom:0">' + zoneHtml('now') + '</div>'
-      + '<div id="boardTagWrap"></div>' + zoneHtml('done');
+      + '<div id="boardTagWrap"></div>' + zoneHtml('done')
+      + settings.memos.map(memoHtml).join(''); // ★メモ枠はタグだけの画面でも一番下に固定で出す
     renderTagBoard(document.getElementById('boardTagWrap'));
   } else if (settings.boardMode === 'both') {
     // ★優先度ボード（上）＋タグボード（下）。どちらもドラッグ先として使える
@@ -4701,10 +4853,11 @@ function renderPriorityBoard(wrap) {
   } else {
     wrap.innerHTML = rows.map(row => `
       <div class="matrix-row" style="grid-template-columns:repeat(${row.length},minmax(0,1fr))">
-        ${row.map(b => b && b.special ? zoneHtml(b.id) : b ? `
+        ${row.map(b => b && b.special ? zoneHtml(b.id) : b && b.memo ? memoHtml(b.ref) : b ? `
         <div class="matrix-quadrant" style="--board-color:${b.color}" onclick="handleZoneBlankClick(event, 'quadrant', ${b.id})">
           <div class="matrix-title"><span>${escapeHtml(boardName(b))}</span>${b.sub ? `<span>${escapeHtml(b.sub)}</span>` : ''}</div>
           <div class="matrix-list" id="matrixList${b.id}" data-q="${b.id}" data-droplist="1"></div>
+          <button type="button" class="limit-more" id="limitMore_${b.id}" style="display:none" onclick="event.stopPropagation(); toggleLimitExpand('${b.id}')"></button>
         </div>` : '<div class="matrix-spacer"></div>').join('')}
       </div>`).join('');
   }
@@ -4769,6 +4922,8 @@ function detachTasksFromMissingBoards() {
 // ---------- 設定タブ：ボード編集 ----------
 function renderSettingsTab() {
   renderSettingsView();
+  renderSettingsLimits();
+  renderSettingsMemos();
   renderSettingsBoards();
   renderSettingsLayout();
   renderSettingsSpecial();
@@ -4824,6 +4979,94 @@ function addBoard() {
   renderSettingsLayout();
 }
 
+// ---------- 設定タブ：表示件数（枠ごと） ----------
+function renderSettingsLimits() {
+  const el = document.getElementById('settingsLimits');
+  if (!el) return;
+  const items = itemsInLayoutOrder(); // 今からやること／各ボード／完了済み（レイアウトの並び順）
+  el.innerHTML = items.map(it => {
+    const key = String(it.id);
+    const v = (settings.limits && settings.limits[key]) || '';
+    return `<div class="set-row">
+      <span class="lay-swatch" style="background:${it.color}"></span>
+      <span class="set-row-label">${escapeHtml(it.special ? (it.name || '（名称なし）') : boardName(it))}</span>
+      <input type="number" class="set-input" style="max-width:90px;flex:none" min="0" max="999" inputmode="numeric" placeholder="全部" value="${v}" aria-label="表示件数" oninput="setLimit('${key}', this.value)">
+      <span class="set-row-label" style="flex:none">件</span>
+    </div>`;
+  }).join('') + '<div class="set-note">空欄または0＝全部表示。上限を超えた分は消えず、枠の下の「あと◯件を表示」で開けます。完了済みは新しく完了した順に並びます。タグボードは対象外です。</div>';
+}
+function setLimit(key, val) {
+  const n = Math.min(999, Math.floor(Number(val)) || 0);
+  if (n > 0) settings.limits[key] = n; else delete settings.limits[key];
+  expandedLimits.delete(key);
+  saveSettings();
+  renderDashboard();
+}
+
+// ---------- 設定タブ：メモ枠 ----------
+function renderSettingsMemos() {
+  const el = document.getElementById('settingsMemos');
+  if (!el) return;
+  el.innerHTML = settings.memos.length ? settings.memos.map(m => `
+    <div class="set-board">
+      <div class="set-row">
+        <input type="color" class="set-color" value="${m.color}" aria-label="色" oninput="updateMemoField(${m.id}, 'color', this.value)">
+        <input type="text" class="set-input" value="${escapeAttr(m.name)}" maxlength="40" placeholder="メモ名" aria-label="メモ名" oninput="updateMemoField(${m.id}, 'name', this.value)">
+      </div>
+      <div class="set-row">
+        <span class="set-row-label">入力欄の高さ（行数）</span>
+        <input type="number" class="set-input" style="max-width:90px;flex:none" min="2" max="30" inputmode="numeric" value="${m.rows}" aria-label="行数" oninput="updateMemoField(${m.id}, 'rows', this.value)">
+        <button type="button" class="set-icon-btn danger" onclick="deleteMemo(${m.id})" aria-label="削除">🗑</button>
+      </div>
+    </div>`).join('') : '<div class="set-empty">メモ枠がありません。「＋ メモ枠を追加」から作れます</div>';
+}
+function updateMemoField(id, field, value) {
+  const m = settings.memos.find(x => x.id === id);
+  if (!m) return;
+  if (field === 'color') {
+    if (!/^#[0-9a-fA-F]{6}$/.test(value)) return;
+    m.color = value;
+  } else if (field === 'rows') {
+    const n = Math.floor(Number(value));
+    if (!n) return; // 入力途中（空欄など）は無視
+    m.rows = Math.min(30, Math.max(2, n));
+  } else {
+    m.name = String(value).slice(0, 40);
+  }
+  flushMemoSave();
+  commitSettings();
+  renderSettingsLayout(); // 枠の中のチップ名・色も追従
+}
+// メモ枠を追加：空いている最初の枠に入れる（空きが無ければ、一番下に新しい行を作って入れる）
+function addMemo() {
+  const color = NEW_BOARD_COLORS[(settings.nextMemoId - 1) % NEW_BOARD_COLORS.length];
+  const m = { id: settings.nextMemoId, name: 'メモ', color, rows: 6, text: '' };
+  settings.nextMemoId++;
+  settings.memos.push(m);
+  const sid = 'memo:' + m.id;
+  let placed = false;
+  outer: for (const row of settings.slots) {
+    for (let c = 0; c < row.length; c++) {
+      if (row[c] === null || row[c] === undefined) { row[c] = sid; placed = true; break outer; }
+    }
+  }
+  if (!placed) settings.slots.push([sid]);
+  commitSettings();
+  renderSettingsMemos();
+  renderSettingsLayout();
+}
+function deleteMemo(id) {
+  const m = settings.memos.find(x => x.id === id);
+  if (!m) return;
+  if (!confirm(`メモ枠「${m.name || 'メモ'}」を削除する？\n書いたメモの内容も消える（元に戻せない）`)) return;
+  flushMemoSave();
+  settings.memos = settings.memos.filter(x => x.id !== id);
+  settings.slots = settings.slots.map(row => row.map(x => (x === 'memo:' + id ? null : x)));
+  commitSettings();
+  renderSettingsMemos();
+  renderSettingsLayout();
+}
+
 function deleteBoard(id) {
   const b = getBoard(id);
   if (!b) return;
@@ -4832,6 +5075,7 @@ function deleteBoard(id) {
   tasks.forEach(t => { if (t.quadrant === id) t.quadrant = null; });
   saveTasks();
   settings.boards = settings.boards.filter(x => x.id !== id);
+  delete settings.limits[String(id)]; // ★そのボードの表示件数設定も消す
   settings.slots = settings.slots.map(row => row.map(x => (x === id ? null : x)));
   commitSettings();
   renderSettingsBoards();
@@ -4847,7 +5091,7 @@ let layoutSortables = [];
 function renderSettingsLayout() {
   const el = document.getElementById('settingsLayout');
   if (!el) return;
-  const chip = b => `<div class="lay-chip" data-id="${b.id}" style="--board-color:${b.color}">${escapeHtml(b.special ? (b.name || '（名称なし）') : boardName(b))}</div>`;
+  const chip = b => `<div class="lay-chip" data-id="${b.id}" style="--board-color:${b.color}">${escapeHtml(b.memo ? '📝 ' + (b.name || 'メモ') : b.special ? (b.name || '（名称なし）') : boardName(b))}</div>`;
   const pattern = settings.slots.map(r => r.length).join(',');
 
   const rowsHtml = settings.slots.map((row, r) => `
@@ -4882,8 +5126,8 @@ function renderSettingsLayout() {
     ${rowsHtml || '<div class="set-empty">枠がありません。上の入力欄か「＋ 行を追加」で作れます</div>'}
     <button type="button" class="set-add-btn" onclick="addRow()">＋ 行を追加</button>
     <div class="set-sub-label">未配置のボード（枠へドラッグして配置）</div>
-    <div class="lay-tray" data-tray="1">${[...unplacedSpecials(), ...unplacedBoards()].map(chip).join('')}</div>
-    <div class="set-note">未配置のボードはボードタブに表示されません（「今からやること」「完了済み」を未配置にすると、優先度の表示ではそのタスクが見えなくなります。「タグで見る」の時は固定で上と下に出ます）。枠を減らすと、はみ出したボードはここに戻ります。空の枠はボードタブでも空白のまま位置が保たれ、全部空の行は表示されません。</div>`;
+    <div class="lay-tray" data-tray="1">${[...unplacedSpecials(), ...unplacedMemos(), ...unplacedBoards()].map(chip).join('')}</div>
+    <div class="set-note">未配置のボードはボードタブに表示されません（「今からやること」「完了済み」を未配置にすると、優先度の表示ではそのタスクが見えなくなります。「タグで見る」の時は固定で上と下に出ます。メモ枠も同じ配置の仕組みですが、「タグで見る」の時は一番下に固定で出ます）。枠を減らすと、はみ出したボードはここに戻ります。空の枠はボードタブでも空白のまま位置が保たれ、全部空の行は表示されません。</div>`;
   initLayoutSortables();
 }
 
@@ -4905,7 +5149,7 @@ function initLayoutSortables() {
 // ドロップ時：DOMではなくデータ（settings.slots）を書き換え、画面は作り直す（1枠1ボードを保つため）
 function onLayoutDrop(evt) {
   const rawId = evt.item.dataset.id;
-  const id = (rawId === 'now' || rawId === 'done') ? rawId : Number(rawId); // ★特別枠は文字列ID
+  const id = (rawId === 'now' || rawId === 'done' || rawId.startsWith('memo:')) ? rawId : Number(rawId); // ★特別枠・メモ枠は文字列ID
   const from = evt.from, to = evt.to;
   if (from !== to) {
     const src = from.dataset.tray ? null : [Number(from.dataset.r), Number(from.dataset.c)];
@@ -5083,8 +5327,10 @@ function resetSettings() {
   const keepTagCollapsed = settings.tagCollapsed;
   const keepTagBoardCols = settings.tagBoardCols;
   const keepView = { showNav: settings.showNav, showTitle: settings.showTitle, datePos: settings.datePos, timerPos: settings.timerPos }; // 画面表示の設定もリセット対象外
+  const keepMemos = { memos: settings.memos, nextMemoId: settings.nextMemoId, limits: settings.limits }; // ★メモの内容・表示件数はリセット対象外
   settings = getDefaultSettings();
-  Object.assign(settings, keepView);
+  Object.assign(settings, keepView, keepMemos);
+  settings.memos.forEach(m => settings.slots.push(['memo:' + m.id])); // メモ枠は一番下に1つずつ並べ直す（消えないように）
   settings.calendarView = keepCalendarView;
   settings.tagMaster = keepTagMaster;
   settings.boardMode = keepBoardMode;
