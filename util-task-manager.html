@@ -1274,13 +1274,20 @@ footer{
 
 /* =====================================================
    日付・タイマーの配置先（設定タブで選べる）
-   ・slotTop／slotBottom／slotAfterDone＝2列グリッド（列数はJSがアイテム数に合わせて設定）
-   ・slotBeside＝「今からやること」の右側（ボードの見方の下）に縦積み
+   ・slotTop／slotBottom＝2列グリッド（列数はJSがアイテム数に合わせて設定）
+   ・slotBeside＝「ボードの見方」バーの右横に並べる
    ・slotParking＝非表示にした時の置き場（画面外）
    ===================================================== */
-.now-right-col{display:flex;flex-direction:column;gap:8px;min-width:0;}
-.now-beside-slot{display:flex;flex-direction:column;gap:8px;}
-.now-action-row.slot-after-done{margin-top:-4px;margin-bottom:14px;}
+/* ボードの見方バー（優先度／タグ切替）＋（設定で選んだ時だけ）日付・タイマーが横に並ぶ */
+.board-mode-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:stretch;margin-bottom:10px;}
+.board-mode-bar .board-mode-panel{flex:1 1 260px;min-height:0;padding:8px 10px;}
+.board-mode-bar .board-mode-panel .set-seg{flex-direction:row;}
+.board-mode-bar .board-mode-panel .set-seg-btn{font-size:12px;line-height:1.3;}
+.now-beside-slot{display:flex;gap:8px;flex:1 1 200px;min-width:0;}
+.now-beside-slot > *{flex:1 1 0;min-width:0;}
+.board-mode-bar .now-card{margin-bottom:0;display:flex;flex-direction:column;justify-content:center;padding:8px;}
+/* ★「今からやること」「完了済み」を優先度ボードの枠として並べた時（matrix-row内）の調整 */
+.matrix-row .now-action-zone,.matrix-row .completed-zone{margin-bottom:0;min-width:0;min-height:100px;}
 /* 設定タブ：セレクト（16px以上でiPhoneのズーム防止／44px以上のタップ領域） */
 .set-select{
   width:100%;min-height:44px;font-family:inherit;font-size:16px;
@@ -1677,18 +1684,10 @@ body.wb-lock{overflow:hidden;}
   <div id="slotParking" style="display:none"></div><!-- 非表示にした日付／タイマーの置き場 -->
 
   <!-- =====================================================
-       「今からやること」ドロップゾーン＋タイマー等の空きスペース
-       ・左：タスクをドラッグ＆ドロップして今の集中タスクを置く欄
-       ・右：ボードの見方（優先度／タグ）の切替ボタン（タイマー等は上段の右側へ移動）
+       ボードの見方（優先度／タグ）の切替バー
+       ・右側には、設定で「ボードの見方の横」を選んだ時だけ日付／タイマーが入る
        ===================================================== -->
-  <div class="now-action-row">
-    <div class="now-action-zone" id="nowZone" onclick="handleZoneBlankClick(event, 'nowDoing')">
-      <div class="zone-title" id="nowZoneTitle">★今からやること</div>
-      <div class="now-action-list" id="nowDoingList"></div>
-      <div class="zone-empty-hint" id="nowDoingEmptyHint">タスクをドラッグ、または空欄タップで追加</div>
-    </div>
-<!-- 右：ボードの見方（優先度／タグ）の切替ボタン＋（設定で選んだ時だけ）日付／タイマー -->
-    <div class="now-right-col">
+  <div class="board-mode-bar">
     <div class="board-mode-panel">
       <div class="zone-title">ボードの見方</div>
       <div class="set-seg board-mode-seg" id="boardModeSeg">
@@ -1697,29 +1696,20 @@ body.wb-lock{overflow:hidden;}
         <button type="button" class="set-seg-btn" data-mode="both" onclick="setBoardMode('both')">⭐＋🏷 両方</button>
       </div>
     </div>
-    <div class="now-beside-slot" id="slotBeside"></div>
-    </div><!-- /.now-right-col -->
+    <div class="now-beside-slot" id="slotBeside" style="display:none"></div><!-- 配置先：ボードの見方の横 -->
   </div>
+  <!-- ★「★今からやること」「✅完了済み」は、優先度ボードの枠の一つとして renderBoardGrid() が描画する
+       （タグだけの画面では、これまで通り固定で上と下に描画） -->
+
 
   <!-- =====================================================
        マトリクス（重要度×緊急度）
        ・常時表示のダッシュボードとして機能する
        ===================================================== -->
   <div id="matrixView"></div><!-- ★中身は renderBoardGrid()（優先度ボード or タグボード）が生成する -->
-  <div class="now-action-row" id="slotBottom" style="display:none"></div><!-- 配置先：ボードの下（完了済みの上） -->
+  <div class="now-action-row" id="slotBottom" style="display:none"></div><!-- 配置先：ボードの下 -->
 
-  <!-- =====================================================
-       完了済みドロップゾーン
-       ・タスクをここにドラッグすると完了扱いになる（チェックと同じ効果）
-       ===================================================== -->
-  <div class="completed-zone" id="completedZone" onclick="handleZoneBlankClick(event, 'completed')">
-    <div class="zone-title" id="completedZoneTitle">✅完了済み</div>
-    <div class="completed-drop-list" id="completedDropList"></div>
-    <div class="zone-empty-hint" id="completedEmptyHint">タスクをドラッグ、または空欄タップで完了タスクとして追加</div>
-  </div>
-  <div class="now-action-row slot-after-done" id="slotAfterDone" style="display:none"></div><!-- 配置先：完了済みの下 -->
-
-  <!-- Excel用コピー（ボード表示形式：ボードの見方に連動） -->
+<!-- Excel用コピー（ボード表示形式：ボードの見方に連動） -->
   <div class="data-bar"><button type="button" class="btn-data" id="btnXlBoard" onclick="copyBoardExcel()">📊 Excel用コピー</button></div>
 
   </div><!-- /#tabPanel-board -->
@@ -1837,14 +1827,14 @@ body.wb-lock{overflow:hidden;}
   <div class="settings-title">画面表示（ヘッダー・日付・タイマー・テーマ）</div>
   <div class="set-card" id="settingsView"></div>
 
-  <div class="settings-title">ボードのレイアウト（枠を作って、ボードをドラッグで配置）</div>
+  <div class="settings-title">ボードのレイアウト（枠を作って、ボード・今からやること・完了済みをドラッグで配置）</div>
   <div class="set-card" id="settingsLayout"></div>
 
   <div class="settings-title">ボードの名称・色・補足</div>
   <div class="set-card" id="settingsBoards"></div>
   <button type="button" class="set-add-btn" onclick="addBoard()">＋ ボードを追加</button>
 
-  <div class="settings-title">特別枠（名称・色）</div>
+  <div class="settings-title">今からやること・完了済み（名称・色）</div>
   <div class="set-card" id="settingsSpecial"></div>
 
   <button type="button" class="set-reset-btn" onclick="resetSettings()">🔄 ボード設定を初期状態に戻す</button>
@@ -2149,6 +2139,7 @@ let activeTagFilter = null;  // 大タグ絞り込み（1つだけ選択可・�
 let activeSubFilter = null;  // 小タグ絞り込み（大タグ選択中だけ有効）
 let editingTaskId = null;    // モーダルで編集中のタスクid（nullなら新規追加）
 let selectedQuadrant = null;
+let selectedZone = null; // ★モーダルで選択中の特別枠：'now'（今からやること）／'done'（完了済み）／null
 let pendingZonePreset = null; // ★ゾーン空欄タップで新規作成する時の初期状態（{isNowDoing, completed}）。openModalForZoneでのみセットする
 let listSortable = null;      // ★リストのSortableインスタンス（並び替え中はdisabledにするため保持）
 let listSort = { key: 'manual', dir: 'asc' }; // ★リストの並び順。DOMContentLoadedでloadListSort()して上書き（constより前に呼ぶとTDZで復元に失敗するため）
@@ -2669,6 +2660,9 @@ function renderDashboard() {
   // ★検索・タグ絞り込みはリストタブ専用になったため、ボードは常に全タスクを表示する
   const base = tasks;
 
+  // ★タグの構成が変わっていたら先に枠を作り直す（今からやる／完了済みの欄もmatrixView内にあるため、流し込みより前に行う）
+  if (settings.boardMode !== 'priority' && tagBoardSignature() !== lastTagBoardSig) renderBoardGrid();
+
   // ★今からやること欄：isNowDoing＝true かつ 未完了のタスク
   const nowDoingItems = base.filter(t => t.isNowDoing && !t.completed).sort((a, b) => a.order - b.order);
   renderDropList('nowDoingList', nowDoingItems);
@@ -2677,7 +2671,6 @@ function renderDashboard() {
   // 各ボード：今からやること欄／完了済みに入っていないタスクのみ
   const showPriorityBoard = settings.boardMode !== 'tag';      // 優先度ボードを出すモード：priority / both
   const showTagBoard      = settings.boardMode !== 'priority'; // タグボードを出すモード：tag / both
-  if (showTagBoard && tagBoardSignature() !== lastTagBoardSig) renderBoardGrid(); // ★タグの構成が変わっていたら先に枠を作り直す
   if (showTagBoard) fillTagBoardLists(base); // ★タグボード：小ボードごとに流し込む
   if (showPriorityBoard) {
     settings.boards.forEach(b => {
@@ -2708,6 +2701,7 @@ function renderDropList(listId, items, showDone, showPriority) {
 // 空の時だけヒント文言を出す（zoneClassは親要素に is-empty を付けてCSSで制御）
 function toggleEmptyHint(listId, hintId, count, zoneClassOnList, zoneClassOnParent) {
   const listEl = document.getElementById(listId);
+  if (!listEl) return; // ★未配置の特別枠は欄が存在しない
   const zoneEl = zoneClassOnList ? listEl.closest('.' + zoneClassOnList) : listEl.closest('.' + zoneClassOnParent);
   if (zoneEl) zoneEl.classList.toggle('is-empty', count === 0);
 }
@@ -2821,6 +2815,8 @@ function openModal(id) {
     selectedTagMain = t.tagMain || null;
     selectedTagSub = t.tagSub || null;
     initQuadrant(t.quadrant);
+    selectedZone = t.completed ? 'done' : (t.isNowDoing ? 'now' : null); // ★今の状態をそのまま選択状態にする
+    refreshQButtons();
     deleteBtn.style.display = 'inline-block';
     syncCalendarBtnState();
   } else {
@@ -2832,6 +2828,7 @@ function openModal(id) {
     document.getElementById('fieldDue').value = (activeTab === 'calendar') ? calEnsureState().selected : todayStr();
     selectedTagMain = null;
     selectedTagSub = null;
+    selectedZone = null;
     initQuadrant(null);
     deleteBtn.style.display = 'none';
     syncCalendarBtnState();
@@ -2849,13 +2846,12 @@ function openModal(id) {
 // =====================================================
 function openModalForZone(zoneType, quadrant) {
   openModal(null);
-  pendingZonePreset = {
-    isNowDoing: zoneType === 'nowDoing',
-    completed: zoneType === 'completed',
-  };
+  // ★タップした欄を初期選択にする（今からやること／完了済みは特別枠ボタン、ボードは従来の優先度ボタン）
+  selectedZone = zoneType === 'nowDoing' ? 'now' : (zoneType === 'completed' ? 'done' : null);
   if (zoneType === 'quadrant') {
     initQuadrant(quadrant); // タップした象限を初期選択状態にする
   }
+  refreshQButtons();
 }
 
 // ゾーンの空欄（＝タスク項目以外の部分）がタップされた時だけ新規追加モーダルを開く
@@ -2878,17 +2874,45 @@ function closeModalOnOverlay(e) {
 // モーダルを開いた時の初期表示用（トグルせず直接値をセットする）
 function initQuadrant(q) {
   selectedQuadrant = (q && getBoard(q)) ? q : null; // ★削除済みボードのIDは未分類扱い
+  refreshQButtons();
+}
+
+// ボード選択ボタンの強調表示を更新（特別枠を選択中は、その特別枠だけが強調される）
+function refreshQButtons() {
   document.querySelectorAll('.q-btn').forEach(btn => {
-    btn.classList.toggle('active', Number(btn.dataset.q) === selectedQuadrant);
+    const on = btn.dataset.z
+      ? btn.dataset.z === selectedZone
+      : (selectedZone === null && Number(btn.dataset.q) === selectedQuadrant);
+    btn.classList.toggle('active', on);
   });
 }
 
 function setQuadrant(q) {
   // ボタンタップ時の切替：同じ象限を再度タップしたら選択解除（未分類に戻す）
-  selectedQuadrant = (selectedQuadrant === q) ? null : q;
-  document.querySelectorAll('.q-btn').forEach(btn => {
-    btn.classList.toggle('active', Number(btn.dataset.q) === selectedQuadrant);
-  });
+  // ★特別枠を選択中にボードをタップした時は、そのボードを選び直す（特別枠は外れる）
+  selectedQuadrant = (selectedZone === null && selectedQuadrant === q) ? null : q;
+  selectedZone = null;
+  refreshQButtons();
+}
+
+// ★「今からやること」「完了済み」ボタン：もう一度タップで解除（優先度ボード側の選択に戻る）
+function setZoneChoice(z) {
+  selectedZone = (selectedZone === z) ? null : z;
+  refreshQButtons();
+}
+
+// タスクに特別枠の選択結果を反映する（完了日の記録は setCompleted に一元化）
+function applyZoneToTask(t, zone) {
+  if (zone === 'done') {
+    setCompleted(t, true);
+  } else if (zone === 'now') {
+    setCompleted(t, false);
+    t.isNowDoing = true;
+  } else {
+    setCompleted(t, false);
+    t.isNowDoing = false;
+  }
+  saveTasks();
 }
 
 // モーダルの入力欄から生データを取得するだけの関数（保存判定やトレーラー付与は呼び出し元で行う）
@@ -2923,13 +2947,8 @@ function saveTaskFromModal() {
 
   const taskData = { title, note, addedDate, due, quadrant: selectedQuadrant, tags, tagMain, tagSub };
 
-  // ★ゾーン空欄タップ経由の新規作成時は、タップした欄の状態を初期値として反映する
-  if (!isEditing && pendingZonePreset) {
-    taskData.isNowDoing = pendingZonePreset.isNowDoing;
-    taskData.completed = pendingZonePreset.completed;
-  }
-
   const savedTask = isEditing ? updateTask(editingTaskId, taskData) : addTask(taskData);
+  if (savedTask) applyZoneToTask(savedTask, selectedZone); // ★今からやること／完了済みの選択を反映
 
   closeModal();
   renderFilterTabs();
@@ -4450,9 +4469,8 @@ const SETTINGS_STORAGE_KEY = 'task_manager_settings_v1';
 // 日付・タイマーの配置先（キー → 設定画面の表示名）。順番＝セレクトの並び順
 const VIEW_POS_LABELS = {
   top:       'ボードの上段（今の位置）',
-  beside:    '「今からやること」の右側（ボードの見方の下）',
-  bottom:    'ボードの下（完了済みの上）',
-  afterDone: '完了済みの下',
+  beside:    '「ボードの見方」の横',
+  bottom:    'ボードの下',
   hidden:    '非表示',
 };
 const VIEW_POS_KEYS = Object.keys(VIEW_POS_LABELS);
@@ -4468,7 +4486,10 @@ function getDefaultSettings() {
       { id: 4, name: '④後回し',       sub: '非重要×非緊急', color: '#8a8f98' },
       { id: 3, name: '③サクッとやる', sub: '非重要×緊急',   color: '#d98c1f' },
     ],
-    slots: [[2, 1], [4, 3]], // ★ボードの配置枠：行ごとの配列（各枠にボードIDかnull）。既定は②①／④③
+    // ★ボードの配置枠：行ごとの配列（各枠にボードID／'now'（今からやること）／'done'（完了済み）／null）
+    //   既定＝今からやること／②①／④③／完了済み
+    slots: [['now'], [2, 1], [4, 3], ['done']],
+    layoutV: 2, // ★配置枠に特別枠（now/done）を含む形式のバージョン（旧データは読み込み時に移行）
     nextBoardId: 5,
     nowDoing:  { name: '★今からやること', color: '#d4a017' },
     completed: { name: '✅完了済み',       color: '#3a9a5c' },
@@ -4500,11 +4521,11 @@ function normalizeSettings(raw) {
   // 配置枠：新形式（slots）があればそれを検証して使う。無ければ旧形式（ボードの並び順＋行ごとの列数）から作る
   let slots;
   if (Array.isArray(raw.slots)) {
-    const ids = new Set(boards.map(b => b.id));
+    const ids = new Set([...boards.map(b => b.id), 'now', 'done']);
     const used = new Set();
     slots = raw.slots
       .map(row => Array.isArray(row)
-        ? row.map(id => (Number.isInteger(id) && ids.has(id) && !used.has(id) && used.add(id)) ? id : null)
+        ? row.map(id => ((Number.isInteger(id) || id === 'now' || id === 'done') && ids.has(id) && !used.has(id) && used.add(id)) ? id : null)
         : [])
       .filter(row => row.length > 0);
   } else {
@@ -4513,11 +4534,14 @@ function normalizeSettings(raw) {
       : [2, 2];
     slots = flowSlots(boards, rc);
   }
+  // ★旧データ（特別枠が配置枠に入っていない形式）の移行：今の見た目に近い形で、今からやる＝一番上の行／完了済み＝一番下の行
+  if (raw.layoutV !== 2) slots = [['now'], ...slots, ['done']];
   const maxId = boards.reduce((m, b) => Math.max(m, b.id), 0);
   const special = (r, d) => ({ name: str(r && r.name, d.name), color: isColor(r && r.color) ? r.color : d.color });
   return {
     boards,
     slots,
+    layoutV: 2,
     nextBoardId: Math.max(Number(raw.nextBoardId) || 0, maxId + 1),
     nowDoing: special(raw.nowDoing, def.nowDoing),
     completed: special(raw.completed, def.completed),
@@ -4528,8 +4552,8 @@ function normalizeSettings(raw) {
     tagBoardCols: Math.max(0, Math.floor(Number(raw.tagBoardCols)) || 0),
     showNav: raw.showNav !== false,
     showTitle: raw.showTitle !== false,
-    datePos: VIEW_POS_KEYS.includes(raw.datePos) ? raw.datePos : 'top',
-    timerPos: VIEW_POS_KEYS.includes(raw.timerPos) ? raw.timerPos : 'top',
+    datePos: VIEW_POS_KEYS.includes(raw.datePos) ? raw.datePos : (raw.datePos === 'afterDone' ? 'bottom' : 'top'),
+    timerPos: VIEW_POS_KEYS.includes(raw.timerPos) ? raw.timerPos : (raw.timerPos === 'afterDone' ? 'bottom' : 'top'),
   };
 }
 
@@ -4595,9 +4619,25 @@ function flowSlots(boards, rowCols) {
   return slots;
 }
 
-// 枠ごとのボード（空の枠はnull）
+// ★枠の中身（ボード／特別枠）を1つの形にそろえて返す。特別枠は special:true、id は 'now' / 'done'
+function getSlotItem(id) {
+  if (id === 'now')  return { id: 'now',  special: true, name: settings.nowDoing.name,  sub: '', color: settings.nowDoing.color };
+  if (id === 'done') return { id: 'done', special: true, name: settings.completed.name, sub: '', color: settings.completed.color };
+  return getBoard(id);
+}
+// 枠ごとのボード／特別枠（空の枠はnull）
 function computeBoardRows() {
-  return settings.slots.map(row => row.map(id => (id === null || id === undefined) ? null : getBoard(id)));
+  return settings.slots.map(row => row.map(id => (id === null || id === undefined) ? null : getSlotItem(id)));
+}
+// 配置されていない特別枠（今からやること／完了済み）
+function unplacedSpecials() {
+  const placed = placedBoardIds();
+  return ['now', 'done'].filter(id => !placed.has(id)).map(getSlotItem);
+}
+// 画面の並び順（枠の左上→右下）＋未配置。特別枠も含む（モーダルのボタン用）
+function itemsInLayoutOrder() {
+  const placed = settings.slots.flat().map(id => (id === null || id === undefined) ? null : getSlotItem(id)).filter(Boolean);
+  return [...placed, ...unplacedBoards(), ...unplacedSpecials()];
 }
 function placedBoardIds() {
   return new Set(settings.slots.flat().filter(id => id !== null && id !== undefined));
@@ -4614,11 +4654,32 @@ function boardsInLayoutOrder() {
 
 // ---------- 画面への反映 ----------
 // ボード枠を作り直す（描画後に renderAll() でタスクを流し込むこと）
+// ★「今からやること」「完了済み」の欄のHTML（優先度ボードの枠の中／タグだけの画面の上下で共用）
+//   IDは固定（nowDoingList／completedDropList 等）。同時に2つ描画されないよう、必ずどちらか一方だけで使う
+function zoneHtml(kind) {
+  if (kind === 'now') {
+    const s = settings.nowDoing;
+    return `<div class="now-action-zone" id="nowZone" style="--board-color:${s.color}" onclick="handleZoneBlankClick(event, 'nowDoing')">
+      <div class="zone-title" id="nowZoneTitle">${escapeHtml(s.name || '（名称なし）')}</div>
+      <div class="now-action-list" id="nowDoingList"></div>
+      <div class="zone-empty-hint" id="nowDoingEmptyHint">タスクをドラッグ、または空欄タップで追加</div>
+    </div>`;
+  }
+  const c = settings.completed;
+  return `<div class="completed-zone" id="completedZone" style="--board-color:${c.color}" onclick="handleZoneBlankClick(event, 'completed')">
+      <div class="zone-title" id="completedZoneTitle">${escapeHtml(c.name || '（名称なし）')}</div>
+      <div class="completed-drop-list" id="completedDropList"></div>
+      <div class="zone-empty-hint" id="completedEmptyHint">タスクをドラッグ、または空欄タップで完了タスクとして追加</div>
+    </div>`;
+}
+
 function renderBoardGrid() {
   const wrap = document.getElementById('matrixView');
   if (!wrap) return;
-  if (settings.boardMode === 'tag') { // ★タグボードのみ
-    renderTagBoard(wrap);
+  if (settings.boardMode === 'tag') { // ★タグボードのみ：今からやる／完了済みは固定で上と下に出す（タスクが見えなくなるのを防ぐ）
+    wrap.innerHTML = '<div class="now-action-row" style="grid-template-columns:minmax(0,1fr);margin-bottom:0">' + zoneHtml('now') + '</div>'
+      + '<div id="boardTagWrap"></div>' + zoneHtml('done');
+    renderTagBoard(document.getElementById('boardTagWrap'));
   } else if (settings.boardMode === 'both') {
     // ★優先度ボード（上）＋タグボード（下）。どちらもドラッグ先として使える
     //   タグボード → 優先度ボードへドラッグ＝優先度の付け替え（handleZoneDropの通常ボード分岐）
@@ -4636,11 +4697,11 @@ function renderPriorityBoard(wrap) {
   // 全ての枠が空の行は出さない。行の中の空の枠は空白のまま（配置位置を保つ）
   const rows = computeBoardRows().filter(row => row.some(b => b));
   if (rows.length === 0) {
-    wrap.innerHTML = '<div class="empty-msg">ボードがありません。設定タブで追加・配置できます</div>';
+    wrap.innerHTML = '<div class="empty-msg">配置されているボードがありません。設定タブで追加・配置できます</div>';
   } else {
     wrap.innerHTML = rows.map(row => `
       <div class="matrix-row" style="grid-template-columns:repeat(${row.length},minmax(0,1fr))">
-        ${row.map(b => b ? `
+        ${row.map(b => b && b.special ? zoneHtml(b.id) : b ? `
         <div class="matrix-quadrant" style="--board-color:${b.color}" onclick="handleZoneBlankClick(event, 'quadrant', ${b.id})">
           <div class="matrix-title"><span>${escapeHtml(boardName(b))}</span>${b.sub ? `<span>${escapeHtml(b.sub)}</span>` : ''}</div>
           <div class="matrix-list" id="matrixList${b.id}" data-q="${b.id}" data-droplist="1"></div>
@@ -4665,10 +4726,11 @@ function applySpecialZones() {
 function renderQuadrantButtons() {
   const wrap = document.getElementById('qSelectWrap');
   if (!wrap) return;
-  const ordered = boardsInLayoutOrder();
+  const ordered = itemsInLayoutOrder(); // ★今からやること／完了済みも、配置した並びでボタンに出す
   wrap.innerHTML = ordered.length
-    ? ordered.map(b =>
-        `<button type="button" class="q-btn" data-q="${b.id}" style="--board-color:${b.color}" onclick="setQuadrant(${b.id})">${escapeHtml(boardName(b))}</button>`
+    ? ordered.map(b => b.special
+        ? `<button type="button" class="q-btn" data-z="${b.id}" style="--board-color:${b.color}" onclick="setZoneChoice('${b.id}')">${escapeHtml(b.name || '（名称なし）')}</button>`
+        : `<button type="button" class="q-btn" data-q="${b.id}" style="--board-color:${b.color}" onclick="setQuadrant(${b.id})">${escapeHtml(boardName(b))}</button>`
       ).join('')
     : '<div class="set-empty">ボードが未設定です（設定タブで追加）</div>';
   initQuadrant(selectedQuadrant);
@@ -4785,7 +4847,7 @@ let layoutSortables = [];
 function renderSettingsLayout() {
   const el = document.getElementById('settingsLayout');
   if (!el) return;
-  const chip = b => `<div class="lay-chip" data-id="${b.id}" style="--board-color:${b.color}">${escapeHtml(boardName(b))}</div>`;
+  const chip = b => `<div class="lay-chip" data-id="${b.id}" style="--board-color:${b.color}">${escapeHtml(b.special ? (b.name || '（名称なし）') : boardName(b))}</div>`;
   const pattern = settings.slots.map(r => r.length).join(',');
 
   const rowsHtml = settings.slots.map((row, r) => `
@@ -4798,7 +4860,7 @@ function renderSettingsLayout() {
       </div>
       <div class="lay-grid" style="grid-template-columns:repeat(${row.length},minmax(0,1fr))">
         ${row.map((id, c) => {
-          const b = (id === null || id === undefined) ? null : getBoard(id);
+          const b = (id === null || id === undefined) ? null : getSlotItem(id);
           return `<div class="lay-slot" data-r="${r}" data-c="${c}">${b ? chip(b) : ''}</div>`;
         }).join('')}
       </div>
@@ -4820,8 +4882,8 @@ function renderSettingsLayout() {
     ${rowsHtml || '<div class="set-empty">枠がありません。上の入力欄か「＋ 行を追加」で作れます</div>'}
     <button type="button" class="set-add-btn" onclick="addRow()">＋ 行を追加</button>
     <div class="set-sub-label">未配置のボード（枠へドラッグして配置）</div>
-    <div class="lay-tray" data-tray="1">${unplacedBoards().map(chip).join('')}</div>
-    <div class="set-note">未配置のボードはボードタブに表示されません。枠を減らすと、はみ出したボードはここに戻ります。空の枠はボードタブでも空白のまま位置が保たれ、全部空の行は表示されません。</div>`;
+    <div class="lay-tray" data-tray="1">${[...unplacedSpecials(), ...unplacedBoards()].map(chip).join('')}</div>
+    <div class="set-note">未配置のボードはボードタブに表示されません（「今からやること」「完了済み」を未配置にすると、優先度の表示ではそのタスクが見えなくなります。「タグで見る」の時は固定で上と下に出ます）。枠を減らすと、はみ出したボードはここに戻ります。空の枠はボードタブでも空白のまま位置が保たれ、全部空の行は表示されません。</div>`;
   initLayoutSortables();
 }
 
@@ -4842,7 +4904,8 @@ function initLayoutSortables() {
 
 // ドロップ時：DOMではなくデータ（settings.slots）を書き換え、画面は作り直す（1枠1ボードを保つため）
 function onLayoutDrop(evt) {
-  const id = Number(evt.item.dataset.id);
+  const rawId = evt.item.dataset.id;
+  const id = (rawId === 'now' || rawId === 'done') ? rawId : Number(rawId); // ★特別枠は文字列ID
   const from = evt.from, to = evt.to;
   if (from !== to) {
     const src = from.dataset.tray ? null : [Number(from.dataset.r), Number(from.dataset.c)];
@@ -4912,7 +4975,7 @@ function renderSettingsSpecial() {
       <input type="text" class="set-input" value="${escapeAttr(settings[key].name)}" maxlength="40" placeholder="名称" aria-label="${label}の名称" oninput="updateSpecial('${key}', 'name', this.value)">
     </div>`;
   el.innerHTML = block('nowDoing', '今からやること枠') + block('completed', '完了済み枠') +
-    '<div class="set-note">この2つは削除できません（完了済み枠はグラフの完了日の記録に使います）。</div>';
+    '<div class="set-note">この2つは削除できません（完了済み枠はグラフの完了日の記録に使います）。配置は上の「ボードのレイアウト」でボードと同じようにドラッグして変えられます。</div>';
 }
 
 function updateSpecial(key, field, value) {
@@ -4937,10 +5000,10 @@ function applyViewSettings() {
   document.body.classList.toggle('hide-topnav', !settings.showNav);
   document.body.classList.toggle('hide-title', !settings.showTitle);
 
-  const slotIds = { top: 'slotTop', beside: 'slotBeside', bottom: 'slotBottom', afterDone: 'slotAfterDone', hidden: 'slotParking' };
+  const slotIds = { top: 'slotTop', beside: 'slotBeside', bottom: 'slotBottom', hidden: 'slotParking' };
   const dateEl = document.getElementById('nowCard');
   const timerEl = document.getElementById('timerWidgetZone');
-  const want = { top: [], beside: [], bottom: [], afterDone: [], hidden: [] }; // 配置先ごとの並び（日付→タイマーの順）
+  const want = { top: [], beside: [], bottom: [], hidden: [] }; // 配置先ごとの並び（日付→タイマーの順）
   if (dateEl)  want[settings.datePos].push(dateEl);
   if (timerEl) want[settings.timerPos].push(timerEl);
 
