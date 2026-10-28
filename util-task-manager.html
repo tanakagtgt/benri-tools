@@ -1261,13 +1261,37 @@ footer{
   padding:10px 8px;
 }
 .now-card .now-line{
-  font-size:12.5px;
+  font-size:16px;            /* ★3行（令和＋西暦／月日(曜日)／時刻）すべて同じ大きさ・同じ色 */
   font-weight:700;
-  color:var(--color-text-sub);
-  line-height:1.5;
+  color:var(--color-text);
+  line-height:1.4;
 }
-.now-card .now-line-date{font-size:16px;color:var(--color-text);}
-.now-action-row .now-card .now-time{font-size:22px;margin-top:2px;}
+.now-action-row .now-card{padding:8px 8px;} /* ★縦幅を少し詰めてボードの面積を確保 */
+/* 日付カードが枠内に1つだけの時は横並び（1行〜2行）にして縦幅を節約 */
+.now-action-row .now-card.wide{
+  flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:2px 14px;
+}
+
+/* =====================================================
+   日付・タイマーの配置先（設定タブで選べる）
+   ・slotTop／slotBottom／slotAfterDone＝2列グリッド（列数はJSがアイテム数に合わせて設定）
+   ・slotBeside＝「今からやること」の右側（ボードの見方の下）に縦積み
+   ・slotParking＝非表示にした時の置き場（画面外）
+   ===================================================== */
+.now-right-col{display:flex;flex-direction:column;gap:8px;min-width:0;}
+.now-beside-slot{display:flex;flex-direction:column;gap:8px;}
+.now-action-row.slot-after-done{margin-top:-4px;margin-bottom:14px;}
+/* 設定タブ：セレクト（16px以上でiPhoneのズーム防止／44px以上のタップ領域） */
+.set-select{
+  width:100%;min-height:44px;font-family:inherit;font-size:16px;
+  color:var(--color-text);background:var(--color-input-bg);
+  border:1px solid var(--color-border-input);border-radius:var(--radius-input);
+  padding:8px 10px;margin-bottom:8px;
+}
+.set-select:focus{outline:none;border-color:var(--color-primary);}
+/* 設定タブ：ヘッダー部分の非表示（common.jsは触らずCSSで隠す） */
+body.hide-topnav .container > .back-to-index{display:none;}
+body.hide-title .container > header{display:none;}
 .board-mode-panel{
   background:var(--color-card);
   border:1px solid var(--color-border);
@@ -1645,10 +1669,12 @@ body.wb-lock{overflow:hidden;}
        1分ごとに自動更新される
        ===================================================== -->
   <!-- 上段を2列に分割：左＝日付（令和／西暦／月日(曜日)／時刻）、右＝タイマー等（timer-widget.jsが #timerWidgetZone に描画） -->
-  <div class="now-action-row">
+  <!-- ★日付カード・タイマーは設定タブの選択に応じてJS(applyViewSettings)が各slotへ移動する -->
+  <div class="now-action-row" id="slotTop">
     <div class="now-card" id="nowCard"></div>
     <div class="timer-placeholder-zone" id="timerWidgetZone"></div>
   </div>
+  <div id="slotParking" style="display:none"></div><!-- 非表示にした日付／タイマーの置き場 -->
 
   <!-- =====================================================
        「今からやること」ドロップゾーン＋タイマー等の空きスペース
@@ -1661,7 +1687,8 @@ body.wb-lock{overflow:hidden;}
       <div class="now-action-list" id="nowDoingList"></div>
       <div class="zone-empty-hint" id="nowDoingEmptyHint">タスクをドラッグ、または空欄タップで追加</div>
     </div>
-<!-- 右：ボードの見方（優先度／タグ）の切替ボタン -->
+<!-- 右：ボードの見方（優先度／タグ）の切替ボタン＋（設定で選んだ時だけ）日付／タイマー -->
+    <div class="now-right-col">
     <div class="board-mode-panel">
       <div class="zone-title">ボードの見方</div>
       <div class="set-seg board-mode-seg" id="boardModeSeg">
@@ -1670,6 +1697,8 @@ body.wb-lock{overflow:hidden;}
         <button type="button" class="set-seg-btn" data-mode="both" onclick="setBoardMode('both')">⭐＋🏷 両方</button>
       </div>
     </div>
+    <div class="now-beside-slot" id="slotBeside"></div>
+    </div><!-- /.now-right-col -->
   </div>
 
   <!-- =====================================================
@@ -1677,6 +1706,7 @@ body.wb-lock{overflow:hidden;}
        ・常時表示のダッシュボードとして機能する
        ===================================================== -->
   <div id="matrixView"></div><!-- ★中身は renderBoardGrid()（優先度ボード or タグボード）が生成する -->
+  <div class="now-action-row" id="slotBottom" style="display:none"></div><!-- 配置先：ボードの下（完了済みの上） -->
 
   <!-- =====================================================
        完了済みドロップゾーン
@@ -1687,6 +1717,7 @@ body.wb-lock{overflow:hidden;}
     <div class="completed-drop-list" id="completedDropList"></div>
     <div class="zone-empty-hint" id="completedEmptyHint">タスクをドラッグ、または空欄タップで完了タスクとして追加</div>
   </div>
+  <div class="now-action-row slot-after-done" id="slotAfterDone" style="display:none"></div><!-- 配置先：完了済みの下 -->
 
   <!-- Excel用コピー（ボード表示形式：ボードの見方に連動） -->
   <div class="data-bar"><button type="button" class="btn-data" id="btnXlBoard" onclick="copyBoardExcel()">📊 Excel用コピー</button></div>
@@ -1803,6 +1834,9 @@ body.wb-lock{overflow:hidden;}
 
   <!-- ================= タブ⑤：設定（ステップ③で本実装。今はデータ管理のみ） ================= -->
   <div class="tab-panel" id="tabPanel-settings">
+  <div class="settings-title">画面表示（ヘッダー・日付・タイマー・テーマ）</div>
+  <div class="set-card" id="settingsView"></div>
+
   <div class="settings-title">ボードのレイアウト（枠を作って、ボードをドラッグで配置）</div>
   <div class="set-card" id="settingsLayout"></div>
 
@@ -2231,12 +2265,11 @@ function renderNowClock() {
   const hour = String(now.getHours()).padStart(2, '0');
   const minute = String(now.getMinutes()).padStart(2, '0');
 
-  // ★3行で表示：令和／西暦／月日(曜日)。曜日の括弧は半角。時刻は4行目に残す
+  // ★3行で表示：令和＋西暦（1行）／月日(曜日)／時刻。曜日の括弧は半角。3行とも同じ字の大きさ・同じ色
   el.innerHTML = `
-    <div class="now-line">令和${reiwa}年</div>
-    <div class="now-line">${seireki}年</div>
-    <div class="now-line now-line-date">${month}月${date}日(${weekday})</div>
-    <div class="now-time">${hour}時${minute}分</div>`;
+    <div class="now-line">令和${reiwa}年${seireki}年</div>
+    <div class="now-line">${month}月${date}日(${weekday})</div>
+    <div class="now-line">${hour}時${minute}分</div>`;
 }
 
 // 今週＝今日を含む「今日〜今週の日曜」まで（月曜始まり運用に合わせて調整可）
@@ -4414,6 +4447,15 @@ function exportIcs() {
    ・ボードIDは再利用しない（nextBoardId）
    ===================================================== */
 const SETTINGS_STORAGE_KEY = 'task_manager_settings_v1';
+// 日付・タイマーの配置先（キー → 設定画面の表示名）。順番＝セレクトの並び順
+const VIEW_POS_LABELS = {
+  top:       'ボードの上段（今の位置）',
+  beside:    '「今からやること」の右側（ボードの見方の下）',
+  bottom:    'ボードの下（完了済みの上）',
+  afterDone: '完了済みの下',
+  hidden:    '非表示',
+};
+const VIEW_POS_KEYS = Object.keys(VIEW_POS_LABELS);
 const NEW_BOARD_COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#84cc16', '#06b6d4', '#a16207'];
 
 // ★関数にしているのは、呼び出しごとに新しいオブジェクトを返してコピー事故を防ぐため
@@ -4435,6 +4477,10 @@ function getDefaultSettings() {
     boardMode: 'priority', // ボードタブの表示：'priority'（優先度ボード）／'tag'（タグボード）
     tagCollapsed: [],      // タグボードで折りたたんでいる大タグ名（大タグなしは TAG_NONE_KEY）
     tagBoardCols: 0,       // タグボードの小ボードの列数（0＝画面幅に合わせて自動）
+    showNav: true,         // 上部ナビ（一覧に戻る＋ライト/ダーク）を表示するか
+    showTitle: true,       // タイトル＋サブタイトルを表示するか
+    datePos: 'top',        // 日付カードの配置先（VIEW_POS_KEYS参照）
+    timerPos: 'top',       // タイマーの配置先（VIEW_POS_KEYS参照）
   };
 }
 
@@ -4480,6 +4526,10 @@ function normalizeSettings(raw) {
     boardMode: (raw.boardMode === 'tag' || raw.boardMode === 'both') ? raw.boardMode : 'priority',
     tagCollapsed: Array.isArray(raw.tagCollapsed) ? raw.tagCollapsed.filter(x => typeof x === 'string').slice(0, 200) : [],
     tagBoardCols: Math.max(0, Math.floor(Number(raw.tagBoardCols)) || 0),
+    showNav: raw.showNav !== false,
+    showTitle: raw.showTitle !== false,
+    datePos: VIEW_POS_KEYS.includes(raw.datePos) ? raw.datePos : 'top',
+    timerPos: VIEW_POS_KEYS.includes(raw.timerPos) ? raw.timerPos : 'top',
   };
 }
 
@@ -4626,6 +4676,7 @@ function renderQuadrantButtons() {
 
 // 設定を画面全体へ反映（呼んだ後に renderAll() でタスクを流し込む）
 function applySettingsToUI() {
+  applyViewSettings(); // ★ヘッダー表示／日付・タイマーの配置を反映
   renderBoardModeSeg();
   renderBoardGrid();
   applySpecialZones();
@@ -4655,6 +4706,7 @@ function detachTasksFromMissingBoards() {
 
 // ---------- 設定タブ：ボード編集 ----------
 function renderSettingsTab() {
+  renderSettingsView();
   renderSettingsBoards();
   renderSettingsLayout();
   renderSettingsSpecial();
@@ -4875,6 +4927,91 @@ function updateSpecial(key, field, value) {
   applySpecialZones();
 }
 
+/* =====================================================
+   【画面表示】ヘッダー表示／日付・タイマーの配置
+   ・ヘッダー：bodyにhide-topnav／hide-titleクラスを付けてCSSで隠す（common.jsは触らない）
+   ・日付カード(#nowCard)とタイマー(#timerWidgetZone)は要素ごと各slotへ移動（中身は壊さない）
+   ・非表示＝#slotParking（display:none）へ退避
+   ===================================================== */
+function applyViewSettings() {
+  document.body.classList.toggle('hide-topnav', !settings.showNav);
+  document.body.classList.toggle('hide-title', !settings.showTitle);
+
+  const slotIds = { top: 'slotTop', beside: 'slotBeside', bottom: 'slotBottom', afterDone: 'slotAfterDone', hidden: 'slotParking' };
+  const dateEl = document.getElementById('nowCard');
+  const timerEl = document.getElementById('timerWidgetZone');
+  const want = { top: [], beside: [], bottom: [], afterDone: [], hidden: [] }; // 配置先ごとの並び（日付→タイマーの順）
+  if (dateEl)  want[settings.datePos].push(dateEl);
+  if (timerEl) want[settings.timerPos].push(timerEl);
+
+  Object.keys(want).forEach(pos => {
+    const slot = document.getElementById(slotIds[pos]);
+    if (!slot) return;
+    const list = want[pos];
+    const cur = Array.from(slot.children);
+    // 並びが違う時だけ付け替える（無駄な再配置でタイマー側の表示状態に触らない）
+    if (cur.length !== list.length || list.some((e, i) => cur[i] !== e)) {
+      list.forEach(e => slot.appendChild(e));
+    }
+    if (pos === 'hidden') return;
+    slot.style.display = list.length ? '' : 'none'; // 空の枠は非表示（ボードが広く使える）
+    if (pos !== 'beside' && list.length) {
+      slot.style.gridTemplateColumns = 'repeat(' + list.length + ', minmax(0, 1fr))';
+    }
+  });
+  // 日付カードが枠内に1つだけ（かつ縦積みでない枠）なら横並び表示
+  if (dateEl) {
+    const alone = settings.datePos !== 'hidden' && settings.datePos !== 'beside' && want[settings.datePos].length === 1;
+    dateEl.classList.toggle('wide', alone);
+  }
+}
+
+function renderSettingsView() {
+  const el = document.getElementById('settingsView');
+  if (!el) return;
+  const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  const onoff = (key, label) => `
+    <div class="set-sub-label">${label}</div>
+    <div class="set-seg">
+      <button type="button" class="set-seg-btn ${settings[key] ? 'active' : ''}" onclick="setViewFlag('${key}', true)">表示</button>
+      <button type="button" class="set-seg-btn ${!settings[key] ? 'active' : ''}" onclick="setViewFlag('${key}', false)">非表示</button>
+    </div>`;
+  const posSelect = (key, label) => `
+    <div class="set-sub-label">${label}</div>
+    <select class="set-select" onchange="setViewPos('${key}', this.value)">
+      ${VIEW_POS_KEYS.map(k => `<option value="${k}" ${settings[key] === k ? 'selected' : ''}>${VIEW_POS_LABELS[k]}</option>`).join('')}
+    </select>`;
+  el.innerHTML = `
+    ${onoff('showNav', '上部ナビ（← 一覧に戻る／ライト・ダーク切替）')}
+    ${onoff('showTitle', 'タイトル・サブタイトル')}
+    <div class="set-sub-label">表示テーマ</div>
+    <div class="set-seg">
+      <button type="button" class="set-seg-btn ${theme === 'light' ? 'active' : ''}" onclick="setThemeFromSettings('light')">☀️ ライト</button>
+      <button type="button" class="set-seg-btn ${theme === 'dark' ? 'active' : ''}" onclick="setThemeFromSettings('dark')">🌙 ダーク</button>
+    </div>
+    ${posSelect('datePos', '日付の配置')}
+    ${posSelect('timerPos', 'タイマーの配置')}
+    <div class="set-note">上部ナビを非表示にしても、テーマはここで切り替えられます。「一覧に戻る」は、非表示中でもブラウザの戻る操作かURLで移動できます。日付・タイマーを「非表示」にすると、ボードがその分広くなります。</div>`;
+}
+function setViewFlag(key, val) {
+  if (key !== 'showNav' && key !== 'showTitle') return;
+  settings[key] = !!val;
+  saveSettings();
+  applyViewSettings();
+  renderSettingsView();
+}
+function setViewPos(key, val) {
+  if ((key !== 'datePos' && key !== 'timerPos') || !VIEW_POS_KEYS.includes(val)) return;
+  settings[key] = val;
+  saveSettings();
+  applyViewSettings();
+  renderSettingsView();
+}
+function setThemeFromSettings(t) {
+  setTheme(t); // common.js側のテーマ切替（保存＋反映）
+  renderSettingsView();
+}
+
 function resetSettings() {
   if (!confirm('ボードの名称・色・並べ方を初期状態に戻す？\n追加したボードのタスクは「未分類」になる（タスク自体は消えない）')) return;
   const keepCalendarView = settings.calendarView; // カレンダー表示の選択・タグ辞書はボード設定のリセット対象外
@@ -4882,7 +5019,9 @@ function resetSettings() {
   const keepBoardMode = settings.boardMode;
   const keepTagCollapsed = settings.tagCollapsed;
   const keepTagBoardCols = settings.tagBoardCols;
+  const keepView = { showNav: settings.showNav, showTitle: settings.showTitle, datePos: settings.datePos, timerPos: settings.timerPos }; // 画面表示の設定もリセット対象外
   settings = getDefaultSettings();
+  Object.assign(settings, keepView);
   settings.calendarView = keepCalendarView;
   settings.tagMaster = keepTagMaster;
   settings.boardMode = keepBoardMode;
