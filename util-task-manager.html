@@ -507,7 +507,7 @@ h1{
 
 /* =====================================================
    ICS一括出力モーダル：絞り込みUI
-   ・ゾーン（今からやること／4象限／完了済み／未分類）のチェックリスト
+   ・ゾーン（各ボード／完了済み／未分類）のチェックリスト
    ・タグはトグル式チップ（複数選択可・OR条件）
    ===================================================== */
 .zone-check-list{
@@ -1657,7 +1657,7 @@ body.wb-lock{overflow:hidden;}
        マトリクス（重要度×緊急度）
        ・常時表示のダッシュボードとして機能する
        ===================================================== -->
-  <div id="matrixView"></div><!-- ★中身は renderBoardGrid()（優先度ボード。今からやること／完了済み／メモ枠も枠の一つとして並ぶ）が生成する -->
+  <div id="matrixView"></div><!-- ★中身は renderBoardGrid()（各ボード。完了済み／メモ枠も枠の一つとして並ぶ）が生成する -->
   <div class="now-action-row" id="slotBottom" style="display:none"></div><!-- 配置先：ボードの下 -->
 
 <!-- Excel用コピー（ボード表示形式：ボードの見方に連動） -->
@@ -1778,15 +1778,12 @@ body.wb-lock{overflow:hidden;}
   <div class="settings-title">画面表示（ヘッダー・日付・タイマー・テーマ）</div>
   <div class="set-card" id="settingsView"></div>
 
-  <div class="settings-title">ボードのレイアウト（枠を作って、ボード・今からやること・完了済み・メモ枠をドラッグで配置）</div>
+  <div class="settings-title">ボードのレイアウト（枠を作って、ボード・完了済み・メモ枠をドラッグで配置）</div>
   <div class="set-card" id="settingsLayout"></div>
 
-  <div class="settings-title">ボードの名称・色・補足</div>
+  <div class="settings-title">ボードの名称・色</div>
   <div class="set-card" id="settingsBoards"></div>
   <button type="button" class="set-add-btn" onclick="addBoard()">＋ ボードを追加</button>
-
-  <div class="settings-title">今からやること・完了済み（名称・色）</div>
-  <div class="set-card" id="settingsSpecial"></div>
 
   <div class="settings-title">表示件数（枠ごと）</div>
   <div class="set-card" id="settingsLimits"></div>
@@ -1830,7 +1827,7 @@ body.wb-lock{overflow:hidden;}
     <ol class="tool-desc-list">
       <li>画面右下の「＋」ボタンからタスクを追加。件名のほかメモ・締切日・タグも入力可（メモ・締切日は空欄でもOK）</li>
       <li>重要度と緊急度を選ぶと、自動で4象限マトリクスのいずれかに振り分けられる</li>
-      <li>「今からやること」欄にドラッグ＆ドロップすると、今集中すべき1件として画面上部に固定表示される</li>
+      <li>ボードは自由に追加・削除・並べ替えできる（「★今からやること」も①〜④と同じ普通のボード）。ドラッグ＆ドロップでタスクをボード間で移動できる</li>
       <li>画面上部のタブで「ボード／リスト／設定」を切り替え。リストタブでは「今日／明日／今週／予定なし／完了済み／すべて」で一覧を絞り込み</li>
       <li>リストタブの検索欄・タグチップで、件名やタグから目的のタスクをすぐ探せる</li>
       <li>完了したタスクはチェック、またはドラッグで「完了済み」ゾーンに移動</li>
@@ -1843,7 +1840,7 @@ body.wb-lock{overflow:hidden;}
       <li>タブ切替でボード・リスト・設定を使い分け（前回開いていたタブを記憶）</li>
       <li>リストタブで締切日・追加日・完了日・タグ・曜日・件名の昇順／降順に並び替え（選んだ並び順も記憶）</li>
       <li>設定タブでボードの追加・削除・名称・色・並べ方（行ごとの列数）を自由に変更でき、「重要×緊急」型に限らず自分の使い方に合わせた分類ができる</li>
-      <li>ボードタブには「今からやること」「完了済み」「メモ枠」も枠として並べられ、配置・名称・色・表示件数を設定できる。リストやグラフの絞り込みは大タグ→小タグの2段</li>
+      <li>ボードタブには「完了済み」「メモ枠」も枠として並べられ、配置・名称・色・表示件数を設定できる。リストやグラフの絞り込みは大タグ→小タグの2段</li>
       <li>タグは「大タグ→小タグ」の2階層。タスク作成時はボタンで選び、設定タブでタグの追加・改名・削除・並び替えができる（改名すると既存タスクも自動で書き換わる）</li>
       <li>タスクの優先度ボード名・大タグ・小タグは、メモ欄に【ボード】【大タグ】【小タグ】の行として自動で記録され、Googleカレンダーに登録した時の説明欄にも入る。大タグ・小タグは色も設定タブで変えられる</li>
       <li>グラフタブで、タスクの作成数と完了数の推移を棒グラフで確認。週（日ごと）・月（日ごと）・年（月ごと）・全期間（年ごと）に切り替え、タグや曜日で絞り込める</li>
@@ -1875,7 +1872,7 @@ body.wb-lock{overflow:hidden;}
       <li>締切日が未設定のタスクはカレンダーには表示されない（リストタブで確認）</li>
       <li>グラフの完了数は、完了枠に入れた日／チェックを付けた日で集計する。この機能の追加前から完了済みだったタスクは、締切日などで仮置きした日付が混ざる</li>
       <li>並び替えで、締切日・完了日などが未設定のタスクは昇順・降順どちらでも末尾に並ぶ。タグ順は先頭のタグ、曜日順は締切日の曜日（月曜始まり）で判定</li>
-      <li>ICS一括出力は期間・ゾーン（各ボード／今からやること／完了済み／未分類）・大タグ／小タグで絞り込んでから書き出す。終日の予定として出力し、タスクごとに固定のUIDを付けるので、Googleカレンダーへ取り込み直しても同じ予定として扱われ、重複しにくい。メモ（ボード・大タグ・小タグ）は予定の説明欄に入る</li>
+      <li>ICS一括出力は期間・ゾーン（各ボード／完了済み／未分類）・大タグ／小タグで絞り込んでから書き出す。終日の予定として出力し、タスクごとに固定のUIDを付けるので、Googleカレンダーへ取り込み直しても同じ予定として扱われ、重複しにくい。メモ（ボード・大タグ・小タグ）は予定の説明欄に入る</li>
     </ul>
 
     <h3 class="tool-desc-subtitle">よくある質問</h3>
@@ -2094,8 +2091,7 @@ let activeTagFilter = null;  // 大タグ絞り込み（1つだけ選択可・�
 let activeSubFilter = null;  // 小タグ絞り込み（大タグ選択中だけ有効）
 let editingTaskId = null;    // モーダルで編集中のタスクid（nullなら新規追加）
 let selectedQuadrant = null;
-let selectedZone = null; // ★モーダルで選択中の特別枠：'now'（今からやること）／'done'（完了済み）／null
-let pendingZonePreset = null; // ★ゾーン空欄タップで新規作成する時の初期状態（{isNowDoing, completed}）。openModalForZoneでのみセットする
+let selectedZone = null; // ★モーダルで選択中の特別枠：'done'（完了済み）／null
 let listSortable = null;      // ★リストのSortableインスタンス（並び替え中はdisabledにするため保持）
 let listSort = { key: 'manual', dir: 'asc' }; // ★リストの並び順。DOMContentLoadedでloadListSort()して上書き（constより前に呼ぶとTDZで復元に失敗するため）
 let settings = null;           // ★ボード設定（DOMContentLoadedでloadSettings()して代入）。構造はgetDefaultSettings()参照
@@ -2106,6 +2102,7 @@ let icsSelectedTags = [];     // ★ICS一括出力モーダルで選択中の�
    ===================================================== */
 document.addEventListener('DOMContentLoaded', () => {
   settings = loadSettings(); // ★ボード設定を最初に読み込む（以降の描画で使う）
+  saveSettings(); // ★旧形式からの移行結果をすぐ保存する（次回起動で二重に移行しないため）
   listSort = loadListSort();
   loadTasks();
   initListSortUI(); // ★並び替えバーの選択肢生成＋前回の並び順を反映
@@ -2143,7 +2140,26 @@ function loadTasks() {
   }
   migrateCompletedAt(); // ★旧データ（完了日なし）を補完
   migrateTagFields(true); // ★旧データ（タグ複数）を 大タグ／小タグ に移行
+  migrateNowDoingToBoard(); // ★旧「今からやる」の印を、普通のボード(nowBoardId)への所属に置き換える
   if (syncMetaNotes()) saveTasks(); // ★既存タスクのメモにも分類行を付ける
+}
+
+/* =====================================================
+   【データ移行】旧「今からやること」（isNowDoing の印）→ 普通のボードへの所属
+   ・印が付いた未完了タスクは、移行先ボード（settings.nowBoardId）に入れる。印そのものは削除する
+   ・移行先ボードを削除済みの場合は、ボードは変えずに印だけ消す
+   ・印の無いデータでは何もしない（何度呼んでも安全）
+   ===================================================== */
+function migrateNowDoingToBoard() {
+  let changed = false;
+  const nb = settings && settings.nowBoardId;
+  tasks.forEach(t => {
+    if (!('isNowDoing' in t)) return;
+    if (t.isNowDoing && !t.completed && nb && getBoard(nb)) t.quadrant = nb;
+    delete t.isNowDoing;
+    changed = true;
+  });
+  if (changed) saveTasks();
 }
 
 /* =====================================================
@@ -2248,10 +2264,8 @@ function addTask(taskData) {
     tags: taskData.tags || [],              // ★互換用：大タグ名だけの配列（[tagMain]）。リスト絞り込み・グラフが使う
     tagMain: taskData.tagMain || null,      // 大タグ（1つ）
     tagSub: taskData.tagSub || null,        // 小タグ（1つ。大タグの配下）
-    // ★ゾーン空欄タップ経由の新規作成時はtaskData.isNowDoing/completedが入る（openModalForZone参照）
     completed: taskData.completed || false,
     completedAt: taskData.completed ? todayStr() : null, // ★完了日（完了ゾーンに入れた日／チェックした日）。グラフ用
-    isNowDoing: taskData.isNowDoing || false, // 「今からやること」欄に置かれているか
     icsUid: null, // ★Googleカレンダー／ICS出力で初めて使う時に発行するID（ensureIcsUid参照）
     order: tasks.length,
     createdAt: Date.now(),
@@ -2281,7 +2295,6 @@ function setCompleted(t, done) {
   const was = !!t.completed;
   t.completed = !!done;
   if (t.completed) {
-    t.isNowDoing = false; // 完了したら「今からやること」欄からは外す
     if (!was || !t.completedAt) {
       t.completedSeq = Date.now(); // ★完了した順（新しい順の表示用）。同じ日に完了した分の順番づけに使う
       t.completedAt = todayStr();
@@ -2536,7 +2549,7 @@ function toggleSubFilter(j) {
 
 /* =====================================================
    【描画】メイン描画エントリーポイント
-   - ダッシュボード（今からやること／マトリクス／完了済み）と
+   - ダッシュボード（各ボード／完了済み）と
      一覧（検索・タブ絞り込み反映）を毎回まとめて更新する
    ===================================================== */
 function renderAll() {
@@ -2610,22 +2623,17 @@ function quadrantShortLabel(q) {
 }
 
 /* =====================================================
-   【描画】ダッシュボード（今からやること／マトリクス／完了済み）
+   【描画】ダッシュボード（各ボード／完了済み）
    - 検索・タグ・日付フィルタはリストタブ専用。ボードは「全体像」を常に出す設計
    ===================================================== */
 function renderDashboard() {
   // ★検索・タグ絞り込みはリストタブ専用になったため、ボードは常に全タスクを表示する
   const base = tasks;
 
-  // ★今からやること欄：isNowDoing＝true かつ 未完了のタスク
-  const nowDoingItems = base.filter(t => t.isNowDoing && !t.completed).sort((a, b) => a.order - b.order);
-  renderDropList('nowDoingList', applyLimit('now', nowDoingItems));
-  toggleEmptyHint('nowDoingList', 'nowDoingEmptyHint', nowDoingItems.length, 'now-action-zone');
-
-  // 各ボード：今からやること欄／完了済みに入っていないタスクのみ
+  // 各ボード：完了済みに入っていないタスクのみ
   settings.boards.forEach(b => {
     if (!document.getElementById('matrixList' + b.id)) return; // 未配置のボードは枠が無いので流し込まない
-    const items = base.filter(t => t.quadrant === b.id && !t.isNowDoing && !t.completed).sort((a, c) => a.order - c.order);
+    const items = base.filter(t => t.quadrant === b.id && !t.completed).sort((a, c) => a.order - c.order);
     renderDropList('matrixList' + b.id, applyLimit(String(b.id), items));
   });
 
@@ -2663,7 +2671,7 @@ function toggleLimitExpand(key) {
   renderDashboard();
 }
 
-// ドロップゾーン共通の描画（今からやること／マトリクス各象限／完了済みで共用）
+// ドロップゾーン共通の描画（各ボード／完了済みで共用）
 // showPriority＝true：優先度ボードの色を左端の線で示す（長押しで優先度名）。現在のボード表示では使わない（互換のため残置）
 function renderDropList(listId, items, showDone, showPriority) {
   const el = document.getElementById(listId);
@@ -2686,8 +2694,8 @@ function toggleEmptyHint(listId, hintId, count, zoneClassOnList, zoneClassOnPare
 /* =====================================================
    【ドラッグ＆ドロップ】SortableJSの初期化
    - 一覧（リスト表示）：単純な並び替え（orderを更新）
-   - 今からやること／マトリクス4象限／完了済み：同じグループにして
-     ゾーンをまたいだドラッグでタスクの状態（quadrant/isNowDoing/completed）を更新する
+   - 各ボード／完了済み：同じグループにして
+     ゾーンをまたいだドラッグでタスクの状態（quadrant/completed）を更新する
    ===================================================== */
 function initSortable() {
   listSortable = new Sortable(document.getElementById('taskList'), {
@@ -2706,14 +2714,14 @@ function initSortable() {
   // ボード枠のドラッグ設定は、ボードの増減・並べ替えのたびに作り直すため initZoneSortables() に分離
 }
 
-// ドラッグで移動できるゾーン（今からやること／各ボード／完了済み）のSortableを作り直す
+// ドラッグで移動できるゾーン（各ボード／完了済み）のSortableを作り直す
 // ・renderBoardGrid()の最後に毎回呼ぶ（ボードのDOMを作り直すので）
 let zoneSortables = [];
 function initZoneSortables() {
   zoneSortables.forEach(s => s.destroy());
   zoneSortables = [];
   // ★ボード側のドロップ先は data-droplist 付きの要素（優先度ボードの各枠）を拾う
-  const ids = ['nowDoingList', 'completedDropList', ...[...document.querySelectorAll('#matrixView [data-droplist]')].map(el => el.id)];
+  const ids = ['completedDropList', ...[...document.querySelectorAll('#matrixView [data-droplist]')].map(el => el.id)];
   ids.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -2725,7 +2733,7 @@ function initZoneSortables() {
   });
 }
 
-// 各ゾーン間でタスクがドロップされた時に、状態（quadrant/isNowDoing/completed）を更新する
+// 各ゾーン間でタスクがドロップされた時に、状態（quadrant/completed）を更新する
 function handleZoneDrop(evt) {
   const id = evt.item.dataset.id;
   const t = tasks.find(t => t.id === id);
@@ -2733,16 +2741,12 @@ function handleZoneDrop(evt) {
 
   const toId = evt.to.id;
 
-  if (toId === 'nowDoingList') {
-    setCompleted(t, false);
-    t.isNowDoing = true;
-  } else if (toId === 'completedDropList') {
+  if (toId === 'completedDropList') {
     setCompleted(t, true); // ★完了日を記録
   } else {
-    // マトリクスのいずれかの象限にドロップされた場合
+    // いずれかのボードにドロップされた場合
     t.quadrant = Number(evt.to.dataset.q);
     setCompleted(t, false);
-    t.isNowDoing = false;
   }
 
   // ★同一ゾーン内での上下並び替えを反映する（移動先のDOM順序をorderとして振り直す）
@@ -2761,9 +2765,8 @@ function reorderZone(zoneEl) {
   const ids = [...zoneEl.children].map(el => el.dataset.id);
   // ★表示件数の上限で隠れているタスクは、見えている分の後ろに元の順で続ける（順番がぶつからないように）
   let all = null;
-  if (zoneEl.id === 'nowDoingList') all = tasks.filter(t => t.isNowDoing && !t.completed);
-  else if (zoneEl.id === 'completedDropList') all = tasks.filter(t => t.completed);
-  else if (zoneEl.dataset.q) all = tasks.filter(t => t.quadrant === Number(zoneEl.dataset.q) && !t.isNowDoing && !t.completed);
+  if (zoneEl.id === 'completedDropList') all = tasks.filter(t => t.completed);
+  else if (zoneEl.dataset.q) all = tasks.filter(t => t.quadrant === Number(zoneEl.dataset.q) && !t.completed);
   if (all) {
     const hidden = all.filter(t => !ids.includes(t.id)).sort((a, b) => a.order - b.order);
     ids.push(...hidden.map(t => t.id));
@@ -2779,7 +2782,6 @@ function reorderZone(zoneEl) {
    ===================================================== */
 function openModal(id) {
   editingTaskId = id || null;
-  pendingZonePreset = null; // ★毎回リセット。ゾーン空欄タップ時はopenModalForZoneがこの直後にセットし直す
   const overlay = document.getElementById('modalOverlay');
   const titleEl = document.getElementById('modalTitle');
   const deleteBtn = document.getElementById('btnDelete');
@@ -2794,7 +2796,7 @@ function openModal(id) {
     selectedTagMain = t.tagMain || null;
     selectedTagSub = t.tagSub || null;
     initQuadrant(t.quadrant);
-    selectedZone = t.completed ? 'done' : (t.isNowDoing ? 'now' : null); // ★今の状態をそのまま選択状態にする
+    selectedZone = t.completed ? 'done' : null; // ★今の状態をそのまま選択状態にする
     refreshQButtons();
     deleteBtn.style.display = 'inline-block';
     syncCalendarBtnState();
@@ -2819,14 +2821,14 @@ function openModal(id) {
 }
 
 // =====================================================
-// ★ゾーン（今からやること／4象限／完了済み）の空欄タップから新規追加
-// - 通常のopenModal(null)を呼んだ直後にpendingZonePresetをセットし直すことで、
-//   「保存ボタンを押したらタップした欄が初期状態になっている」を実現する
+// ★ゾーン（各ボード／完了済み）の空欄タップから新規追加
+// - 通常のopenModal(null)を呼んだ直後に、タップした欄（ボード／完了済み）を選択状態にすることで、
+//   「保存ボタンを押したらタップした欄に入っている」を実現する
 // =====================================================
 function openModalForZone(zoneType, quadrant) {
   openModal(null);
-  // ★タップした欄を初期選択にする（今からやること／完了済みは特別枠ボタン、ボードは従来の優先度ボタン）
-  selectedZone = zoneType === 'nowDoing' ? 'now' : (zoneType === 'completed' ? 'done' : null);
+  // ★タップした欄を初期選択にする（完了済みは特別枠ボタン、ボードは従来のボタン）
+  selectedZone = zoneType === 'completed' ? 'done' : null;
   if (zoneType === 'quadrant') {
     initQuadrant(quadrant); // タップした象限を初期選択状態にする
   }
@@ -2843,7 +2845,6 @@ function handleZoneBlankClick(e, zoneType, quadrant) {
 function closeModal() {
   document.getElementById('modalOverlay').classList.remove('show');
   editingTaskId = null;
-  pendingZonePreset = null;
 }
 
 function closeModalOnOverlay(e) {
@@ -2874,7 +2875,7 @@ function setQuadrant(q) {
   refreshQButtons();
 }
 
-// ★「今からやること」「完了済み」ボタン：もう一度タップで解除（優先度ボード側の選択に戻る）
+// ★「完了済み」ボタン：もう一度タップで解除（ボード側の選択に戻る）
 function setZoneChoice(z) {
   selectedZone = (selectedZone === z) ? null : z;
   refreshQButtons();
@@ -2884,12 +2885,8 @@ function setZoneChoice(z) {
 function applyZoneToTask(t, zone) {
   if (zone === 'done') {
     setCompleted(t, true);
-  } else if (zone === 'now') {
-    setCompleted(t, false);
-    t.isNowDoing = true;
   } else {
     setCompleted(t, false);
-    t.isNowDoing = false;
   }
   saveTasks();
 }
@@ -2927,7 +2924,7 @@ function saveTaskFromModal() {
   const taskData = { title, note, addedDate, due, quadrant: selectedQuadrant, tags, tagMain, tagSub };
 
   const savedTask = isEditing ? updateTask(editingTaskId, taskData) : addTask(taskData);
-  if (savedTask) applyZoneToTask(savedTask, selectedZone); // ★今からやること／完了済みの選択を反映
+  if (savedTask) applyZoneToTask(savedTask, selectedZone); // ★完了済みの選択を反映
 
   closeModal();
   renderFilterTabs();
@@ -3184,6 +3181,7 @@ function importJson(event) {
       tasks = tasks.concat(withNewIds);
       migrateCompletedAt(); // ★完了日の無い旧形式データを補完（内部でsaveTasksも実行）
       migrateTagFields(false); // ★旧形式のタグ（複数）を 大タグ／小タグ に移行
+      migrateNowDoingToBoard(); // ★旧JSONに残る「今からやる」の印を移行
       saveTasks();
       renderFilterTabs();
       renderAll();
@@ -3264,18 +3262,16 @@ function xlSorted(fn) { return tasks.filter(fn).sort((a, b) => a.order - b.order
 
 function copyBoardExcel() {
   const rows = [];
-  // 特別枠（今からやること／完了済み）は常に先頭
-  rows.push(...xlBlock([
-    { head: settings.nowDoing.name,  items: xlSorted(t => t.isNowDoing && !t.completed) },
-    { head: settings.completed.name, items: xlSorted(t => t.completed) },
-  ]));
-  // 優先度ボード（画面に配置済みのものだけ。画面の左上→右下の順）
-  const placed = settings.slots.flat().map(id => getBoard(id)).filter(Boolean);
-  rows.push([]);
-  rows.push(...xlBlock(placed.map(b => ({
-    head: boardName(b),
-    items: xlSorted(t => t.quadrant === b.id && !t.isNowDoing && !t.completed),
-  }))));
+  // 画面に配置済みの枠だけ。画面の左上→右下の順（完了済みも配置した位置の通り）
+  const cols = [];
+  settings.slots.flat().forEach(id => {
+    if (id === 'done') cols.push({ head: settings.completed.name, items: xlSorted(t => t.completed) });
+    else if (typeof id === 'number') {
+      const b = getBoard(id);
+      if (b) cols.push({ head: boardName(b), items: xlSorted(t => t.quadrant === b.id && !t.completed) });
+    }
+  });
+  rows.push(...xlBlock(cols));
   xlCopy(rows, 'btnXlBoard', '📊 Excel用コピー');
 }
 
@@ -4098,7 +4094,7 @@ function setSubTagColor(i, j, value) {
 /* =====================================================
    【ICS一括出力】締切日のあるタスクを .ics ファイルに書き出す（Googleカレンダー等へ取り込める）
    ・絞り込み：期間（締切日）／ゾーン／タグ（大タグ・小タグ。複数選択はOR条件）。締切日が無いタスクは対象外
-   ・ゾーン：各ボード（優先度）／今からやること／完了済み／未分類。初期状態は「完了済み」以外をON
+   ・ゾーン：各ボード／完了済み／未分類。初期状態は「完了済み」以外をON
    ・出力：終日イベント（DTSTART/DTENDはVALUE=DATE）。TRANSP:TRANSPARENT＝予定が「ビジー」にならない
    ・UID：タスクごとの固定ID（ensureIcsUid）。再出力・再取り込みしても重複せず、更新として扱われる
    ・DESCRIPTION：メモ（【ボード】【大タグ】【小タグ】行を含む）。「更新:」「UID:」の行は除く
@@ -4111,7 +4107,6 @@ let icsTagChoices = [];      // [{ key, label }]（icsSelectedTagsには選択�
 
 function icsTaskZoneKey(t) {
   if (t.completed) return 'done';
-  if (t.isNowDoing) return 'now';
   const b = getBoard(t.quadrant);
   return b ? 'b:' + b.id : 'none';
 }
@@ -4127,8 +4122,7 @@ function icsTagMatches(key, t) {
 }
 
 function openIcsModal() {
-  icsZoneChoices = boardsInLayoutOrder().map(b => ({ key: 'b:' + b.id, label: boardName(b) + (b.sub ? `（${b.sub}）` : ''), color: b.color }));
-  icsZoneChoices.push({ key: 'now', label: settings.nowDoing.name, color: settings.nowDoing.color });
+  icsZoneChoices = boardsInLayoutOrder().map(b => ({ key: 'b:' + b.id, label: boardName(b), color: b.color }));
   icsZoneChoices.push({ key: 'done', label: settings.completed.name, color: settings.completed.color });
   icsZoneChoices.push({ key: 'none', label: '未分類（優先度なし）', color: '#8a8f98' });
   icsSelectedZones = new Set(icsZoneChoices.map(z => z.key).filter(k => k !== 'done')); // 完了済みは初期OFF
@@ -4312,20 +4306,21 @@ function getDefaultSettings() {
   return {
     // 配列の順＝画面に並ぶ順（従来の見た目＝②①／④③）
     boards: [
-      { id: 2, name: '②計画してやる', sub: '重要×非緊急',   color: '#1a7a5e' },
-      { id: 1, name: '①すぐやる',     sub: '重要×緊急',     color: '#d64545' },
-      { id: 4, name: '④後回し',       sub: '非重要×非緊急', color: '#8a8f98' },
-      { id: 3, name: '③サクッとやる', sub: '非重要×緊急',   color: '#d98c1f' },
+      { id: 5, name: '★今からやること', color: '#d4a017' }, // ★以前は特別枠だったが、今は普通のボード（削除もできる）
+      { id: 2, name: '②計画してやる', color: '#1a7a5e' },
+      { id: 1, name: '①すぐやる',     color: '#d64545' },
+      { id: 4, name: '④後回し',       color: '#8a8f98' },
+      { id: 3, name: '③サクッとやる', color: '#d98c1f' },
     ],
-    // ★ボードの配置枠：行ごとの配列（各枠にボードID／'now'（今からやること）／'done'（完了済み）／null）
+    // ★ボードの配置枠：行ごとの配列（各枠にボードID／'done'（完了済み）／'memo:<id>'（メモ枠）／null）
     //   既定＝今からやること／②①／④③／完了済み
-    slots: [['now'], [2, 1], [4, 3], ['done']],
-    layoutV: 2, // ★配置枠に特別枠（now/done）を含む形式のバージョン（旧データは読み込み時に移行）
-    limits: { done: 10 }, // ★表示件数の上限（キー：'now'／'done'／ボードID文字列。未設定・0＝全部表示）。既定は完了済みだけ10件
+    slots: [[5], [2, 1], [4, 3], ['done']],
+    layoutV: 3, // ★配置枠の形式バージョン（3＝今からやることが普通のボード。旧データは読み込み時に移行）
+    nowBoardId: 5, // ★旧「今からやる」の印が付いたタスク（旧JSON読込など）の移し先ボードID
+    limits: { done: 10 }, // ★表示件数の上限（キー：'done'／ボードID文字列。未設定・0＝全部表示）。既定は完了済みだけ10件
     memos: [],            // ★メモ枠：[{ id, name, color, rows, text }]。配置枠には 'memo:<id>' で入る
     nextMemoId: 1,
-    nextBoardId: 5,
-    nowDoing:  { name: '★今からやること', color: '#d4a017' },
+    nextBoardId: 6,
     completed: { name: '✅完了済み',       color: '#3a9a5c' },
     calendarView: 'month', // カレンダータブの表示：'month'（月）／'day'（日）
     tagMaster: [],         // タグ辞書：[{ name:'仕事', subs:['会議','資料'] }]。配列の順＝ボタンの並び順
@@ -4341,19 +4336,22 @@ function normalizeSettings(raw) {
   if (!raw || typeof raw !== 'object') return def;
   const isColor = c => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c);
   const str = (v, fallback) => (typeof v === 'string' ? v : fallback).slice(0, 40);
+  const lv = Number(raw.layoutV) || 0; // 設定データの形式バージョン（3未満＝「今からやること」がまだ特別枠だった旧形式）
 
-  let boards = def.boards;
+  // ★ボード（旧データにあった「補足」sub は読み込まずに捨てる）
+  let boards = def.boards.filter(b => lv >= 3 || b.id !== 5); // 旧形式でボード定義が無い時は、今からやるボード(5)を除く（下で移行して作る）
   if (Array.isArray(raw.boards)) {
     const seen = new Set();
     boards = raw.boards
       .filter(b => b && Number.isInteger(b.id) && b.id > 0 && !seen.has(b.id) && seen.add(b.id))
-      .map(b => ({ id: b.id, name: str(b.name, ''), sub: str(b.sub, ''), color: isColor(b.color) ? b.color : '#8a8f98' }));
+      .map(b => ({ id: b.id, name: str(b.name, ''), color: isColor(b.color) ? b.color : '#8a8f98' }));
   }
   const memos = normalizeMemos(raw.memos);
   // 配置枠：新形式（slots）があればそれを検証して使う。無ければ旧形式（ボードの並び順＋行ごとの列数）から作る
   let slots;
   if (Array.isArray(raw.slots)) {
-    const ids = new Set([...boards.map(b => b.id), 'now', 'done', ...memos.map(m => 'memo:' + m.id)]);
+    const ids = new Set([...boards.map(b => b.id), 'done', ...memos.map(m => 'memo:' + m.id)]);
+    if (lv < 3) ids.add('now'); // 旧形式の「今からやること」枠（このあと普通のボードに置き換える）
     const used = new Set();
     slots = raw.slots
       .map(row => Array.isArray(row)
@@ -4366,19 +4364,36 @@ function normalizeSettings(raw) {
       : [2, 2];
     slots = flowSlots(boards, rc);
   }
-  // ★旧データ（特別枠が配置枠に入っていない形式）の移行：今の見た目に近い形で、今からやる＝一番上の行／完了済み＝一番下の行
-  if (raw.layoutV !== 2) slots = [['now'], ...slots, ['done']];
+  // 旧データ（特別枠が配置枠に入っていない形式）：今からやる＝一番上の行／完了済み＝一番下の行
+  if (lv < 2) slots = [['now'], ...slots, ['done']];
+
   const maxId = boards.reduce((m, b) => Math.max(m, b.id), 0);
+  let nextId = Math.max(Number(raw.nextBoardId) || 0, maxId + 1);
   const special = (r, d) => ({ name: str(r && r.name, d.name), color: isColor(r && r.color) ? r.color : d.color });
+  const rawLimits = raw.limits === undefined ? { ...def.limits } : { ...raw.limits };
+  let nowBoardId = Number.isInteger(raw.nowBoardId) ? raw.nowBoardId : null;
+
+  // ★移行：旧「今からやること」特別枠 → 普通のボード（名称・色・配置・表示件数を引き継ぐ）
+  //   ・印が付いていたタスクの移し先は nowBoardId（タスク側の移行は migrateNowDoingToBoard）
+  if (lv < 3) {
+    const sp = special(raw.nowDoing, { name: '★今からやること', color: '#d4a017' });
+    const nb = { id: nextId++, name: sp.name, color: sp.color };
+    boards = [nb, ...boards];
+    nowBoardId = nb.id;
+    slots = slots.map(row => row.map(id => (id === 'now' ? nb.id : id)));
+    if (rawLimits.now) rawLimits[String(nb.id)] = rawLimits.now;
+    delete rawLimits.now;
+  }
+
   return {
     boards,
     slots,
-    layoutV: 2,
+    layoutV: 3,
+    nowBoardId,
     memos,
     nextMemoId: Math.max(Number(raw.nextMemoId) || 0, memos.reduce((mx, m) => Math.max(mx, m.id), 0) + 1),
-    limits: raw.limits === undefined ? { ...def.limits } : normalizeLimits(raw.limits),
-    nextBoardId: Math.max(Number(raw.nextBoardId) || 0, maxId + 1),
-    nowDoing: special(raw.nowDoing, def.nowDoing),
+    limits: normalizeLimits(rawLimits),
+    nextBoardId: nextId,
     completed: special(raw.completed, def.completed),
     calendarView: raw.calendarView === 'day' ? 'day' : 'month',
     tagMaster: normalizeTagMaster(raw.tagMaster),
@@ -4408,12 +4423,12 @@ function normalizeMemos(raw) {
   });
   return out;
 }
-// 表示件数の検証：キーは now／done／ボードID（数字）だけ。1〜999件、それ以外は「全部表示」扱いで捨てる
+// 表示件数の検証：キーは done／ボードID（数字）だけ。1〜999件、それ以外は「全部表示」扱いで捨てる
 function normalizeLimits(raw) {
   const out = {};
   if (!raw || typeof raw !== 'object') return out;
   Object.keys(raw).forEach(k => {
-    if (!(k === 'now' || k === 'done' || /^\d+$/.test(k))) return;
+    if (!(k === 'done' || /^\d+$/.test(k))) return;
     const n = Math.floor(Number(raw[k]));
     if (n > 0) out[k] = Math.min(n, 999);
   });
@@ -4482,10 +4497,9 @@ function flowSlots(boards, rowCols) {
   return slots;
 }
 
-// ★枠の中身（ボード／特別枠）を1つの形にそろえて返す。特別枠は special:true、id は 'now' / 'done'
+// ★枠の中身（ボード／完了済み／メモ枠）を1つの形にそろえて返す。完了済みは special:true、id は 'done'
 function getSlotItem(id) {
-  if (id === 'now')  return { id: 'now',  special: true, name: settings.nowDoing.name,  sub: '', color: settings.nowDoing.color };
-  if (id === 'done') return { id: 'done', special: true, name: settings.completed.name, sub: '', color: settings.completed.color };
+  if (id === 'done') return { id: 'done', special: true, name: settings.completed.name, color: settings.completed.color };
   if (typeof id === 'string' && id.startsWith('memo:')) { // ★メモ枠
     const m = settings.memos.find(x => 'memo:' + x.id === id);
     return m ? { id, memo: true, name: m.name, color: m.color, ref: m } : null;
@@ -4501,10 +4515,10 @@ function unplacedMemos() {
 function computeBoardRows() {
   return settings.slots.map(row => row.map(id => (id === null || id === undefined) ? null : getSlotItem(id)));
 }
-// 配置されていない特別枠（今からやること／完了済み）
+// 配置されていない特別枠（完了済み）
 function unplacedSpecials() {
   const placed = placedBoardIds();
-  return ['now', 'done'].filter(id => !placed.has(id)).map(getSlotItem);
+  return ['done'].filter(id => !placed.has(id)).map(getSlotItem);
 }
 // 画面の並び順（枠の左上→右下）＋未配置。特別枠も含む（モーダルのボタン用）
 function itemsInLayoutOrder() {
@@ -4526,18 +4540,9 @@ function boardsInLayoutOrder() {
 
 // ---------- 画面への反映 ----------
 // ボード枠を作り直す（描画後に renderAll() でタスクを流し込むこと）
-// ★「今からやること」「完了済み」の欄のHTML（優先度ボードの枠の中／タグだけの画面の上下で共用）
-//   IDは固定（nowDoingList／completedDropList 等）。同時に2つ描画されないよう、必ずどちらか一方だけで使う
-function zoneHtml(kind) {
-  if (kind === 'now') {
-    const s = settings.nowDoing;
-    return `<div class="now-action-zone" id="nowZone" style="--board-color:${s.color}" onclick="handleZoneBlankClick(event, 'nowDoing')">
-      <div class="zone-title" id="nowZoneTitle">${escapeHtml(s.name || '（名称なし）')}</div>
-      <div class="now-action-list" id="nowDoingList"></div>
-      <button type="button" class="limit-more" id="limitMore_now" style="display:none" onclick="event.stopPropagation(); toggleLimitExpand('now')"></button>
-      <div class="zone-empty-hint" id="nowDoingEmptyHint">タスクをドラッグ、または空欄タップで追加</div>
-    </div>`;
-  }
+// ★「完了済み」の欄のHTML（優先度ボードの枠の一つとして使う）
+//   IDは固定（completedDropList 等）。配置枠には1つしか入らないので重複しない
+function zoneHtml() {
   const c = settings.completed;
   return `<div class="completed-zone" id="completedZone" style="--board-color:${c.color}" onclick="handleZoneBlankClick(event, 'completed')">
       <div class="zone-title" id="completedZoneTitle">${escapeHtml(c.name || '（名称なし）')}</div>
@@ -4588,9 +4593,9 @@ function renderPriorityBoard(wrap) {
   } else {
     wrap.innerHTML = rows.map(row => `
       <div class="matrix-row" style="grid-template-columns:repeat(${row.length},minmax(0,1fr))">
-        ${row.map(b => b && b.special ? zoneHtml(b.id) : b && b.memo ? memoHtml(b.ref) : b ? `
+        ${row.map(b => b && b.special ? zoneHtml() : b && b.memo ? memoHtml(b.ref) : b ? `
         <div class="matrix-quadrant" style="--board-color:${b.color}" onclick="handleZoneBlankClick(event, 'quadrant', ${b.id})">
-          <div class="matrix-title"><span>${escapeHtml(boardName(b))}</span>${b.sub ? `<span>${escapeHtml(b.sub)}</span>` : ''}</div>
+          <div class="matrix-title"><span>${escapeHtml(boardName(b))}</span></div>
           <div class="matrix-list" id="matrixList${b.id}" data-q="${b.id}" data-droplist="1"></div>
           <button type="button" class="limit-more" id="limitMore_${b.id}" style="display:none" onclick="event.stopPropagation(); toggleLimitExpand('${b.id}')"></button>
         </div>` : '<div class="matrix-spacer"></div>').join('')}
@@ -4598,7 +4603,7 @@ function renderPriorityBoard(wrap) {
   }
 }
 
-// 「今からやること」「完了済み」の名称・色を反映
+// 「完了済み」の名称・色を反映
 function applySpecialZones() {
   const apply = (zoneId, titleId, s) => {
     const z = document.getElementById(zoneId);
@@ -4606,7 +4611,6 @@ function applySpecialZones() {
     if (z) z.style.setProperty('--board-color', s.color);
     if (t) t.textContent = s.name || '（名称なし）';
   };
-  apply('nowZone', 'nowZoneTitle', settings.nowDoing);
   apply('completedZone', 'completedZoneTitle', settings.completed);
 }
 
@@ -4614,7 +4618,7 @@ function applySpecialZones() {
 function renderQuadrantButtons() {
   const wrap = document.getElementById('qSelectWrap');
   if (!wrap) return;
-  const ordered = itemsInLayoutOrder(); // ★今からやること／完了済みも、配置した並びでボタンに出す
+  const ordered = itemsInLayoutOrder(); // ★完了済みも、配置した並びでボタンに出す
   wrap.innerHTML = ordered.length
     ? ordered.map(b => b.special
         ? `<button type="button" class="q-btn" data-z="${b.id}" style="--board-color:${b.color}" onclick="setZoneChoice('${b.id}')">${escapeHtml(b.name || '（名称なし）')}</button>`
@@ -4660,7 +4664,6 @@ function renderSettingsTab() {
   renderSettingsMemos();
   renderSettingsBoards();
   renderSettingsLayout();
-  renderSettingsSpecial();
   renderSettingsTags();
   renderSettingsCalendar();
 }
@@ -4668,21 +4671,26 @@ function renderSettingsTab() {
 function renderSettingsBoards() {
   const el = document.getElementById('settingsBoards');
   if (!el) return;
-  const ordered = boardsInLayoutOrder(); // レイアウトの並び順（左上→右下）で表示
-  el.innerHTML = ordered.length ? ordered.map(b => `
+  const ordered = itemsInLayoutOrder(); // レイアウトの並び順（左上→右下）で表示。完了済みも同じ一覧に入る
+  el.innerHTML = ordered.length ? ordered.map(b => b.special ? `
+    <div class="set-board">
+      <div class="set-row">
+        <input type="color" class="set-color" value="${b.color}" aria-label="色" oninput="updateDoneField('color', this.value)">
+        <input type="text" class="set-input" value="${escapeAttr(b.name)}" maxlength="40" placeholder="名称" aria-label="完了済みの名称" oninput="updateDoneField('name', this.value)">
+        <span class="set-row-label" style="flex:none" title="完了済みは削除できません">🔒</span>
+      </div>
+    </div>` : `
     <div class="set-board">
       <div class="set-row">
         <input type="color" class="set-color" value="${b.color}" aria-label="色" oninput="updateBoardField(${b.id}, 'color', this.value)">
         <input type="text" class="set-input" value="${escapeAttr(b.name)}" maxlength="40" placeholder="ボード名" aria-label="ボード名" oninput="updateBoardField(${b.id}, 'name', this.value)">
-      </div>
-      <div class="set-row">
-        <input type="text" class="set-input" value="${escapeAttr(b.sub)}" maxlength="40" placeholder="補足（任意）例：重要×緊急" aria-label="補足" oninput="updateBoardField(${b.id}, 'sub', this.value)">
         <button type="button" class="set-icon-btn danger" onclick="deleteBoard(${b.id})" aria-label="削除">🗑</button>
       </div>
-    </div>`).join('') : '<div class="set-empty">ボードがありません。「＋ ボードを追加」から作れます</div>';
+    </div>`).join('') + '<div class="set-note">🔒の完了済みは削除できません（グラフの完了日の記録に使うため）。それ以外のボードは🗑で削除できます。</div>'
+    : '<div class="set-empty">ボードがありません。「＋ ボードを追加」から作れます</div>';
 }
 
-// 名称・補足・色の変更（入力中に呼ばれるため、この一覧自身は再描画しない＝フォーカスを失わない）
+// 名称・色の変更（入力中に呼ばれるため、この一覧自身は再描画しない＝フォーカスを失わない）
 function updateBoardField(id, field, value) {
   const b = getBoard(id);
   if (!b) return;
@@ -4690,16 +4698,27 @@ function updateBoardField(id, field, value) {
     if (!/^#[0-9a-fA-F]{6}$/.test(value)) return;
     b.color = value;
   } else {
-    b[field] = String(value).slice(0, 40);
+    b.name = String(value).slice(0, 40);
   }
   commitSettings();
   renderSettingsLayout(); // 枠の中のボード名・色も追従
+}
+// 完了済みの名称・色の変更（同じく、この一覧自身は再描画しない）
+function updateDoneField(field, value) {
+  if (field === 'color') {
+    if (!/^#[0-9a-fA-F]{6}$/.test(value)) return;
+    settings.completed.color = value;
+  } else {
+    settings.completed.name = String(value).slice(0, 40);
+  }
+  commitSettings();
+  renderSettingsLayout();
 }
 
 // ボードを追加：空いている最初の枠に入れる（空きが無ければ「未配置」に置く）
 function addBoard() {
   const color = NEW_BOARD_COLORS[(settings.nextBoardId - 1) % NEW_BOARD_COLORS.length];
-  const nb = { id: settings.nextBoardId, name: '新しいボード', sub: '', color };
+  const nb = { id: settings.nextBoardId, name: '新しいボード', color };
   settings.nextBoardId++;
   settings.boards.push(nb);
   outer: for (const row of settings.slots) {
@@ -4716,7 +4735,7 @@ function addBoard() {
 function renderSettingsLimits() {
   const el = document.getElementById('settingsLimits');
   if (!el) return;
-  const items = itemsInLayoutOrder(); // 今からやること／各ボード／完了済み（レイアウトの並び順）
+  const items = itemsInLayoutOrder(); // 各ボード／完了済み（レイアウトの並び順）
   el.innerHTML = items.map(it => {
     const key = String(it.id);
     const v = (settings.limits && settings.limits[key]) || '';
@@ -4860,7 +4879,7 @@ function renderSettingsLayout() {
     <button type="button" class="set-add-btn" onclick="addRow()">＋ 行を追加</button>
     <div class="set-sub-label">未配置のボード（枠へドラッグして配置）</div>
     <div class="lay-tray" data-tray="1">${[...unplacedSpecials(), ...unplacedMemos(), ...unplacedBoards()].map(chip).join('')}</div>
-    <div class="set-note">未配置のボードはボードタブに表示されません（「今からやること」「完了済み」を未配置にすると、そのタスクはボードタブから見えなくなります（リスト・カレンダー・グラフには残ります）。メモ枠も同じ配置の仕組みです）。枠を減らすと、はみ出したボードはここに戻ります。空の枠はボードタブでも空白のまま位置が保たれ、全部空の行は表示されません。</div>`;
+    <div class="set-note">未配置のボードはボードタブに表示されません（未配置にしたボードや完了済みのタスクは、ボードタブから見えなくなります。リスト・カレンダー・グラフには残ります。メモ枠も同じ配置の仕組みです）。枠を減らすと、はみ出したボードはここに戻ります。空の枠はボードタブでも空白のまま位置が保たれ、全部空の行は表示されません。</div>`;
   initLayoutSortables();
 }
 
@@ -4882,7 +4901,7 @@ function initLayoutSortables() {
 // ドロップ時：DOMではなくデータ（settings.slots）を書き換え、画面は作り直す（1枠1ボードを保つため）
 function onLayoutDrop(evt) {
   const rawId = evt.item.dataset.id;
-  const id = (rawId === 'now' || rawId === 'done' || rawId.startsWith('memo:')) ? rawId : Number(rawId); // ★特別枠・メモ枠は文字列ID
+  const id = (rawId === 'done' || rawId.startsWith('memo:')) ? rawId : Number(rawId); // ★完了済み・メモ枠は文字列ID
   const from = evt.from, to = evt.to;
   if (from !== to) {
     const src = from.dataset.tray ? null : [Number(from.dataset.r), Number(from.dataset.c)];
@@ -4939,32 +4958,6 @@ function deleteRow(r) {
   commitSettings();
   renderSettingsLayout();
   renderSettingsBoards();
-}
-
-// ---------- 設定タブ：特別枠（今からやること／完了済み） ----------
-function renderSettingsSpecial() {
-  const el = document.getElementById('settingsSpecial');
-  if (!el) return;
-  const block = (key, label) => `
-    <div class="set-sub-label">${label}</div>
-    <div class="set-row">
-      <input type="color" class="set-color" value="${settings[key].color}" aria-label="色" oninput="updateSpecial('${key}', 'color', this.value)">
-      <input type="text" class="set-input" value="${escapeAttr(settings[key].name)}" maxlength="40" placeholder="名称" aria-label="${label}の名称" oninput="updateSpecial('${key}', 'name', this.value)">
-    </div>`;
-  el.innerHTML = block('nowDoing', '今からやること枠') + block('completed', '完了済み枠') +
-    '<div class="set-note">この2つは削除できません（完了済み枠はグラフの完了日の記録に使います）。配置は上の「ボードのレイアウト」でボードと同じようにドラッグして変えられます。</div>';
-}
-
-function updateSpecial(key, field, value) {
-  if (!settings[key]) return;
-  if (field === 'color') {
-    if (!/^#[0-9a-fA-F]{6}$/.test(value)) return;
-    settings[key].color = value;
-  } else {
-    settings[key].name = String(value).slice(0, 40);
-  }
-  saveSettings();
-  applySpecialZones();
 }
 
 /* =====================================================
