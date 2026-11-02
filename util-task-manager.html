@@ -1292,7 +1292,7 @@ body.hide-title .container > header{display:none;}
    【ボードのレイアウト編集】枠（スロット）＋ドラッグ配置
    ===================================================== */
 .lay-row{margin-bottom:10px;}
-.lay-grid{display:grid;gap:6px;}
+.lay-grid{display:grid;gap:6px;overflow-x:auto;} /* 列が多い時は横にスクロール */
 .lay-slot{
   min-height:56px;
   border:2px dashed var(--color-border-input);
@@ -1304,12 +1304,12 @@ body.hide-title .container > header{display:none;}
 }
 .lay-chip{
   flex:1;
+  min-width:0;
   display:flex;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-  min-height:48px;
-  padding:4px 6px;
+  flex-direction:column;
+  align-items:stretch;
+  gap:4px;
+  padding:4px;
   border-radius:6px;
   background:color-mix(in srgb,var(--board-color) 22%,var(--color-card));
   border:1px solid color-mix(in srgb,var(--board-color) 60%,var(--color-card));
@@ -1317,9 +1317,39 @@ body.hide-title .container > header{display:none;}
   font-weight:700;
   line-height:1.3;
   color:var(--color-text);
-  word-break:break-word;
-  cursor:grab;
 }
+/* ★ボードの中で直接：色・名称・表示件数・削除（ドラッグは ⠿ のつかみ部分だけで動く） */
+.lay-chip-top{display:flex;align-items:center;gap:4px;}
+.lay-handle{
+  flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;
+  cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
+  font-size:20px;color:var(--color-text-muted);
+  border-radius:6px;background:color-mix(in srgb,var(--board-color) 14%,var(--color-card));
+}
+.lay-color{
+  flex:1;min-width:0;height:44px;padding:2px;cursor:pointer;
+  border:1px solid var(--color-border-input);border-radius:6px;background:var(--color-input-bg);
+}
+.lay-del,.lay-lock{
+  flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;
+  font-size:16px;border-radius:6px;
+}
+.lay-del{
+  cursor:pointer;font-family:inherit;
+  color:var(--color-warn-text);background:var(--color-warn-bg);border:1px solid var(--color-warn-border);
+}
+.lay-del:hover{background:var(--color-warn-hover);}
+.lay-lock{color:var(--color-text-muted);}
+.lay-name,.lay-limit-input{
+  width:100%;min-width:0;min-height:44px;font-family:inherit;font-size:16px; /* 16px以上＝iPhoneの自動ズーム防止 */
+  color:var(--color-text);background:var(--color-input-bg);
+  border:1px solid var(--color-border-input);border-radius:6px;padding:6px 8px;
+}
+.lay-name:focus,.lay-limit-input:focus{outline:none;border-color:var(--color-primary);}
+.lay-limit{display:flex;align-items:center;gap:4px;color:var(--color-text-sub);}
+.lay-limit .lay-limit-input{flex:1;}
+.lay-chip-memo{flex-direction:row;align-items:center;min-height:52px;}
+.lay-chip-label{flex:1;min-width:0;word-break:break-word;padding:0 4px;}
 .lay-tray{
   min-height:60px;
   border:2px dashed var(--color-border-input);
@@ -1331,7 +1361,7 @@ body.hide-title .container > header{display:none;}
   align-items:flex-start;
   margin-bottom:6px;
 }
-.lay-tray .lay-chip{flex:0 0 auto;min-width:96px;}
+.lay-tray .lay-chip{flex:0 0 auto;min-width:150px;}
 .lay-ghost{opacity:0.4;}
 .matrix-spacer{min-height:20px;}
 .settings-title{
@@ -1778,15 +1808,8 @@ body.wb-lock{overflow:hidden;}
   <div class="settings-title">画面表示（ヘッダー・日付・タイマー・テーマ）</div>
   <div class="set-card" id="settingsView"></div>
 
-  <div class="settings-title">ボードのレイアウト（枠を作って、ボード・完了済み・メモ枠をドラッグで配置）</div>
+  <div class="settings-title">ボードの設定とレイアウト（枠を作って、⠿をドラッグして配置。名称・色・表示件数・削除は各ボードの中で）</div>
   <div class="set-card" id="settingsLayout"></div>
-
-  <div class="settings-title">ボードの名称・色</div>
-  <div class="set-card" id="settingsBoards"></div>
-  <button type="button" class="set-add-btn" onclick="addBoard()">＋ ボードを追加</button>
-
-  <div class="settings-title">表示件数（枠ごと）</div>
-  <div class="set-card" id="settingsLimits"></div>
 
   <div class="settings-title">メモ枠（タスクではなく直接書き込めるメモ）</div>
   <div class="set-card" id="settingsMemos"></div>
@@ -4660,59 +4683,41 @@ function detachTasksFromMissingBoards() {
 // ---------- 設定タブ：ボード編集 ----------
 function renderSettingsTab() {
   renderSettingsView();
-  renderSettingsLimits();
   renderSettingsMemos();
-  renderSettingsBoards();
   renderSettingsLayout();
   renderSettingsTags();
   renderSettingsCalendar();
 }
 
-function renderSettingsBoards() {
-  const el = document.getElementById('settingsBoards');
-  if (!el) return;
-  const ordered = itemsInLayoutOrder(); // レイアウトの並び順（左上→右下）で表示。完了済みも同じ一覧に入る
-  el.innerHTML = ordered.length ? ordered.map(b => b.special ? `
-    <div class="set-board">
-      <div class="set-row">
-        <input type="color" class="set-color" value="${b.color}" aria-label="色" oninput="updateDoneField('color', this.value)">
-        <input type="text" class="set-input" value="${escapeAttr(b.name)}" maxlength="40" placeholder="名称" aria-label="完了済みの名称" oninput="updateDoneField('name', this.value)">
-        <span class="set-row-label" style="flex:none" title="完了済みは削除できません">🔒</span>
-      </div>
-    </div>` : `
-    <div class="set-board">
-      <div class="set-row">
-        <input type="color" class="set-color" value="${b.color}" aria-label="色" oninput="updateBoardField(${b.id}, 'color', this.value)">
-        <input type="text" class="set-input" value="${escapeAttr(b.name)}" maxlength="40" placeholder="ボード名" aria-label="ボード名" oninput="updateBoardField(${b.id}, 'name', this.value)">
-        <button type="button" class="set-icon-btn danger" onclick="deleteBoard(${b.id})" aria-label="削除">🗑</button>
-      </div>
-    </div>`).join('') + '<div class="set-note">🔒の完了済みは削除できません（グラフの完了日の記録に使うため）。それ以外のボードは🗑で削除できます。</div>'
-    : '<div class="set-empty">ボードがありません。「＋ ボードを追加」から作れます</div>';
-}
-
-// 名称・色の変更（入力中に呼ばれるため、この一覧自身は再描画しない＝フォーカスを失わない）
+// 名称・色の変更（入力中に呼ばれるため、レイアウト画面は再描画しない＝フォーカス・カラーピッカーを失わない）
 function updateBoardField(id, field, value) {
   const b = getBoard(id);
   if (!b) return;
   if (field === 'color') {
     if (!/^#[0-9a-fA-F]{6}$/.test(value)) return;
     b.color = value;
+    syncChipColor(String(id), value);
   } else {
     b.name = String(value).slice(0, 40);
   }
   commitSettings();
-  renderSettingsLayout(); // 枠の中のボード名・色も追従
 }
-// 完了済みの名称・色の変更（同じく、この一覧自身は再描画しない）
+// 完了済みの名称・色の変更（同じく、レイアウト画面は再描画しない）
 function updateDoneField(field, value) {
   if (field === 'color') {
     if (!/^#[0-9a-fA-F]{6}$/.test(value)) return;
     settings.completed.color = value;
+    syncChipColor('done', value);
   } else {
     settings.completed.name = String(value).slice(0, 40);
   }
   commitSettings();
-  renderSettingsLayout();
+}
+// レイアウト上のボード枠の縁取り色だけ、その場で更新する
+function syncChipColor(dataId, color) {
+  document.querySelectorAll('#settingsLayout .lay-chip').forEach(c => {
+    if (c.dataset.id === dataId) c.style.setProperty('--board-color', color);
+  });
 }
 
 // ボードを追加：空いている最初の枠に入れる（空きが無ければ「未配置」に置く）
@@ -4727,26 +4732,10 @@ function addBoard() {
     }
   }
   commitSettings();
-  renderSettingsBoards();
   renderSettingsLayout();
 }
 
-// ---------- 設定タブ：表示件数（枠ごと） ----------
-function renderSettingsLimits() {
-  const el = document.getElementById('settingsLimits');
-  if (!el) return;
-  const items = itemsInLayoutOrder(); // 各ボード／完了済み（レイアウトの並び順）
-  el.innerHTML = items.map(it => {
-    const key = String(it.id);
-    const v = (settings.limits && settings.limits[key]) || '';
-    return `<div class="set-row">
-      <span class="lay-swatch" style="background:${it.color}"></span>
-      <span class="set-row-label">${escapeHtml(it.special ? (it.name || '（名称なし）') : boardName(it))}</span>
-      <input type="number" class="set-input" style="max-width:90px;flex:none" min="0" max="999" inputmode="numeric" placeholder="全部" value="${v}" aria-label="表示件数" oninput="setLimit('${key}', this.value)">
-      <span class="set-row-label" style="flex:none">件</span>
-    </div>`;
-  }).join('') + '<div class="set-note">空欄または0＝全部表示。上限を超えた分は消えず、枠の下の「あと◯件を表示」で開けます。完了済みは新しく完了した順に並びます。</div>';
-}
+// ---------- 表示件数（枠ごと）の変更。入力欄は「ボードのレイアウト」の各ボードの中にある ----------
 function setLimit(key, val) {
   const n = Math.min(999, Math.floor(Number(val)) || 0);
   if (n > 0) settings.limits[key] = n; else delete settings.limits[key];
@@ -4830,7 +4819,6 @@ function deleteBoard(id) {
   delete settings.limits[String(id)]; // ★そのボードの表示件数設定も消す
   settings.slots = settings.slots.map(row => row.map(x => (x === id ? null : x)));
   commitSettings();
-  renderSettingsBoards();
   renderSettingsLayout();
 }
 
@@ -4843,7 +4831,28 @@ let layoutSortables = [];
 function renderSettingsLayout() {
   const el = document.getElementById('settingsLayout');
   if (!el) return;
-  const chip = b => `<div class="lay-chip" data-id="${b.id}" style="--board-color:${b.color}">${escapeHtml(b.memo ? '📝 ' + (b.name || 'メモ') : b.special ? (b.name || '（名称なし）') : boardName(b))}</div>`;
+  // ★枠の中のボード：⠿（ドラッグ用のつかみ）・色・名称・表示件数・削除（完了済みは🔒で削除不可）を直接持つ
+  const chip = b => {
+    if (b.memo) { // メモ枠は名称・色・行数・削除を「メモ枠」カードで設定するので、ここは移動用の表示だけ
+      return `<div class="lay-chip lay-chip-memo" data-id="${b.id}" style="--board-color:${b.color}"><span class="lay-handle" title="ドラッグして移動">⠿</span><span class="lay-chip-label">${escapeHtml('📝 ' + (b.name || 'メモ'))}</span></div>`;
+    }
+    const key = b.special ? 'done' : String(b.id);
+    const lim = (settings.limits && settings.limits[key]) || '';
+    const colorFn = b.special ? `updateDoneField('color', this.value)` : `updateBoardField(${b.id}, 'color', this.value)`;
+    const nameFn = b.special ? `updateDoneField('name', this.value)` : `updateBoardField(${b.id}, 'name', this.value)`;
+    const del = b.special
+      ? `<span class="lay-lock" title="完了済みは削除できません（グラフの完了日の記録に使うため）">🔒</span>`
+      : `<button type="button" class="lay-del" onclick="deleteBoard(${b.id})" aria-label="削除">🗑</button>`;
+    return `<div class="lay-chip" data-id="${b.id}" style="--board-color:${b.color}">
+      <div class="lay-chip-top">
+        <span class="lay-handle" title="ドラッグして移動">⠿</span>
+        <input type="color" class="lay-color" value="${b.color}" aria-label="色" oninput="${colorFn}">
+        ${del}
+      </div>
+      <input type="text" class="lay-name" value="${escapeAttr(b.name)}" maxlength="40" placeholder="名称" aria-label="名称" oninput="${nameFn}">
+      <label class="lay-limit"><span>表示</span><input type="number" class="lay-limit-input" min="0" max="999" inputmode="numeric" placeholder="全部" value="${lim}" aria-label="表示件数" oninput="setLimit('${key}', this.value)"><span>件</span></label>
+    </div>`;
+  };
   const pattern = settings.slots.map(r => r.length).join(',');
 
   const rowsHtml = settings.slots.map((row, r) => `
@@ -4854,7 +4863,7 @@ function renderSettingsLayout() {
         <button type="button" class="set-icon-btn" onclick="changeRowCols(${r}, 1)" aria-label="枠を増やす">＋</button>
         <button type="button" class="set-icon-btn danger" onclick="deleteRow(${r})" aria-label="行を削除">🗑</button>
       </div>
-      <div class="lay-grid" style="grid-template-columns:repeat(${row.length},minmax(0,1fr))">
+      <div class="lay-grid" style="grid-template-columns:repeat(${row.length},minmax(130px,1fr))">
         ${row.map((id, c) => {
           const b = (id === null || id === undefined) ? null : getSlotItem(id);
           return `<div class="lay-slot" data-r="${r}" data-c="${c}">${b ? chip(b) : ''}</div>`;
@@ -4874,12 +4883,14 @@ function renderSettingsLayout() {
       <button type="button" class="tag-btn" onclick="applyLayoutPattern([2,2,3])">2・2・3</button>
       <button type="button" class="tag-btn" onclick="applyLayoutPattern([4,2,3])">4・2・3</button>
     </div>
-    <div class="set-sub-label">枠（ボードをドラッグして移動。スマホは少し長押ししてから動かす）</div>
+    <div class="set-sub-label">枠（⠿をつかんでドラッグして移動。色・名称・表示件数・🗑は各ボードの中で直接変えられます）</div>
     ${rowsHtml || '<div class="set-empty">枠がありません。上の入力欄か「＋ 行を追加」で作れます</div>'}
     <button type="button" class="set-add-btn" onclick="addRow()">＋ 行を追加</button>
-    <div class="set-sub-label">未配置のボード（枠へドラッグして配置）</div>
+    <button type="button" class="set-add-btn" onclick="addBoard()">＋ ボードを追加</button>
+    <div class="set-sub-label">未配置のボード（⠿を枠へドラッグして配置）</div>
     <div class="lay-tray" data-tray="1">${[...unplacedSpecials(), ...unplacedMemos(), ...unplacedBoards()].map(chip).join('')}</div>
-    <div class="set-note">未配置のボードはボードタブに表示されません（未配置にしたボードや完了済みのタスクは、ボードタブから見えなくなります。リスト・カレンダー・グラフには残ります。メモ枠も同じ配置の仕組みです）。枠を減らすと、はみ出したボードはここに戻ります。空の枠はボードタブでも空白のまま位置が保たれ、全部空の行は表示されません。</div>`;
+    <div class="set-note">未配置のボードはボードタブに表示されません（未配置にしたボードや完了済みのタスクは、ボードタブから見えなくなります。リスト・カレンダー・グラフには残ります。メモ枠も同じ配置の仕組みです）。枠を減らすと、はみ出したボードはここに戻ります。空の枠はボードタブでも空白のまま位置が保たれ、全部空の行は表示されません。</div>
+    <div class="set-note">表示件数：空欄または0＝全部表示。上限を超えた分は消えず、ボードの下の「あと◯件を表示」で開けます。完了済みは新しく完了した順に並びます。🔒の完了済みは削除できません。それ以外のボードは🗑で削除でき、中のタスクは「未分類」になります。</div>`;
   initLayoutSortables();
 }
 
@@ -4890,8 +4901,7 @@ function initLayoutSortables() {
     layoutSortables.push(new Sortable(el, {
       group: 'boardLayout',
       animation: 150,
-      delay: 150,              // スマホでスクロールと区別するため、少し長押ししてからドラッグ開始
-      delayOnTouchOnly: true,
+      handle: '.lay-handle',   // ★⠿のつかみ部分だけでドラッグ開始（入力欄・色・削除ボタンはそのまま操作できる）
       ghostClass: 'lay-ghost',
       onEnd: onLayoutDrop,
     }));
@@ -4915,7 +4925,7 @@ function onLayoutDrop(evt) {
     }
     commitSettings();
   }
-  setTimeout(() => { renderSettingsLayout(); renderSettingsBoards(); }, 0);
+  setTimeout(() => { renderSettingsLayout(); }, 0);
 }
 
 function parseLayoutPattern(s) {
@@ -4934,7 +4944,6 @@ function applyLayoutPattern(cols) {
     Array.from({ length: n }, (_, c) => (old[r] && old[r][c] !== undefined) ? old[r][c] : null));
   commitSettings();
   renderSettingsLayout();
-  renderSettingsBoards();
 }
 function changeRowCols(r, d) {
   const row = settings.slots[r];
@@ -4943,21 +4952,18 @@ function changeRowCols(r, d) {
   else if (row.length > 1) row.pop(); // 末尾の枠を削除（中のボードは未配置に戻る）
   commitSettings();
   renderSettingsLayout();
-  renderSettingsBoards();
 }
 function addRow() {
   const last = settings.slots[settings.slots.length - 1];
   settings.slots.push(Array.from({ length: last ? last.length : 2 }, () => null));
   commitSettings();
   renderSettingsLayout();
-  renderSettingsBoards();
 }
 function deleteRow(r) {
   if (!settings.slots[r]) return;
   settings.slots.splice(r, 1); // 行内のボードは未配置に戻る
   commitSettings();
   renderSettingsLayout();
-  renderSettingsBoards();
 }
 
 /* =====================================================
