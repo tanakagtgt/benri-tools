@@ -86,7 +86,7 @@ body{
   width:100%;
   max-width:none;          /* 上限なし。常に画面ギリギリまで使う */
   margin:0 auto;
-  padding:16px 12px 0;     /* 左右12pxだけ残す（0にすると端に貼り付く） */
+  padding:16px 2px 0;      /* ★左右2pxだけ残す（ボード同士の隙間と揃える） */
 }
 /* =====================================================
    ヘッダー
@@ -147,8 +147,8 @@ h1{
 .now-action-row{
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:8px;
-  margin-bottom:10px;
+  gap:2px;            /* ★ボード同士の隙間（横）2px */
+  margin-bottom:2px;  /* ★ボード同士の隙間（縦）2px */
 }
 .now-action-zone{
   background:color-mix(in srgb,var(--board-color,#d4a017) 12%,var(--color-card));
@@ -407,7 +407,7 @@ h1{
    マトリクス表示（重要度×緊急度の4象限）
    スマホは2×2の正方形寄りグリッドで1画面に収める
    ===================================================== */
-#matrixView{margin-bottom:14px;}
+#matrixView{margin-bottom:2px;} /* ★下段スロットとの縦の隙間も2px */
 
 .matrix-grid{
   display:grid;
@@ -896,8 +896,8 @@ footer{
 .matrix-quadrant,.now-action-zone,.completed-zone,.q-btn,.badge-q{
   --board-text:color-mix(in srgb,var(--board-color,#8a8f98) 70%,var(--color-text));
 }
-#matrixView{display:flex;flex-direction:column;gap:8px;}
-.matrix-row{display:grid;gap:8px;}
+#matrixView{display:flex;flex-direction:column;gap:2px;} /* ★ボード行同士の縦の隙間2px */
+.matrix-row{display:grid;gap:2px;} /* ★ボード同士の横の隙間2px */
 .matrix-item{word-break:break-word;}
 
 .set-card{
