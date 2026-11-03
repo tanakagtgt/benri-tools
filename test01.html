@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>〇〇〇会計事務所｜人と人、仕事と人をつなぐ 地元の公認会計士・税理士</title>
+<meta name="description" content="地元に根ざし、人と人、仕事と人をつなぐ公認会計士・税理士事務所。税務顧問、決算申告、創業支援、相続・事業承継までお任せください。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* ===== 色はすべて変数管理（ライト／ダーク両対応） ===== */
+:root{
+  --bg:#f6f4ef; --surface:#ffffff; --text:#2b2d31; --sub:#5d6068; --line:#dcd8cd;
+  --main:#2f3b46;      /* 青灰色 */
+  --accent:#b5793a;    /* 琥珀（つなぐ・温かさ） */
+  --on-main:#f6f4ef;
+  --hero-from:#2f3b46; --hero-to:#46545f;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16191d; --surface:#1f2429; --text:#e8e6e0; --sub:#a4a8ae; --line:#323941;
+    --main:#9db3c4; --accent:#d9a066; --on-main:#16191d;
+    --hero-from:#1d252c; --hero-to:#2b3640;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16191d; --surface:#1f2429; --text:#e8e6e0; --sub:#a4a8ae; --line:#323941;
+  --main:#9db3c4; --accent:#d9a066; --on-main:#16191d;
+  --hero-from:#1d252c; --hero-to:#2b3640;
+}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:70px;scroll-behavior:smooth}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Noto Sans JP",sans-serif;line-height:1.9;font-size:16px}
+a{color:inherit}
+.wrap{max-width:960px;margin:0 auto;padding:0 20px}
+h1,h2,h3{font-family:"Noto Serif JP",serif;line-height:1.5;margin:0}
+
+/* ===== ヘッダー ===== */
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--bg);border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;height:58px}
+.logo{font-family:"Noto Serif JP",serif;font-weight:700;font-size:17px;text-decoration:none;color:var(--main)}
+nav{display:flex;gap:18px;font-size:14px}
+nav a{text-decoration:none;color:var(--sub)}
+nav a:hover{color:var(--accent)}
+@media(max-width:640px){nav a:not(.nav-cta){display:none}}
+.nav-cta{background:var(--main);color:var(--on-main);padding:6px 14px;border-radius:999px;font-weight:700}
+
+/* ===== ヒーロー ===== */
+.hero{background:linear-gradient(135deg,var(--hero-from),var(--hero-to));color:#f6f4ef;padding:84px 0 92px;position:relative;overflow:hidden}
+.hero small{letter-spacing:.2em;color:#e0b783;font-size:13px}
+.hero h1{font-size:clamp(26px,6vw,44px);margin:14px 0 18px}
+.hero h1 em{font-style:normal;color:#e0b783}
+.hero p{max-width:520px;margin:0 0 28px;opacity:.9}
+.btn{display:inline-block;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;min-height:44px}
+.btn-main{background:#d9a066;color:#2b2d31}
+.btn-sub{border:1px solid rgba(246,244,239,.5);color:#f6f4ef;margin-left:8px}
+
+/* ===== セクション共通 ===== */
+section{padding:68px 0}
+.eyebrow{color:var(--accent);font-size:12px;letter-spacing:.22em;font-weight:700}
+h2{font-size:clamp(22px,4.5vw,30px);margin:6px 0 10px;color:var(--main)}
+.lead{color:var(--sub);max-width:600px;margin:0 0 32px}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:24px}
+.card .no{font-family:"Noto Serif JP",serif;color:var(--accent);font-size:28px;font-weight:700;line-height:1}
+.card h3{font-size:18px;margin:10px 0 8px;color:var(--main)}
+.card p{margin:0;color:var(--sub);font-size:15px}
+
+/* ===== 代表／概要 ===== */
+.profile{display:grid;gap:28px;grid-template-columns:200px 1fr;align-items:start}
+@media(max-width:640px){.profile{grid-template-columns:1fr}}
+.photo{aspect-ratio:1;border-radius:12px;background:var(--line);display:flex;align-items:center;justify-content:center;color:var(--sub);font-size:13px}
+.career{margin:14px 0 0;padding:0;list-style:none;color:var(--sub);font-size:15px}
+.career li{padding:6px 0;border-bottom:1px dashed var(--line)}
+dl.info{margin:0;display:grid;grid-template-columns:130px 1fr;border-top:1px solid var(--line)}
+dl.info dt,dl.info dd{margin:0;padding:14px 4px;border-bottom:1px solid var(--line)}
+dl.info dt{font-weight:700;color:var(--main)}
+@media(max-width:520px){dl.info{grid-template-columns:100px 1fr}}
+
+/* ===== お問い合わせ ===== */
+.contact{background:var(--main);color:var(--on-main);text-align:center}
+.contact h2{color:var(--on-main)}
+.contact .lead{color:var(--on-main);opacity:.85;margin-left:auto;margin-right:auto}
+.contact .btn{background:var(--accent);color:#1f2429;margin:4px}
+footer{padding:26px 0;text-align:center;font-size:12px;color:var(--sub)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a class="logo" href="#top">〇〇〇会計事務所</a>
+    <nav>
+      <a href="#strength">私たちの強み</a>
+      <a href="#service">業務内容</a>
+      <a href="#profile">代表紹介</a>
+      <a href="#office">事務所概要</a>
+      <a class="nav-cta" href="#contact">ご相談</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <!-- ヒーロー -->
+  <div class="hero">
+    <div class="wrap">
+      <small>公認会計士・税理士　／　和歌山</small>
+      <h1>地元で、人と人を、<br>仕事と人を、<em>つなぐ</em>。</h1>
+      <p>地元に根ざして、数字のその先にある「人」と「仕事」をつなぐ。経営者さまの一番近くにいる、頼れる相談相手でありたいと考えています。</p>
+      <a class="btn btn-main" href="#contact">無料相談のご予約</a><a class="btn btn-sub" href="#service">業務内容を見る</a>
+    </div>
+  </div>
+
+  <!-- 強み -->
+  <section id="strength">
+    <div class="wrap">
+      <div class="eyebrow">STRENGTH</div>
+      <h2>私たちの3つの約束</h2>
+      <p class="lead">資格を持つ専門家として、そして同じ地域で暮らす一人として。この3つを大切にしています。</p>
+      <div class="grid">
+        <div class="card"><div class="no">01</div><h3>人と人をつなぐ</h3><p>金融機関、行政書士、社労士、弁護士など、信頼できる専門家とのネットワークで、お悩みを一つの窓口から解決へ導きます。</p></div>
+        <div class="card"><div class="no">02</div><h3>仕事と人をつなぐ</h3><p>事業の想いと数字をつなぎ、経営判断に役立つ会計をご提案。創業・承継・採用など、次の一歩を一緒に考えます。</p></div>
+        <div class="card"><div class="no">03</div><h3>地元とつながる</h3><p>この地域の商慣習や景気感を肌で知るからこそ、現実に即した無理のないアドバイスができます。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 業務内容 -->
+  <section id="service">
+    <div class="wrap">
+      <div class="eyebrow">SERVICE</div>
+      <h2>業務内容</h2>
+      <p class="lead">個人事業主さまから中小企業さままで、税務と会計の“困った”に幅広く対応します。</p>
+      <div class="grid">
+        <div class="card"><h3>税務顧問・決算申告</h3><p>毎月の記帳指導から決算、各種申告まで。経営状況を分かりやすくお伝えします。</p></div>
+        <div class="card"><h3>創業・法人化支援</h3><p>事業計画の作成、融資のご相談、各種届出まで、はじめの一歩を伴走します。</p></div>
+        <div class="card"><h3>相続・事業承継</h3><p>相続税申告や自社株対策など、大切な想いを次世代へつなぐお手伝いをします。</p></div>
+        <div class="card"><h3>経営コンサルティング</h3><p>資金繰り、経営計画、業務改善など、数字を軸に会社の成長を支援します。</p></div>
+        <div class="card"><h3>税務調査の立会い</h3><p>調査対応に不安がある方へ。専門家として納税者の立場を丁寧にサポートします。</p></div>
+        <div class="card"><h3>セカンドオピニオン</h3><p>現在の税務・会計についての疑問や不安に、第三者の立場でお答えします。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 代表 -->
+  <section id="profile" style="background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+    <div class="wrap">
+      <div class="eyebrow">PROFILE</div>
+      <h2>代表紹介</h2>
+      <div class="profile">
+        <div class="photo">代表写真<br>（差し替え）</div>
+        <div>
+          <h3 style="font-size:20px">〇〇 〇〇（〇〇 〇〇）</h3>
+          <div style="color:var(--sub);font-size:14px">公認会計士・税理士</div>
+          <p style="margin:12px 0 0;color:var(--sub)">地元で生まれ育ち、監査法人などでの経験を経て独立。「数字を通して、人と人、仕事と人をつなぎたい」という想いから、地域の皆さまの身近な相談相手として活動しています。</p>
+          <ul class="career">
+            <li>経歴：〇〇大学卒業／〇〇監査法人 勤務（仮）</li>
+            <li>資格：公認会計士、税理士</li>
+            <li>得意分野：創業支援、事業承継、中小企業の経営支援（仮）</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 事務所概要 -->
+  <section id="office">
+    <div class="wrap">
+      <div class="eyebrow">OFFICE</div>
+      <h2>事務所概要</h2>
+      <dl class="info">
+        <dt>事務所名</dt><dd>〇〇〇会計事務所</dd>
+        <dt>代表者</dt><dd>〇〇 〇〇（公認会計士・税理士）</dd>
+        <dt>所在地</dt><dd>〒640-0000 和歌山県和歌山市〇〇 0-0-0（仮）</dd>
+        <dt>電話</dt><dd>073-000-0000（仮）</dd>
+        <dt>営業時間</dt><dd>平日 9:00〜17:30（土日祝休み／事前予約で時間外対応可）</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- お問い合わせ -->
+  <section class="contact" id="contact">
+    <div class="wrap">
+      <div class="eyebrow" style="color:var(--accent)">CONTACT</div>
+      <h2>まずは、お気軽にご相談ください</h2>
+      <p class="lead">初回のご相談は無料です。「こんなこと聞いてもいいのかな？」という内容でも大丈夫です。</p>
+      <a class="btn" href="tel:0730000000">📞 電話で相談する</a>
+      <a class="btn" href="#">✉️ お問い合わせフォーム</a>
+    </div>
+  </section>
+</main>
+
+<footer>© 〇〇〇会計事務所　※本ページはデザイン確認用のテスト版です（文言・連絡先は仮）</footer>
+</body>
+</html>
