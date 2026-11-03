@@ -1232,15 +1232,19 @@ footer{
 }
 .now-action-row .now-card{padding:8px 8px;} /* ★縦幅を少し詰めてボードの面積を確保 */
 /* 日付カードが枠内に1つだけの時は横並び（1行〜2行）にして縦幅を節約 */
-.now-action-row .now-card.wide{
+.widget-host .now-card.wide{
   flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:2px 14px;
 }
 
 /* =====================================================
-   日付・タイマーの配置先（設定タブで選べる）
-   ・slotTop／slotBottom＝2列グリッド（列数はJSがアイテム数に合わせて設定）
-   ・slotParking＝非表示にした時の置き場（画面外）
+   日付・タイマーの枠（ボードのレイアウトで他のボードと同じように配置する）
+   ・.widget-host＝ボード行(.matrix-row)の中に入る箱。中に #nowCard／#timerWidgetZone を移して入れる
+   ・slotParking＝未配置の時の置き場（画面外）
    ===================================================== */
+.widget-host{min-width:0;display:flex;flex-direction:column;}
+.widget-host > .now-card,
+.widget-host > .timer-placeholder-zone{flex:1;margin-bottom:0;min-width:0;}
+.widget-host > .now-card{display:flex;flex-direction:column;justify-content:center;padding:8px;}
 /* ★表示件数の上限を超えた分を開閉するボタン（枠の下に出る。ボタンのクリックで新規タスク追加が開かないようJS側でstopPropagation） */
 .limit-more{
   display:block;width:100%;margin-top:6px;min-height:36px;
@@ -1672,20 +1676,18 @@ body.wb-lock{overflow:hidden;}
        現在日時（令和／曜日／時分）
        1分ごとに自動更新される
        ===================================================== -->
-  <!-- 上段を2列に分割：左＝日付（令和／西暦／月日(曜日)／時刻）、右＝タイマー等（timer-widget.jsが #timerWidgetZone に描画） -->
-  <!-- ★日付カード・タイマーは設定タブの選択に応じてJS(applyViewSettings)が各slotへ移動する -->
-  <div class="now-action-row" id="slotTop">
+  <!-- ★日付（令和／西暦／月日(曜日)／時刻）とタイマー（timer-widget.jsが #timerWidgetZone に描画）は、ボードと同じ「枠」として配置する -->
+  <!-- 　設定タブの「ボードのレイアウト」で動かす。JS(renderPriorityBoard)が要素ごと枠へ移すので、中身（タイマーの動作状態）は壊れない -->
+  <div id="slotParking" style="display:none"><!-- 日付／タイマーの置き場（未配置の時もここ）。配置されると renderPriorityBoard() がボードの枠の中へ移す -->
     <div class="now-card" id="nowCard"></div>
     <div class="timer-placeholder-zone" id="timerWidgetZone"></div>
   </div>
-  <div id="slotParking" style="display:none"></div><!-- 非表示にした日付／タイマーの置き場 -->
 
   <!-- =====================================================
        マトリクス（重要度×緊急度）
        ・常時表示のダッシュボードとして機能する
        ===================================================== -->
   <div id="matrixView"></div><!-- ★中身は renderBoardGrid()（各ボード。完了済み／メモ枠も枠の一つとして並ぶ）が生成する -->
-  <div class="now-action-row" id="slotBottom" style="display:none"></div><!-- 配置先：ボードの下 -->
 
 <!-- Excel用コピー（ボード表示形式：ボードの見方に連動） -->
   <div class="data-bar"><button type="button" class="btn-data" id="btnXlBoard" onclick="copyBoardExcel()">📊 Excel用コピー</button></div>
@@ -4312,13 +4314,8 @@ function exportIcs() {
    ・ボードIDは再利用しない（nextBoardId）
    ===================================================== */
 const SETTINGS_STORAGE_KEY = 'task_manager_settings_v1';
-// 日付・タイマーの配置先（キー → 設定画面の表示名）。順番＝セレクトの並び順
-const VIEW_POS_LABELS = {
-  top:       'ボードの上段（今の位置）',
-  bottom:    'ボードの下',
-  hidden:    '非表示',
-};
-const VIEW_POS_KEYS = Object.keys(VIEW_POS_LABELS);
+// ★日付・タイマーは配置枠(slots)に 'date'／'timer' として入る（ボードと同じ移動・入れ替え・未配置）
+const WIDGET_IDS = ['date', 'timer'];
 const NEW_BOARD_COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#84cc16', '#06b6d4', '#a16207'];
 
 // ★関数にしているのは、呼び出しごとに新しいオブジェクトを返してコピー事故を防ぐため
@@ -4333,9 +4330,9 @@ function getDefaultSettings() {
       { id: 3, name: '③サクッとやる', color: '#d98c1f' },
     ],
     // ★ボードの配置枠：行ごとの配列（各枠にボードID／'done'（完了済み）／'memo:<id>'（メモ枠）／null）
-    //   既定＝今からやること／②①／④③／完了済み
-    slots: [[5], [2, 1], [4, 3], ['done']],
-    layoutV: 3, // ★配置枠の形式バージョン（3＝今からやることが普通のボード。旧データは読み込み時に移行）
+    //   'date'＝日付カード／'timer'＝タイマー も枠の一つ。既定＝日付・タイマー／今からやること／②①／④③／完了済み
+    slots: [['date', 'timer'], [5], [2, 1], [4, 3], ['done']],
+    layoutV: 4, // ★配置枠の形式バージョン（3＝今からやることが普通のボード／4＝日付・タイマーも枠。旧データは読み込み時に移行）
     nowBoardId: 5, // ★旧「今からやる」の印が付いたタスク（旧JSON読込など）の移し先ボードID
     limits: { done: 10 }, // ★表示件数の上限（キー：'done'／ボードID文字列。未設定・0＝全部表示）。既定は完了済みだけ10件
     memos: [],            // ★メモ枠：[{ id, name, color, rows, text }]。配置枠には 'memo:<id>' で入る
@@ -4346,8 +4343,6 @@ function getDefaultSettings() {
     tagMaster: [],         // タグ辞書：[{ name:'仕事', subs:['会議','資料'] }]。配列の順＝ボタンの並び順
     showNav: true,         // 上部ナビ（一覧に戻る＋ライト/ダーク）を表示するか
     showTitle: true,       // タイトル＋サブタイトルを表示するか
-    datePos: 'top',        // 日付カードの配置先（VIEW_POS_KEYS参照）
-    timerPos: 'top',       // タイマーの配置先（VIEW_POS_KEYS参照）
   };
 }
 
@@ -4370,7 +4365,7 @@ function normalizeSettings(raw) {
   // 配置枠：新形式（slots）があればそれを検証して使う。無ければ旧形式（ボードの並び順＋行ごとの列数）から作る
   let slots;
   if (Array.isArray(raw.slots)) {
-    const ids = new Set([...boards.map(b => b.id), 'done', ...memos.map(m => 'memo:' + m.id)]);
+    const ids = new Set([...boards.map(b => b.id), 'done', ...WIDGET_IDS, ...memos.map(m => 'memo:' + m.id)]);
     if (lv < 3) ids.add('now'); // 旧形式の「今からやること」枠（このあと普通のボードに置き換える）
     const used = new Set();
     slots = raw.slots
@@ -4405,10 +4400,20 @@ function normalizeSettings(raw) {
     delete rawLimits.now;
   }
 
+  // ★移行：旧「日付・タイマーの配置先（datePos／timerPos）」→ 配置枠へ
+  //   top＝一番上の行／bottom（旧afterDone含む）＝一番下の行／hidden＝未配置。どちらも未設定なら上段
+  if (lv < 4) {
+    const posOf = v => (v === 'afterDone' ? 'bottom' : (['top', 'bottom', 'hidden'].includes(v) ? v : 'top'));
+    const pos = { date: posOf(raw.datePos), timer: posOf(raw.timerPos) };
+    const topRow = WIDGET_IDS.filter(id => pos[id] === 'top');
+    const bottomRow = WIDGET_IDS.filter(id => pos[id] === 'bottom');
+    slots = [...(topRow.length ? [topRow] : []), ...slots, ...(bottomRow.length ? [bottomRow] : [])];
+  }
+
   return {
     boards,
     slots,
-    layoutV: 3,
+    layoutV: 4,
     nowBoardId,
     memos,
     nextMemoId: Math.max(Number(raw.nextMemoId) || 0, memos.reduce((mx, m) => Math.max(mx, m.id), 0) + 1),
@@ -4419,9 +4424,6 @@ function normalizeSettings(raw) {
     tagMaster: normalizeTagMaster(raw.tagMaster),
     showNav: raw.showNav !== false,
     showTitle: raw.showTitle !== false,
-    // ★廃止した配置先（ボードの見方の横→上段／完了済みの下→ボードの下）は読み替える
-    datePos: VIEW_POS_KEYS.includes(raw.datePos) ? raw.datePos : (raw.datePos === 'afterDone' ? 'bottom' : 'top'),
-    timerPos: VIEW_POS_KEYS.includes(raw.timerPos) ? raw.timerPos : (raw.timerPos === 'afterDone' ? 'bottom' : 'top'),
   };
 }
 
@@ -4520,6 +4522,9 @@ function flowSlots(boards, rowCols) {
 // ★枠の中身（ボード／完了済み／メモ枠）を1つの形にそろえて返す。完了済みは special:true、id は 'done'
 function getSlotItem(id) {
   if (id === 'done') return { id: 'done', special: true, name: settings.completed.name, color: settings.completed.color };
+  // ★日付・タイマー（widget:true）。タスクの行き先ではない。色は配置画面の表示用だけ
+  if (id === 'date')  return { id: 'date',  widget: true, name: '📅 日付',     color: '#8a8f98' };
+  if (id === 'timer') return { id: 'timer', widget: true, name: '⏱ タイマー', color: '#8a8f98' };
   if (typeof id === 'string' && id.startsWith('memo:')) { // ★メモ枠
     const m = settings.memos.find(x => 'memo:' + x.id === id);
     return m ? { id, memo: true, name: m.name, color: m.color, ref: m } : null;
@@ -4535,6 +4540,11 @@ function unplacedMemos() {
 function computeBoardRows() {
   return settings.slots.map(row => row.map(id => (id === null || id === undefined) ? null : getSlotItem(id)));
 }
+// 配置されていない日付・タイマー
+function unplacedWidgets() {
+  const placed = placedBoardIds();
+  return WIDGET_IDS.filter(id => !placed.has(id)).map(getSlotItem);
+}
 // 配置されていない特別枠（完了済み）
 function unplacedSpecials() {
   const placed = placedBoardIds();
@@ -4543,7 +4553,7 @@ function unplacedSpecials() {
 // 画面の並び順（枠の左上→右下）＋未配置。特別枠も含む（モーダルのボタン用）
 function itemsInLayoutOrder() {
   const placed = settings.slots.flat().map(id => (id === null || id === undefined) ? null : getSlotItem(id)).filter(Boolean);
-  return [...placed, ...unplacedBoards(), ...unplacedSpecials()].filter(it => !it.memo); // メモ枠はタスクの行き先ではないので除く
+  return [...placed, ...unplacedBoards(), ...unplacedSpecials()].filter(it => !it.memo && !it.widget); // メモ枠・日付・タイマーはタスクの行き先ではないので除く
 }
 function placedBoardIds() {
   return new Set(settings.slots.flat().filter(id => id !== null && id !== undefined));
@@ -4606,6 +4616,7 @@ function renderBoardGrid() {
 
 // 優先度ボードの枠だけを作る（wrapの中身を差し替える。Sortableの初期化は呼び出し側）
 function renderPriorityBoard(wrap) {
+  parkWidgets(); // ★日付・タイマーは作り直しで消えないよう、先に置き場へ退避
   // 全ての枠が空の行は出さない。行の中の空の枠は空白のまま（配置位置を保つ）
   const rows = computeBoardRows().filter(row => row.some(b => b));
   if (rows.length === 0) {
@@ -4613,13 +4624,37 @@ function renderPriorityBoard(wrap) {
   } else {
     wrap.innerHTML = rows.map(row => `
       <div class="matrix-row" style="grid-template-columns:repeat(${row.length},minmax(0,1fr))">
-        ${row.map(b => b && b.special ? zoneHtml() : b && b.memo ? memoHtml(b.ref) : b ? `
+        ${row.map(b => b && b.special ? zoneHtml() : b && b.widget ? `<div class="widget-host" data-widget="${b.id}"></div>` : b && b.memo ? memoHtml(b.ref) : b ? `
         <div class="matrix-quadrant" style="--board-color:${b.color}" onclick="handleZoneBlankClick(event, 'quadrant', ${b.id})">
           <div class="matrix-title"><span>${escapeHtml(boardName(b))}</span></div>
           <div class="matrix-list" id="matrixList${b.id}" data-q="${b.id}" data-droplist="1"></div>
           <button type="button" class="limit-more" id="limitMore_${b.id}" style="display:none" onclick="event.stopPropagation(); toggleLimitExpand('${b.id}')"></button>
         </div>` : '<div class="matrix-spacer"></div>').join('')}
       </div>`).join('');
+  }
+  attachWidgets(wrap); // ★日付・タイマーを配置された枠へ戻す
+}
+
+// ★日付カード(#nowCard)・タイマー(#timerWidgetZone)は作り直さず要素ごと移す（タイマーの動作状態を壊さないため）
+function parkWidgets() {
+  const park = document.getElementById('slotParking');
+  if (!park) return;
+  ['nowCard', 'timerWidgetZone'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.parentElement !== park) park.appendChild(el);
+  });
+}
+function attachWidgets(wrap) {
+  const idMap = { date: 'nowCard', timer: 'timerWidgetZone' };
+  wrap.querySelectorAll('.widget-host').forEach(host => {
+    const el = document.getElementById(idMap[host.dataset.widget]);
+    if (el) host.appendChild(el);
+  });
+  // 日付カードが、その行で1枠だけなら横並び（1〜2行）にして縦幅を節約
+  const dateEl = document.getElementById('nowCard');
+  if (dateEl) {
+    const row = dateEl.closest('.matrix-row');
+    dateEl.classList.toggle('wide', !!row && row.children.length === 1);
   }
 }
 
@@ -4830,6 +4865,9 @@ function renderSettingsLayout() {
   if (!el) return;
   // ★枠の中のボード：⠿（ドラッグ用のつかみ）・色・名称・表示件数・削除（完了済みは🔒で削除不可）を直接持つ
   const chip = b => {
+    if (b.widget) { // ★日付・タイマーは色・名称・削除が無いので、移動用の表示だけ
+      return `<div class="lay-chip lay-chip-memo" data-id="${b.id}"><span class="lay-handle" title="ドラッグして移動">⠿</span><span class="lay-chip-label">${escapeHtml(b.name)}</span></div>`;
+    }
     if (b.memo) { // メモ枠は名称・色・行数・削除を「メモ枠」カードで設定するので、ここは移動用の表示だけ
       return `<div class="lay-chip lay-chip-memo" data-id="${b.id}" style="--board-color:${b.color}"><span class="lay-handle" title="ドラッグして移動">⠿</span><span class="lay-chip-label">${escapeHtml('📝 ' + (b.name || 'メモ'))}</span></div>`;
     }
@@ -4885,8 +4923,8 @@ function renderSettingsLayout() {
     <button type="button" class="set-add-btn" onclick="addRow()">＋ 行を追加</button>
     <button type="button" class="set-add-btn" onclick="addBoard()">＋ ボードを追加</button>
     <div class="set-sub-label">未配置のボード（⠿を枠へドラッグして配置）</div>
-    <div class="lay-tray" data-tray="1">${[...unplacedSpecials(), ...unplacedMemos(), ...unplacedBoards()].map(chip).join('')}</div>
-    <div class="set-note">未配置のボードはボードタブに表示されません（未配置にしたボードや完了済みのタスクは、ボードタブから見えなくなります。リスト・カレンダー・グラフには残ります。メモ枠も同じ配置の仕組みです）。枠を減らすと、はみ出したボードはここに戻ります。空の枠はボードタブでも空白のまま位置が保たれ、全部空の行は表示されません。</div>
+    <div class="lay-tray" data-tray="1">${[...unplacedWidgets(), ...unplacedSpecials(), ...unplacedMemos(), ...unplacedBoards()].map(chip).join('')}</div>
+    <div class="set-note">📅日付・⏱タイマーもボードと同じように⠿で移動・入れ替えできます（未配置にすると非表示）。未配置のボードはボードタブに表示されません（未配置にしたボードや完了済みのタスクは、ボードタブから見えなくなります。リスト・カレンダー・グラフには残ります。メモ枠も同じ配置の仕組みです）。枠を減らすと、はみ出したボードはここに戻ります。空の枠はボードタブでも空白のまま位置が保たれ、全部空の行は表示されません。</div>
     <div class="set-note">表示件数：空欄または0＝全部表示。上限を超えた分は消えず、ボードの下の「あと◯件を表示」で開けます。完了済みは新しく完了した順に並びます。🔒の完了済みは削除できません。それ以外のボードは🗑で削除でき、中のタスクは「未分類」になります。</div>`;
   initLayoutSortables();
 }
@@ -4908,7 +4946,7 @@ function initLayoutSortables() {
 // ドロップ時：DOMではなくデータ（settings.slots）を書き換え、画面は作り直す（1枠1ボードを保つため）
 function onLayoutDrop(evt) {
   const rawId = evt.item.dataset.id;
-  const id = (rawId === 'done' || rawId.startsWith('memo:')) ? rawId : Number(rawId); // ★完了済み・メモ枠は文字列ID
+  const id = (rawId === 'done' || WIDGET_IDS.includes(rawId) || rawId.startsWith('memo:')) ? rawId : Number(rawId); // ★完了済み・日付・タイマー・メモ枠は文字列ID
   const from = evt.from, to = evt.to;
   if (from !== to) {
     const src = from.dataset.tray ? null : [Number(from.dataset.r), Number(from.dataset.c)];
@@ -4964,42 +5002,13 @@ function deleteRow(r) {
 }
 
 /* =====================================================
-   【画面表示】ヘッダー表示／日付・タイマーの配置
+   【画面表示】ヘッダー表示
    ・ヘッダー：bodyにhide-topnav／hide-titleクラスを付けてCSSで隠す（common.jsは触らない）
-   ・日付カード(#nowCard)とタイマー(#timerWidgetZone)は要素ごと各slotへ移動（中身は壊さない）
-   ・非表示＝#slotParking（display:none）へ退避
+   ・日付・タイマーの配置は「ボードのレイアウト」（settings.slots）に統合した（renderPriorityBoard参照）
    ===================================================== */
 function applyViewSettings() {
   document.body.classList.toggle('hide-topnav', !settings.showNav);
   document.body.classList.toggle('hide-title', !settings.showTitle);
-
-  const slotIds = { top: 'slotTop', bottom: 'slotBottom', hidden: 'slotParking' };
-  const dateEl = document.getElementById('nowCard');
-  const timerEl = document.getElementById('timerWidgetZone');
-  const want = { top: [], bottom: [], hidden: [] }; // 配置先ごとの並び（日付→タイマーの順）
-  if (dateEl)  want[settings.datePos].push(dateEl);
-  if (timerEl) want[settings.timerPos].push(timerEl);
-
-  Object.keys(want).forEach(pos => {
-    const slot = document.getElementById(slotIds[pos]);
-    if (!slot) return;
-    const list = want[pos];
-    const cur = Array.from(slot.children);
-    // 並びが違う時だけ付け替える（無駄な再配置でタイマー側の表示状態に触らない）
-    if (cur.length !== list.length || list.some((e, i) => cur[i] !== e)) {
-      list.forEach(e => slot.appendChild(e));
-    }
-    if (pos === 'hidden') return;
-    slot.style.display = list.length ? '' : 'none'; // 空の枠は非表示（ボードが広く使える）
-    if (list.length) {
-      slot.style.gridTemplateColumns = 'repeat(' + list.length + ', minmax(0, 1fr))';
-    }
-  });
-  // 日付カードが枠内に1つだけ（かつ縦積みでない枠）なら横並び表示
-  if (dateEl) {
-    const alone = settings.datePos !== 'hidden' && want[settings.datePos].length === 1;
-    dateEl.classList.toggle('wide', alone);
-  }
 }
 
 function renderSettingsView() {
@@ -5012,11 +5021,6 @@ function renderSettingsView() {
       <button type="button" class="set-seg-btn ${settings[key] ? 'active' : ''}" onclick="setViewFlag('${key}', true)">表示</button>
       <button type="button" class="set-seg-btn ${!settings[key] ? 'active' : ''}" onclick="setViewFlag('${key}', false)">非表示</button>
     </div>`;
-  const posSelect = (key, label) => `
-    <div class="set-sub-label">${label}</div>
-    <select class="set-select" onchange="setViewPos('${key}', this.value)">
-      ${VIEW_POS_KEYS.map(k => `<option value="${k}" ${settings[key] === k ? 'selected' : ''}>${VIEW_POS_LABELS[k]}</option>`).join('')}
-    </select>`;
   el.innerHTML = `
     ${onoff('showNav', '上部ナビ（← 一覧に戻る／ライト・ダーク切替）')}
     ${onoff('showTitle', 'タイトル・サブタイトル')}
@@ -5025,20 +5029,11 @@ function renderSettingsView() {
       <button type="button" class="set-seg-btn ${theme === 'light' ? 'active' : ''}" onclick="setThemeFromSettings('light')">☀️ ライト</button>
       <button type="button" class="set-seg-btn ${theme === 'dark' ? 'active' : ''}" onclick="setThemeFromSettings('dark')">🌙 ダーク</button>
     </div>
-    ${posSelect('datePos', '日付の配置')}
-    ${posSelect('timerPos', 'タイマーの配置')}
-    <div class="set-note">上部ナビを非表示にしても、テーマはここで切り替えられます。「一覧に戻る」は、非表示中でもブラウザの戻る操作かURLで移動できます。日付・タイマーを「非表示」にすると、ボードがその分広くなります。</div>`;
+    <div class="set-note">上部ナビを非表示にしても、テーマはここで切り替えられます。「一覧に戻る」は、非表示中でもブラウザの戻る操作かURLで移動できます。日付・タイマーの位置は、下の「ボードのレイアウト」でボードと同じように動かせます（未配置にすると非表示）。</div>`;
 }
 function setViewFlag(key, val) {
   if (key !== 'showNav' && key !== 'showTitle') return;
   settings[key] = !!val;
-  saveSettings();
-  applyViewSettings();
-  renderSettingsView();
-}
-function setViewPos(key, val) {
-  if ((key !== 'datePos' && key !== 'timerPos') || !VIEW_POS_KEYS.includes(val)) return;
-  settings[key] = val;
   saveSettings();
   applyViewSettings();
   renderSettingsView();
@@ -5052,7 +5047,7 @@ function resetSettings() {
   if (!confirm('ボードの名称・色・並べ方を初期状態に戻す？\n追加したボードのタスクは「未分類」になる（タスク自体は消えない）')) return;
   const keepCalendarView = settings.calendarView; // カレンダー表示の選択・タグ辞書はボード設定のリセット対象外
   const keepTagMaster = settings.tagMaster;
-  const keepView = { showNav: settings.showNav, showTitle: settings.showTitle, datePos: settings.datePos, timerPos: settings.timerPos }; // 画面表示の設定もリセット対象外
+  const keepView = { showNav: settings.showNav, showTitle: settings.showTitle }; // 画面表示の設定もリセット対象外
   const keepMemos = { memos: settings.memos, nextMemoId: settings.nextMemoId, limits: settings.limits }; // ★メモの内容・表示件数はリセット対象外
   settings = getDefaultSettings();
   Object.assign(settings, keepView, keepMemos);
