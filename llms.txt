@@ -1,0 +1,38 @@
+# arigato-tools.com
+
+> 無料で使える計算・変換・便利ツールを集めたサイト。すべてのツールはブラウザの中で動作し、入力したデータが外部に送信されることはありません。会員登録も不要です。
+
+## ツール一覧
+
+- [タスク管理ツール](https://arigato-tools.com/util-task-manager): ブラウザで保存完結。重要度×緊急度の4象限で優先順位を整理できますGoogleカレンダーへ追加可能。
+- [年齢西暦和暦変換ツール](https://arigato-tools.com/wareki): 令和・平成・昭和の和暦と西暦、年齢を双方向で即座に変換。
+- [年齢計算ツール](https://arigato-tools.com/age): 生年月日から現在の年齢を自動計算。西暦・和暦どちらも対応。5人まで同時計算できます。
+- [営業日計算ツール](https://arigato-tools.com/calc-eigyobi-count): 土日・祝日を除いた営業日数を自動計算。祝日は2020〜2030年の日本の祝日に対応。振替休日・年末年始（12/29〜1/3）も除外可能。
+- [借金返済シミュレーションツール](https://arigato-tools.com/debt-repayment-simulator): 返済額計算・繰上返済シミュレーション。
+- [住宅ローン算定ツール](https://arigato-tools.com/jyutakuro-n): 返済額計算・繰上返済シミュレーション・投資比較・住宅ローン控除を一画面で確認。変動金利リスクも対応。
+- [賃貸総額シミュレーター](https://arigato-tools.com/chintai-sougaku): 月額費用と居住年数を入力するだけで、一生分の賃貸コストを自動計算
+- [積立NISAシミュレーター](https://arigato-tools.com/nisa): 毎月積立の複利効果を計算・グラフで可視化。元本・積立額・年数・利回りを入力するだけ。
+- [PDF⇔画像 変換ツール](https://arigato-tools.com/pdf_image_converter): PDFを画像（JPG/PNG）に変換・複数画像をPDF1枚にまとめる。ファイルはブラウザ内で処理、サーバー送信なし。
+- [画像編集ツール](https://arigato-tools.com/image-editor): 画像のリサイズ・トリミング・回転などをブラウザ上で簡単編集。登録不要・サーバー送信なし。完全無料。
+- [単価比較ツール](https://arigato-tools.com/unit-price-compare): 商品の内容量と価格から単価を自動計算・比較。スーパーでどちらがお得か一目でわかる。
+- [栄養コスパ比較ツール](https://arigato-tools.com/nutrition-cospa-tool): たんぱく質・カロリーなどをコスパで比較。食費を抑えながら栄養バランスを整えたい人に。
+- [消費カロリー計算ツール（TDEE・基礎代謝）](https://arigato-tools.com/calorie-consumption): 体脂肪率を入力すると高精度なKatch-McArdle式も選べます
+- [コーヒー豆とお湯計算ツール](https://arigato-tools.com/coffee-calculator): 豆の量or欲しいコーヒーの量から必要なお湯の量を計算
+- [実質時給計算ツール](https://arigato-tools.com/jikyu-calculator): 手取り・拘束時間ベースの実質時給を一括計算
+- [児童手当計算ツール](https://arigato-tools.com/jidouteate-calculator): 生年月日を入力するだけで月額・年額・生涯累計を試算
+- [見積書・請求書 作成ツール](https://arigato-tools.com/mitumorisho-seikyuusho): スマホで見積書・請求書を作成しコンビニ印刷可能
+- [QRコード作成ツール](https://arigato-tools.com/qrcode-creator): 入力したテキスト・URLがそのままQRコードになります
+- [音声カット・分割ツール](https://arigato-tools.com/util-audio-cutter): MP3・WAVを好きな位置で複数に分割。無劣化の高速モードとZIP一括保存に対応
+- [関数電卓](https://arigato-tools.com/calc-function-calculator): 三角関数・対数・べき乗・階乗などに対応したフル機能の関数電卓。DEG/RAD切替、メモリ機能、計算履歴つき。
+- [FIREできるかシミュレーター](https://arigato-tools.com/fin-money-fire-sim): NISA・課税口座・生活防衛資金から税金・国保・年金まで込みで、資産が何歳まで持つかを試算。暴落テストや「もしも」の比較にも対応
+- [収支記録カレンダー](https://arigato-tools.com/fin-income-tracker): 投資と回収を日別に記録し、収支・回収率・勝率をカレンダーとチャートで確認できる
+- [家計簿](https://arigato-tools.com/fin-household-budget): 収入と支出をカレンダーに記録し、リスト・収支表・グラフでタグ別に家計を振り返れる
+- [妊娠週数・出産予定日計算](https://arigato-tools.com/calc-pregnancy-week): 最終月経開始日から出産予定日と今日の妊娠週数を自動計算。週数から日付の逆算、週ごとのカレンダーも確認できる
+- [速読トレーナー（RSVP）](https://arigato-tools.com/util-speed-reader): 文章を高速表示するRSVP方式の速読練習ツール。速度・表示文字数・縦横・色を調整、履歴も保存
+- [シフト給料カレンダー](https://arigato-tools.com/fin-shift-pay): バイト・パートのシフトから給料を自動計算。深夜・休日・残業・交通費・締日と給料日に対応
+- [文章変換ツール](https://arigato-tools.com/conv-bunsho-henkan): 文字数カウント・全角半角変換・置換・改行をまとめて処理
+- [順番決めツール](https://arigato-tools.com/util-order-decider): サイコロ・コイントス・くじ引き・じゃんけんで順番決め
+- [PDF編集ツール](https://arigato-tools.com/util-pdf-editor): Adobe Readerより使いやすいのを目指しました
+- [PDF結合・ページ整理](https://arigato-tools.com/util-pdf-merge): 複数のPDFを1つに結合し、ページの並べ替え・削除・回転・抽出ができる無料ツール。ファイルは外部送信なし
+- [UI用語図鑑](https://arigato-tools.com/doc-ui-glossary): モーダル・トースト等のUI用語を12カテゴリで検索できる図鑑
+- [スマホ電光掲示板](https://arigato-tools.com/util-led-sign): スマホの画面を電光掲示板に。テキストや画像をLED風にスクロール表示
