@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+   <link rel="canonical" href="https://arigato-tools.com/dengonban">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NXJCSR0EX1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-NXJCSR0EX1');
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>伝言板｜誰でも気軽に書き込める昔ながらの掲示板</title>
+<meta name="description" content="登録不要・無料の伝言板。名前とメッセージを書くだけで、誰でも気軽に書き込めます。感想や要望、ちょっとした一言をどうぞ。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #f4f6f9;
+  color: #222;
+  font-family: 'BIZ UDPGothic', sans-serif;
+  min-height: 100vh;
+  padding: 24px 14px 60px;
+  display: flex; flex-direction: column; align-items: center;
+}
+.container { width: 100%; max-width: 640px; }
+header { text-align: center; margin-bottom: 22px; }
+h1 {
+  font-size: clamp(20px,5vw,26px); font-weight: 700;
+  color: #1a56db; margin-bottom: 4px; letter-spacing: 0.03em;
+}
+.subtitle { font-size: 11px; color: #666; line-height: 1.8; }
+
+/* 投稿フォーム */
+.form-card {
+  background: #fff; border: 1px solid #dde3ee; border-radius: 10px;
+  padding: 18px; margin-bottom: 18px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.form-card label { display: block; font-size: 13px; font-weight: 700; margin: 0 0 5px; }
+.form-card input[type="text"], .form-card input[type="password"], .form-card textarea {
+  width: 100%; border: 1px solid #cbd5e1; border-radius: 6px;
+  font-family: 'BIZ UDPGothic', sans-serif; font-size: 14px; color: #222;
+  padding: 9px 10px; margin-bottom: 12px; outline: none; background: #fff;
+}
+.form-card input:focus, .form-card textarea:focus { border-color: #1a56db; }
+.form-card textarea { min-height: 90px; resize: vertical; line-height: 1.7; }
+.form-hint { font-size: 11px; color: #888; margin: -6px 0 12px; line-height: 1.6; }
+.btn-post {
+  width: 100%; border: none; border-radius: 8px; cursor: pointer;
+  background: #1a56db; color: #fff; font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 15px; font-weight: 700; padding: 12px;
+}
+.btn-post:disabled { background: #9db8ec; cursor: wait; }
+.form-msg { font-size: 13px; margin-top: 10px; line-height: 1.6; }
+.form-msg.error { color: #c0392b; }
+.form-msg.ok { color: #1a7a3a; }
+
+/* 投稿一覧（レトロ掲示板風） */
+.board-title { font-size: 15px; font-weight: 700; color: #1a56db; margin: 6px 0 10px; }
+.post {
+  background: #fffdf5; border: 2px solid #b9a06a; border-radius: 4px;
+  margin-bottom: 12px; overflow: hidden;
+}
+.post-head {
+  background: #efe6c8; border-bottom: 1px solid #d8c690;
+  font-size: 12px; color: #5b4a1f; padding: 7px 10px;
+  display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+}
+.post-head .post-no { font-weight: 700; }
+.post-body {
+  font-size: 14px; line-height: 1.9; color: #222;
+  padding: 12px 12px 10px; white-space: pre-wrap; word-break: break-word;
+}
+.post-del {
+  display: block; text-align: right; padding: 0 10px 8px;
+  font-size: 11px; color: #999; cursor: pointer; background: none; border: none;
+  font-family: 'BIZ UDPGothic', sans-serif; margin-left: auto;
+}
+.post-del:hover { color: #c0392b; }
+.board-empty, .board-status {
+  background: #fff; border: 1px solid #dde3ee; border-radius: 10px;
+  padding: 18px; font-size: 13px; line-height: 1.8; color: #555; text-align: center;
+}
+
+/* 説明カード */
+.desc-card {
+  background: #fff; border: 1px solid #dde3ee; border-radius: 10px;
+  padding: 18px; margin-top: 20px; margin-bottom: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06); font-size: 14px; line-height: 1.8; color: #222;
+}
+.desc-card h2 { font-size: 16px; color: #1a56db; margin: 0 0 10px; }
+.desc-card h3 { font-size: 14px; margin: 16px 0 6px; }
+.desc-card p { margin: 0 0 10px; }
+.desc-card a { color: #1a56db; }
+footer { text-align: center; font-size: 11px; color: #999; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>💬 伝言板</h1>
+<p class="subtitle">古き良きネットの伝言板。登録不要・無料で、誰でも気軽に書き込めます</p>
+</header>
+
+<div class="form-card">
+<form id="postForm">
+<label for="nameInput">名前</label>
+<input type="text" id="nameInput" maxlength="20" placeholder="例：ど" autocomplete="off">
+<label for="msgInput">メッセージ</label>
+<textarea id="msgInput" maxlength="500" placeholder="感想や要望、ちょっとした一言をどうぞ（500文字まで）"></textarea>
+<label for="delKeyInput">削除用パスワード（任意）</label>
+<input type="password" id="delKeyInput" maxlength="20" placeholder="あとで自分の投稿を消すときに使います（4〜20文字）">
+<p class="form-hint">※ 投稿は1分に1回までです。URLを書いてもリンクにはなりません。</p>
+<button type="submit" class="btn-post" id="postBtn">書き込む</button>
+<p class="form-msg" id="formMsg"></p>
+</form>
+</div>
+
+<h2 class="board-title">📋 みんなの書き込み</h2>
+<div id="boardList"><p class="board-status">読み込み中…</p></div>
+
+<div class="desc-card">
+<h2>この伝言板について</h2>
+<p>arigato-tools.com の伝言板です。ツールを使った感想や、「こんなツールがほしい」という要望、ちょっとした一言など、気軽に書き込んでください。登録やログインは不要です。</p>
+<h3>使い方</h3>
+<p>名前とメッセージを書いて「書き込む」を押すだけです。削除用パスワードを入れておくと、あとで自分の投稿だけを消すことができます。投稿は新しいものが上に表示されます。</p>
+<h3>注意事項</h3>
+<p>書き込みは誰でも見ることができます。住所・電話番号・メールアドレスなどの個人情報は書かないでください。不適切な書き込みは管理者が削除します。投稿は管理者の判断で削除されることがあります。削除してほしい書き込みがある場合は、<a href="https://docs.google.com/forms/d/e/1FAIpQLSfUe9UzcRcIRFb4TmDAYKsZ75CcGRjF8Z7Ar_u7a4KgyyNyzQ/viewform?usp=publish-editor" target="_blank" rel="noopener">お問い合わせフォーム</a>からご連絡ください。</p>
+</div>
+
+<footer>
+<p>© 伝言板</p>
+</footer>
+</div>
+
+<script>
+const listEl = document.getElementById('boardList');
+const formMsg = document.getElementById('formMsg');
+const postBtn = document.getElementById('postBtn');
+
+function fmtDate(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return iso;
+  return d.getFullYear() + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' +
+    String(d.getDate()).padStart(2, '0') + ' ' +
+    String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+
+function showMsg(text, kind) {
+  formMsg.textContent = text;
+  formMsg.className = 'form-msg ' + (kind || '');
+}
+
+async function loadPosts() {
+  try {
+    const res = await fetch('/api/board');
+    if (res.status === 503) {
+      listEl.innerHTML = '<p class="board-status">ただいま準備中です。もうしばらくお待ちください。</p>';
+      return;
+    }
+    if (!res.ok) throw new Error('load failed');
+    const data = await res.json();
+    renderPosts(data.posts || []);
+  } catch (e) {
+    listEl.innerHTML = '<p class="board-status">書き込みを読み込めませんでした。時間をおいてもう一度お試しください。</p>';
+  }
+}
+
+function renderPosts(posts) {
+  listEl.textContent = '';
+  if (!posts.length) {
+    const p = document.createElement('p');
+    p.className = 'board-empty';
+    p.textContent = 'まだ書き込みがありません。最初の1件をどうぞ！';
+    listEl.appendChild(p);
+    return;
+  }
+  posts.forEach(function (post) {
+    const wrap = document.createElement('div');
+    wrap.className = 'post';
+
+    const head = document.createElement('div');
+    head.className = 'post-head';
+    const no = document.createElement('span');
+    no.className = 'post-no';
+    no.textContent = 'No.' + post.id + '　' + post.name;
+    const date = document.createElement('span');
+    date.textContent = fmtDate(post.created_at);
+    head.appendChild(no);
+    head.appendChild(date);
+
+    const body = document.createElement('div');
+    body.className = 'post-body';
+    body.textContent = post.message;
+
+    const del = document.createElement('button');
+    del.className = 'post-del';
+    del.type = 'button';
+    del.textContent = 'この投稿を削除';
+    del.addEventListener('click', function () { deletePost(post.id); });
+
+    wrap.appendChild(head);
+    wrap.appendChild(body);
+    wrap.appendChild(del);
+    listEl.appendChild(wrap);
+  });
+}
+
+async function deletePost(id) {
+  const pw = prompt('削除用パスワードを入力してください');
+  if (pw === null) return;
+  if (!pw) { alert('パスワードが入力されていません。'); return; }
+  try {
+    const res = await fetch('/api/board?id=' + id, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ delKey: pw })
+    });
+    const data = await res.json().catch(function () { return {}; });
+    if (res.ok && data.ok) { loadPosts(); }
+    else { alert('削除できませんでした。パスワードが違うか、投稿時にパスワードが設定されていません。'); }
+  } catch (e) {
+    alert('削除に失敗しました。時間をおいてもう一度お試しください。');
+  }
+}
+
+document.getElementById('postForm').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  const name = document.getElementById('nameInput').value.trim();
+  const message = document.getElementById('msgInput').value.trim();
+  const delKey = document.getElementById('delKeyInput').value;
+  if (!name) { showMsg('名前を入力してください。', 'error'); return; }
+  if (name.length > 20) { showMsg('名前は20文字までです。', 'error'); return; }
+  if (!message) { showMsg('メッセージを入力してください。', 'error'); return; }
+  if (message.length > 500) { showMsg('メッセージは500文字までです。', 'error'); return; }
+  if (delKey && (delKey.length < 4 || delKey.length > 20)) { showMsg('削除用パスワードは4〜20文字で入力してください。', 'error'); return; }
+
+  postBtn.disabled = true;
+  showMsg('', '');
+  try {
+    const res = await fetch('/api/board', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name, message: message, delKey: delKey })
+    });
+    const data = await res.json().catch(function () { return {}; });
+    if (res.ok && data.ok) {
+      showMsg('書き込みました！', 'ok');
+      document.getElementById('msgInput').value = '';
+      loadPosts();
+    } else if (res.status === 429 || data.error === 'too_fast') {
+      showMsg('投稿は1分に1回までです。少し待ってからもう一度どうぞ。', 'error');
+    } else if (res.status === 503) {
+      showMsg('ただいま準備中です。もうしばらくお待ちください。', 'error');
+    } else {
+      showMsg('書き込みに失敗しました。入力内容を確認してください。', 'error');
+    }
+  } catch (err) {
+    showMsg('書き込みに失敗しました。時間をおいてもう一度お試しください。', 'error');
+  } finally {
+    postBtn.disabled = false;
+  }
+});
+
+loadPosts();
+</script>
+</body>
+</html>
