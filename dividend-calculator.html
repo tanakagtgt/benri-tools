@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<!-- スマホズーム防止：font-size 16px以上を徹底すること -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- AdSense（静的配置：審査・自動広告用。広告ユニット本体はcommon.jsのadAreaSlotが注入） -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2195458991382480" crossorigin="anonymous"></script>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NXJCSR0EX1"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-NXJCSR0EX1');
+</script>
+
+<link rel="canonical" href="https://arigato-tools.com/dividend-calculator">
+
+<!-- SEO -->
+<title>配当金計算ツール｜年間配当・税引き後・利回りを計算</title>
+<meta name="description" content="保有株数と1株あたりの年間配当金から、年間の配当収入を計算。税引き後の金額・月あたり・配当利回りもまとめて確認できます。無料・登録不要・データ送信なし。">
+
+<!-- OGP設定 -->
+<meta property="og:title" content="配当金計算ツール｜年間配当・税引き後・利回りを計算">
+<meta property="og:description" content="保有株数と1株あたりの年間配当金から、年間の配当収入を計算。税引き後の金額・月あたり・配当利回りもまとめて確認できます。無料・登録不要・データ送信なし。">
+<meta property="og:image" content="https://arigato-tools.com/ogp-default.png">
+<meta property="og:url" content="https://arigato-tools.com/dividend-calculator">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ありがとうツール">
+<meta name="twitter:card" content="summary_large_image">
+
+<!-- Googleフォント：CLSを最小化するためpreconnect -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+
+<!-- QRコード生成ライブラリ（common.jsのshowQr()が使用。共有エリアのQRボタンに必須） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<!-- 共通CSS（色・ボタン・カード・ナビ・広告・シェア・ダークモード等） -->
+<link rel="stylesheet" href="/common.css">
+
+<style>
+/* =====================================================
+このツール固有のスタイルだけをここに書く
+・ベース／ナビ／広告／ヘッダー／カード／ボタン／シェア／QR／リセット／フッターは
+common.cssに任せる
+・色は必ずcommon.cssの変数（var(--color-xxx)）を使う
+→ ダークモードに自動対応するため、#fff等の直書きは避ける
+===================================================== */
+
+/* NISAチェックボックスの行 */
+.check-row {
+display: flex; align-items: flex-start; gap: 8px;
+background: var(--color-primary-bg); border: 1px solid var(--color-primary-border);
+border-radius: var(--radius-input); padding: 12px 14px; margin-top: 12px;
+font-size: 13px; font-weight: 700; color: var(--color-text); cursor: pointer; line-height: 1.6;
+}
+.check-row input[type="checkbox"] {
+width: 20px; height: 20px; flex: 0 0 auto; margin-top: 1px;
+accent-color: var(--color-primary); cursor: pointer;
+}
+.check-row small { display: block; font-size: 11px; font-weight: 400; color: var(--color-text-muted);}
+
+/* =====================================================
+解説文（.tool-desc）
+===================================================== */
+.tool-desc {
+background: var(--color-card);
+border: 1px solid var(--color-border);
+border-radius: var(--radius-card);
+padding: 16px 18px;
+margin-bottom: 14px;
+font-size: 13px;
+line-height: 1.8;
+color: var(--color-text-sub);
+box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.tool-desc h2 { font-size: 14px; color: var(--color-text); margin: 14px 0 6px;}
+.tool-desc h2:first-child { margin-top: 0;}
+.tool-desc p { margin-bottom: 8px;}
+.tool-desc ul { padding-left: 18px;}
+.tool-desc li { margin-bottom: 2px;}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div id="topNavSlot"></div>
+
+<header>
+<h1>配当金計算ツール</h1>
+<p class="subtitle">保有株数と1株あたりの配当金から、年間の配当収入を計算します<br>
+※ 税引き後の金額・月あたり・配当利回りもまとめて確認できます</p>
+</header>
+
+<div class="card">
+
+<!-- ▼ セクション①：保有株数と配当金 -->
+<div class="section-title">▶ 保有株数と配当金</div>
+<div class="input-grid-3">
+<div class="input-group">
+<label for="shares">保有株数（株）</label>
+<input type="number" id="shares" inputmode="numeric" placeholder="例：100" oninput="onInputChange()">
+</div>
+<div class="input-group">
+<label for="dps">1株あたり年間配当金（円）</label>
+<input type="number" id="dps" inputmode="decimal" placeholder="例：200" oninput="onInputChange()">
+</div>
+<div class="input-group">
+<label for="price">現在の株価（円・任意）</label>
+<input type="number" id="price" inputmode="numeric" placeholder="例：5,000" oninput="onInputChange()">
+</div>
+</div>
+<p class="input-hint">※ 1株あたり年間配当金は、年間の配当金を1株あたりに直した金額です。決算短信や証券会社の銘柄ページで確認できます。株価を入れると配当利回りも表示します。</p>
+
+<label class="check-row" for="nisaAccount">
+<input type="checkbox" id="nisaAccount" onchange="onInputChange()">
+<span>NISA口座で保有している（配当金が非課税）<small>チェックを入れると税金0円で計算します。課税口座の場合は税率約20.315%で計算します。</small></span>
+</label>
+
+<button class="btn-calc" onclick="calculate()">計算する</button>
+<div class="error-msg" id="errorMsg"></div>
+</div>
+
+<!-- 結果パネル -->
+<div class="result-panel">
+<div class="result-main">
+<div class="result-label">年間配当金（税引き後）</div>
+<div>
+<span class="result-number placeholder" id="resultNum">—</span>
+<span class="result-unit">円／年</span>
+</div>
+<div class="result-sub" id="resultSub">株価を入力すると、ここに配当利回りも表示されます</div>
+</div>
+
+<div class="breakdown-wrap">
+<div class="breakdown">
+<!-- ① 年間配当金（税引き前） -->
+<div class="breakdown-item highlight">
+<div class="b-num placeholder" id="bA">—</div>
+<div class="b-unit">円／年</div>
+<div class="b-label">年間配当金（税引き前）</div>
+</div>
+<!-- ② 税金（概算） -->
+<div class="breakdown-item">
+<div class="b-num placeholder" id="bB">—</div>
+<div class="b-unit">円／年</div>
+<div class="b-label">税金（概算）</div>
+</div>
+<!-- ③ 月あたり配当金（税引き後） -->
+<div class="breakdown-item">
+<div class="b-num placeholder" id="bC">—</div>
+<div class="b-unit">円／月</div>
+<div class="b-label">月あたり配当金（税引き後）</div>
+</div>
+</div>
+
+<div class="copy-actions">
+<button class="btn-action" id="btnCopyText" onclick="copyResultText()" disabled>📋 結果をコピー</button>
+</div>
+</div>
+</div>
+
+<!-- 解説文（AdSenseの有用性判定対策：このツール専用の独自文章） -->
+<section class="tool-desc">
+<h2>このツールの使い方</h2>
+<p>保有株数と1株あたりの年間配当金を入力すると、年間の配当金が税引き前・税引き後・月あたりで表示されます。現在の株価を入れると配当利回りも確認できます。NISA口座で保有している場合はチェックを入れると、税金0円で計算します。</p>
+<h2>こんな方におすすめ</h2>
+<p>「株の配当で年間いくらもらえるのか」を具体的な金額で知りたい方、配当生活やFIREの計画を立てている方、NISA口座と課税口座で手取りがどれくらい変わるのか比べたい方に役立ちます。</p>
+<h2>配当金の計算方法</h2>
+<p>年間配当金（税引き前）は「保有株数×1株あたり年間配当金」で求めます。税金は約20.315%（所得税15.315%＋住民税5%）で概算し、税引き後の金額は「税引き前−税金」です。月あたりは税引き後を12で割った金額、配当利回りは「1株あたり年間配当金÷株価×100」で求めます。金額は円未満を四捨五入して表示します。配当金は年1〜2回、権利確定日に株を持っている株主へ支払われます。なお、このツールは計算だけを行うもので、投資の助言や銘柄の推奨ではありません。配当は企業の業績により減配・無配になることもあります。</p>
+<h2>計算の具体例</h2>
+<p>たとえば100株を持っていて、1株あたりの年間配当金が200円、株価が5,000円の場合、年間配当金（税引き前）は100株×200円＝<strong>20,000円</strong>です。税金は20,000円×20.315%＝<strong>4,063円</strong>なので、税引き後は20,000円−4,063円＝<strong>15,937円</strong>、月あたりは15,937円÷12＝<strong>約1,328円</strong>になります。配当利回りは200円÷5,000円＝<strong>4.0%</strong>です。同じ条件でNISA口座なら税金は0円なので、税引き後はそのまま20,000円、月あたり約1,667円になります。</p>
+<h2>よくある質問</h2>
+<p><strong>Q. 配当金にかかる税金はどれくらいですか？</strong><br>A. 約20.315%です（所得税15.315%＋住民税5%）。このツールではその税率で概算しています。NISA口座で受け取る配当金は非課税なので、「NISA口座で保有している」にチェックを入れると税金0円で計算します。</p>
+<p><strong>Q. 配当利回りとは何ですか？</strong><br>A. 1株あたりの年間配当金を株価で割った割合です。たとえば1株200円の配当が出る株を5,000円で買えば、利回りは4.0%です。利回りが高いほど配当は多くなりますが、株価の下落や減配のリスクもあるため、利回りだけで銘柄を選ぶのはおすすめしません。</p>
+<p><strong>Q. 月1万円の配当をもらうにはいくら必要ですか？</strong><br>A. 利回り4.0%の株で、税引き後に月1万円（年12万円）を受け取るには、税引き前で年約150,593円の配当が必要で、投資額は約376万円になります。利回りや税金（NISA口座なら非課税）で必要な額は変わります。</p>
+<p><strong>Q. 入力したデータはサーバーに送られますか？</strong><br>A. いいえ、計算はすべてブラウザ内で行われ、入力内容が外部に送信されることはありません。</p>
+</section>
+
+<!-- ★共通パーツのスロット（common.jsが中身を自動注入） -->
+<div id="shareAreaSlot"></div>
+<div id="resetBtnSlot"></div>
+<div id="bottomNavSlot"></div>
+<div id="adAreaSlot"></div>
+
+</div><!-- /.container -->
+
+<div id="qrModalSlot"></div>
+<div id="footerSlot"></div>
+
+<!-- ★読み込み順が重要：common.js → このツールのscript
+このツールのscriptで再定義した関数が、common.jsの同名関数を上書きする -->
+<script src="/common.js"></script>
+<script>
+/* =====================================================================
+配当金計算ツール（common.js対応版）
+---------------------------------------------------------------------
+1. 設定・定数（common.jsが参照する変数もここで定義）
+2. 入力取得・計算・表示（calculateInputs／calculateResult／displayResult）
+3. コピー
+4. リセット（onResetExtra／resetの上書き）
+5. シェア用テキスト／URL
+
+★common.jsの関数のうち、このツールで「上書き」しているもの
+・copyResultText() … 配当金専用の文面でコピーするため
+・reset() … 利回り表示（resultSub）も初期状態に戻すため
+・shareX()／shareLine() … 入力が空の初期状態でもシェアできるようにするため
+（common版は「有効な計算結果がある時だけ」動く仕様）
+それ以外（計算の流れ／リセット表示／保存／復元／入力リセット／QR／URLコピー／
+テーマ／おすすめ／広告）はcommon.jsをそのまま使用
+
+★結果表示のid（resultNum／bA／bB／bC／btnCopyText）はcommon.jsのreset()が
+直接初期化する名前に揃えてある
+===================================================================== */
+
+/* =====================================================
+1. 設定（★ツールごとに書き換える）
+===================================================== */
+const CURRENT_TOOL_ID = 'dividend-calculator';
+const STORAGE_KEY = 'dividend-calculator_inputs';
+
+// 保存・復元・リセット・入力値URLの対象id一覧
+const STORAGE_FIELDS = [
+'shares', 'dps', 'price', 'nisaAccount'
+];
+
+// common.jsのbuildConditionsLines()用
+const INPUT_LABELS = {
+shares: '保有株数（株）', dps: '1株あたり年間配当金（円）',
+price: '現在の株価（円）', nisaAccount: 'NISA口座'
+};
+
+// 結果の表示ラベル（コピー文面で共通利用）
+const RESULT_LABELS = {
+main: '年間配当金（税引き後）',
+subA: '年間配当金（税引き前）',
+subB: '税金（概算）',
+subC: '月あたり配当金（税引き後）'
+};
+
+// 配当金の税率（所得税15.315%＋住民税5%）
+const TAX_RATE = 0.20315;
+
+/* =====================================================
+2. 入力取得・計算・表示
+===================================================== */
+function calculateInputs() {
+return {
+shares: parseFloat(document.getElementById('shares').value),
+dps: parseFloat(document.getElementById('dps').value),
+price: parseFloat(document.getElementById('price').value),
+nisa: document.getElementById('nisaAccount').checked
+};
+}
+
+/* 配当金を算出する
+★common.jsの規約：入力不正（保有株数・1株配当がない）のときは null を返す
+@returns {object|null} 株価が未入力のとき利回りはnull（画面では利回り非表示） */
+function calculateResult(inp) {
+// 最低限必要な値：保有株数 と 1株あたり年間配当金
+if (isNaN(inp.shares) || inp.shares <= 0) return null;
+if (isNaN(inp.dps) || inp.dps <= 0) return null;
+
+// 年間配当金（税引き前）= 保有株数 × 1株あたり年間配当金
+const gross = inp.shares * inp.dps;
+
+// 税金（概算）= 税引き前 × 20.315%（NISA口座なら0円）
+const tax = inp.nisa? 0: gross * TAX_RATE;
+
+// 年間配当金（税引き後）= 税引き前 − 税金
+const net = gross - tax;
+
+// 月あたり配当金（税引き後）= 税引き後 ÷ 12
+const monthly = net / 12;
+
+// 配当利回り = 1株あたり年間配当金 ÷ 株価 × 100（株価未入力ならnull）
+const yieldPct = (!isNaN(inp.price) && inp.price > 0)
+? inp.dps / inp.price * 100
+: null;
+
+return {
+gross, tax, net, monthly, yieldPct,
+main: net, subA: gross, subB: tax, subC: monthly // common.jsの規約名
+};
+}
+
+/* 計算結果をDOMに反映する（null → '—'、数値 → 整数に丸めてカンマ区切り） */
+function displayResult(r) {
+const setVal = (id, val) => {
+const el = document.getElementById(id);
+if (val!== null) {
+el.textContent = Math.round(val).toLocaleString();
+el.classList.remove('placeholder');
+} else {
+el.textContent = '—';
+el.classList.add('placeholder');
+}
+};
+
+setVal('resultNum', r.net);
+setVal('bA', r.gross);
+setVal('bB', r.tax);
+setVal('bC', r.monthly);
+
+// 利回り表示（株価が入力されているときだけ）
+const sub = document.getElementById('resultSub');
+if (r.yieldPct!== null) {
+sub.textContent = '配当利回り ' + (Math.round(r.yieldPct * 100) / 100).toLocaleString() + '%'
++ '（1株配当 ' + Math.round(calculateInputs().dps).toLocaleString() + '円 ÷ 株価 '
++ Math.round(calculateInputs().price).toLocaleString() + '円）';
+} else {
+sub.textContent = '株価を入力すると、ここに配当利回りも表示されます';
+}
+
+document.getElementById('btnCopyText').disabled = false;
+}
+
+/* =====================================================
+3. コピー（common.jsのcopyToClipboard()でボタンのフィードバック付き）
+===================================================== */
+// 結果をテキストでコピー（common.jsのcopyResultText()を上書き）
+function copyResultText() {
+const inputs = calculateInputs();
+const result = calculateResult(inputs);
+if (!result) return;
+
+const fmt = v => Math.round(v).toLocaleString() + ' 円';
+const lines = [
+'',
+`保有株数：${Math.round(inputs.shares).toLocaleString()} 株`,
+`1株あたり年間配当金：${Math.round(inputs.dps).toLocaleString()} 円`,
+inputs.nisa? 'NISA口座：はい（非課税）': 'NISA口座：いいえ（税率 約20.315%）',
+`年間配当金（税引き前）：${fmt(result.gross)}`,
+`税金（概算）：${fmt(result.tax)}`,
+`年間配当金（税引き後）：${fmt(result.net)}`,
+`月あたり配当金（税引き後）：${fmt(result.monthly)}`,
+];
+if (result.yieldPct!== null) {
+lines.push(`配当利回り：${Math.round(result.yieldPct * 100) / 100}%`);
+}
+
+copyToClipboard(lines.join('\n'), 'btnCopyText', '📋 結果をコピー');
+}
+
+/* =====================================================
+4. リセット（common.jsのhandleReset()から自動で呼ばれる）
+入力欄のクリア＆localStorage削除はcommon.jsのresetAll()が実施済み
+→ ここでは自動計算フィールドを空に戻し、結果表示を初期化する
+===================================================== */
+// common.jsのreset()を上書きし、利回り表示（resultSub）も初期状態に戻す
+function reset() {
+const numEl = document.getElementById('resultNum');
+if (numEl) {
+numEl.textContent = '—';
+numEl.classList.add('placeholder');
+}
+
+['bA', 'bB', 'bC'].forEach(id => {
+const el = document.getElementById(id);
+if (!el) return;
+el.textContent = '—';
+el.classList.add('placeholder');
+});
+
+['btnCopyText', 'btnCopyUrlInputs', 'btnQrInputs', 'btnCopyExcel'].forEach(id => {
+const el = document.getElementById(id);
+if (el) el.disabled = true;
+});
+
+const sub = document.getElementById('resultSub');
+if (sub) sub.textContent = '株価を入力すると、ここに配当利回りも表示されます';
+}
+
+function onResetExtra() {
+calculate(); // 入力が空なので、結果表示も初期状態に戻る（保存はしない）
+}
+
+/* =====================================================
+5. シェア用テキスト／URL（common.jsのshareUrl／showQrが使用）
+===================================================== */
+function buildShareUrl() {
+return location.href.split('?')[0];
+}
+
+function buildShareText() {
+return `配当金計算ツール\n保有株数と1株あたりの配当金から、年間の配当収入を計算できます！`;
+}
+
+// common.js版は「有効な計算結果がある時だけ」動くため、入力が空の初期状態でも
+// ツール紹介をシェアできるよう上書き（ツール紹介文は結果に依存しない）
+function shareX() {
+const text = buildShareText() + '\n' + buildShareUrl();
+window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+function shareLine() {
+const text = buildShareText() + '\n' + buildShareUrl();
+window.open(`https://line.me/R/msg/text/${encodeURIComponent(text)}`, '_blank');
+}
+</script>
+</body>
+</html>
