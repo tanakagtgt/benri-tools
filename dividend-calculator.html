@@ -310,7 +310,7 @@ setVal('bC', r.monthly);
 // 利回り表示（株価が入力されているときだけ）
 const sub = document.getElementById('resultSub');
 if (r.yieldPct!== null) {
-sub.textContent = '配当利回り ' + (Math.round(r.yieldPct * 100) / 100).toLocaleString() + '%'
+sub.textContent = '配当利回り ' + r.yieldPct.toFixed(1) + '%'
 + '（1株配当 ' + Math.round(calculateInputs().dps).toLocaleString() + '円 ÷ 株価 '
 + Math.round(calculateInputs().price).toLocaleString() + '円）';
 } else {
@@ -341,7 +341,7 @@ inputs.nisa? 'NISA口座：はい（非課税）': 'NISA口座：いいえ（税
 `月あたり配当金（税引き後）：${fmt(result.monthly)}`,
 ];
 if (result.yieldPct!== null) {
-lines.push(`配当利回り：${Math.round(result.yieldPct * 100) / 100}%`);
+lines.push(`配当利回り：${result.yieldPct.toFixed(1)}%`);
 }
 
 copyToClipboard(lines.join('\n'), 'btnCopyText', '📋 結果をコピー');
