@@ -295,7 +295,7 @@
     <select id="sortSelect" onchange="changeSort(this.value)" aria-label="並び替え">
       <option value="default">並び順：標準</option>
       <option value="new">並び順：新着順</option>
-      <option value="name">並び順：名前順</option>
+      <option value="name">並び順：名前順（五十音）</option>
       <option value="fav">並び順：★お気に入り優先</option>
     </select>
     <button type="button" class="filter-btn" id="favOnlyBtn" aria-pressed="false" onclick="toggleFavOnly()">★のみ</button>
@@ -337,151 +337,151 @@
   <li class="tool-cat">
     <h2>🧮 日常の計算</h2>
   </li>
-  <li>
+  <li data-yomi="ねんれいせいれきわれきへんかんつーる">
     <a href="wareki.html">年齢西暦和暦変換ツール</a>
     <div class="desc">令和・平成・昭和の和暦と西暦、年齢を双方向で即座に変換。</div>
   </li>
-  <li>
+  <li data-yomi="ねんれいけいさんつーる">
     <a href="age.html">年齢計算ツール</a>
     <div class="desc">生年月日から現在の年齢を自動計算。西暦・和暦どちらも対応。5人まで同時計算できます。</div>
   </li>
-  <li>
+  <li data-yomi="えいぎょうびけいさんつーる">
     <a href="calc-eigyobi-count.html">営業日計算ツール</a>
     <div class="desc">土日・祝日を除いた営業日数を自動計算。祝日は2020〜2030年の日本の祝日に対応。振替休日・年末年始（12/29〜1/3）も除外可能。</div>
   </li>
-  <li>
+  <li data-yomi="たんかひかくつーる">
     <a href="unit-price-compare.html">単価比較ツール</a>
     <div class="desc">商品の内容量と価格から単価を自動計算・比較。スーパーでどちらがお得か一目でわかる。</div>
   </li>
-  <li>
+  <li data-yomi="えいようこすぱひかくつーる">
     <a href="nutrition-cospa-tool.html">栄養コスパ比較ツール</a>
     <div class="desc">たんぱく質・カロリーなどをコスパで比較。食費を抑えながら栄養バランスを整えたい人に。</div>
   </li>
-  <li>
+  <li data-yomi="しょうひかろりーけいさんつーる">
     <a href="calorie-consumption.html">消費カロリー計算ツール（TDEE・基礎代謝）</a>
     <div class="desc">体脂肪率を入力すると高精度なKatch-McArdle式も選べます</div>
   </li>
-  <li>
+  <li data-yomi="こーひーまめとおゆけいさんつーる">
     <a href="coffee-calculator.html">コーヒー豆とお湯計算ツール</a>
     <div class="desc">豆の量or欲しいコーヒーの量から必要なお湯の量を計算</div>
   </li>
-  <li>
+  <li data-yomi="じっしつじきゅうけいさんつーる">
     <a href="jikyu-calculator.html">実質時給計算ツール</a>
     <div class="desc">手取り・拘束時間ベースの実質時給を一括計算</div>
   </li>
-  <li>
+  <li data-yomi="じどうてあてけいさんつーる">
     <a href="jidouteate-calculator.html">児童手当計算ツール</a>
     <div class="desc">生年月日を入力するだけで月額・年額・生涯累計を試算</div>
   </li>
-  <li>
+  <li data-yomi="かんすうでんたく">
     <a href="calc-function-calculator.html">関数電卓</a>
     <div class="desc">三角関数・対数・べき乗・階乗などに対応したフル機能の関数電卓。DEG/RAD切替、メモリ機能、計算履歴つき。</div>
   </li>
-  <li>
+  <li data-yomi="にんしんしゅうすうしゅっさんよていびけいさん">
     <a href="calc-pregnancy-week.html">妊娠週数・出産予定日計算</a>
     <div class="desc">最終月経開始日から出産予定日と今日の妊娠週数を自動計算。週数から日付の逆算、週ごとのカレンダーも確認できる</div>
   </li>
   <li class="tool-cat">
     <h2>💰 お金の計算</h2>
   </li>
-  <li>
+  <li data-yomi="しゃっきんへんさいしみゅれーしょんつーる">
     <a href="debt-repayment-simulator.html">借金返済シミュレーションツール</a>
     <div class="desc">返済額計算・繰上返済シミュレーション。</div>
   </li>
-  <li>
+  <li data-yomi="じゅうたくろーんさんていつーる">
     <a href="jyutakuro-n.html">住宅ローン算定ツール</a>
     <div class="desc">返済額計算・繰上返済シミュレーション・投資比較・住宅ローン控除を一画面で確認。変動金利リスクも対応。</div>
   </li>
-  <li>
+  <li data-yomi="ちんたいそうがくしみゅれーたー">
     <a href="chintai-sougaku.html">賃貸総額シミュレーター</a>
     <div class="desc">月額費用と居住年数を入力するだけで、一生分の賃貸コストを自動計算</div>
   </li>
-  <li>
+  <li data-yomi="つみたてにさしみゅれーたー">
     <a href="nisa.html">積立NISAシミュレーター</a>
     <div class="desc">毎月積立の複利効果を計算・グラフで可視化。元本・積立額・年数・利回りを入力するだけ。</div>
   </li>
-  <li>
+  <li data-yomi="ふぁいあできるかしみゅれーたー">
     <a href="fin-money-fire-sim.html">FIREできるかシミュレーター</a>
     <div class="desc">NISA・課税口座・生活防衛資金から税金・国保・年金まで込みで、資産が何歳まで持つかを試算。暴落テストや「もしも」の比較にも対応</div>
   </li>
-  <li>
+  <li data-yomi="しゅうしきろくかれんだー">
     <a href="fin-income-tracker.html">収支記録カレンダー</a>
     <div class="desc">投資と回収を日別に記録し、収支・回収率・勝率をカレンダーとチャートで確認できる</div>
   </li>
-  <li>
+  <li data-yomi="かけいぼ">
     <a href="fin-household-budget.html">家計簿</a>
     <div class="desc">収入と支出をカレンダーに記録し、リスト・収支表・グラフでタグ別に家計を振り返れる</div>
   </li>
-  <li>
+  <li data-yomi="しふときゅうりょうかれんだー">
     <a href="fin-shift-pay.html">シフト給料カレンダー</a>
     <div class="desc">バイト・パートのシフトから給料を自動計算。深夜・休日・残業・交通費・締日と給料日に対応</div>
   </li>
-  <li>
+  <li data-yomi="はいとうきんけいさんつーる">
     <a href="dividend-calculator.html">配当金計算ツール</a>
     <div class="desc">保有株数と1株あたりの配当金から年間の配当収入を計算。税引き後・月あたり・配当利回りもまとめて確認できます。</div>
   </li>
   <li class="tool-cat">
     <h2>🔄 変換</h2>
   </li>
-  <li>
+  <li data-yomi="ぴーでぃーえふがぞうへんかんつーる">
     <a href="pdf_image_converter.html">PDF⇔画像 変換ツール</a>
     <div class="desc">PDFを画像（JPG/PNG）に変換・複数画像をPDF1枚にまとめる。ファイルはブラウザ内で処理、サーバー送信なし。</div>
   </li>
-  <li>
+  <li data-yomi="ぶんしょうへんかんつーる">
     <a href="conv-bunsho-henkan.html">文章変換ツール</a>
     <div class="desc">文字数カウント・全角半角変換・置換・改行をまとめて処理</div>
   </li>
   <li class="tool-cat">
     <h2>🛠️ 便利ツール</h2>
   </li>
-  <li>
+  <li data-yomi="たすくかんりつーる">
     <a href="util-task-manager.html">タスク管理ツール</a>
     <div class="desc">ブラウザで保存完結。重要度×緊急度の4象限で優先順位を整理できますGoogleカレンダーへ追加可能。</div>
   </li>
-  <li>
+  <li data-yomi="がぞうへんしゅうつーる">
     <a href="image-editor.html">画像編集ツール</a>
     <div class="desc">画像のリサイズ・トリミング・回転などをブラウザ上で簡単編集。登録不要・サーバー送信なし。完全無料。</div>
   </li>
-  <li>
+  <li data-yomi="きゅーあーるこーどさくせいつーる">
     <a href="qrcode-creator.html">QRコード作成ツール</a>
     <div class="desc">入力したテキスト・URLがそのままQRコードになります</div>
   </li>
-  <li>
+  <li data-yomi="おんせいかっとぶんかつつーる">
     <a href="util-audio-cutter.html">音声カット・分割ツール</a>
     <div class="desc">MP3・WAVを好きな位置で複数に分割。無劣化の高速モードとZIP一括保存に対応</div>
   </li>
-  <li>
+  <li data-yomi="そくどくとれーなー">
     <a href="util-speed-reader.html">速読トレーナー（RSVP）</a>
     <div class="desc">文章を高速表示するRSVP方式の速読練習ツール。速度・表示文字数・縦横・色を調整、履歴も保存</div>
   </li>
-  <li>
+  <li data-yomi="じゅんばんきめつーる">
     <a href="util-order-decider.html">順番決めツール</a>
     <div class="desc">サイコロ・コイントス・くじ引き・じゃんけんで順番決め</div>
   </li>
-  <li>
+  <li data-yomi="ぴーでぃーえふへんしゅうつーる">
     <a href="util-pdf-editor.html">PDF編集ツール</a>
     <div class="desc">Adobe Readerより使いやすいのを目指しました</div>
   </li>
-  <li>
+  <li data-yomi="ぴーでぃーえふけつごうぺーじせいり">
     <a href="util-pdf-merge.html">PDF結合・ページ整理</a>
     <div class="desc">複数のPDFを1つに結合し、ページの並べ替え・削除・回転・抽出ができる無料ツール。ファイルは外部送信なし</div>
   </li>
-  <li>
+  <li data-yomi="すまほでんこうけいじばん">
     <a href="util-led-sign.html">スマホ電光掲示板</a>
     <div class="desc">スマホの画面を電光掲示板に。テキストや画像をLED風にスクロール表示</div>
   </li>
-  <li>
+  <li data-yomi="でんごんばん">
     <a href="dengonban.html">伝言板</a>
     <div class="desc">誰でも気軽に書き込める、昔ながらの伝言板。感想や要望をどうぞ。</div>
   </li>
   <li class="tool-cat">
     <h2>📄 書類・図鑑</h2>
   </li>
-  <li>
+  <li data-yomi="みつもりしょせいきゅうしょさくせいつーる">
     <a href="mitumorisho-seikyuusho.html">見積書・請求書 作成ツール</a>
     <div class="desc">スマホで見積書・請求書を作成しコンビニ印刷可能</div>
   </li>
-  <li>
+  <li data-yomi="ゆーあいようごずかん">
     <a href="doc-ui-glossary.html">UI用語図鑑</a>
     <div class="desc">モーダル・トースト等のUI用語を12カテゴリで検索できる図鑑</div>
   </li>
@@ -566,7 +566,7 @@ const RECENT_SHOW_MAX  = 5;   // 画面に出す最近使った件数
 const RECENT_STORE_MAX = 10;  // 保存しておく最大件数
 const NEW_BADGE_DAYS   = 14;  // 追加日からこの日数以内ならNEW
 
-let toolItems = [];   // [{ id, li, link, name, order, favBtn }]
+let toolItems = [];   // [{ id, li, link, name, yomi, order, favBtn }]
 let toolMeta  = {};   // id -> { emoji, date, category }（tools.jsonから補完）
 let favIds    = [];
 let favOnly   = false;
@@ -616,7 +616,7 @@ function initTop() {
     btn.className = 'fav-btn';
     btn.addEventListener('click', () => toggleFav(id));
     li.appendChild(btn);
-    toolItems.push({ id, li, link, name: link.textContent.trim(), order: i, favBtn: btn });
+    toolItems.push({ id, li, link, name: link.textContent.trim(), yomi: li.getAttribute('data-yomi') || '', order: i, favBtn: btn });
   });
   toolItems.forEach(updateFavButton);
   updateFavOnlyLabel();
@@ -754,6 +754,70 @@ function clearRecent() {
    name   ：名前の五十音順
    fav    ：★付きを先頭（中身は標準順）
    ===================================================== */
+/* =====================================================
+   五十音順（辞書式）の比較
+   - localeCompare('ja') だけだと拗音（しゃ・しゅ等）の扱いが辞書と
+     違うため、読み仮名を五十音のランク列に直して比べる
+   - 濁点は清音の直後（か→が）、半濁点はその直後（ば→ぱ）、
+     拗音は直前の仮名の直後（し→しゃ→しゅ→しょ→す）、
+     促音「っ」は「つ」の直後、長音「ー」は直前の母音として扱う
+   - yomi がないツール（将来の追加分）は従来の名前比較にフォールバック
+   ===================================================== */
+const GOJUON = {};
+'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん'
+  .split('').forEach((k, i) => GOJUON[k] = i + 1);
+const DAKUTEN = { 'が':'か','ぎ':'き','ぐ':'く','げ':'け','ご':'こ','ざ':'さ','じ':'し','ず':'す','ぜ':'せ','ぞ':'そ','だ':'た','ぢ':'ち','づ':'つ','で':'て','ど':'と','ば':'は','び':'ひ','ぶ':'ふ','べ':'へ','ぼ':'ほ' };
+const HANDAKUTEN = { 'ぱ':'は','ぴ':'ひ','ぷ':'ふ','ぺ':'へ','ぽ':'ほ' };
+const SMALL_VOWEL = { 'ぁ':'あ','ぃ':'い','ぅ':'う','ぇ':'え','ぉ':'お' };
+const SMALL_Y = { 'ゃ':0.1,'ゅ':0.2,'ょ':0.3 };
+
+function gojuuonKey(yomi) {
+  const key = [];
+  let prevBase = 0;   // 直前の仮名の基本ランク
+  let prevVowel = 0;  // 直前の仮名の母音（あ=1, い=2, う=3, え=4, お=5）
+  for (const ch of yomi) {
+    if (GOJUON[ch] !== undefined) {
+      key.push(GOJUON[ch]);
+      prevBase = GOJUON[ch];
+      prevVowel = (GOJUON[ch] - 1) % 5 + 1;
+    } else if (DAKUTEN[ch]) {
+      key.push(GOJUON[DAKUTEN[ch]] + 0.5);
+      prevBase = GOJUON[DAKUTEN[ch]] + 0.5;
+      prevVowel = (GOJUON[DAKUTEN[ch]] - 1) % 5 + 1;
+    } else if (HANDAKUTEN[ch]) {
+      key.push(GOJUON[HANDAKUTEN[ch]] + 0.6);
+      prevBase = GOJUON[HANDAKUTEN[ch]] + 0.6;
+      prevVowel = (GOJUON[HANDAKUTEN[ch]] - 1) % 5 + 1;
+    } else if (SMALL_VOWEL[ch]) {
+      key.push(prevBase + 0.05); // ふぁ：ふの直後（ふぁ < ぶ < ぴ）
+      prevVowel = (GOJUON[SMALL_VOWEL[ch]] - 1) % 5 + 1;
+    } else if (SMALL_Y[ch] !== undefined) {
+      key.push(prevBase + SMALL_Y[ch]); // しゃ：しの直後
+      prevVowel = { 'ゃ':1, 'ゅ':3, 'ょ':5 }[ch];
+    } else if (ch === 'っ') {
+      key.push(GOJUON['つ'] + 0.1);
+      prevVowel = 3;
+    } else if (ch === 'ー') {
+      key.push(prevVowel);
+    } else {
+      key.push(99); // 想定外の文字は末尾寄せ
+    }
+  }
+  return key;
+}
+
+function compareName(a, b) {
+  if (a.yomi && b.yomi) {
+    const ka = gojuuonKey(a.yomi), kb = gojuuonKey(b.yomi);
+    const n = Math.min(ka.length, kb.length);
+    for (let i = 0; i < n; i++) {
+      if (ka[i] !== kb[i]) return ka[i] - kb[i];
+    }
+    if (ka.length !== kb.length) return ka.length - kb.length;
+  }
+  return a.name.localeCompare(b.name, 'ja');
+}
+
 function changeSort(mode) {
   sortMode = mode;
   try { localStorage.setItem(INDEX_SORT_KEY, mode); } catch (e) {}
@@ -775,7 +839,7 @@ function applySort() {
   if (sortMode === 'new') {
     list.sort((a, b) => dateOf(b).localeCompare(dateOf(a)) || byOrder(a, b));
   } else if (sortMode === 'name') {
-    list.sort((a, b) => a.name.localeCompare(b.name, 'ja') || byOrder(a, b));
+    list.sort((a, b) => compareName(a, b) || byOrder(a, b));
   } else if (sortMode === 'fav') {
     const rank = item => (favIds.includes(item.id) ? 0 : 1);
     list.sort((a, b) => rank(a) - rank(b) || byOrder(a, b));
