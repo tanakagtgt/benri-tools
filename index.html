@@ -101,15 +101,17 @@
     padding: 14px 16px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.06);
   }
-  /* ジャンル見出し（generate.pyが出力する li.tool-cat。カード風にはしない） */
-  .tool-list li.tool-cat {
-    background: transparent;
-    border: none;
-    box-shadow: none;
-    padding: 18px 2px 6px;
-    margin-bottom: 0;
-  }
-  .tool-list li.tool-cat h2 { font-size: 16px; color: var(--color-text); margin: 0; }
+  /* ジャンル別カード（.tool-groups：画面幅で1→2→3→4列に変わる） */
+  .tool-groups { display: grid; gap: 16px; grid-template-columns: 1fr; align-items: start; margin-bottom: 14px; }
+  @media (min-width: 640px) { .tool-groups { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 960px) { .tool-groups { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 1240px) { .tool-groups { grid-template-columns: repeat(4, 1fr); } }
+  .tool-group { background: var(--color-card); border: 1px solid var(--color-border); border-radius: var(--radius-card); padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .tool-group h2 { font-size: 16px; color: var(--color-text); margin: 0 0 6px; }
+  /* カードの中のツールは区切り線だけのコンパクトな行にする（カード風にはしない） */
+  .tool-group .tool-list { margin-bottom: 0; }
+  .tool-group .tool-list li { background: transparent; border: none; box-shadow: none; border-radius: 0; margin-bottom: 0; padding: 10px 60px 10px 0; }
+  .tool-group .tool-list li + li { border-top: 1px solid var(--color-border); }
   .tool-list li a {
     display: inline-block;
     padding: 2px 0;
@@ -327,16 +329,16 @@
     </ul>
   </section>
 
-  <ul class="tool-list" id="toolList">
+  <div class="tool-groups" id="toolList">
 <!-- =====================================================
      ツール一覧（ビルドスクリプトがtools.jsonから自動生成する場所）
      ★このコメントの間は generate.py が自動で置き換える。手編集しない。
      新しいツールを増やしたい時は tools.json に追記して generate.py を実行するだけ。
      ===================================================== -->
 <!-- TOOLLIST_START -->
-  <li class="tool-cat">
-    <h2>🧮 日常の計算</h2>
-  </li>
+  <section class="tool-group" data-category="calc">
+    <h2>🧮 日常の計算（11件）</h2>
+    <ul class="tool-list">
   <li data-yomi="ねんれいせいれきわれきへんかんつーる">
     <a href="wareki.html">年齢西暦和暦変換ツール</a>
     <div class="desc">令和・平成・昭和の和暦と西暦、年齢を双方向で即座に変換。</div>
@@ -381,9 +383,11 @@
     <a href="calc-pregnancy-week.html">妊娠週数・出産予定日計算</a>
     <div class="desc">最終月経開始日から出産予定日と今日の妊娠週数を自動計算。週数から日付の逆算、週ごとのカレンダーも確認できる</div>
   </li>
-  <li class="tool-cat">
-    <h2>💰 お金の計算</h2>
-  </li>
+    </ul>
+  </section>
+  <section class="tool-group" data-category="fin">
+    <h2>💰 お金の計算（9件）</h2>
+    <ul class="tool-list">
   <li data-yomi="しゃっきんへんさいしみゅれーしょんつーる">
     <a href="debt-repayment-simulator.html">借金返済シミュレーションツール</a>
     <div class="desc">返済額計算・繰上返済シミュレーション。</div>
@@ -420,9 +424,11 @@
     <a href="dividend-calculator.html">配当金計算ツール</a>
     <div class="desc">保有株数と1株あたりの配当金から年間の配当収入を計算。税引き後・月あたり・配当利回りもまとめて確認できます。</div>
   </li>
-  <li class="tool-cat">
-    <h2>🔄 変換</h2>
-  </li>
+    </ul>
+  </section>
+  <section class="tool-group" data-category="conv">
+    <h2>🔄 変換（2件）</h2>
+    <ul class="tool-list">
   <li data-yomi="ぴーでぃーえふがぞうへんかんつーる">
     <a href="pdf_image_converter.html">PDF⇔画像 変換ツール</a>
     <div class="desc">PDFを画像（JPG/PNG）に変換・複数画像をPDF1枚にまとめる。ファイルはブラウザ内で処理、サーバー送信なし。</div>
@@ -431,9 +437,11 @@
     <a href="conv-bunsho-henkan.html">文章変換ツール</a>
     <div class="desc">文字数カウント・全角半角変換・置換・改行をまとめて処理</div>
   </li>
-  <li class="tool-cat">
-    <h2>🛠️ 便利ツール</h2>
-  </li>
+    </ul>
+  </section>
+  <section class="tool-group" data-category="util">
+    <h2>🛠️ 便利ツール（10件）</h2>
+    <ul class="tool-list">
   <li data-yomi="たすくかんりつーる">
     <a href="util-task-manager.html">タスク管理ツール</a>
     <div class="desc">ブラウザで保存完結。重要度×緊急度の4象限で優先順位を整理できますGoogleカレンダーへ追加可能。</div>
@@ -474,9 +482,11 @@
     <a href="dengonban.html">伝言板</a>
     <div class="desc">誰でも気軽に書き込める、昔ながらの伝言板。感想や要望をどうぞ。</div>
   </li>
-  <li class="tool-cat">
-    <h2>📄 書類・図鑑</h2>
-  </li>
+    </ul>
+  </section>
+  <section class="tool-group" data-category="doc">
+    <h2>📄 書類・図鑑（2件）</h2>
+    <ul class="tool-list">
   <li data-yomi="みつもりしょせいきゅうしょさくせいつーる">
     <a href="mitumorisho-seikyuusho.html">見積書・請求書 作成ツール</a>
     <div class="desc">スマホで見積書・請求書を作成しコンビニ印刷可能</div>
@@ -485,8 +495,12 @@
     <a href="doc-ui-glossary.html">UI用語図鑑</a>
     <div class="desc">モーダル・トースト等のUI用語を12カテゴリで検索できる図鑑</div>
   </li>
+    </ul>
+  </section>
 <!-- TOOLLIST_END -->
-  </ul>
+  </div>
+  <!-- 並び替えが「標準」以外のときに使うフラットな一覧（JSがツールをここへ移動する） -->
+  <ul class="tool-list" id="toolListFlat" style="display:none"></ul>
   <!-- 検索結果0件のときだけJSで表示するメッセージ -->
   <div class="no-result" id="noResultMsg">😢 該当するツールが見つかりませんでした</div>
 
@@ -566,12 +580,11 @@ const RECENT_SHOW_MAX  = 5;   // 画面に出す最近使った件数
 const RECENT_STORE_MAX = 10;  // 保存しておく最大件数
 const NEW_BADGE_DAYS   = 14;  // 追加日からこの日数以内ならNEW
 
-let toolItems = [];   // [{ id, li, link, name, yomi, order, favBtn }]
+let toolItems = [];   // [{ id, li, link, name, yomi, order, home, favBtn }]（home＝所属するジャンルカード内のul）
 let toolMeta  = {};   // id -> { emoji, date, category }（tools.jsonから補完）
 let favIds    = [];
 let favOnly   = false;
 let sortMode  = 'default';
-let initialListOrder = []; // #toolList の初期の子要素順（見出し＋ツール）
 
 /* ---------- localStorage 小物（失敗しても落とさない） ---------- */
 function readList(key) {
@@ -603,9 +616,6 @@ function initTop() {
   const sel = document.getElementById('sortSelect');
   if (sel) sel.value = sortMode;
 
-  // ジャンル見出しを含む一覧の初期並びを保存（「標準」順への復帰用）
-  initialListOrder = Array.from(document.getElementById('toolList').children);
-
   // 自動生成されたliに★ボタンを後付けする（generate.pyの出力は変えない）
   document.querySelectorAll('#toolList li').forEach((li, i) => {
     const link = li.querySelector('a');
@@ -616,13 +626,15 @@ function initTop() {
     btn.className = 'fav-btn';
     btn.addEventListener('click', () => toggleFav(id));
     li.appendChild(btn);
-    toolItems.push({ id, li, link, name: link.textContent.trim(), yomi: li.getAttribute('data-yomi') || '', order: i, favBtn: btn });
+    toolItems.push({ id, li, link, name: link.textContent.trim(), yomi: li.getAttribute('data-yomi') || '', order: i, home: li.parentElement, favBtn: btn });
   });
   toolItems.forEach(updateFavButton);
   updateFavOnlyLabel();
 
   // 一覧・履歴チップのリンクをクリックしたら「最近使った」に記録
+  // （フラット用の一覧も同じ扱いにする）
   document.getElementById('toolList').addEventListener('click', onToolLinkClick);
+  document.getElementById('toolListFlat').addEventListener('click', onToolLinkClick);
   document.getElementById('recentChips').addEventListener('click', onToolLinkClick);
 
   applySort();
@@ -826,10 +838,14 @@ function changeSort(mode) {
 }
 
 function applySort() {
-  const ul = document.getElementById('toolList');
-  // 「標準」：初期の並び（ジャンル見出し＋ツール）にそのまま戻す
+  const grid = document.getElementById('toolList');
+  const flat = document.getElementById('toolListFlat');
+  // 「標準」：各ツールを元のジャンルカードに戻し、グリッド表示にする
   if (sortMode === 'default') {
-    initialListOrder.forEach(node => ul.appendChild(node));
+    toolItems.slice().sort((a, b) => a.order - b.order)
+      .forEach(item => item.home.appendChild(item.li));
+    flat.style.display = 'none';
+    grid.style.display = '';
     return;
   }
   const dateOf = item => (toolMeta[item.id] && toolMeta[item.id].date) || '';
@@ -845,8 +861,10 @@ function applySort() {
     list.sort((a, b) => rank(a) - rank(b) || byOrder(a, b));
   }
 
-  // 標準以外は見出しを外したフラットな1列にする（見出しの表示は updateCatHeadings が制御）
-  list.forEach(item => ul.appendChild(item.li)); // appendChildは既存要素を「移動」する
+  // 標準以外はジャンルカードを外し、フラットな1列にする
+  list.forEach(item => flat.appendChild(item.li)); // appendChildは既存要素を「移動」する
+  grid.style.display = 'none';
+  flat.style.display = '';
 }
 
 /* =====================================================
@@ -883,33 +901,19 @@ function applyFilter() {
 }
 
 /* =====================================================
-   【ジャンル見出しの表示制御】
-   - 「標準」順のときだけ見出しを表示し、表示中のツールが
-     1件もないジャンルは見出しごと隠す
-   - 標準以外の並び替えではフラットな1列にするため常に隠す
+   【ジャンルカードの表示制御】
+   - 「標準」順のときだけカードを表示し、表示中のツールが
+     1件もないジャンルはカードごと隠す
+   - 標準以外の並び替えではフラットな1列になるため、カード側は
+     applySort がグリッドごと隠している（ここでは何もしない）
    ===================================================== */
 function updateCatHeadings() {
-  const ul = document.getElementById('toolList');
-  const heads = Array.from(ul.querySelectorAll('li.tool-cat'));
-  if (sortMode !== 'default') {
-    heads.forEach(h => h.style.display = 'none');
-    return;
-  }
-  let currentHead = null;
-  let headHasVisible = false;
-  const flush = () => {
-    if (currentHead) currentHead.style.display = headHasVisible ? '' : 'none';
-  };
-  Array.from(ul.children).forEach(node => {
-    if (node.classList.contains('tool-cat')) {
-      flush();
-      currentHead = node;
-      headHasVisible = false;
-    } else if (currentHead && node.style.display !== 'none') {
-      headHasVisible = true;
-    }
+  if (sortMode !== 'default') return;
+  Array.from(document.querySelectorAll('#toolList .tool-group')).forEach(section => {
+    const hasVisible = Array.from(section.querySelectorAll('li'))
+      .some(li => li.style.display !== 'none');
+    section.style.display = hasVisible ? '' : 'none';
   });
-  flush();
 }
 
 /* =====================================================
