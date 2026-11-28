@@ -49,16 +49,47 @@ def load_tools():
         return json.load(f)
 
 
+# トップページ一覧のジャンル分け（表示順＝この並び順）
+# カテゴリは tools.json の "category" を見る。和暦（wareki）は
+# tools.json 側で "calc"（日常の計算）にしている。
+CATEGORIES = [
+    ("calc", "🧮 日常の計算"),
+    ("fin", "💰 お金の計算"),
+    ("conv", "🔄 変換"),
+    ("util", "🛠️ 便利ツール"),
+    ("doc", "📄 書類・図鑑"),
+]
+
+
+def tool_li(t) -> str:
+    return (
+        "  <li>\n"
+        f'    <a href="{escape(t["file"])}">{escape(t["name"])}</a>\n'
+        f'    <div class="desc">{escape(t["desc"])}</div>\n'
+        "  </li>"
+    )
+
+
 def build_tool_list_html(tools) -> str:
-    """tools.json の並び順どおりに <li> ブロックを組み立てる"""
+    """ジャンルごとに見出し<li>を挟み、tools.json の並び順どおりに
+    <li> ブロックを組み立てる。見出しは <li class="tool-cat"> で、
+    トップページのJS（検索・並び替え）が制御できる形にしている。"""
     items = []
-    for t in tools:
+    known = {cat_id for cat_id, _ in CATEGORIES}
+    for cat_id, cat_label in CATEGORIES:
+        group = [t for t in tools if t.get("category") == cat_id]
+        if not group:
+            continue
         items.append(
-            "  <li>\n"
-            f'    <a href="{escape(t["file"])}">{escape(t["name"])}</a>\n'
-            f'    <div class="desc">{escape(t["desc"])}</div>\n'
+            "  <li class=\"tool-cat\">\n"
+            f"    <h2>{cat_label}</h2>\n"
             "  </li>"
         )
+        items.extend(tool_li(t) for t in group)
+    # カテゴリ未設定・未知のカテゴリのツールがあれば末尾にそのまま追加（取りこぼし防止）
+    for t in tools:
+        if t.get("category") not in known:
+            items.append(tool_li(t))
     return "\n".join(items)
 
 
