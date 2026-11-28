@@ -244,8 +244,16 @@ async function loadRecommends() {
     const res = await fetch('/tools.json');
     const tools = await res.json();
 
+    const current = tools.find(t => t.id === CURRENT_TOOL_ID);
     const others = tools.filter(t => t.id !== CURRENT_TOOL_ID);
-    const picks = others.sort(() => Math.random() - 0.5).slice(0, 2);
+    // 同じカテゴリのツールを優先し、足りない分は他カテゴリから補う
+    // （トップページは CURRENT_TOOL_ID が空のため従来どおりランダム2件）
+    const shuffle = arr => arr.slice().sort(() => Math.random() - 0.5);
+    const sameCat = current && current.category
+      ? others.filter(t => t.category === current.category)
+      : [];
+    const rest = others.filter(t => !sameCat.includes(t));
+    const picks = [...shuffle(sameCat), ...shuffle(rest)].slice(0, 2);
 
     const html = picks.length > 0
       ? picks.map(t => `<a class="recommend-link" href="${t.url}">${t.emoji} ${t.name}</a>`).join('')
