@@ -18,11 +18,11 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
-<title>便利ツール集｜無料で使える計算・変換ツール</title>
-<meta name="description" content="年齢計算・営業日計算・住宅ローン・NISA・PDF変換・和暦西暦変換など無料ツールをまとめて公開中。登録不要ですぐ使えます。">
+<title>無料計算ツール集｜年齢・営業日・住宅ローン・NISA・配当金</title>
+<meta name="description" content="年齢・営業日・住宅ローン・NISA・配当金・FIRE・PDF変換など34の無料ツールをまとめて公開中。登録不要ですぐ使えます。">
 
-<meta property="og:title" content="便利ツール集｜無料で使える計算・変換ツール">
-<meta property="og:description" content="年齢計算・営業日計算・住宅ローン・NISA・PDF変換・和暦西暦変換など無料ツールをまとめて公開中。登録不要ですぐ使えます。">
+<meta property="og:title" content="無料計算ツール集｜年齢・営業日・住宅ローン・NISA・配当金">
+<meta property="og:description" content="年齢・営業日・住宅ローン・NISA・配当金・FIRE・PDF変換など34の無料ツールをまとめて公開中。登録不要ですぐ使えます。">
 <meta property="og:url" content="https://arigato-tools.com/">
 <meta property="og:image" content="https://arigato-tools.com/ogp-default.png">
 <meta property="og:type" content="website">
@@ -250,6 +250,8 @@
   }
   .tool-desc h2 { font-size: 15px; color: var(--color-text); margin-bottom: 8px; }
   .tool-desc p + p { margin-top: 8px; }
+  .tool-desc ul { padding-left: 18px; }
+  .tool-desc li { margin-bottom: 2px; }
 </style>
 </head>
 <body>
@@ -265,7 +267,7 @@
 
   <header>
     <h1>便利ツール集</h1>
-    <p class="subtitle">無料・登録不要ですぐ使える計算・変換ツールをまとめています。</p>
+    <p class="subtitle">年齢・営業日・住宅ローン・NISAなど34の無料ツール。登録不要ですぐ使えます。</p>
   </header>
 
   <!-- =====================================================
@@ -300,6 +302,21 @@
   </div>
 
   <div class="search-count" id="searchCount"></div>
+
+  <!-- 人気のツール（よく使われているツールへのショートカット） -->
+  <section class="tool-desc">
+    <h2>人気のツール</h2>
+    <p>よく使われているツールです。まずはここからどうぞ。</p>
+    <ul>
+      <li>📅 <a href="/calc-eigyobi-count">営業日計算ツール</a> — 土日・祝日を除いた営業日数を自動計算</li>
+      <li>🎂 <a href="/age">年齢計算ツール</a> — 生年月日から今の年齢を自動計算</li>
+      <li>✂️ <a href="/util-audio-cutter">音声カット・分割ツール</a> — MP3・WAVを無劣化で分割</li>
+      <li>💳 <a href="/debt-repayment-simulator">借金返済シミュレーションツール</a> — 返済額と完済までを試算</li>
+      <li>🔧 <a href="/conv-bunsho-henkan">文章変換ツール</a> — 文字数カウント・全角半角変換・置換</li>
+      <li>🔥 <a href="/fin-money-fire-sim">FIREできるかシミュレーター</a> — 資産が何歳まで持つかを試算</li>
+      <li>💰 <a href="/dividend-calculator">配当金計算ツール</a> — 年間の配当収入を税引き後まで計算</li>
+    </ul>
+  </section>
 
   <ul class="tool-list" id="toolList">
 <!-- =====================================================
@@ -456,6 +473,12 @@
     <h2>このサイトについて</h2>
     <p>「便利ツール集」は、日々の計算・書類づくり・ファイル変換など、ちょっと困ったときにすぐ使える無料ツールをまとめたサイトです。年齢や営業日、住宅ローンなどの計算から、PDFや画像の変換、見積書の作成まで、スマホの片手操作でも使いやすいことを意識して作っています。</p>
     <p>使い方は、上の検索ボックスにキーワードを入れるか、一覧から目的のツールを選ぶだけ。登録やログインは不要で、計算や変換はブラウザ内で完結するツールが中心です。ご要望や不具合は、フッターのお問い合わせからお知らせください。</p>
+    <h2>カテゴリ別に探す</h2>
+    <p>お金の計算なら<a href="/jyutakuro-n">住宅ローン</a>、<a href="/nisa">積立NISA</a>、<a href="/fin-money-fire-sim">FIRE</a>、<a href="/dividend-calculator">配当金</a>、<a href="/debt-repayment-simulator">借金返済</a>、<a href="/chintai-sougaku">賃貸総額</a>。日常の計算なら<a href="/calc-eigyobi-count">営業日計算</a>、<a href="/age">年齢計算</a>、<a href="/wareki">和暦変換</a>、<a href="/jidouteate-calculator">児童手当</a>。ファイルの変換・作成なら<a href="/pdf_image_converter">PDF⇔画像変換</a>、<a href="/util-pdf-merge">PDF結合</a>、<a href="/image-editor">画像編集</a>、<a href="/mitumorisho-seikyuusho">見積書・請求書</a>、<a href="/qrcode-creator">QRコード作成</a>があります。すべてのツールは無料・登録不要で、ブラウザだけで使えます。</p>
+    <h2>よくある質問</h2>
+    <p><strong>Q. ツールは本当に無料ですか？</strong><br>A. はい、すべて無料で使えます。登録やログインも不要です。</p>
+    <p><strong>Q. 入力したデータはサーバーに送られますか？</strong><br>A. 計算ツールはブラウザ内で計算するので、入力内容が外部に送信されることはありません。伝言板のように書き込みを共有するツールは、その旨をページ内に書いています。</p>
+    <p><strong>Q. スマホでも使えますか？</strong><br>A. はい、スマホの片手操作でも使いやすいよう作っています。ダークモードへの切り替えもできます。</p>
   </section>
 
   <!-- シェアエリア（共通・触らない） -->
