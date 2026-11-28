@@ -62,8 +62,11 @@ CATEGORIES = [
 
 
 def tool_li(t) -> str:
+    # data-yomi：トップページの「名前順（五十音）」並び替えで使う読み仮名
+    yomi = escape(t.get("yomi", ""))
+    yomi_attr = f' data-yomi="{yomi}"' if yomi else ""
     return (
-        "  <li>\n"
+        f"  <li{yomi_attr}>\n"
         f'    <a href="{escape(t["file"])}">{escape(t["name"])}</a>\n'
         f'    <div class="desc">{escape(t["desc"])}</div>\n'
         "  </li>"
