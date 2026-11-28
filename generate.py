@@ -74,9 +74,10 @@ def tool_li(t) -> str:
 
 
 def build_tool_list_html(tools) -> str:
-    """ジャンルごとに見出し<li>を挟み、tools.json の並び順どおりに
-    <li> ブロックを組み立てる。見出しは <li class="tool-cat"> で、
-    トップページのJS（検索・並び替え）が制御できる形にしている。"""
+    """ジャンルごとに <section class="tool-group"> のカードを作り、
+    tools.json の並び順どおりに <li> を並べる。見出しには件数を入れる。
+    トップページのCSS（.tool-groups）が画面幅で1〜4列に並べ、
+    JS（検索・並び替え）がカード単位で表示を制御する。"""
     items = []
     known = {cat_id for cat_id, _ in CATEGORIES}
     for cat_id, cat_label in CATEGORIES:
@@ -84,15 +85,18 @@ def build_tool_list_html(tools) -> str:
         if not group:
             continue
         items.append(
-            "  <li class=\"tool-cat\">\n"
-            f"    <h2>{cat_label}</h2>\n"
-            "  </li>"
+            f'  <section class="tool-group" data-category="{cat_id}">\n'
+            f"    <h2>{cat_label}（{len(group)}件）</h2>\n"
+            '    <ul class="tool-list">'
         )
         items.extend(tool_li(t) for t in group)
+        items.append("    </ul>\n  </section>")
     # カテゴリ未設定・未知のカテゴリのツールがあれば末尾にそのまま追加（取りこぼし防止）
-    for t in tools:
-        if t.get("category") not in known:
-            items.append(tool_li(t))
+    rest = [t for t in tools if t.get("category") not in known]
+    if rest:
+        items.append('  <ul class="tool-list">')
+        items.extend(tool_li(t) for t in rest)
+        items.append("  </ul>")
     return "\n".join(items)
 
 
