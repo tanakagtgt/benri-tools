@@ -101,6 +101,15 @@
     padding: 14px 16px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.06);
   }
+  /* ジャンル見出し（generate.pyが出力する li.tool-cat。カード風にはしない） */
+  .tool-list li.tool-cat {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 18px 2px 6px;
+    margin-bottom: 0;
+  }
+  .tool-list li.tool-cat h2 { font-size: 16px; color: var(--color-text); margin: 0; }
   .tool-list li a {
     display: inline-block;
     padding: 2px 0;
@@ -325,9 +334,8 @@
      新しいツールを増やしたい時は tools.json に追記して generate.py を実行するだけ。
      ===================================================== -->
 <!-- TOOLLIST_START -->
-  <li>
-    <a href="util-task-manager.html">タスク管理ツール</a>
-    <div class="desc">ブラウザで保存完結。重要度×緊急度の4象限で優先順位を整理できますGoogleカレンダーへ追加可能。</div>
+  <li class="tool-cat">
+    <h2>🧮 日常の計算</h2>
   </li>
   <li>
     <a href="wareki.html">年齢西暦和暦変換ツール</a>
@@ -340,30 +348,6 @@
   <li>
     <a href="calc-eigyobi-count.html">営業日計算ツール</a>
     <div class="desc">土日・祝日を除いた営業日数を自動計算。祝日は2020〜2030年の日本の祝日に対応。振替休日・年末年始（12/29〜1/3）も除外可能。</div>
-  </li>
-  <li>
-    <a href="debt-repayment-simulator.html">借金返済シミュレーションツール</a>
-    <div class="desc">返済額計算・繰上返済シミュレーション。</div>
-  </li>
-  <li>
-    <a href="jyutakuro-n.html">住宅ローン算定ツール</a>
-    <div class="desc">返済額計算・繰上返済シミュレーション・投資比較・住宅ローン控除を一画面で確認。変動金利リスクも対応。</div>
-  </li>
-  <li>
-    <a href="chintai-sougaku.html">賃貸総額シミュレーター</a>
-    <div class="desc">月額費用と居住年数を入力するだけで、一生分の賃貸コストを自動計算</div>
-  </li>
-  <li>
-    <a href="nisa.html">積立NISAシミュレーター</a>
-    <div class="desc">毎月積立の複利効果を計算・グラフで可視化。元本・積立額・年数・利回りを入力するだけ。</div>
-  </li>
-  <li>
-    <a href="pdf_image_converter.html">PDF⇔画像 変換ツール</a>
-    <div class="desc">PDFを画像（JPG/PNG）に変換・複数画像をPDF1枚にまとめる。ファイルはブラウザ内で処理、サーバー送信なし。</div>
-  </li>
-  <li>
-    <a href="image-editor.html">画像編集ツール</a>
-    <div class="desc">画像のリサイズ・トリミング・回転などをブラウザ上で簡単編集。登録不要・サーバー送信なし。完全無料。</div>
   </li>
   <li>
     <a href="unit-price-compare.html">単価比較ツール</a>
@@ -390,20 +374,31 @@
     <div class="desc">生年月日を入力するだけで月額・年額・生涯累計を試算</div>
   </li>
   <li>
-    <a href="mitumorisho-seikyuusho.html">見積書・請求書 作成ツール</a>
-    <div class="desc">スマホで見積書・請求書を作成しコンビニ印刷可能</div>
-  </li>
-  <li>
-    <a href="qrcode-creator.html">QRコード作成ツール</a>
-    <div class="desc">入力したテキスト・URLがそのままQRコードになります</div>
-  </li>
-  <li>
-    <a href="util-audio-cutter.html">音声カット・分割ツール</a>
-    <div class="desc">MP3・WAVを好きな位置で複数に分割。無劣化の高速モードとZIP一括保存に対応</div>
-  </li>
-  <li>
     <a href="calc-function-calculator.html">関数電卓</a>
     <div class="desc">三角関数・対数・べき乗・階乗などに対応したフル機能の関数電卓。DEG/RAD切替、メモリ機能、計算履歴つき。</div>
+  </li>
+  <li>
+    <a href="calc-pregnancy-week.html">妊娠週数・出産予定日計算</a>
+    <div class="desc">最終月経開始日から出産予定日と今日の妊娠週数を自動計算。週数から日付の逆算、週ごとのカレンダーも確認できる</div>
+  </li>
+  <li class="tool-cat">
+    <h2>💰 お金の計算</h2>
+  </li>
+  <li>
+    <a href="debt-repayment-simulator.html">借金返済シミュレーションツール</a>
+    <div class="desc">返済額計算・繰上返済シミュレーション。</div>
+  </li>
+  <li>
+    <a href="jyutakuro-n.html">住宅ローン算定ツール</a>
+    <div class="desc">返済額計算・繰上返済シミュレーション・投資比較・住宅ローン控除を一画面で確認。変動金利リスクも対応。</div>
+  </li>
+  <li>
+    <a href="chintai-sougaku.html">賃貸総額シミュレーター</a>
+    <div class="desc">月額費用と居住年数を入力するだけで、一生分の賃貸コストを自動計算</div>
+  </li>
+  <li>
+    <a href="nisa.html">積立NISAシミュレーター</a>
+    <div class="desc">毎月積立の複利効果を計算・グラフで可視化。元本・積立額・年数・利回りを入力するだけ。</div>
   </li>
   <li>
     <a href="fin-money-fire-sim.html">FIREできるかシミュレーター</a>
@@ -418,20 +413,46 @@
     <div class="desc">収入と支出をカレンダーに記録し、リスト・収支表・グラフでタグ別に家計を振り返れる</div>
   </li>
   <li>
-    <a href="calc-pregnancy-week.html">妊娠週数・出産予定日計算</a>
-    <div class="desc">最終月経開始日から出産予定日と今日の妊娠週数を自動計算。週数から日付の逆算、週ごとのカレンダーも確認できる</div>
-  </li>
-  <li>
-    <a href="util-speed-reader.html">速読トレーナー（RSVP）</a>
-    <div class="desc">文章を高速表示するRSVP方式の速読練習ツール。速度・表示文字数・縦横・色を調整、履歴も保存</div>
-  </li>
-  <li>
     <a href="fin-shift-pay.html">シフト給料カレンダー</a>
     <div class="desc">バイト・パートのシフトから給料を自動計算。深夜・休日・残業・交通費・締日と給料日に対応</div>
   </li>
   <li>
+    <a href="dividend-calculator.html">配当金計算ツール</a>
+    <div class="desc">保有株数と1株あたりの配当金から年間の配当収入を計算。税引き後・月あたり・配当利回りもまとめて確認できます。</div>
+  </li>
+  <li class="tool-cat">
+    <h2>🔄 変換</h2>
+  </li>
+  <li>
+    <a href="pdf_image_converter.html">PDF⇔画像 変換ツール</a>
+    <div class="desc">PDFを画像（JPG/PNG）に変換・複数画像をPDF1枚にまとめる。ファイルはブラウザ内で処理、サーバー送信なし。</div>
+  </li>
+  <li>
     <a href="conv-bunsho-henkan.html">文章変換ツール</a>
     <div class="desc">文字数カウント・全角半角変換・置換・改行をまとめて処理</div>
+  </li>
+  <li class="tool-cat">
+    <h2>🛠️ 便利ツール</h2>
+  </li>
+  <li>
+    <a href="util-task-manager.html">タスク管理ツール</a>
+    <div class="desc">ブラウザで保存完結。重要度×緊急度の4象限で優先順位を整理できますGoogleカレンダーへ追加可能。</div>
+  </li>
+  <li>
+    <a href="image-editor.html">画像編集ツール</a>
+    <div class="desc">画像のリサイズ・トリミング・回転などをブラウザ上で簡単編集。登録不要・サーバー送信なし。完全無料。</div>
+  </li>
+  <li>
+    <a href="qrcode-creator.html">QRコード作成ツール</a>
+    <div class="desc">入力したテキスト・URLがそのままQRコードになります</div>
+  </li>
+  <li>
+    <a href="util-audio-cutter.html">音声カット・分割ツール</a>
+    <div class="desc">MP3・WAVを好きな位置で複数に分割。無劣化の高速モードとZIP一括保存に対応</div>
+  </li>
+  <li>
+    <a href="util-speed-reader.html">速読トレーナー（RSVP）</a>
+    <div class="desc">文章を高速表示するRSVP方式の速読練習ツール。速度・表示文字数・縦横・色を調整、履歴も保存</div>
   </li>
   <li>
     <a href="util-order-decider.html">順番決めツール</a>
@@ -446,10 +467,6 @@
     <div class="desc">複数のPDFを1つに結合し、ページの並べ替え・削除・回転・抽出ができる無料ツール。ファイルは外部送信なし</div>
   </li>
   <li>
-    <a href="doc-ui-glossary.html">UI用語図鑑</a>
-    <div class="desc">モーダル・トースト等のUI用語を12カテゴリで検索できる図鑑</div>
-  </li>
-  <li>
     <a href="util-led-sign.html">スマホ電光掲示板</a>
     <div class="desc">スマホの画面を電光掲示板に。テキストや画像をLED風にスクロール表示</div>
   </li>
@@ -457,9 +474,16 @@
     <a href="dengonban.html">伝言板</a>
     <div class="desc">誰でも気軽に書き込める、昔ながらの伝言板。感想や要望をどうぞ。</div>
   </li>
+  <li class="tool-cat">
+    <h2>📄 書類・図鑑</h2>
+  </li>
   <li>
-    <a href="dividend-calculator.html">配当金計算ツール</a>
-    <div class="desc">保有株数と1株あたりの配当金から年間の配当収入を計算。税引き後・月あたり・配当利回りもまとめて確認できます。</div>
+    <a href="mitumorisho-seikyuusho.html">見積書・請求書 作成ツール</a>
+    <div class="desc">スマホで見積書・請求書を作成しコンビニ印刷可能</div>
+  </li>
+  <li>
+    <a href="doc-ui-glossary.html">UI用語図鑑</a>
+    <div class="desc">モーダル・トースト等のUI用語を12カテゴリで検索できる図鑑</div>
   </li>
 <!-- TOOLLIST_END -->
   </ul>
@@ -547,6 +571,7 @@ let toolMeta  = {};   // id -> { emoji, date, category }（tools.jsonから補�
 let favIds    = [];
 let favOnly   = false;
 let sortMode  = 'default';
+let initialListOrder = []; // #toolList の初期の子要素順（見出し＋ツール）
 
 /* ---------- localStorage 小物（失敗しても落とさない） ---------- */
 function readList(key) {
@@ -577,6 +602,9 @@ function initTop() {
   } catch (e) {}
   const sel = document.getElementById('sortSelect');
   if (sel) sel.value = sortMode;
+
+  // ジャンル見出しを含む一覧の初期並びを保存（「標準」順への復帰用）
+  initialListOrder = Array.from(document.getElementById('toolList').children);
 
   // 自動生成されたliに★ボタンを後付けする（generate.pyの出力は変えない）
   document.querySelectorAll('#toolList li').forEach((li, i) => {
@@ -734,6 +762,12 @@ function changeSort(mode) {
 }
 
 function applySort() {
+  const ul = document.getElementById('toolList');
+  // 「標準」：初期の並び（ジャンル見出し＋ツール）にそのまま戻す
+  if (sortMode === 'default') {
+    initialListOrder.forEach(node => ul.appendChild(node));
+    return;
+  }
   const dateOf = item => (toolMeta[item.id] && toolMeta[item.id].date) || '';
   const byOrder = (a, b) => a.order - b.order;
   const list = toolItems.slice();
@@ -745,11 +779,9 @@ function applySort() {
   } else if (sortMode === 'fav') {
     const rank = item => (favIds.includes(item.id) ? 0 : 1);
     list.sort((a, b) => rank(a) - rank(b) || byOrder(a, b));
-  } else {
-    list.sort(byOrder);
   }
 
-  const ul = document.getElementById('toolList');
+  // 標準以外は見出しを外したフラットな1列にする（見出しの表示は updateCatHeadings が制御）
   list.forEach(item => ul.appendChild(item.li)); // appendChildは既存要素を「移動」する
 }
 
@@ -774,6 +806,8 @@ function applyFilter() {
     if (show) visibleCount++;
   });
 
+  updateCatHeadings();
+
   // 0件メッセージ：★のみで空の時は登録方法を案内
   const noResult = document.getElementById('noResultMsg');
   noResult.textContent = (favOnly && !keyword)
@@ -782,6 +816,36 @@ function applyFilter() {
   noResult.style.display = visibleCount === 0 ? 'block' : 'none';
 
   updateSearchCount(visibleCount);
+}
+
+/* =====================================================
+   【ジャンル見出しの表示制御】
+   - 「標準」順のときだけ見出しを表示し、表示中のツールが
+     1件もないジャンルは見出しごと隠す
+   - 標準以外の並び替えではフラットな1列にするため常に隠す
+   ===================================================== */
+function updateCatHeadings() {
+  const ul = document.getElementById('toolList');
+  const heads = Array.from(ul.querySelectorAll('li.tool-cat'));
+  if (sortMode !== 'default') {
+    heads.forEach(h => h.style.display = 'none');
+    return;
+  }
+  let currentHead = null;
+  let headHasVisible = false;
+  const flush = () => {
+    if (currentHead) currentHead.style.display = headHasVisible ? '' : 'none';
+  };
+  Array.from(ul.children).forEach(node => {
+    if (node.classList.contains('tool-cat')) {
+      flush();
+      currentHead = node;
+      headHasVisible = false;
+    } else if (currentHead && node.style.display !== 'none') {
+      headHasVisible = true;
+    }
+  });
+  flush();
 }
 
 /* =====================================================
@@ -798,7 +862,7 @@ function clearSearch() {
    【件数表示】「全◯件」または「◯件表示（全◯件中）」を出す
    ===================================================== */
 function updateSearchCount(count) {
-  const total = document.querySelectorAll('#toolList li').length;
+  const total = toolItems.length; // 見出しliは件数に含めない
   const keyword = document.getElementById('toolSearch').value.trim();
   const shown = typeof count === 'number' ? count : total;
 
@@ -814,7 +878,7 @@ function buildShareUrl() {
   return location.href.split('?')[0];
 }
 function buildShareText() {
-  return '便利ツール集｜無料で使える計算・変換ツール\n年齢計算・住宅ローン・NISA・PDF変換など無料ツールをまとめて公開中！';
+  return '無料計算ツール集｜年齢・営業日・住宅ローン・NISA・配当金\n年齢・営業日・住宅ローン・NISA・配当金・FIRE・PDF変換など34の無料ツールをまとめて公開中！';
 }
 </script>
 </body>
