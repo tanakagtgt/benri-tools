@@ -6,7 +6,8 @@
     "file": "util-task-manager.html",
     "emoji": "📝",
     "category": "util",
-    "desc": "ブラウザで保存完結。重要度×緊急度の4象限で優先順位を整理できますGoogleカレンダーへ追加可能。"
+    "desc": "ブラウザで保存完結。重要度×緊急度の4象限で優先順位を整理できますGoogleカレンダーへ追加可能。",
+    "yomi": "たすくかんりつーる"
   },
   {
     "id": "wareki",
@@ -15,7 +16,8 @@
     "file": "wareki.html",
     "emoji": "🗓️",
     "category": "calc",
-    "desc": "令和・平成・昭和の和暦と西暦、年齢を双方向で即座に変換。"
+    "desc": "令和・平成・昭和の和暦と西暦、年齢を双方向で即座に変換。",
+    "yomi": "ねんれいせいれきわれきへんかんつーる"
   },
   {
     "id": "age",
@@ -24,7 +26,8 @@
     "file": "age.html",
     "emoji": "🎂",
     "category": "calc",
-    "desc": "生年月日から現在の年齢を自動計算。西暦・和暦どちらも対応。5人まで同時計算できます。"
+    "desc": "生年月日から現在の年齢を自動計算。西暦・和暦どちらも対応。5人まで同時計算できます。",
+    "yomi": "ねんれいけいさんつーる"
   },
   {
     "id": "calc-eigyobi-count",
@@ -33,7 +36,8 @@
     "file": "calc-eigyobi-count.html",
     "emoji": "📅",
     "category": "calc",
-    "desc": "土日・祝日を除いた営業日数を自動計算。祝日は2020〜2030年の日本の祝日に対応。振替休日・年末年始（12/29〜1/3）も除外可能。"
+    "desc": "土日・祝日を除いた営業日数を自動計算。祝日は2020〜2030年の日本の祝日に対応。振替休日・年末年始（12/29〜1/3）も除外可能。",
+    "yomi": "えいぎょうびけいさんつーる"
   },
   {
     "id": "debt-repayment-simulator",
@@ -42,7 +46,8 @@
     "file": "debt-repayment-simulator.html",
     "emoji": "💳",
     "category": "fin",
-    "desc": "返済額計算・繰上返済シミュレーション。"
+    "desc": "返済額計算・繰上返済シミュレーション。",
+    "yomi": "しゃっきんへんさいしみゅれーしょんつーる"
   },
   {
     "id": "jyutakuro-n",
@@ -51,7 +56,8 @@
     "file": "jyutakuro-n.html",
     "emoji": "🏠",
     "category": "fin",
-    "desc": "返済額計算・繰上返済シミュレーション・投資比較・住宅ローン控除を一画面で確認。変動金利リスクも対応。"
+    "desc": "返済額計算・繰上返済シミュレーション・投資比較・住宅ローン控除を一画面で確認。変動金利リスクも対応。",
+    "yomi": "じゅうたくろーんさんていつーる"
   },
   {
     "id": "chintai-sougaku",
@@ -60,7 +66,8 @@
     "file": "chintai-sougaku.html",
     "emoji": "🏢",
     "category": "fin",
-    "desc": "月額費用と居住年数を入力するだけで、一生分の賃貸コストを自動計算"
+    "desc": "月額費用と居住年数を入力するだけで、一生分の賃貸コストを自動計算",
+    "yomi": "ちんたいそうがくしみゅれーたー"
   },
   {
     "id": "nisa",
@@ -69,7 +76,8 @@
     "file": "nisa.html",
     "emoji": "📈",
     "category": "fin",
-    "desc": "毎月積立の複利効果を計算・グラフで可視化。元本・積立額・年数・利回りを入力するだけ。"
+    "desc": "毎月積立の複利効果を計算・グラフで可視化。元本・積立額・年数・利回りを入力するだけ。",
+    "yomi": "つみたてにさしみゅれーたー"
   },
   {
     "id": "pdf_image_converter",
@@ -78,7 +86,8 @@
     "file": "pdf_image_converter.html",
     "emoji": "🖼️",
     "category": "conv",
-    "desc": "PDFを画像（JPG/PNG）に変換・複数画像をPDF1枚にまとめる。ファイルはブラウザ内で処理、サーバー送信なし。"
+    "desc": "PDFを画像（JPG/PNG）に変換・複数画像をPDF1枚にまとめる。ファイルはブラウザ内で処理、サーバー送信なし。",
+    "yomi": "ぴーでぃーえふがぞうへんかんつーる"
   },
   {
     "id": "image-editor",
@@ -87,7 +96,8 @@
     "file": "image-editor.html",
     "emoji": "🖌️",
     "category": "util",
-    "desc": "画像のリサイズ・トリミング・回転などをブラウザ上で簡単編集。登録不要・サーバー送信なし。完全無料。"
+    "desc": "画像のリサイズ・トリミング・回転などをブラウザ上で簡単編集。登録不要・サーバー送信なし。完全無料。",
+    "yomi": "がぞうへんしゅうつーる"
   },
   {
     "id": "unit-price-compare",
@@ -96,7 +106,8 @@
     "file": "unit-price-compare.html",
     "emoji": "💴",
     "category": "calc",
-    "desc": "商品の内容量と価格から単価を自動計算・比較。スーパーでどちらがお得か一目でわかる。"
+    "desc": "商品の内容量と価格から単価を自動計算・比較。スーパーでどちらがお得か一目でわかる。",
+    "yomi": "たんかひかくつーる"
   },
   {
     "id": "nutrition-cospa-tool",
@@ -105,7 +116,8 @@
     "file": "nutrition-cospa-tool.html",
     "emoji": "🥦",
     "category": "calc",
-    "desc": "たんぱく質・カロリーなどをコスパで比較。食費を抑えながら栄養バランスを整えたい人に。"
+    "desc": "たんぱく質・カロリーなどをコスパで比較。食費を抑えながら栄養バランスを整えたい人に。",
+    "yomi": "えいようこすぱひかくつーる"
   },
   {
     "id": "calorie-consumption",
@@ -114,7 +126,8 @@
     "file": "calorie-consumption.html",
     "emoji": "🔥",
     "category": "calc",
-    "desc": "体脂肪率を入力すると高精度なKatch-McArdle式も選べます"
+    "desc": "体脂肪率を入力すると高精度なKatch-McArdle式も選べます",
+    "yomi": "しょうひかろりーけいさんつーる"
   },
   {
     "id": "coffee-calculator",
@@ -123,7 +136,8 @@
     "file": "coffee-calculator.html",
     "emoji": "☕",
     "category": "calc",
-    "desc": "豆の量or欲しいコーヒーの量から必要なお湯の量を計算"
+    "desc": "豆の量or欲しいコーヒーの量から必要なお湯の量を計算",
+    "yomi": "こーひーまめとおゆけいさんつーる"
   },
   {
     "id": "jikyu-calculator",
@@ -132,7 +146,8 @@
     "file": "jikyu-calculator.html",
     "emoji": "⏱️",
     "category": "calc",
-    "desc": "手取り・拘束時間ベースの実質時給を一括計算"
+    "desc": "手取り・拘束時間ベースの実質時給を一括計算",
+    "yomi": "じっしつじきゅうけいさんつーる"
   },
   {
     "id": "jidouteate-calculator",
@@ -141,7 +156,8 @@
     "file": "jidouteate-calculator.html",
     "emoji": "👶",
     "category": "calc",
-    "desc": "生年月日を入力するだけで月額・年額・生涯累計を試算"
+    "desc": "生年月日を入力するだけで月額・年額・生涯累計を試算",
+    "yomi": "じどうてあてけいさんつーる"
   },
   {
     "id": "mitumorisho-seikyuusho",
@@ -150,7 +166,8 @@
     "file": "mitumorisho-seikyuusho.html",
     "emoji": "🧾",
     "category": "doc",
-    "desc": "スマホで見積書・請求書を作成しコンビニ印刷可能"
+    "desc": "スマホで見積書・請求書を作成しコンビニ印刷可能",
+    "yomi": "みつもりしょせいきゅうしょさくせいつーる"
   },
   {
     "id": "qrcode-creator",
@@ -159,7 +176,8 @@
     "file": "qrcode-creator.html",
     "emoji": "📷",
     "category": "util",
-    "desc": "入力したテキスト・URLがそのままQRコードになります"
+    "desc": "入力したテキスト・URLがそのままQRコードになります",
+    "yomi": "きゅーあーるこーどさくせいつーる"
   },
   {
     "id": "util-audio-cutter",
@@ -168,7 +186,8 @@
     "file": "util-audio-cutter.html",
     "emoji": "✂️",
     "category": "util",
-    "desc": "MP3・WAVを好きな位置で複数に分割。無劣化の高速モードとZIP一括保存に対応"
+    "desc": "MP3・WAVを好きな位置で複数に分割。無劣化の高速モードとZIP一括保存に対応",
+    "yomi": "おんせいかっとぶんかつつーる"
   },
   {
     "id": "calc-function-calculator",
@@ -177,7 +196,8 @@
     "file": "calc-function-calculator.html",
     "emoji": "🧮",
     "category": "calc",
-    "desc": "三角関数・対数・べき乗・階乗などに対応したフル機能の関数電卓。DEG/RAD切替、メモリ機能、計算履歴つき。"
+    "desc": "三角関数・対数・べき乗・階乗などに対応したフル機能の関数電卓。DEG/RAD切替、メモリ機能、計算履歴つき。",
+    "yomi": "かんすうでんたく"
   },
   {
     "id": "fin-money-fire-sim",
@@ -186,7 +206,8 @@
     "file": "fin-money-fire-sim.html",
     "emoji": "🔥",
     "category": "fin",
-    "desc": "NISA・課税口座・生活防衛資金から税金・国保・年金まで込みで、資産が何歳まで持つかを試算。暴落テストや「もしも」の比較にも対応"
+    "desc": "NISA・課税口座・生活防衛資金から税金・国保・年金まで込みで、資産が何歳まで持つかを試算。暴落テストや「もしも」の比較にも対応",
+    "yomi": "ふぁいあできるかしみゅれーたー"
   },
   {
     "id": "fin-income-tracker",
@@ -195,7 +216,8 @@
     "file": "fin-income-tracker.html",
     "emoji": "📅",
     "category": "fin",
-    "desc": "投資と回収を日別に記録し、収支・回収率・勝率をカレンダーとチャートで確認できる"
+    "desc": "投資と回収を日別に記録し、収支・回収率・勝率をカレンダーとチャートで確認できる",
+    "yomi": "しゅうしきろくかれんだー"
   },
   {
     "id": "fin-household-budget",
@@ -204,7 +226,8 @@
     "file": "fin-household-budget.html",
     "emoji": "📒",
     "category": "fin",
-    "desc": "収入と支出をカレンダーに記録し、リスト・収支表・グラフでタグ別に家計を振り返れる"
+    "desc": "収入と支出をカレンダーに記録し、リスト・収支表・グラフでタグ別に家計を振り返れる",
+    "yomi": "かけいぼ"
   },
   {
     "id": "calc-pregnancy-week",
@@ -213,7 +236,8 @@
     "file": "calc-pregnancy-week.html",
     "emoji": "🤰",
     "category": "calc",
-    "desc": "最終月経開始日から出産予定日と今日の妊娠週数を自動計算。週数から日付の逆算、週ごとのカレンダーも確認できる"
+    "desc": "最終月経開始日から出産予定日と今日の妊娠週数を自動計算。週数から日付の逆算、週ごとのカレンダーも確認できる",
+    "yomi": "にんしんしゅうすうしゅっさんよていびけいさん"
   },
   {
     "id": "util-speed-reader",
@@ -222,7 +246,8 @@
     "file": "util-speed-reader.html",
     "emoji": "📖",
     "category": "util",
-    "desc": "文章を高速表示するRSVP方式の速読練習ツール。速度・表示文字数・縦横・色を調整、履歴も保存"
+    "desc": "文章を高速表示するRSVP方式の速読練習ツール。速度・表示文字数・縦横・色を調整、履歴も保存",
+    "yomi": "そくどくとれーなー"
   },
   {
     "id": "fin-shift-pay",
@@ -231,7 +256,8 @@
     "file": "fin-shift-pay.html",
     "emoji": "🗓️",
     "category": "fin",
-    "desc": "バイト・パートのシフトから給料を自動計算。深夜・休日・残業・交通費・締日と給料日に対応"
+    "desc": "バイト・パートのシフトから給料を自動計算。深夜・休日・残業・交通費・締日と給料日に対応",
+    "yomi": "しふときゅうりょうかれんだー"
   },
   {
     "id": "conv-bunsho-henkan",
@@ -240,7 +266,8 @@
     "file": "conv-bunsho-henkan.html",
     "emoji": "🔧",
     "category": "conv",
-    "desc": "文字数カウント・全角半角変換・置換・改行をまとめて処理"
+    "desc": "文字数カウント・全角半角変換・置換・改行をまとめて処理",
+    "yomi": "ぶんしょうへんかんつーる"
   },
   {
     "id": "util-order-decider",
@@ -249,7 +276,8 @@
     "file": "util-order-decider.html",
     "emoji": "🎲",
     "category": "util",
-    "desc": "サイコロ・コイントス・くじ引き・じゃんけんで順番決め"
+    "desc": "サイコロ・コイントス・くじ引き・じゃんけんで順番決め",
+    "yomi": "じゅんばんきめつーる"
   },
   {
     "id": "util-pdf-editor",
@@ -258,7 +286,8 @@
     "file": "util-pdf-editor.html",
     "emoji": "📝",
     "category": "util",
-    "desc": "Adobe Readerより使いやすいのを目指しました"
+    "desc": "Adobe Readerより使いやすいのを目指しました",
+    "yomi": "ぴーでぃーえふへんしゅうつーる"
   },
   {
     "id": "util-pdf-merge",
@@ -267,7 +296,8 @@
     "file": "util-pdf-merge.html",
     "emoji": "📝",
     "category": "util",
-    "desc": "複数のPDFを1つに結合し、ページの並べ替え・削除・回転・抽出ができる無料ツール。ファイルは外部送信なし"
+    "desc": "複数のPDFを1つに結合し、ページの並べ替え・削除・回転・抽出ができる無料ツール。ファイルは外部送信なし",
+    "yomi": "ぴーでぃーえふけつごうぺーじせいり"
   },
   {
     "id": "doc-ui-glossary",
@@ -276,7 +306,8 @@
     "file": "doc-ui-glossary.html",
     "emoji": "📖",
     "category": "doc",
-    "desc": "モーダル・トースト等のUI用語を12カテゴリで検索できる図鑑"
+    "desc": "モーダル・トースト等のUI用語を12カテゴリで検索できる図鑑",
+    "yomi": "ゆーあいようごずかん"
   },
   {
     "id": "util-led-sign",
@@ -285,7 +316,8 @@
     "file": "util-led-sign.html",
     "emoji": "💡",
     "category": "util",
-    "desc": "スマホの画面を電光掲示板に。テキストや画像をLED風にスクロール表示"
+    "desc": "スマホの画面を電光掲示板に。テキストや画像をLED風にスクロール表示",
+    "yomi": "すまほでんこうけいじばん"
   },
   {
     "id": "dengonban",
@@ -294,7 +326,8 @@
     "file": "dengonban.html",
     "emoji": "💬",
     "category": "util",
-    "desc": "誰でも気軽に書き込める、昔ながらの伝言板。感想や要望をどうぞ。"
+    "desc": "誰でも気軽に書き込める、昔ながらの伝言板。感想や要望をどうぞ。",
+    "yomi": "でんごんばん"
   },
   {
     "id": "dividend-calculator",
@@ -303,6 +336,7 @@
     "file": "dividend-calculator.html",
     "emoji": "💰",
     "category": "fin",
-    "desc": "保有株数と1株あたりの配当金から年間の配当収入を計算。税引き後・月あたり・配当利回りもまとめて確認できます。"
+    "desc": "保有株数と1株あたりの配当金から年間の配当収入を計算。税引き後・月あたり・配当利回りもまとめて確認できます。",
+    "yomi": "はいとうきんけいさんつーる"
   }
 ]
